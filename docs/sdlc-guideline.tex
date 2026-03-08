@@ -1,0 +1,479 @@
+% Scrum Pipeline & Governance Guide (LaTeX)
+% Purpose: Canonical guide for single-team Scrum implementation for the
+% Digital Procurement & PLS Seedbed project (permissioned blockchain).
+% Includes: pipeline steps, artifact rules, terminology (single meaning),
+% ADR template, DoR / DoD, traceability rules, CI/CD gating, and storage conventions.
+%
+% Standards & guides referenced at end (explicit). Use this LaTeX as the
+% project's authoritative procedural guide; keep it under version control.
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{titlesec}
+\usepackage{parskip}
+\pagestyle{fancy}
+\fancyhead[L]{Digital Procurement \& PLS Seedbed}
+\fancyhead[R]{Scrum Pipeline \& Governance Guide}
+\fancyfoot[C]{\thepage}
+
+\title{Scrum Pipeline \& Governance Guide\\
+\large Single-Team Scrum — Digital Procurement \& PLS Seedbed}
+\author{Prepared by: Project Delivery Team}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document is the canonical Scrum pipeline and governance guide to be used throughout the development lifecycle of the Digital Procurement \& PLS Seedbed project (permissioned blockchain).  
+It defines a single unambiguous meaning for every abbreviation and technical term used in the project, prescribes the step-by-step Scrum pipeline from initial requirement gathering through testing, deployment and maintenance, and establishes obligatory artifact management, traceability, and decision workflows (including architecture decisions).  
+
+This guide is intended to be \textbf{the project procedural source of truth} (see Section~\ref{sec:sourceoftruth} for recommended canonical phrasing and storage). It is normative for all teams, contributors, reviewers, auditors, and stakeholders.
+\end{abstract}
+
+\tableofcontents
+\clearpage
+
+\section{Scope and intent}
+This document prescribes the single-team Scrum workflow for converting validated requirements into production software and maintaining it thereafter. It is deliberately prescriptive: each term and abbreviation is assigned one exact meaning (see Section~\ref{sec:glossary}) and every artifact and activity is defined so there is no ambiguity in interpretation.
+
+The guide assumes the project will follow a permissioned blockchain architecture with off-chain components. It is compatible with the project's Preliminary SRS (ReqIDs R01--R30) and the backlog mapping produced by the Product Owner.
+
+\section{Terminology: single meanings (Glossary)}\label{sec:glossary}
+Each entry below is the exclusive accepted meaning for the term throughout the project documents and communication. Use these forms verbatim in all PRs, ADRs, tickets, and audits.
+
+\begin{longtable}{p{0.25\textwidth} p{0.68\textwidth}}
+\toprule
+\textbf{Term / Abbreviation} & \textbf{Definition (single meaning)} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{c}{\textit{Continued}}\\
+\toprule
+\textbf{Term / Abbreviation} & \textbf{Definition (single meaning)} \\
+\midrule
+\endhead
+Product Backlog & The single, ordered list of all Product Backlog Items (PBIs). The Product Owner (PO) is the owner of the Product Backlog. No other backlog shall be treated as authoritative. \\
+Product Backlog Item (PBI) & Any unit of work in the Product Backlog. PBIs are labeled as \texttt{Story}, \texttt{Spike}, \texttt{Enabler}, \texttt{Bug}, or \texttt{Task}. Each PBI must have a unique identifier of form \texttt{PBI-\#\#\#}. \\
+Requirement (ReqID) & A canonical requirement referenced in the SRS, identified as \texttt{Rxx} (e.g., \texttt{R01}). The SRS requirement remains the authoritative requirement text. PBIs implement or satisfy requirements and must reference the originating \texttt{Rxx} values. \\
+Definition of Ready (DoR) & The checklist that a PBI must satisfy before the team may commit it to a Sprint. \\
+Definition of Done (DoD) & The checklist required for a PBI to be considered complete and releasable. DoD is enforced by CI \& PO acceptance. \\
+Architecture Decision Record (ADR) & A single file that documents a non-trivial architecture or design decision using the project's ADR template and unique ID (\texttt{ADR-YYYY-NN}). \\
+Spike & A timeboxed PBI to reduce uncertainty; deliverable must be an artifact (prototype, measurement, or decision). Spikes are limited to the timebox defined in the PBI. \\
+Enabler & A PBI whose primary purpose is to create architectural runway, capability, or reduce systemic risk (e.g., CI pipeline, monitoring). \\
+Shariah Board Approval & Formal recorded statement (on-chain or in governance registry) that a PLS product meets the applicable Shariah checklist. This term means an explicit, signed acceptance by the designated Shariah authority for a PBI or ADR. \\
+Canonical Backlog Repository & The project's single authoritative storage for the Product Backlog CSV and its derivatives (recommended name; see Section~\ref{sec:sourceoftruth}). \\
+Traceability Matrix & CSV mapping that links each \texttt{ReqID (Rxx)} to one or more \texttt{PBI-\#\#\#} items and test artifacts; stored in a canonical location and required for audits. \\
+Release & A set of PBIs that have completed DoD and passed release acceptance checks; one release is created per deployment window. \\
+SLA / SLO & Service Level Agreement / Service Level Objective. The SLO is a measurable objective the system must meet; SLA is the contractual obligation derived from SLO(s). Both are stored in the operations runbook. \\
+PR & Pull Request to merge code or docs into the canonical branch. Every PR must reference one or more \texttt{PBI-\#\#\#} and any related \texttt{ADR-}. \\
+CI & Continuous Integration pipeline. The set of automated checks that must pass for a PR to be mergeable. \\
+CD & Continuous Delivery/Deployment. The pipeline that promotes artifacts from staging to production per release policy. \\
+\bottomrule
+\end{longtable}
+
+\section{Standards and normative references}
+The project shall use the following standards and guidance as normative references for interpretation of technical and compliance requirements. When those standards evolve, the project documents will record the version used.
+
+\begin{itemize}[noitemsep]
+  \item \textbf{The Scrum Guide (2020 Edition).} 
+  Ken Schwaber and Jeff Sutherland. 
+  Defines the official single-team Scrum framework and terminology.
+  \item \textbf{W3C Decentralized Identifiers (DID) and Verifiable Credentials (VC).} 
+  World Wide Web Consortium (W3C). 
+  Governs identity representation and cryptographic credential exchange.
+  \item \textbf{Permissioned Blockchain Architecture Patterns.} 
+  Hyperledger Fabric documentation. 
+  Defines channels, private data collections, and endorsement policies.
+  \item \textbf{ISO 20022 Financial Messaging Standard.} 
+  International Organization for Standardization. 
+  Governs structured payment message formats and mapping.
+  \item \textbf{GS1 EPCIS Standard.} 
+  GS1 Global. 
+  Defines event-based supply chain data representation.
+  \item \textbf{NIST Cryptographic and Logging Guidance.} 
+  National Institute of Standards and Technology (NIST). 
+  Governs secure logging, cryptographic controls, and access management.
+\end{itemize}
+
+\textbf{Note:} Each listed standard is referenced to clarify acceptance criteria in PBIs. Where the SRS (ReqIDs) cites other domain sources (e.g., AAOIFI guidance for PLS), those sources are also normative for the relevant PBIs.
+
+\section{High-level pipeline: steps and responsibilities}\label{sec:pipeline}
+This section defines the pipeline stages in precise, prescriptive terms. Each stage lists required artifacts, who owns them, gating criteria, and the exact words to use in tickets and PRs.
+
+\subsection{Stage 0 — Discovery \& Requirements Intake}
+\textbf{Purpose:} capture business objectives, regulatory constraints, high-risk items (legal, Shariah), and produce canonical \texttt{ReqID} entries.
+
+\textbf{Inputs:} stakeholder interview notes, regulatory memos, SRS draft, pilot partner requirements.
+
+\textbf{Outputs:}
+\begin{itemize}
+  \item \texttt{ReqID} entries (form: \texttt{Rxx}) added to the SRS file.
+  \item Prioritized risk list and proposed \textbf{MVP Top-10} requirements.
+  \item Intake ticket in the canonical backlog: title format ``Intake: Rxx — \textless short title\textgreater''.
+\end{itemize}
+
+\textbf{Owner:} Product Owner (PO) for prioritization; Business Analyst for capture; Legal and Shariah liaison for compliance tagging.
+
+\textbf{Gate to next stage:} PO signs the intake ticket ``PO:accepted'' and assigns priority (P0/P1/P2), and attaches one or more \texttt{ReqID} references.
+
+\subsection{Stage 1 — Backlog Triage \& Classification}
+\textbf{Purpose:} convert raw requirements into candidate PBIs with initial size category and required classification.
+
+\textbf{Actions:}
+\begin{itemize}
+  \item Create PBI in the canonical backlog CSV with required fields: \texttt{PBI-\#\#\#, Type, Title, Description, AcceptanceCriteria, ReqIDs, NFR\_Tags, StoryPoints, Priority, Owner, Sprint, Status, Dependencies, Notes}.
+  \item Classify Type as exactly one of: \texttt{Story}, \texttt{Spike}, \texttt{Enabler}, \texttt{Bug}, or \texttt{Task}.
+  \item If unclear, create a \texttt{Spike} (timeboxed). Spikes must include explicit \emph{Exit Criteria} and a timebox (calendar days).
+\end{itemize}
+
+\textbf{Owner:} PO to create; Developers to perform quick feasibility review.
+
+\textbf{Gate (DoR Precheck):} PBI must have: Title, Description, at least one Acceptance Criterion, one ReqID reference, and an assigned Owner (or \texttt{PO-delegate}). PBIs lacking any of these fields are ``Not Ready''.
+
+\subsection{Stage 2 — Backlog Refinement}
+\textbf{Purpose:} prepare PBIs for Sprint Planning by breaking large PBIs, adding testable acceptance criteria, capturing dependencies, and identifying NFR impacts.
+
+\textbf{Actions (mandatory for refinement):}
+\begin{itemize}
+  \item Re-write acceptance criteria in testable form (Gherkin is preferred): \texttt{Given / When / Then}.
+  \item Attach or link any ADR drafts that the PBI depends on.
+  \item Add NFR acceptance tests inline (e.g., ``Latency: 95th percentile < 2s at X RPS (test reference)''), or create a specific Enabler PBI if the NFR requires dedicated work.
+  \item Estimate story points using team consensus (relative estimation).
+\end{itemize}
+
+\textbf{Owner:} PO and Developers jointly. Meeting cadence: at least once per sprint (mid-sprint) for 10–15\% of sprint time.
+
+\textbf{Gate (DoR):} PBI must meet the full DoR checklist in Section~\ref{sec:dor_dod}.
+
+\subsection{Stage 3 — Sprint Planning}
+\textbf{Purpose:} commit to a set of PBIs for the sprint that together form a Sprint Goal.
+
+\textbf{Actions:}
+\begin{itemize}
+  \item Team selects PBIs (commitment) that are DoR-compliant.
+  \item Break each PBI into Tasks with owners and hours (not mandatory to store in canonical backlog CSV; tasks can exist in the team's sprint board).
+  \item Reserve explicit capacity for Enablers and Tech Debt (default: 20\% of sprint capacity; configurable by team).
+  \item Record Sprint Goal as a single sentence: format ``Sprint N Goal: \textless goal text\textgreater''.
+\end{itemize}
+
+\textbf{Owner:} Developers (commitment) and PO (prioritization).
+
+\textbf{Gate:} Sprint backlog committed and recorded in the canonical backlog repository with Sprint field populated (e.g., ``Sprint 1'').
+
+\subsection{Stage 4 — Sprint Execution (Development)}
+\textbf{Purpose:} implement PBIs, produce tested deliverables, create ADRs when architectural choices are needed.
+
+\textbf{Daily actions:}
+\begin{itemize}
+  \item Daily Scrum focusing on progress toward the Sprint Goal and impediments.
+  \item PR workflow: every change must be a PR that references the associated \texttt{PBI-\#\#\#} and any ADRs.
+  \item Code review required: minimum one reviewer (two for security-sensitive PBIs).
+  \item PR gating: the PR must pass CI checks (see Section~\ref{sec:ci_cd_gating}).
+\end{itemize}
+
+\textbf{ADR flow for architectural decisions:}
+\begin{enumerate}
+  \item If a PBI reveals architectural uncertainty, open a \textbf{Spike} PBI (timeboxed).
+  \item Spike deliverable: a prototype or measured evidence and a proposed ADR draft.
+  \item ADR draft is reviewed in the next refinement meeting. ADRs are written using the template in Section~\ref{sec:adr_template}.
+  \item \textbf{Micro decision}: team accepts ADR in a PR merged to \texttt{adrs/} (no governance required).
+  \item \textbf{Macro decision}: ADR marked ``Requires Governance'' must be scheduled for governance review and formal sign-off (PO + Architect + Shariah Board or Regulators as required).
+\end{enumerate}
+
+\textbf{Owner:} Developers for implementation; Tech Lead/Architect for ADRs; PO for ensuring business alignment.
+
+\subsection{Stage 5 — Continuous Integration \& Automated Testing}\label{sec:ci_cd_gating}
+\textbf{Purpose:} ensure code quality, security, and automated verification before merge or release.
+
+\textbf{CI suite must include (minimum):}
+\begin{itemize}
+  \item Unit tests with code coverage reporting.
+  \item Static Application Security Testing (SAST).
+  \item Dependency vulnerability scanning (SCA).
+  \item Integration tests for services touched by the PBI (must be run for PRs that touch those services).
+  \item Linting and style checks.
+  \item Test for NFRs where feasible (e.g., automated performance smoke tests for payment path).
+\end{itemize}
+
+\textbf{Merge policy:} PRs may only be merged when all mandatory CI checks pass. Exceptions create a documented risk ticket and require approval by the Security owner.
+
+\textbf{Owner:} CI Engineer / DevOps for pipeline; Developers for test coverage.
+
+\subsection{Stage 6 — Pre-Production / Staging Validation}
+\textbf{Purpose:} validate integrated system behavior, run full PLS test harness, and check compliance items.
+
+\textbf{Required staging checks before release:}
+\begin{itemize}
+  \item Full E2E tests for sprint-scoped critical flows (PO must identify critical flows per sprint).
+  \item PLS test harness scenarios (profit/loss) must pass for PBIs that modify PLS logic.
+  \item Load tests for performance-sensitive PBIs (as defined in NFR tags).
+  \item Security scans (DAST) and penetration test tickets must be green or have tracked remediation PBIs.
+  \item Documentation and runbooks for any production-impacting change.
+\end{itemize}
+
+\textbf{Owner:} QA and SRE; PO verifies acceptance criteria are satisfied in staging.
+
+\subsection{Stage 7 — Release \& Deployment}
+\textbf{Purpose:} deploy accepted release to production in a controlled, reversible manner.
+
+\textbf{Release policy:}
+\begin{itemize}
+  \item Release can proceed when all sprint PBIs are marked Done and release acceptance checks are green.
+  \item Use a safe deployment pattern: feature-flag gated, canary, or blue/green as appropriate per PBI risk profile.
+  \item Include a rollout/rollback plan and a runbook. Document the release in the release notes file and tag the release in Git.
+\end{itemize}
+
+\textbf{Owner:} DevOps (execution), PO (final go/no-go), Security/Compliance (signoffs if required).
+
+\subsection{Stage 8 — Production Operations \& Maintenance}
+\textbf{Purpose:} operate the system under SLOs, manage incidents, and feed operational learnings back to backlog.
+
+\textbf{Operational rules:}
+\begin{itemize}
+  \item Monitoring: Grafana dashboards for key metrics (throughput, latency, error rate, node health).
+  \item Alerts: SRE on-call must be notified per runbook thresholds.
+  \item Incident handling: incidents open a ticket linked to related PBI(s) or new PBI(s) for remediation. Severity classification must follow the incident policy document.
+  \item Continuous improvement: regular review of SLOs and technical debt, and creation of PBIs for long-term fixes.
+\end{itemize}
+
+\textbf{Owner:} SRE / Ops; PO for prioritization of operational PBIs.
+
+\subsection{Stage 9 — Feedback Loop (Metrics \& Retrospectives)}
+\textbf{Purpose:} use data to re-prioritize the backlog and improve team processes.
+
+\textbf{Actions:}
+\begin{itemize}
+  \item Sprint Review: PO demonstrates Done PBIs and records stakeholder feedback in canonical backlog.
+  \item Sprint Retrospective: team documents process improvements; modernize DoD/DoR if necessary; create PBIs for improvements.
+  \item Metric review cadence: weekly for operational metrics; monthly for business KPIs.
+\end{itemize}
+
+\textbf{Owner:} PO and Scrum team.
+
+\section{Definition of Ready (DoR) and Definition of Done (DoD)}\label{sec:dor_dod}
+These checklists are enforced as part of Sprint Planning and CI gating. Use exact language below when marking PBIs ready/done.
+
+\subsection{Definition of Ready (DoR)}
+A PBI is \textbf{Ready} when all of the following are true:
+\begin{enumerate}[leftmargin=*]
+  \item Title and short description use the canonical formats (Title: short human summary; Description: elaborated context and user value).
+  \item At least one associated \texttt{ReqID} (Rxx) is listed in the AcceptanceCriteria field.
+  \item One or more explicit, testable Acceptance Criteria are included (prefer Gherkin).
+  \item Dependencies listed and owners identified.
+  \item Story Points estimated by the team (relative sizing).
+  \item Type is one of: Story, Spike, Enabler, Bug, Task.
+  \item Security/Compliance tag present if PBI touches regulated areas (e.g., KYC, PLS contracts).
+  \item PO has assigned priority and a PO-approval comment is present in the PBI record.
+\end{enumerate}
+
+\subsection{Definition of Done (DoD)}
+A PBI is \textbf{Done} when all of the following are verified:
+\begin{enumerate}[leftmargin=*]
+  \item Code committed and merged into the canonical main branch (PR closed) referencing the PBI.
+  \item All CI checks passed (unit tests, SAST, SCA, integration tests required).
+  \item Acceptance Criteria verified in staging and annotated in the PBI with evidence links (test run IDs, artifacts).
+  \item Documentation updated (API docs / runbooks / README) where applicable and linked.
+  \item If PBI is production-impacting:
+    \begin{itemize}
+      \item Monitoring dashboards created and alerts configured.
+      \item Runbook entry for incident handling added.
+    \end{itemize}
+  \item Security: no critical/high vulnerabilities open for the component (or remediation PBIs created and tracked).
+  \item PO has marked the PBI as Accepted in the backlog with a clear acceptance comment.
+\end{enumerate}
+
+\section{Architecture Decision Record (ADR) template}\label{sec:adr_template}
+Use this exact template for every ADR. Store each ADR as \texttt{adrs/ADR-YYYY-NN.md} in the repository. The ADR is the canonical, auditable record of decisions.
+
+\begin{lstlisting}[basicstyle=\ttfamily\small, frame=single, breaklines=true, breakatwhitespace=true]
+Title: <short title>
+ADR-ID: ADR-YYYY-NN
+Status: Proposed | Accepted | Deprecated
+Context:
+  - Describe the context and forces (constraints, ReqIDs, stakeholders)
+Decision:
+  - Describe the chosen option in clear, unambiguous language.
+Consequences:
+  - Positive consequences (benefits)
+  - Negative consequences (risks, trade-offs)
+  - Migration strategy (if applicable)
+Related PBIs:
+  - PBI-### (implementing this ADR)
+Related ReqIDs:
+  - Rxx, Ryy
+Decision Date: YYYY-MM-DD
+Author: Name / Role
+Reviewers: Name / Role, ...
+Governance Required: Yes | No  # If yes, list governance body (PO, Architect, Shariah Board etc.)
+Links:
+  - Prototype repo, test results, performance graphs, meeting minutes
+Signature:
+  - For Accepted: record names/roles and date of acceptance
+\end{lstlisting}
+
+\section{Traceability rules and matrix}
+Traceability is mandatory for audit and regulatory compliance. The Traceability Matrix maps \texttt{ReqID (Rxx)} to one or more \texttt{PBI-\#\#\#} rows and to test artifacts.
+
+\textbf{Traceability CSV columns (mandatory):}
+\texttt{ReqID, PBI\_IDs (comma), Test\_Artifacts (links), ADR\_IDs (if any), Owner, Notes}
+
+\textbf{Rules:}
+\begin{enumerate}[leftmargin=*]
+  \item Every PBI that implements or affects a requirement must include the originating \texttt{ReqID} in the PBI record (AcceptanceCriteria or Notes).
+  \item Test artifacts (CI job(run id), Gherkin scenario file, load test report) must be linked from the PBI.
+  \item The Traceability Matrix file must be updated as part of PBI completion and merged by PR.
+  \item For regulatory or Shariah-impacting PBIs, the traceability record must include an explicit Shariah Board Approval link or regulator sign-off artifact before the PBI is considered Done.
+\end{enumerate}
+
+\section{Handling new requirements, changes, and emergency fixes}
+\subsection{New requirement intake}
+Follow the Stage 0 and Stage 1 process. Label all newly created PBIs with the source channel (e.g., ``RegulatorRequest'', ``Incident'', ``ShariahBoard'', ``CustomerFeedback'').
+
+\subsection{Change control policy}
+\begin{itemize}
+  \item Minor changes (no cross-cutting or compliance impact) are handled as normal PBIs and scheduled by the PO.
+  \item Major changes (affecting ReqIDs with compliance or Shariah implications) must create a PBI and a corresponding ADR (if architectural) and must not be merged to main without governance sign-off.
+  \item Emergency fixes: create an emergency PBI, open an incident ticket, and follow emergency release playbook. Emergency merges must be followed by a retrospective and an ADR if the emergency reveals architectural deficits.
+\end{itemize}
+
+\section{Macro vs Micro decisions — governance matrix}
+This table defines where decisions are made, who decides, and the required artifacts.
+
+\begin{longtable}{p{0.22\textwidth} p{0.28\textwidth} p{0.28\textwidth} p{0.18\textwidth}}
+\toprule
+Decision Type & Example & Decision Authorities & Artifact Required \\
+\midrule
+\endfirsthead
+\toprule
+Decision Type & Example & Decision Authorities & Artifact Required \\
+\midrule
+\endhead
+Micro & API naming, small refactor & Dev Team (Tech Lead) & ADR (short) or PR description \\
+Mid & Data model change, module boundaries & Tech Lead + PO & ADR + Spike results + Test plans \\
+Macro & Platform selection, consortium bylaws, Shariah rulings & Governance Board (PO, Architect, Legal, Shariah as needed) & ADR + cost/impact analysis + formal sign-off record \\
+Emergency & Production P0 fix & SRE + Tech Lead + PO (rapid) & Incident ticket + postmortem + ADR if design change \\
+\bottomrule
+\end{longtable}
+
+\section{CI/CD gating and enforcement (detailed)}
+\textbf{CI Pipeline stages (required for all PRs):}
+\begin{enumerate}[leftmargin=*]
+  \item Checkout + Build
+  \item Unit tests (fail on coverage below threshold for module)
+  \item Lint + Static analysis
+  \item SAST (block on Critical)
+  \item Dependency scan (SCA) — block on Critical CVEs
+  \item Integration tests (selected by changed components)
+  \item Automated acceptance tests (Gherkin scenarios tagged by PBI)
+  \item Deploy to ephemeral staging and smoke test (for PRs that change infra)
+\end{enumerate}
+
+\textbf{CD Pipeline (release):}
+\begin{enumerate}[leftmargin=*]
+  \item Deploy to staging and run full test suite
+  \item Performance regression tests (for changes touching critical paths)
+  \item Security DAST (for web endpoints)
+  \item Release approval gates (PO, Security, Compliance signoffs)
+  \item Promote to production using feature toggle / canary / blue-green
+\end{enumerate}
+
+\section{Artifact repository structure and canonical storage}\label{sec:sourceoftruth}
+The recommended canonical names and locations (store in Git repo; protect main branch):
+
+\begin{itemize}
+  \item \texttt{backlog/digital\_procurement\_backlog.csv} \quad --- the canonical Product Backlog CSV (the project's operational \textbf{source of truth}).
+  \item \texttt{docs/SRS\_prelim.tex} \quad --- SRS LaTeX source (authoritative requirement document).
+  \item \texttt{docs/DoD\_DoR.tex} \quad --- DoD / DoR canonical checklist (this document compiled).
+  \item \texttt{adrs/ADR-YYYY-NN.md} \quad --- ADR records (one per file).
+  \item \texttt{diagrams/*.mmd, *.puml} \quad --- source diagrams (Mermaid / PlantUML).
+  \item \texttt{openapi/*.yaml} \quad --- API specification (OpenAPI).
+  \item \texttt{tests/pls\_harness/*} \quad --- automated PLS scenarios and CI harness.
+  \item \texttt{ops/runbooks/*} \quad --- runbooks, release playbooks, SLO definitions.
+\end{itemize}
+
+\textbf{Preferred phrase for 'source of truth':} use the phrase \textbf{Canonical Backlog Repository} in place of ambiguous terms like ``source of truth''. This phrase specifies both the content (the backlog) and its repository location, reducing ambiguity in requests and audits.
+
+\section{Auditability and compliance checklist}
+For any release that affects compliance areas (KYC/AML, PLS, privacy), ensure the following artifacts exist and are linked in the release PR:
+\begin{itemize}
+  \item Traceability Matrix rows linking ReqIDs to PBIs.
+  \item ADRs impacting compliance logic.
+  \item Shariah Board Approval artifacts (signed minutes or on-chain record).
+  \item Test evidence (PLS harness results, load test reports, DAST/DAST results).
+  \item Exportable ledger bundle for regulator review (if requested), with provenance proof.
+\end{itemize}
+
+\section{Templates and naming conventions (exact strings)}
+Use the following exact naming conventions:
+
+\begin{itemize}
+  \item PBI IDs: \texttt{PBI-}\{3-digit decimal\} (e.g., \texttt{PBI-001}).
+  \item Requirement IDs: \texttt{R}\{2-digit\} (e.g., \texttt{R01}).
+  \item ADR IDs: \texttt{ADR-YYYY-NN}.
+  \item Branches for feature work: \texttt{feature/PBI-\#\#\#-short-desc}.
+  \item PR title format: \texttt{PBI-\#\#\#: short-title (type)} e.g., \texttt{PBI-012: Issue tokenized invoice (Story)}.
+  \item Release tags: \texttt{release/vMAJOR.MINOR.PATCH}.
+\end{itemize}
+
+\section{Examples: End-to-end flow for a requirement}
+\textbf{Example:} SRS requirement \texttt{R07} (PLS contract model).
+
+\begin{enumerate}[leftmargin=*]
+  \item Discovery: PO creates intake note referencing \texttt{R07}.
+  \item Backlog Triage: create \texttt{PBI-011 (Spike)} and \texttt{PBI-013 (Story: Deploy PLS contract)}.
+  \item Spike executes and produces prototype + ADR (\texttt{ADR-2026-01}).
+  \item ADR accepted by Tech Lead and flagged ``Requires Shariah Board Approval''.
+  \item Shariah Board Review scheduled; once approved, PBI-013 moves to Sprint Planning.
+  \item Development proceeds, PR references \texttt{PBI-013} and \texttt{ADR-2026-01}. CI passes.
+  \item PBI-013 acceptance tests run (PLS harness, distribution audit). Evidence linked in the PBI.
+  \item Release: PBI marked Done; traceability matrix updated linking \texttt{R07} to \texttt{PBI-011}, \texttt{PBI-013} and \texttt{ADR-2026-01}.
+\end{enumerate}
+
+\section{Enforcement and exceptions}
+\begin{itemize}
+  \item This guide is normative. Deviations must be documented in an ADR marked ``Process Exception'' and require PO + Scrum Master approval.
+  \item Emergency deviations follow the incident policy, and must be followed by a postmortem and appropriate ADRs/PBIs to remediate root causes.
+\end{itemize}
+
+\section{Appendix: references}
+The following normative references are used in acceptance criteria and compliance interpretations:
+\begin{itemize}[noitemsep]
+  \item \textbf{The Scrum Guide (2020 Edition)}, 
+  Ken Schwaber and Jeff Sutherland. Defines the Scrum framework for single-team development.
+  \item \textbf{W3C Decentralized Identifiers (DID) v1.0 and Verifiable Credentials Data Model v1.1}, 
+  World Wide Web Consortium (W3C).
+  \item \textbf{Hyperledger Fabric Documentation}, 
+  Linux Foundation. Defines permissioned blockchain architecture patterns 
+  including channels and private data collections.
+  \item \textbf{ISO 20022 Financial Services Message Scheme}, 
+  International Organization for Standardization.
+  \item \textbf{GS1 EPCIS and CBV Standard}, 
+  GS1 Global. Defines supply chain event capture format.
+  \item \textbf{NIST Special Publications (e.g., SP 800-53, SP 800-92)}, 
+  National Institute of Standards and Technology. 
+  Defines cryptographic, logging, and access control guidance.
+\end{itemize}
+
+\section{Revision history}
+\begin{tabular}{p{0.18\textwidth} p{0.18\textwidth} p{0.58\textwidth}}
+\toprule
+Date & Version & Summary of changes \\
+\midrule
+\today & 1.0 & Initial canonical Scrum pipeline \& governance guide (this document). \\
+\bottomrule
+\end{tabular}
+
+\bigskip
+\noindent
+\hrulefill
+
+\noindent \textbf{Usage note:} Keep this LaTeX source under \texttt{docs/} in the project Git repository. Any change to this guide must be made by Pull Request and requires PO \& Tech Lead approval. This file is the operational policy for how the team executes Scrum and manages architectural and compliance decisions.
+
+\end{document}
