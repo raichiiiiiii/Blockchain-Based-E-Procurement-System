@@ -1,0 +1,12 @@
+{
+  "event_id": "evt-2026-0001",
+  "event_type": "invoice_approved",
+  "procurement_reference_id": "PO-2026-0007",
+  "supplier_id": "SUP-001",
+  "buyer_id": "BUY-001",
+  "invoice_id": "INV-2026-9001",
+  "amount": "12500.00",
+  "currency": "MYR",
+  "approved_by": "buyer.approver.1",
+  "approved_at": "2026-03-06T10:00:00Z"
+}

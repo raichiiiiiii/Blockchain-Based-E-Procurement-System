@@ -1,0 +1,26 @@
+@startuml
+title ADR-2026-002 - UML Activity Diagram - Evidence Generation Flow
+
+start
+
+:Receive procure-to-pay audit event;
+:Normalize event fields;
+:Produce canonical JSON;
+:Compute SHA-256 event hash;
+:Append event hash to daily evidence manifest;
+
+if (End of bundle window/day?) then (yes)
+  :Compute Merkle tree from manifest hashes;
+  :Derive manifest root;
+  :Submit manifest root to RFC 3161 TSA;
+  :Receive timestamp token;
+  :Assemble evidence bundle\n(bundle metadata, hashes,\nMerkle root, timestamp reference);
+  :Write evidence bundle to immutable / WORM storage;
+else (no)
+  :Persist updated manifest state;
+endif
+
+:Make verification logic available\n(API / CLI / library);
+
+stop
+@enduml

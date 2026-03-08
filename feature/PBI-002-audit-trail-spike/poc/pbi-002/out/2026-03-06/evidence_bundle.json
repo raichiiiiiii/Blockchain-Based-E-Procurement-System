@@ -1,0 +1,15 @@
+{
+  "bundle_id": "bundle-2026-03-06",
+  "bundle_date": "2026-03-06",
+  "event_count": 1,
+  "event_hashes": [
+    "e621e14618f09bc5f516e5e883d6820e7ac6f75f96ba13e267ef01acffaae122"
+  ],
+  "merkle_root": "e621e14618f09bc5f516e5e883d6820e7ac6f75f96ba13e267ef01acffaae122",
+  "timestamp_token_reference": null,
+  "storage_location": null,
+  "generator_version": "poc-0.1.0",
+  "generated_at": "2026-03-06T18:36:52.869323+00:00",
+  "last_event_file": "sample_event.json",
+  "last_event_hash": "e621e14618f09bc5f516e5e883d6820e7ac6f75f96ba13e267ef01acffaae122"
+}
