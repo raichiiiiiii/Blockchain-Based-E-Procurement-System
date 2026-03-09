@@ -1,0 +1,20 @@
+@startuml
+title ADR-2026-002 - UML Sequence Diagram - Auditor Verification
+
+actor Auditor
+participant "Verification Component" as Verifier
+database "Immutable / WORM Storage" as WORM
+participant "RFC 3161 Timestamp Authority" as TSA
+
+Auditor -> Verifier : verify(eventRecord, bundleId)
+Verifier -> Verifier : canonicalize(eventRecord)
+Verifier -> Verifier : recompute SHA-256 event hash
+Verifier -> WORM : read(bundleId)
+WORM --> Verifier : evidence bundle, manifest,\nMerkle data, timestamp token
+Verifier -> Verifier : verify manifest inclusion
+Verifier -> Verifier : recompute Merkle path/root
+Verifier -> TSA : validate(timestampToken, merkleRoot)
+TSA --> Verifier : validation result
+Verifier --> Auditor : verification result\n(integrity, inclusion, timestamp validity)
+
+@enduml

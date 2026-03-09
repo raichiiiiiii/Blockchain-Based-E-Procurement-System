@@ -1,0 +1,740 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{tcolorbox}
+\usepackage{pdflscape}
+\usepackage{listings}
+
+\lstdefinestyle{csvstyle}{
+    basicstyle=\ttfamily\scriptsize,
+    breaklines=true,
+    columns=fullflexible,
+    frame=single,
+    showstringspaces=false
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\begin{document}
+
+\section{Stage 1 --- Backlog Triage \& Classification: PBI Templates and Usage Examples}
+
+This section provides a prescriptive authoring structure for Product Backlog Items (PBIs) in Stage 1.  
+All PBIs must be created in the canonical backlog CSV with the following required fields:
+
+\begin{quote}
+\texttt{PBI-\#\#\#, Type, Title, Description, AcceptanceCriteria, ReqIDs, NFR\_Tags, StoryPoints, Priority, Owner, Sprint, Status, Dependencies, Notes}
+\end{quote}
+
+The \texttt{Type} field must be exactly one of the following:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Story}
+    \item \textbf{Spike}
+    \item \textbf{Enabler}
+    \item \textbf{Bug}
+    \item \textbf{Task}
+\end{itemize}
+
+If the work item is not yet sufficiently understood, it must be classified as a \textbf{Spike}.  
+Every Spike must include:
+\begin{itemize}[leftmargin=1.5em]
+    \item an explicit investigation scope,
+    \item explicit exit criteria, and
+    \item a timebox in calendar days.
+\end{itemize}
+
+\subsection{Common Stage 1 Rules for All PBI Types}
+
+A PBI is considered \textbf{Ready for refinement} only if it contains at least:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item a clear \textbf{Title},
+    \item a meaningful \textbf{Description},
+    \item at least one \textbf{Acceptance Criterion},
+    \item at least one linked \textbf{ReqID},
+    \item an assigned \textbf{Owner}.
+\end{itemize}
+
+A PBI lacking any of the above must be marked \textbf{Not Ready}.
+
+\subsection{Recommended Field Semantics by PBI Type}
+
+\begin{longtable}{|p{2.2cm}|p{3.0cm}|p{4.2cm}|p{4.2cm}|}
+\hline
+\textbf{Type} & \textbf{Primary Purpose} & \textbf{Description Focus} & \textbf{Acceptance Criteria Focus} \\
+\hline
+Story & Deliver user or business value & User role, need, scope, business outcome & Functional behavior in testable form \\
+\hline
+Spike & Reduce uncertainty & Unknowns, investigation scope, approach & Exit criteria, evidence, recommendation \\
+\hline
+Enabler & Create technical capability & Platform, tooling, infrastructure, technical enablement & Measurable technical outcomes \\
+\hline
+Bug & Correct a defect & Observed vs expected behavior, impact, reproduction & Fix confirmation and regression protection \\
+\hline
+Task & Perform bounded work item & Concrete action and expected output & Completion and validation of deliverable \\
+\hline
+\end{longtable}
+
+
+\subsection{Story Template}
+
+\subsubsection*{When to Use}
+Use a \textbf{Story} when the PBI represents user-facing or business-facing value.
+
+\subsubsection*{Recommended Title Format}
+\begin{quote}
+\texttt{As a <role>, I want <capability>, so that <outcome>}
+\end{quote}
+
+\subsubsection*{Description Template}
+The \texttt{Description} field for a Story should use the following structure:
+\begin{quote}
+Context: \\
+Business problem: \\
+User role / actor: \\
+Expected behavior: \\
+Business value: \\
+In scope: \\
+Out of scope:
+\end{quote}
+
+\subsubsection*{Generic Authoring Template}
+\begin{quote}
+\textbf{PBI-\#\#\#:} [Sequential ID] \\
+\textbf{Type:} Story \\
+\textbf{Title:} As a \textless role\textgreater, I want \textless capability\textgreater, so that \textless outcome\textgreater \\
+
+\textbf{Description:} \\
+Context: \\
+Business problem: \\
+User role / actor: \\
+Expected behavior: \\
+Business value: \\
+In scope: \\
+Out of scope: \\
+
+\textbf{AcceptanceCriteria:}
+\begin{itemize}[leftmargin=1.5em]
+    \item Given \textless context\textgreater, when \textless action\textgreater, then \textless result\textgreater
+    \item Given \textless context\textgreater, when \textless action\textgreater, then \textless result\textgreater
+    \item Given \textless edge case\textgreater, when \textless action\textgreater, then \textless result\textgreater
+\end{itemize}
+
+\textbf{ReqIDs:} Rxx;Ryy \\
+\textbf{NFR\_Tags:} Audit;Security;Usability;Performance;Compliance \\
+\textbf{StoryPoints:} [Team estimate] \\
+\textbf{Priority:} P0 / P1 / P2 \\
+\textbf{Owner:} [Name / Role] \\
+\textbf{Sprint:} [Blank until planned or Sprint N] \\
+\textbf{Status:} New / Not Ready / Ready for Refinement \\
+\textbf{Dependencies:} None or [Related PBI / ADR / External dependency] \\
+\textbf{Notes:} [Assumptions / constraints / open questions]
+\end{quote}
+
+\subsubsection*{Detailed Example}
+\begin{quote}
+\textbf{PBI-101} \\
+\textbf{Type:} Story \\
+\textbf{Title:} As a procurement officer, I want to submit a supplier evaluation form, so that vendor selection is recorded consistently \\
+
+\textbf{Description:} \\
+Context: Supplier evaluations are currently recorded in email and spreadsheets. \\
+Business problem: Weak audit traceability and inconsistent evidence make supplier selection difficult to verify. \\
+User role / actor: Procurement officer. \\
+Expected behavior: The procurement officer can complete, validate, and submit a standard supplier evaluation form. \\
+Business value: Improves procurement governance, standardization, and audit readiness. \\
+In scope: Form creation, validation, submission, persistence, and reference number generation. \\
+Out of scope: Approval workflow and analytics. \\
+
+\textbf{AcceptanceCriteria:}
+\begin{itemize}[leftmargin=1.5em]
+    \item Given an authenticated procurement officer, when all mandatory fields are completed and submitted, then the evaluation is saved and a reference number is displayed.
+    \item Given required fields are missing, when submission is attempted, then validation errors are shown and the submission is blocked.
+    \item Given a saved evaluation exists, when an auditor views the record, then the submitter identity and timestamp are visible.
+\end{itemize}
+
+\textbf{ReqIDs:} R12;R19 \\
+\textbf{NFR\_Tags:} Audit;Security;Usability \\
+\textbf{StoryPoints:} 5 \\
+\textbf{Priority:} P1 \\
+\textbf{Owner:} Aisyah \\
+\textbf{Sprint:} Sprint 2 \\
+\textbf{Status:} Ready for Refinement \\
+\textbf{Dependencies:} None \\
+\textbf{Notes:} Capture audit metadata for compliance review.
+\end{quote}
+
+\subsection{Spike Template}
+
+\subsubsection*{When to Use}
+Use a \textbf{Spike} when the team does not yet know enough to confidently define the solution, estimate the effort, or classify the work more specifically.
+
+\subsubsection*{Recommended Title Format}
+\begin{quote}
+\texttt{Investigate <unknown / decision area>}
+\end{quote}
+
+\subsubsection*{Description Template}
+The \texttt{Description} field for a Spike should use the following structure:
+\begin{quote}
+Unknown / problem statement: \\
+Why a decision is needed now: \\
+Investigation scope: \\
+Explicit exclusions: \\
+Approach:
+\end{quote}
+
+\subsubsection*{Generic Authoring Template}
+\begin{quote}
+\textbf{PBI-\#\#\#:} [Sequential ID] \\
+\textbf{Type:} Spike \\
+\textbf{Title:} Investigate \textless topic\textgreater \\
+
+\textbf{Description:} \\
+Unknown / problem statement: \\
+Why a decision is needed now: \\
+Investigation scope: \\
+Explicit exclusions: \\
+Approach: Prototype / benchmark / compliance analysis / architecture review \\
+
+\textbf{AcceptanceCriteria:}
+\begin{itemize}[leftmargin=1.5em]
+    \item Given the Spike is complete, when the timebox ends, then a documented outcome is attached.
+    \item Given alternative options are considered, when the Spike concludes, then a recommendation and rationale are recorded.
+    \item Given architectural or governance impact exists, when the Spike concludes, then a draft ADR or follow-up PBIs are identified.
+\end{itemize}
+
+\textbf{ReqIDs:} Rxx \\
+\textbf{NFR\_Tags:} Compliance;Auditability;Performance;Architecture;Security;Integration \\
+\textbf{StoryPoints:} [Small estimate or team convention] \\
+\textbf{Priority:} P0 / P1 / P2 \\
+\textbf{Owner:} [Name / Role] \\
+\textbf{Sprint:} [Blank until planned or Sprint N] \\
+\textbf{Status:} New / Not Ready / Ready for Refinement \\
+\textbf{Dependencies:} [Related PBI / ADR / external input] \\
+\textbf{Notes:} Timebox: X calendar days. Exit Criteria: [criteria]. Deliverables: [artifacts]. Open Questions: [questions].
+\end{quote}
+
+\subsubsection*{Detailed Example}
+\begin{quote}
+\textbf{PBI-102} \\
+\textbf{Type:} Spike \\
+\textbf{Title:} Investigate PLS profit-sharing calculation engine approach \\
+
+\textbf{Description:} \\
+Unknown / problem statement: It is unclear whether PLS calculation logic should be implemented in application code, a rules engine, or a configurable service. \\
+Why a decision is needed now: Multiple future PBIs depend on a stable and auditable implementation approach. \\
+Investigation scope: Compare correctness, traceability, performance, and ease of change across candidate approaches. \\
+Explicit exclusions: No production implementation is included in this Spike. \\
+Approach: Prototype representative PLS scenarios and evaluate at least two design options. \\
+
+\textbf{AcceptanceCriteria:}
+\begin{itemize}[leftmargin=1.5em]
+    \item Given the Spike is concluded, when the timebox ends, then a written recommendation is attached.
+    \item Given at least two design options are reviewed, when the Spike closes, then trade-offs, assumptions, and risks are documented.
+    \item Given an architectural decision is required, when the Spike closes, then a draft ADR and follow-up PBIs are identified.
+\end{itemize}
+
+\textbf{ReqIDs:} R33 \\
+\textbf{NFR\_Tags:} Compliance;Auditability;Performance;Architecture \\
+\textbf{StoryPoints:} 3 \\
+\textbf{Priority:} P0 \\
+\textbf{Owner:} Farid \\
+\textbf{Sprint:} Sprint 2 \\
+\textbf{Status:} Ready for Refinement \\
+\textbf{Dependencies:} PBI-115;ADR-TBD \\
+\textbf{Notes:} Timebox: 5 calendar days. Exit Criteria: recommendation, prototype evidence, draft ADR.
+\end{quote}
+
+\subsection{Enabler Template}
+
+\subsubsection*{When to Use}
+Use an \textbf{Enabler} when the work creates technical capability needed for future delivery, but does not by itself deliver direct end-user business value.
+
+\subsubsection*{Recommended Title Format}
+\begin{quote}
+\texttt{Enable <technical capability>}
+\end{quote}
+
+\subsubsection*{Description Template}
+The \texttt{Description} field for an Enabler should use the following structure:
+\begin{quote}
+Capability to be created or improved: \\
+Why it is needed: \\
+Which future PBIs it enables: \\
+Technical scope: \\
+Explicit exclusions:
+\end{quote}
+
+\subsubsection*{Generic Authoring Template}
+\begin{quote}
+\textbf{PBI-\#\#\#:} [Sequential ID] \\
+\textbf{Type:} Enabler \\
+\textbf{Title:} Enable \textless technical capability\textgreater \\
+
+\textbf{Description:} \\
+Capability to be created or improved: \\
+Why it is needed: \\
+Which future PBIs it enables: \\
+Technical scope: \\
+Explicit exclusions: \\
+
+\textbf{AcceptanceCriteria:}
+\begin{itemize}[leftmargin=1.5em]
+    \item Given the capability is implemented, when it is used, then the intended technical outcome is available.
+    \item Given future PBIs depend on the capability, when those teams consume it, then usage guidance exists.
+    \item Given the capability affects operations, when deployed, then runbook and monitoring updates exist.
+\end{itemize}
+
+\textbf{ReqIDs:} Rxx or linked parent requirement \\
+\textbf{NFR\_Tags:} Security;Reliability;Maintainability;Observability;Compliance \\
+\textbf{StoryPoints:} [Team estimate] \\
+\textbf{Priority:} P0 / P1 / P2 \\
+\textbf{Owner:} [Name / Role] \\
+\textbf{Sprint:} [Blank until planned or Sprint N] \\
+\textbf{Status:} New / Not Ready / Ready for Refinement \\
+\textbf{Dependencies:} [Platform / infra / ADR / external approval] \\
+\textbf{Notes:} [Enabled PBIs / rollout notes / operational considerations]
+\end{quote}
+
+\subsubsection*{Detailed Example}
+\begin{quote}
+\textbf{PBI-103} \\
+\textbf{Type:} Enabler \\
+\textbf{Title:} Enable automated dependency vulnerability scanning in CI \\
+
+\textbf{Description:} \\
+Capability to be created or improved: Add software composition analysis scanning to PR and protected-branch pipelines. \\
+Why it is needed: Baseline CI security controls require automated dependency checks before merge. \\
+Which future PBIs it enables: All Stories, Bugs, and Enablers that add or update dependencies. \\
+Technical scope: Add CI job, severity thresholds, failure policy, and report publication. \\
+Explicit exclusions: Remediation of all existing vulnerabilities is not included. \\
+
+\textbf{AcceptanceCriteria:}
+\begin{itemize}[leftmargin=1.5em]
+    \item Given a pull request modifies dependencies, when CI runs, then an automated SCA result is generated.
+    \item Given a critical vulnerability is detected, when CI completes, then the pull request is blocked according to policy.
+    \item Given developers need the scan results, when the CI job completes, then a readable vulnerability report is available.
+\end{itemize}
+
+\textbf{ReqIDs:} R41 \\
+\textbf{NFR\_Tags:} Security;Maintainability;Compliance \\
+\textbf{StoryPoints:} 5 \\
+\textbf{Priority:} P1 \\
+\textbf{Owner:} DevOps Engineer \\
+\textbf{Sprint:} Sprint 2 \\
+\textbf{Status:} Ready for Refinement \\
+\textbf{Dependencies:} CI runner access;approved scanning tool \\
+\textbf{Notes:} Enables secure merge gating for future Stories.
+\end{quote}
+
+\subsection{Bug Template}
+
+\subsubsection*{When to Use}
+Use a \textbf{Bug} when existing system behavior differs from required or expected behavior.
+
+\subsubsection*{Recommended Title Format}
+\begin{quote}
+\texttt{Fix <defect summary>}
+\end{quote}
+
+\subsubsection*{Description Template}
+The \texttt{Description} field for a Bug should use the following structure:
+\begin{quote}
+Observed behavior: \\
+Expected behavior: \\
+Business or technical impact: \\
+Affected users or environments: \\
+Reproduction steps:
+\end{quote}
+
+\subsubsection*{Generic Authoring Template}
+\begin{quote}
+\textbf{PBI-\#\#\#:} [Sequential ID] \\
+\textbf{Type:} Bug \\
+\textbf{Title:} Fix \textless defect summary\textgreater \\
+
+\textbf{Description:} \\
+Observed behavior: \\
+Expected behavior: \\
+Business or technical impact: \\
+Affected users or environments: \\
+Reproduction steps: \\
+
+\textbf{AcceptanceCriteria:}
+\begin{itemize}[leftmargin=1.5em]
+    \item Given the defect scenario, when the relevant action is repeated, then the issue no longer occurs.
+    \item Given related normal behavior, when the fix is applied, then existing functionality still works correctly.
+    \item Given the defect has operational significance, when the event recurs, then diagnostic logging or monitoring is sufficient.
+\end{itemize}
+
+\textbf{ReqIDs:} Rxx or violated parent requirement \\
+\textbf{NFR\_Tags:} Reliability;Security;Performance;Audit \\
+\textbf{StoryPoints:} [Team estimate] \\
+\textbf{Priority:} P0 / P1 / P2 \\
+\textbf{Owner:} [Name / Role] \\
+\textbf{Sprint:} [Blank until planned or Sprint N] \\
+\textbf{Status:} New / Not Ready / Ready for Refinement \\
+\textbf{Dependencies:} [Incident ticket / external system / parent PBI] \\
+\textbf{Notes:} [Logs / screenshots / suspected cause / incident reference]
+\end{quote}
+
+\subsubsection*{Detailed Example}
+\begin{quote}
+\textbf{PBI-104} \\
+\textbf{Type:} Bug \\
+\textbf{Title:} Fix duplicate supplier record creation on retry submission \\
+
+\textbf{Description:} \\
+Observed behavior: Retry after timeout may create a second supplier record. \\
+Expected behavior: Submission must be idempotent. \\
+Business or technical impact: Data inconsistency, manual cleanup, and audit risk. \\
+Affected users or environments: Procurement users in staging with possible production exposure. \\
+Reproduction steps: Submit supplier registration, force timeout after persistence, and retry the same payload. \\
+
+\textbf{AcceptanceCriteria:}
+\begin{itemize}[leftmargin=1.5em]
+    \item Given the same supplier registration request is retried, when processed again, then no duplicate supplier record is created.
+    \item Given the original request already succeeded, when the user retries, then the same record identifier is returned or referenced.
+    \item Given duplicate-prevention logic is triggered, when logs are reviewed, then the event is traceable for audit and debugging.
+\end{itemize}
+
+\textbf{ReqIDs:} R12;R27 \\
+\textbf{NFR\_Tags:} Reliability;Audit \\
+\textbf{StoryPoints:} 3 \\
+\textbf{Priority:} P0 \\
+\textbf{Owner:} Backend Developer \\
+\textbf{Sprint:} Sprint 2 \\
+\textbf{Status:} Ready for Refinement \\
+\textbf{Dependencies:} INC-023 \\
+\textbf{Notes:} Suspected cause: missing idempotency key handling.
+\end{quote}
+
+\subsection{Task Template}
+
+\subsubsection*{When to Use}
+Use a \textbf{Task} when the work is a bounded action or deliverable that is too specific to be a Story and too narrow to be an Enabler.
+
+\subsubsection*{Recommended Title Format}
+\begin{quote}
+\texttt{Do <specific action>}
+\end{quote}
+
+\subsubsection*{Description Template}
+The \texttt{Description} field for a Task should use the following structure:
+\begin{quote}
+Action to be performed: \\
+Why it is needed: \\
+Expected output: \\
+Scope: \\
+Explicit exclusions:
+\end{quote}
+
+\subsubsection*{Generic Authoring Template}
+\begin{quote}
+\textbf{PBI-\#\#\#:} [Sequential ID] \\
+\textbf{Type:} Task \\
+\textbf{Title:} Do \textless specific action\textgreater \\
+
+\textbf{Description:} \\
+Action to be performed: \\
+Why it is needed: \\
+Expected output: \\
+Scope: \\
+Explicit exclusions: \\
+
+\textbf{AcceptanceCriteria:}
+\begin{itemize}[leftmargin=1.5em]
+    \item Given the work is completed, when reviewed, then the expected output exists.
+    \item Given the output is intended for use by another role or team, when validated, then it is usable and complete.
+    \item Given the Task supports a parent PBI, when traceability is reviewed, then the linkage is recorded.
+\end{itemize}
+
+\textbf{ReqIDs:} Rxx or inherited from parent PBI \\
+\textbf{NFR\_Tags:} [If applicable] \\
+\textbf{StoryPoints:} [Usually small estimate] \\
+\textbf{Priority:} P0 / P1 / P2 \\
+\textbf{Owner:} [Name / Role] \\
+\textbf{Sprint:} [Blank until planned or Sprint N] \\
+\textbf{Status:} New / Not Ready / Ready for Refinement \\
+\textbf{Dependencies:} [Parent PBI / environment / approval] \\
+\textbf{Notes:} [Artifact path / constraints / linkage notes]
+\end{quote}
+
+\subsubsection*{Detailed Example}
+\begin{quote}
+\textbf{PBI-105} \\
+\textbf{Type:} Task \\
+\textbf{Title:} Do staging runbook update for supplier onboarding release \\
+
+\textbf{Description:} \\
+Action to be performed: Update the staging and production runbook for the new supplier onboarding flow. \\
+Why it is needed: QA and Ops require deployment, validation, and rollback guidance before release. \\
+Expected output: Updated runbook committed in the repository. \\
+Scope: Deployment steps, validation checks, rollback steps, and operational contacts. \\
+Explicit exclusions: No infrastructure changes are included. \\
+
+\textbf{AcceptanceCriteria:}
+\begin{itemize}[leftmargin=1.5em]
+    \item Given the onboarding flow is ready for staging, when the runbook is reviewed, then deployment, validation, and rollback steps are documented.
+    \item Given an operator follows the runbook, when executing the checks, then required commands, URLs, and validation steps are present.
+    \item Given traceability is reviewed, when the Task is complete, then the runbook update is linked to the parent Story.
+\end{itemize}
+
+\textbf{ReqIDs:} R12 \\
+\textbf{NFR\_Tags:} Operability;Documentation \\
+\textbf{StoryPoints:} 2 \\
+\textbf{Priority:} P1 \\
+\textbf{Owner:} QA Lead \\
+\textbf{Sprint:} Sprint 2 \\
+\textbf{Status:} Ready for Refinement \\
+\textbf{Dependencies:} PBI-101 \\
+\textbf{Notes:} Store output under \texttt{docs/runbooks/supplier-onboarding.md}.
+\end{quote}
+
+\subsection{Complete PBI Templates and Mock Canonical Backlog Examples}
+
+All PBIs must be created in the canonical backlog CSV with the following required fields:
+
+\begin{quote}
+\texttt{PBI-\#\#\#, Type, Title, Description, AcceptanceCriteria, ReqIDs, NFR\_Tags, StoryPoints, Priority, Owner, Sprint, Status, Dependencies, Notes}
+\end{quote}
+
+The examples below show the full canonical structure rather than a shortened summary.
+
+\subsubsection*{Description Template by PBI Type}
+
+The \texttt{Description} field should be structured according to the nature of the PBI type.
+
+\begin{tcolorbox}[colback=white,colframe=black,title=Story --- Description Template]
+\textbf{Context:} \\
+\textbf{Business problem:} \\
+\textbf{User role / actor:} \\
+\textbf{Expected behavior:} \\
+\textbf{Business value:} \\
+\textbf{In scope:} \\
+\textbf{Out of scope:}
+\end{tcolorbox}
+
+\begin{tcolorbox}[colback=white,colframe=black,title=Spike --- Description Template]
+\textbf{Unknown / problem statement:} \\
+\textbf{Why a decision is needed now:} \\
+\textbf{Investigation scope:} \\
+\textbf{Explicit exclusions:} \\
+\textbf{Approach:}
+\end{tcolorbox}
+
+\begin{tcolorbox}[colback=white,colframe=black,title=Enabler --- Description Template]
+\textbf{Capability to be created or improved:} \\
+\textbf{Why it is needed:} \\
+\textbf{Which future PBIs it enables:} \\
+\textbf{Technical scope:} \\
+\textbf{Explicit exclusions:}
+\end{tcolorbox}
+
+\begin{tcolorbox}[colback=white,colframe=black,title=Bug --- Description Template]
+\textbf{Observed behavior:} \\
+\textbf{Expected behavior:} \\
+\textbf{Business or technical impact:} \\
+\textbf{Affected users or environments:} \\
+\textbf{Reproduction steps:}
+\end{tcolorbox}
+
+\begin{tcolorbox}[colback=white,colframe=black,title=Task --- Description Template]
+\textbf{Action to be performed:} \\
+\textbf{Why it is needed:} \\
+\textbf{Expected output:} \\
+\textbf{Scope:} \\
+\textbf{Explicit exclusions:}
+\end{tcolorbox}
+
+\subsubsection*{Mock PBIs in Full Canonical Table Form}
+
+Because the canonical backlog contains many fields, the example table is shown in landscape orientation.
+
+\begin{landscape}
+\scriptsize
+\renewcommand{\arraystretch}{1.2}
+
+\begin{longtable}{|p{1.5cm}|p{1.3cm}|p{3.6cm}|p{4.6cm}|p{5.0cm}|p{1.5cm}|p{2.0cm}|p{1.1cm}|p{1.0cm}|p{1.7cm}|p{1.3cm}|p{1.8cm}|p{2.3cm}|p{3.0cm}|}
+\hline
+\textbf{PBI ID} &
+\textbf{Type} &
+\textbf{Title} &
+\textbf{Description} &
+\textbf{AcceptanceCriteria} &
+\textbf{ReqIDs} &
+\textbf{NFR\_Tags} &
+\textbf{StoryPoints} &
+\textbf{Priority} &
+\textbf{Owner} &
+\textbf{Sprint} &
+\textbf{Status} &
+\textbf{Dependencies} &
+\textbf{Notes} \\
+\hline
+\endfirsthead
+
+\hline
+\textbf{PBI ID} &
+\textbf{Type} &
+\textbf{Title} &
+\textbf{Description} &
+\textbf{AcceptanceCriteria} &
+\textbf{ReqIDs} &
+\textbf{NFR\_Tags} &
+\textbf{StoryPoints} &
+\textbf{Priority} &
+\textbf{Owner} &
+\textbf{Sprint} &
+\textbf{Status} &
+\textbf{Dependencies} &
+\textbf{Notes} \\
+\hline
+\endhead
+
+PBI-101 &
+Story &
+As a procurement officer, I want to submit a supplier evaluation form, so that vendor selection is recorded consistently &
+Context: supplier evaluations are currently recorded in email and spreadsheets. Business problem: weak audit traceability and inconsistent evidence. User role / actor: procurement officer. Expected behavior: user can complete, validate, and submit a standard form. Business value: improves governance and standardization. In scope: create, validate, submit, persist. Out of scope: approval workflow and analytics. &
+Given an authenticated procurement officer, when all mandatory fields are completed and submitted, then the evaluation is saved and a reference number is displayed. Given required fields are missing, when submission is attempted, then validation errors are shown and submission is blocked. Given a saved evaluation exists, when an auditor views the record, then submitter identity and timestamp are visible. &
+R12;R19 &
+Audit;Security;Usability &
+5 &
+P1 &
+Aisyah &
+Sprint 2 &
+Ready for Refinement &
+None &
+Capture audit metadata for compliance review. \\
+\hline
+
+PBI-102 &
+Spike &
+Investigate PLS profit-sharing calculation engine approach &
+Unknown / problem statement: it is unclear whether PLS calculation logic should be implemented in application code, a rules engine, or a configurable service. Why a decision is needed now: multiple future PBIs depend on a stable and auditable implementation approach. Investigation scope: compare correctness, traceability, performance, and ease of change. Explicit exclusions: no production implementation. Approach: prototype representative scenarios and evaluate options. &
+Given the Spike is concluded, when the timebox ends, then a written recommendation is attached. Given at least two design options are reviewed, when the Spike closes, then trade-offs, assumptions, and risks are documented. Given an architectural decision is required, when the Spike closes, then a draft ADR and follow-up PBIs are identified. &
+R33 &
+Compliance;Auditability;Performance;Architecture &
+3 &
+P0 &
+Farid &
+Sprint 2 &
+Ready for Refinement &
+PBI-115;ADR-TBD &
+Timebox: 5 calendar days. Exit Criteria: recommendation, prototype evidence, draft ADR. \\
+\hline
+
+PBI-103 &
+Enabler &
+Enable automated dependency vulnerability scanning in CI &
+Capability to be created or improved: add software composition analysis scanning to PR and protected-branch pipelines. Why it is needed: baseline CI security controls require automated dependency checks before merge. Which future PBIs it enables: all Stories, Bugs, and Enablers that add or update dependencies. Technical scope: CI job, severity thresholds, failure policy, report publication. Explicit exclusions: remediation of all existing vulnerabilities. &
+Given a pull request modifies dependencies, when CI runs, then an SCA result is generated automatically. Given a critical vulnerability is detected, when CI completes, then the pull request is blocked according to policy. Given developers need scan results, when the job finishes, then a readable report is available. &
+R41 &
+Security;Maintainability;Compliance &
+5 &
+P1 &
+DevOps Engineer &
+Sprint 2 &
+Ready for Refinement &
+CI runner access;approved scanning tool &
+Enables secure merge gating for future Stories. \\
+\hline
+
+PBI-104 &
+Bug &
+Fix duplicate supplier record creation on retry submission &
+Observed behavior: retry after timeout may create a second supplier record. Expected behavior: submission must be idempotent. Business or technical impact: data inconsistency, manual cleanup, and audit risk. Affected users or environments: procurement users in staging with possible production exposure. Reproduction steps: submit supplier registration, force timeout after persistence, retry same payload. &
+Given the same supplier registration request is retried, when processed again, then no duplicate supplier record is created. Given the original request already succeeded, when the user retries, then the same record identifier is returned or referenced. Given duplicate-prevention logic is triggered, when logs are reviewed, then the event is traceable for audit and debugging. &
+R12;R27 &
+Reliability;Audit &
+3 &
+P0 &
+Backend Developer &
+Sprint 2 &
+Ready for Refinement &
+INC-023 &
+Suspected cause: missing idempotency key handling. \\
+\hline
+
+PBI-105 &
+Task &
+Do staging runbook update for supplier onboarding release &
+Action to be performed: update the staging and production runbook for the new supplier onboarding flow. Why it is needed: QA and Ops require deployment, validation, and rollback guidance before release. Expected output: updated runbook committed in repository. Scope: deployment steps, validation checks, rollback steps, operational contacts. Explicit exclusions: no infrastructure changes. &
+Given the onboarding flow is ready for staging, when the runbook is reviewed, then deployment, validation, and rollback steps are documented. Given an operator follows the runbook, when executing the checks, then required commands, URLs, and validation steps are present. Given traceability is reviewed, when the Task is complete, then the runbook update is linked to the parent Story. &
+R12 &
+Operability;Documentation &
+2 &
+P1 &
+QA Lead &
+Sprint 2 &
+Ready for Refinement &
+PBI-101 &
+Store output under \texttt{docs/runbooks/supplier-onboarding.md}. \\
+\hline
+
+\end{longtable}
+\end{landscape}
+
+\normalsize
+
+\subsubsection*{Mock PBIs as Boxed Canonical CSV}
+
+The following example shows the same PBIs exactly as canonical backlog rows.
+
+\begin{tcolorbox}[title=Example Canonical Backlog CSV,colback=white,colframe=black]
+\begin{lstlisting}[style=csvstyle]
+PBI-###,Type,Title,Description,AcceptanceCriteria,ReqIDs,NFR_Tags,StoryPoints,Priority,Owner,Sprint,Status,Dependencies,Notes
+
+PBI-101,Story,"As a procurement officer, I want to submit a supplier evaluation form, so that vendor selection is recorded consistently","Context: supplier evaluations are currently recorded in email and spreadsheets. Business problem: weak audit traceability and inconsistent evidence. User role / actor: procurement officer. Expected behavior: user can complete, validate, and submit a standard form. Business value: improves governance and standardization. In scope: create, validate, submit, persist. Out of scope: approval workflow and analytics.","Given an authenticated procurement officer, when all mandatory fields are completed and submitted, then the evaluation is saved and a reference number is displayed. | Given required fields are missing, when submission is attempted, then validation errors are shown and submission is blocked. | Given a saved evaluation exists, when an auditor views the record, then submitter identity and timestamp are visible.","R12;R19","Audit;Security;Usability",5,P1,"Aisyah","Sprint 2","Ready for Refinement","None","Capture audit metadata for compliance review"
+
+PBI-102,Spike,"Investigate PLS profit-sharing calculation engine approach","Unknown / problem statement: it is unclear whether PLS calculation logic should be implemented in application code, a rules engine, or a configurable service. Why a decision is needed now: multiple future PBIs depend on a stable and auditable implementation approach. Investigation scope: compare correctness, traceability, performance, and ease of change. Explicit exclusions: no production implementation. Approach: prototype representative scenarios and evaluate options.","Given the Spike is concluded, when the timebox ends, then a written recommendation is attached. | Given at least two design options are reviewed, when the Spike closes, then trade-offs, assumptions, and risks are documented. | Given an architectural decision is required, when the Spike closes, then a draft ADR and follow-up PBIs are identified.","R33","Compliance;Auditability;Performance;Architecture",3,P0,"Farid","Sprint 2","Ready for Refinement","PBI-115;ADR-TBD","Timebox: 5 calendar days. Exit Criteria: recommendation, prototype evidence, draft ADR"
+
+PBI-103,Enabler,"Enable automated dependency vulnerability scanning in CI","Capability to be created or improved: add software composition analysis scanning to PR and protected-branch pipelines. Why it is needed: baseline CI security controls require automated dependency checks before merge. Which future PBIs it enables: all Stories, Bugs, and Enablers that add or update dependencies. Technical scope: CI job, severity thresholds, failure policy, report publication. Explicit exclusions: remediation of all existing vulnerabilities.","Given a pull request modifies dependencies, when CI runs, then an SCA result is generated automatically. | Given a critical vulnerability is detected, when CI completes, then the pull request is blocked according to policy. | Given developers need scan results, when the job finishes, then a readable report is available.","R41","Security;Maintainability;Compliance",5,P1,"DevOps Engineer","Sprint 2","Ready for Refinement","CI runner access;approved scanning tool","Enables secure merge gating for future Stories"
+
+PBI-104,Bug,"Fix duplicate supplier record creation on retry submission","Observed behavior: retry after timeout may create a second supplier record. Expected behavior: submission must be idempotent. Business or technical impact: data inconsistency, manual cleanup, and audit risk. Affected users or environments: procurement users in staging with possible production exposure. Reproduction steps: submit supplier registration, force timeout after persistence, retry same payload.","Given the same supplier registration request is retried, when processed again, then no duplicate supplier record is created. | Given the original request already succeeded, when the user retries, then the same record identifier is returned or referenced. | Given duplicate-prevention logic is triggered, when logs are reviewed, then the event is traceable for audit and debugging.","R12;R27","Reliability;Audit",3,P0,"Backend Developer","Sprint 2","Ready for Refinement","INC-023","Suspected cause: missing idempotency key handling"
+
+PBI-105,Task,"Do staging runbook update for supplier onboarding release","Action to be performed: update the staging and production runbook for the new supplier onboarding flow. Why it is needed: QA and Ops require deployment, validation, and rollback guidance before release. Expected output: updated runbook committed in repository. Scope: deployment steps, validation checks, rollback steps, operational contacts. Explicit exclusions: no infrastructure changes.","Given the onboarding flow is ready for staging, when the runbook is reviewed, then deployment, validation, and rollback steps are documented. | Given an operator follows the runbook, when executing the checks, then required commands, URLs, and validation steps are present. | Given traceability is reviewed, when the Task is complete, then the runbook update is linked to the parent Story.","R12","Operability;Documentation",2,P1,"QA Lead","Sprint 2","Ready for Refinement","PBI-101","Store output under docs/runbooks/supplier-onboarding.md"
+\end{lstlisting}
+\end{tcolorbox}
+
+\subsubsection*{Authoring Note}
+
+The examples above preserve the same canonical field structure across all PBI types, but the content emphasis differs by type:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Story} emphasizes business value and user-facing behavior.
+    \item \textbf{Spike} emphasizes uncertainty, exit criteria, and timebox.
+    \item \textbf{Enabler} emphasizes technical capability and future delivery support.
+    \item \textbf{Bug} emphasizes observed versus expected behavior and reproducibility.
+    \item \textbf{Task} emphasizes a bounded action and a concrete output.
+\end{itemize}
+
+
+\subsection{Suggested Stage 1 Authoring Policy Text}
+
+The following wording may be inserted directly into the governance guide:
+
+\begin{quote}
+Each PBI type shall use a structured authoring pattern appropriate to the nature of the work.  
+Stories shall express business or user value.  
+Spikes shall express uncertainty reduction and must include explicit exit criteria and a timebox in calendar days.  
+Enablers shall define technical capabilities required for future delivery.  
+Bugs shall state observed versus expected behavior and include reproducible defect context.  
+Tasks shall define a bounded work action and a clear deliverable.
+
+A PBI shall be marked \texttt{Not Ready} if it does not contain a meaningful Title, Description, at least one Acceptance Criterion, at least one ReqID reference, and an assigned Owner.
+\end{quote}
+
+\end{document}

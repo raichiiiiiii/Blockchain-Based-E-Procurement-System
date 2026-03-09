@@ -1,0 +1,48 @@
+@startuml
+title ADR-2026-002 - UML Deployment Diagram - Centralized MVP Deployment
+
+node "Enterprise Environment" {
+  node "Procure-to-Pay Application Node" as AppNode {
+    artifact "Event Producer" as EventProducerArtifact
+  }
+
+  node "Evidence Service Node" as EvidenceNode {
+    artifact "Canonicalization Component" as CanonicalizerArtifact
+    artifact "Hashing Component" as HasherArtifact
+    artifact "Daily Manifest Component" as ManifestArtifact
+    artifact "Merkle Root Component" as MerkleArtifact
+    artifact "Evidence Bundle Assembler" as BundleArtifact
+    artifact "Verification Component\n(API / CLI / library)" as VerifierArtifact
+  }
+}
+
+node "Trusted External Service" as TSANode {
+  artifact "RFC 3161 TSA Service" as TSAArtifact
+}
+
+node "Immutable Retention Platform" as WORMNode {
+  artifact "WORM Object Store / Immutable Repository" as WORMArtifact
+}
+
+node "Auditor Workstation" as AuditorNode {
+  artifact "Auditor Client" as AuditorArtifact
+}
+
+EventProducerArtifact -- CanonicalizerArtifact
+CanonicalizerArtifact -- HasherArtifact
+HasherArtifact -- ManifestArtifact
+ManifestArtifact -- MerkleArtifact
+MerkleArtifact -- BundleArtifact
+BundleArtifact -- TSAArtifact
+BundleArtifact -- WORMArtifact
+AuditorArtifact -- VerifierArtifact
+VerifierArtifact -- WORMArtifact
+VerifierArtifact -- TSAArtifact
+
+node "Deferred Post-MVP Node" as FabricNode {
+  artifact "Fabric / Hybrid Anchoring Adapter" as FabricArtifact
+}
+
+MerkleArtifact .. FabricArtifact : deferred root anchoring
+
+@enduml

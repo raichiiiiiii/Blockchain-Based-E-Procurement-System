@@ -1,0 +1,327 @@
+% Preliminary SRS + Traceability Matrix
+% Project: Digital Procurement & PLS Seedbed (permissioned blockchain)
+% LaTeX source intended for compilation with pdflatex / lualatex / Overleaf
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{caption}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhead[L]{Digital Procurement \& PLS Seedbed}
+\fancyhead[R]{Preliminary SRS}
+\fancyfoot[C]{\thepage}
+\title{Preliminary Software Requirements Specification (SRS) \\and Traceability Matrix\\\large Digital Procurement + Permissioned Blockchain + SME Market Access + PLS Seedbed}
+\author{Prepared by: ChatGPT (preliminary public-source draft)}
+\date{\today}
+\begin{document}
+\maketitle
+\begin{abstract}
+This document is a preliminary Software Requirements Specification (SRS) and traceability matrix for a digital procurement platform built on a permissioned blockchain, intended to support SME market access and seedbed financing using Shariah-compliant profit–loss sharing (PLS) instruments.\
+\noindent
+This draft is derived solely from public-domain sources (standards, vendor docs, regulatory guidance, whitepapers, academic literature, and open-source POCs). Each requirement is tagged with the source category and suggested stakeholder roles; stakeholder validation is required to finalize requirements.
+\end{abstract}
+\tableofcontents
+\clearpage
+\section{Document purpose and scope}
+This SRS provides a structured set of candidate functional and non-functional requirements, compliance constraints, and a traceability matrix mapping requirements to public sources and assumed stakeholders. The system scope includes: \begin{itemize}[noitemsep]
+\item SME onboarding and identity (DID/VC-enabled)
+\item Procure-to-pay lifecycle (tender, PO, delivery, invoice, settlement)
+\item Permissioned blockchain ledger and smart-contract templates
+\item PLS product support (musharakah/mudharabah-like templates) and tokenisation of receivables
+\item Integrations: banks (payments, financing), ERPs, logistics/3PL, standards (EPCIS/GS1, ISO20022)
+\item Governance, audit, Shariah review, and regulatory reporting
+\end{itemize}
+
+\section{Assumed stakeholder roles}
+(Used to tag requirements in traceability matrix)
+\begin{itemize}
+\item SMEs / Suppliers
+\item Buyers / Procurement Officers (public \& private)
+\item Participating Banks (PLS providers)
+\item Regulators (financial, procurement, data protection) and Shariah Boards
+\item Network / Consortium Admins and Operators
+\item Logistics / 3PL Providers
+\item Auditors / Compliance Officers
+\item Developers / Integrators (API consumers)
+\end{itemize}
+
+\section{Definitions, acronyms, and conventions}
+\begin{description}
+\item[PLS] Profit-Loss Sharing (musharakah / mudharabah style)
+\item[DID] Decentralized Identifier (W3C)
+\item[VC] Verifiable Credential
+\item[EPCIS] GS1 event capture standard for supply chain visibility
+\item[SLA] Service Level Agreement
+\item[KYC/AML] Know-Your-Customer / Anti-Money Laundering
+\end{description}
+
+\section{Project constraints and implementation assumptions}
+\label{sec:constraints}
+
+The initial implementation of the Digital Procurement \& PLS Seedbed is subject to practical delivery, budget, and architecture constraints. These constraints materially affect scope selection, technology choices, and MVP definition.
+
+\subsection{Primary project constraints}
+\begin{itemize}
+\item \textbf{Schedule constraint.} The MVP must be designed, developed, tested, and demonstrated within \textbf{12 weeks (3 months)}. Therefore, only features that are implementable within this timebox shall be included in the first release.
+\item \textbf{Cost constraint.} The solution must be \textbf{low-cost to deploy and operate} during the MVP stage. High upfront infrastructure, specialist platform administration, and expensive integration patterns shall be avoided unless strictly necessary for the pilot objectives.
+\item \textbf{Resource constraint.} The project assumes a small development team with limited time for platform engineering, DevOps hardening, and enterprise-grade distributed network administration.
+\end{itemize}
+
+\subsection{Derived architectural constraints}
+The following constraints are derived from the schedule and cost limits above:
+
+\begin{itemize}
+\item \textbf{No full-scale permissioned blockchain rollout in MVP.} A full consortium-grade Hyperledger Fabric deployment with multiple independently managed nodes, certificate authorities, ordering services, channel governance, and production-grade operations is considered too costly and too time-consuming for the initial 12-week MVP.
+\item \textbf{Preference for centralized application core.} The MVP shall prioritize a \textbf{centralized platform architecture} using a conventional relational or document-oriented database, standard backend services, and workflow automation for core business processes.
+\item \textbf{Hybrid architecture permitted if blockchain is retained.} If blockchain is still required for research or demonstrative purposes, the MVP shall adopt a \textbf{hybrid architecture}: core transaction processing, workflow, and application state remain off-chain in a centralized platform, while selected transaction hashes or verification proofs may be anchored to a permissioned blockchain.
+\item \textbf{Blockchain use must be minimal and justified.} Any blockchain component included in the MVP must have a narrowly defined purpose such as integrity verification, audit proof anchoring, or research validation. Blockchain shall not be used for all business data or all application logic during the MVP unless a clear benefit is demonstrated.
+\item \textbf{ERP integration shall be limited in MVP scope.} Direct integration with ERP or accounting systems is recognized as a major cost and complexity driver. Therefore, the MVP should use either mock APIs, CSV import/export, or a limited proof-of-concept integration rather than full production-grade ERP connectivity.
+\item \textbf{Node hosting and operational overhead must be minimized.} The MVP shall avoid architecture choices that require extensive node hosting, multi-organization network maintenance, or complex blockchain governance operations during the first release.
+\item \textbf{Preference for standard components.} The system should use commodity infrastructure and widely available components, including standard databases, API-based integration, and workflow automation mechanisms, to reduce setup cost and shorten delivery time.
+\end{itemize}
+
+\subsection{MVP boundary implications}
+Given the above constraints, the MVP should focus on demonstrating the essential business flow rather than full technical decentralization. The first release should prioritize:
+\begin{itemize}
+\item supplier onboarding,
+\item procure-to-pay workflow tracking,
+\item basic auditability,
+\item simple financing or PLS workflow simulation,
+\item lightweight API integration patterns,
+\item optional blockchain-backed verification only where necessary.
+\end{itemize}
+
+Features that require heavy infrastructure, multi-party production governance, or extensive enterprise integration may be deferred to later phases.
+
+\subsection{Technology decision implication}
+For the MVP, a \textbf{centralized-first} or \textbf{hybrid centralized + blockchain anchoring} design is the preferred baseline. A full Hyperledger Fabric implementation should be treated as a later-phase enhancement unless stakeholder validation explicitly confirms sufficient budget, time, and operational capacity.
+
+\section{High-level system context and architecture}
+The architecture described below must satisfy the project design constraints defined in Section~\ref{sec:design_constraints}.
+\begin{itemize}
+\item Baseline: permissioned, consortium blockchain (e.g., Hyperledger Fabric / Besu) with off-chain components for heavy data, analytics, and reporting.
+\item Pattern: hybrid microservices + event-driven messaging + on-chain chaincode for core settlement/escrow/PLS logic. EPCIS-compatible event capture layer for logistics.
+\end{itemize}
+
+\section{Functional requirements}
+\label{sec:functional}
+Requirements are prefixed Rxx. Each entry contains: brief requirement, category, source category (public documents), stakeholders, and short acceptance criteria.
+\begin{enumerate}[label=R\arabic*:,leftmargin=*,itemsep=6pt]
+\item \textbf{R01 — DID-based decentralized identity for SMEs.} \
+\textit{Type:} Functional / Data. \textit{Source category:} Standards (W3C DID/VC). \textit{Stakeholders:} SMEs, Network Admins. \textit{Acceptance:} SME can register and present a verifiable credential; verification returns valid cryptographic proof.
+\item \textbf{R02 — KYC/AML onboarding workflow.} \
+\textit{Type:} Functional / Compliance. \textit{Source:} Regulatory (AML/KYC). \textit{Stakeholders:} Banks, Regulators. \textit{Acceptance:} All transacting SMEs must pass KYC checks or be flagged; audit log retained per jurisdictional retention rules.
+\item \textbf{R03 — Permissioned network membership \& role management.} \
+\textit{Type:} Functional / Security. \textit{Source:} Platform docs (Hyperledger Fabric). \textit{Stakeholders:} Consortium Admins. \textit{Acceptance:} Admins can add/remove members; access control enforced by channels/ACLs.
+\item \textbf{R04 — EPCIS-compatible event recording for shipment/receipt.} \
+\textit{Type:} Functional / Interoperability. \textit{Source:} Standards (GS1 EPCIS). \textit{Stakeholders:} Buyers, Logistics. \textit{Acceptance:} Events ingest/export validate against EPCIS schema.
+\item \textbf{R05 — Immutable ledger audit trail for procure-to-pay events.} \
+\textit{Type:} Functional / Compliance. \textit{Source:} Industry pilots (World Bank, WEF). \textit{Stakeholders:} Auditors, Regulators. \textit{Acceptance:} Each PO→Delivery→Invoice→Settlement step recorded with timestamp \& signer hash.
+\item \textbf{R06 — Smart-contract template for order acceptance \& escrow.} \
+\textit{Type:} Functional. \textit{Source:} Vendor/POC docs. \textit{Stakeholders:} Buyers, SMEs, Banks. \textit{Acceptance:} Smart contract enforces PO terms and escrow flows; funds moved and released upon proof conditions.
+\item \textbf{R07 — PLS contract model (musharakah/mudharabah).} \
+\textit{Type:} Functional / Shariah compliance. \textit{Source:} Regulatory + AAOIFI/IFSB guidance. \textit{Stakeholders:} Banks, Shariah Board. \textit{Acceptance:} PLS contract deployable with parameters (profit ratio, loss allocation); ledger records distribution per contract.
+\item \textbf{R08 — Tokenized representation of receivables for financing.} \
+\textit{Type:} Functional / Integration. \textit{Source:} Tokenization whitepapers, industry reports. \textit{Stakeholders:} Banks, Financiers. \textit{Acceptance:} Invoice token can be issued, transferred, and redeemed; token provenance traces to original invoice.
+\item \textbf{R09 — Endorsement policy \& validation for transactions.} \
+\textit{Type:} Security / Platform. \textit{Source:} Hyperledger Fabric docs. \textit{Stakeholders:} Network Admins. \textit{Acceptance:} Transactions accepted only with required endorsers' signatures; others rejected.
+\item \textbf{R10 — Privacy channels / private data collections.} \
+\textit{Type:} Security / Architecture. \textit{Source:} Fabric private data / channels docs. \textit{Stakeholders:} Buyers, Banks. \textit{Acceptance:} Sensitive payment terms visible only to permitted parties; others see hashed proofs.
+\item \textbf{R11 — API gateway with ISO20022-compatible payment messaging.} \
+\textit{Type:} Integration / Non-functional. \textit{Source:} ISO20022 + vendor guides. \textit{Stakeholders:} Banks, Integrators. \textit{Acceptance:} Payment messages map to ISO20022 fields and are accepted by bank sandbox(s).
+\item \textbf{R12 — Event-driven architecture for async reconciliation.} \
+\textit{Type:} Non-functional / Design. \textit{Source:} Industry whitepapers (Deloitte/Oracle). \textit{Stakeholders:} Developers, Operators. \textit{Acceptance:} Reconciliation completes within agreed SLA after event processing; failed events retried.
+\item \textbf{R13 — Performance baseline (configurable tx/sec).} \
+\textit{Type:} Non-functional / Performance. \textit{Source:} Platform benchmarks. \textit{Stakeholders:} Network Ops. \textit{Acceptance:} System sustains configured tx/sec under load-testing with acceptable latency.
+\item \textbf{R14 — Data governance \& machine-readable procurement metadata.} \
+\textit{Type:} Data / Compliance. \textit{Source:} OECD digital procurement guidance. \textit{Stakeholders:} Procurement Officers, Regulators. \textit{Acceptance:} Tenders published with machine-readable metadata per recommended schema.
+\item \textbf{R15 — Audit reporting \& export for regulators.} \
+\textit{Type:} Functional / Compliance. \textit{Source:} OECD / World Bank pilots. \textit{Stakeholders:} Regulators. \textit{Acceptance:} Regulator can request \& receive signed ledger export bundle within SLA.
+\item \textbf{R16 — Versioning \& upgradeable smart-contract patterns.} \
+\textit{Type:} Maintainability / Functional. \textit{Source:} Platform best practices. \textit{Stakeholders:} Developers, Shariah Board. \textit{Acceptance:} Contract upgrades are auditable and backward-compatible or provide migration scripts.
+\item \textbf{R17 — Role-based UI \& dashboards.} \
+\textit{Type:} Functional / UX. \textit{Source:} Industry pilots. \textit{Stakeholders:} Buyers, Banks, Admins. \textit{Acceptance:} Each role sees tailored dashboard and can perform role-specific actions.
+\item \textbf{R18 — On-chain evidence for delivery (IoT/QR proofs).} \
+\textit{Type:} Integration / Functional. \textit{Source:} GS1 / IoT pilots. \textit{Stakeholders:} Logistics, Buyers. \textit{Acceptance:} Delivery event recorded and verifiable via signed IoT/QR proof.
+\item \textbf{R19 — Data retention \& legal-hold policy.} \
+\textit{Type:} Compliance. \textit{Source:} Regulatory guidance. \textit{Stakeholders:} Auditors, Legal. \textit{Acceptance:} Records retained per jurisdiction; legal-hold prevents deletion.
+\item \textbf{R20 — Shariah governance workflow for PLS approvals.} \
+\textit{Type:} Functional / Compliance. \textit{Source:} Malaysia SC, AAOIFI. \textit{Stakeholders:} Shariah Board, Banks. \textit{Acceptance:} Each PLS product passes Shariah checklist and is recorded before activation.
+\item \textbf{R21 — Dispute resolution \& on-chain arbitration record.} \
+\textit{Type:} Governance. \textit{Source:} WEF governance guidance. \textit{Stakeholders:} Buyers, SMEs, Auditors. \textit{Acceptance:} Dispute lifecycle recorded on-chain with evidence attachments and final status.
+\item \textbf{R22 — Access logging \& cryptographic non-repudiation.} \
+\textit{Type:} Security / Audit. \textit{Source:} NIST / ISO27001. \textit{Stakeholders:} Auditors, Network Ops. \textit{Acceptance:} All accesses logged with cryptographic signatures enabling non-repudiation.
+\item \textbf{R23 — Interoperability adapter for legacy ERPs.} \
+\textit{Type:} Integration. \textit{Source:} Vendor integration guides. \textit{Stakeholders:} Buyers, SMEs. \textit{Acceptance:} Adapter mapping passes sample PO/invoice integration tests.
+\item \textbf{R24 — Consent management \& data privacy controls.} \
+\textit{Type:} Privacy. \textit{Source:} OECD privacy guidance. \textit{Stakeholders:} SMEs, Regulators. \textit{Acceptance:} SMEs can grant/revoke consent; exports honor consent state.
+\item \textbf{R25 — Monitoring, SLAs \& incident management.} \
+\textit{Type:} Ops. \textit{Source:} Vendor ops guides. \textit{Stakeholders:} Network Ops, Admins. \textit{Acceptance:} Alerts for node failure and incident runbooks trigger notifications.
+\item \textbf{R26 — Test harness with reproducible PLS scenarios.} \
+\textit{Type:} Verification. \textit{Source:} Open-source POCs. \textit{Stakeholders:} Developers, QA, Banks. \textit{Acceptance:} Test suite reproduces profit/loss calculations across sample scenarios.
+\item \textbf{R27 — Identity \& credential revocation mechanisms.} \
+\textit{Type:} Security. \textit{Source:} W3C DID/VC revocation patterns. \textit{Stakeholders:} Network Admins. \textit{Acceptance:} Revoke API invalidates credential verification.
+\item \textbf{R28 — Regulatory sandbox mode \& audit hooks.} \
+\textit{Type:} Compliance / Functional. \textit{Source:} World Bank / national sandbox guidance. \textit{Stakeholders:} Regulators, Banks. \textit{Acceptance:} Sandbox mode enables enhanced logs and restricted deployment scope.
+\item \textbf{R29 — Multi-jurisdiction configuration (retention/consent).} \
+\textit{Type:} Compliance / Non-functional. \textit{Source:} OECD + national examples. \textit{Stakeholders:} Legal, Admins. \textit{Acceptance:} Configurable rules applied per jurisdiction in tests.
+\item \textbf{R30 — Governance model: consortium bylaws \& on-chain policy registry.} \
+\textit{Type:} Governance. \textit{Source:} WEF/World Bank governance docs. \textit{Stakeholders:} Consortium Admins, Regulators. \textit{Acceptance:} Policy changes require quorum and are recorded on-chain.
+\end{enumerate}
+
+\section{Non-functional requirements (selected)}
+\begin{enumerate}[label=NF\arabic*:,leftmargin=*,itemsep=6pt]
+\item \textbf{NF01 — Security baseline.} System follows ISO27001-aligned controls and NIST recommendations for identity, key management, and logging.
+\item \textbf{NF02 — Performance / scalability.} Baseline configurable target e.g., 200 tx/sec for initial consortium; scalable to higher throughput with sharding/ordering improvements.
+\item \textbf{NF03 — Availability.} 99.9\% availability target for core services during business hours; disaster recovery plan with RTO/RPO defined.
+\item \textbf{NF04 — Privacy.} Payment terms and commercial-sensitive data stored in private collections or off-chain vaults; hashes and proofs stored on chain.
+\item \textbf{NF05 — Maintainability / Upgrades.} Smart-contract upgrade path defined, migration scripts and test harness for any on-chain migration.
+\end{enumerate}
+
+\section{Compliance \& governance requirements}
+List of high-risk regulatory constraints (examples):
+\begin{itemize}
+\item Shariah compliance for PLS products — profit sharing, loss allocation rules, audit trails.
+\item AML/KYC and CDD obligations for financial participants.
+\item Data protection \& retention laws per jurisdiction.
+\item Public procurement transparency rules (machine-readable tenders per OECD guidance).
+\end{itemize}
+
+\section{Data model \& interfaces (high level)}
+\begin{itemize}
+\item Identity: DID + Verifiable Credential (W3C) for SMEs and orgs.
+\item Event model: EPCIS event envelope for shipment/delivery/invoice events.
+\item Payment messages: ISO20022-compatible fields for settlement \& reconciliation.
+\item Smart-contract interface: chaincode functions for PO creation, accept/fulfil, escrow, issue-token, transfer-token, settle-PLS.
+\end{itemize}
+
+\section{Design constraints}
+\label{sec:design_constraints}
+
+The following constraints restrict the architecture, implementation approach, and scope of the MVP system. These constraints arise from project delivery limitations, infrastructure cost considerations, and stakeholder feedback regarding operational complexity.
+
+\begin{enumerate}[label=C\arabic*:,leftmargin=*]
+\item \textbf{C01 — Timebox constraint.} The MVP shall be deliverable within 12 calendar weeks, including development, testing, and demonstration.
+
+\item \textbf{C02 — Low-cost deployment constraint.} The MVP shall use infrastructure and deployment patterns that minimize upfront and recurring operational cost.
+
+\item \textbf{C03 — Minimal operational complexity constraint.} The MVP shall avoid solutions requiring substantial node hosting, distributed ledger administration, or complex consortium governance in the first release.
+
+\item \textbf{C04 — Limited integration constraint.} ERP/accounting integration in the MVP shall be limited to lightweight API integration, mock services, or file-based exchange unless explicitly prioritized by stakeholders.
+
+\item \textbf{C05 — Centralized-first architecture constraint.} The default MVP architecture shall be centralized unless blockchain functionality is proven necessary for a specific requirement.
+
+\item \textbf{C06 — Hybrid blockchain constraint.} If blockchain is included in the MVP, it shall be limited to integrity verification, audit anchoring, or selective proof recording, while operational data and workflows remain primarily off-chain.
+
+\item \textbf{C07 — Scope minimization constraint.} Requirements that significantly increase implementation time, hosting cost, or integration complexity may be deferred from the MVP to later system phases.
+\end{enumerate}
+
+\section{Traceability matrix}
+The traceability matrix below maps the functional requirements (R01..R30) to public source categories and assumed stakeholders. This is a compact extract; the full matrix with direct source links is provided in Appendix A (bibliography).
+
+\begin{longtable}{p{0.08\textwidth} p{0.35\textwidth} p{0.23\textwidth} p{0.23\textwidth}}
+\caption{Traceability matrix (compact)}\\
+\toprule
+Req ID & Short requirement & Source category & Stakeholders \\
+\midrule
+\endfirsthead
+\toprule
+Req ID & Short requirement & Source category & Stakeholders \\
+\midrule
+\endhead
+R01 & DID-based SME identity & W3C DID/VC (standards) & SMEs, Network Admins \\
+R02 & KYC/AML onboarding workflow & Regulatory AML/KYC guidance & Banks, Regulators \\
+R03 & Permissioned membership management & Hyperledger Fabric docs & Consortium Admins \\
+R04 & EPCIS-compatible event recording & GS1 EPCIS & Buyers, Logistics \\
+R05 & Immutable ledger audit trail & WEF / World Bank pilots & Auditors, Regulators \\
+R06 & Smart-contract escrow & Vendor POCs & Buyers, SMEs, Banks \\
+R07 & PLS contract model & Malaysia SC; AAOIFI/IFSB & Banks, Shariah Board \\
+R08 & Tokenized receivables & Tokenisation whitepapers & Banks, Financiers \\
+R09 & Endorsement policy & Fabric docs & Network Admins \\
+R10 & Privacy collections & Fabric private data & Buyers, Banks \\
+R11 & ISO20022 payment API & ISO20022 docs & Banks, Integrators \\
+R12 & Event-driven reconciliation & Deloitte/Oracle whitepapers & Developers, Ops \\
+R13 & Performance baseline & Platform benchmarks & Network Ops \\
+R14 & Machine-readable procurement metadata & OECD guidance & Procurement Officers, Regulators \\
+R15 & Audit export for regulators & OECD / World Bank & Regulators, Auditors \\
+R16 & Versioning smart-contracts & Platform best practices & Developers, Shariah Board \\
+R17 & Role-based UI & Industry pilots (WFP/IBM) & Buyers, Banks \\
+R18 & On-chain IoT proofs & GS1 / IoT pilots & Logistics, Buyers \\
+R19 & Retention & Regulatory guidance & Legal, Auditors \\
+R20 & Shariah governance workflow & Malaysia SC, AAOIFI & Shariah Board, Banks \\
+R21 & Dispute resolution record & WEF governance docs & Buyers, SMEs \\
+R22 & Access logging & NIST / ISO27001 & Auditors, Ops \\
+R23 & ERP adapter & Vendor integration guides & Buyers, SMEs \\
+R24 & Consent management & OECD privacy guidance & SMEs, Regulators \\
+R25 & Monitoring & Vendor ops docs & Network Ops \\
+R26 & PLS test harness & Open-source POCs & Developers, Banks \\
+R27 & Credential revocation & W3C DID/VC patterns & Network Admins \\
+R28 & Regulatory sandbox mode & World Bank / national sandboxes & Regulators, Banks \\
+R29 & Multi-jurisdiction support & OECD + national examples & Legal, Admins \\
+R30 & Consortium governance & WEF / World Bank governance & Consortium Admins \\
+\bottomrule
+\end{longtable}
+
+\section{Validation gaps and risk register (high level)}
+\begin{itemize}
+\item Business rules for PLS splits and exceptions require Shariah board confirmation (high risk).\
+\item KYC thresholds and acceptable identity evidence for SMEs (medium risk).\
+\item Jurisdictional retention/consent conflicts (multi-jurisdiction) (high risk).\
+\item Throughput targets vs chosen platform capability (performance risk).\
+\end{itemize}
+
+\section{Appendix A: Selected bibliography (public sources used)}
+Below is a curated set of public-domain sources used to derive the candidate requirements. For each, consult the document for technical details and canonical field lists.
+\begin{enumerate}
+\item OECD. "Digital Transformation of Public Procurement" (2025 report).
+\item World Bank. "FundsChain" feature / World Bank blockchain initiatives (2025).
+\item World Economic Forum. "Inclusive Deployment of Blockchain for Supply Chains" (2019).
+\item GS1 US. "Applying GS1 Standards for Supply Chain Visibility in Blockchain" (2020, EPCIS guidance).
+\item NIST. "Manufacturing Supply Chain Traceability with Blockchain Related Technology" (2023 reference implementation).
+\item Hyperledger Fabric documentation (IBM / Hyperledger community docs).
+\item Malaysia Securities Commission. "Guidelines on Islamic Capital Market Products and Services" (contains musharakah/mudharabah guidance).
+\item AAOIFI standards and IFSB guidance on Islamic finance products.
+\item Deloitte. "Using blockchain to drive supply chain transparency" (industry article / whitepaper).
+\item Oracle \& Deloitte. "Value-driven supply chain: blockchain + IoT" (POV briefing).
+\item IBM Institute for Business Value — Blockchain for sustainable supply chains whitepaper.
+\item World Food Programme — "Building Blocks" (identity and cash transfer on blockchain) case study.
+\item Citrusxchange / SupplyChainDigital coverage on invoice-financing platforms.
+\item Academic literature: Govindan et al. (2023), Rakshit et al. (2022), Alimohammadlou et al. (2023), Ojo \& Zhou (2020), Pi (2026) — supply chain and blockchain adoption papers.
+\item WEF publications on government procurement \& blockchain (IDB collaboration case studies).
+\item ISO 20022 payment messaging guidance (SWIFT whitepapers).
+\item W3C DID / Verifiable Credentials specifications.
+\item White \& Case LLP: "Tokenised Islamic finance products" insights.
+\item R3 Corda / Enterprise Ethereum (Besu/Quorum) platform docs (privacy \& permissioning comparisons).
+\item Various GitHub POCs (IBM Food Trust sample chaincode, MangoChain, public repos demonstrating invoice tokenisation).
+\item Industry articles: ISM Supply Management, SupplyChainDigital.
+\item McKinsey, PwC industry reports on blockchain in supply chains (selected briefs).
+\item National fintech regulator guidance (e.g., Bahrain, UAE tokenisation frameworks where public).
+\item FAO / UNECE reports on blockchain for agriculture \& market access.
+\item UN / IDB procurement pilot summaries (public reports).
+\item Research articles on Islamic fintech and blockchain (Fintech in Islamic finance literature review — 2022/2023).
+\end{enumerate}
+
+\section{Appendix B: Next steps and recommended actions}
+\begin{enumerate}
+\item Validate high-risk requirements with named stakeholders (Shariah board, pilot bank, procurement owner).\
+\item Prioritize requirements by legal/compliance risk and business value; produce top-10 MVP backlog.\
+\item Produce sequence diagrams and user-stories for top 8 requirements.\
+\item Build prototype: identity + PO lifecycle + simple PLS contract + tokenised invoice flow in a sandbox.
+\end{enumerate}
+
+\section{Appendix C: Assumptions}
+\begin{itemize}
+\item Permissioned blockchain baseline (Fabric/Besu/Corda-like).\
+\item Primary jurisdiction not yet selected; retention rules configurable.\
+\item Stakeholder roles are placeholders for later mapping to real organizations.\
+\end{itemize}
+
+\vfill\noindent
+\hrulefill\\
+\noindent {\footnotesize This preliminary SRS is a public-source-derived draft and requires stakeholder validation.}
+\end{document}
