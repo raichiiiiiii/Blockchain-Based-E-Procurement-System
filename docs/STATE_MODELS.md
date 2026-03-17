@@ -48,10 +48,10 @@ Where a state or transition remains partly unresolved:
 - direct `suspended -> deleted` in normal flow
 
 ### Sprint 1 working assumption
-Newly created organizations start in `pendingReview`.
+Newly created organizations start in `pendingReview`. This aligns with the provisional baseline defined in `ARCHITECTURE.md` and `API_CONTRACTS.md`.
 
 [FLAG-MEMBERSHIP-INITIAL-STATE]
-Backlog/task wording and later working assumptions conflict on initial state.
+Backlog/task wording and later working assumptions conflict on initial state. The current Sprint 1 working assumption for implementation is that new organizations start as `pendingReview`. This flag remains to track the ongoing discussion and possible later reconciliation.
 
 [FLAG-MEMBERSHIP-STATE-SET]
 Earlier task phrasing referenced a simpler lifecycle; Sprint 1 now uses the richer five-state model as a provisional baseline.

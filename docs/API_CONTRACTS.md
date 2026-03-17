@@ -181,6 +181,22 @@ Rules:
 - `deleted` is logical/administrative, not a destructive delete contract
 - inactive organizations remain historically readable
 - non-active organizations may be blocked from protected actions
+- status transitions must conform to the organization lifecycle model defined in `STATE_MODELS.md`
+- permitted transitions for the Sprint 1 baseline are:
+  - `pendingReview -> active`
+  - `pendingReview -> inactive`
+  - `active -> inactive`
+  - `active -> suspended`
+  - `inactive -> active`
+  - `suspended -> active`
+  - `inactive -> deleted`
+- prohibited transitions for the Sprint 1 baseline include:
+  - direct `pendingReview -> deleted` in normal flow
+  - direct `suspended -> deleted` in normal flow
+  - any transition from `deleted` to another state
+
+[FLAG-MEMBERSHIP-STATE-SET]
+The organization lifecycle used by this endpoint follows the current provisional five-state Sprint 1 baseline defined in `STATE_MODELS.md`.
 
 ## 6. Role catalog contracts
 
@@ -542,7 +558,7 @@ History-read logging requirements are not yet finalized, but sensitive history a
 `submittedByUserId.md`
 
 
-```md
+````md
 # submittedByUserId Contract Fix
 
 Status: Patch note for Sprint 1 baseline  
@@ -704,4 +720,4 @@ This patch is complete when:
 - submission response/history may expose submitter only as server-derived data
 - request validation rejects or ignores client-authored submitter during the transition strategy selected by the team
 - audit uses authenticated actor identity, not payload identity
-```
+````
