@@ -1,0 +1,17 @@
+gantt
+    title Sprint 1 User Story Execution Plan with Dependency Notes
+    dateFormat  YYYY-MM-DD
+    axisFormat  %d %b
+    excludes weekends
+
+    section R03 - Membership and Access Governance
+    PBI-031 Register member organization                 :pbi031, 2026-03-16, 3d
+    PBI-032 Define and maintain platform roles           :pbi032, 2026-03-16, 3d
+    PBI-033 Assign roles to users (after 031 and 032)   :pbi033, after pbi032, 5d
+    PBI-034 Enforce deactivation access block (after 031 and 033) :crit, pbi034, after pbi033, 5d
+
+    section R20 - Shariah Review Workflow
+    PBI-035 Submit PLS item for review                   :pbi035, 2026-03-16, 3d
+    PBI-036 Record checklist outcome (after 035)        :pbi036, after pbi035, 3d
+    PBI-037 Record final decision (after 036)           :pbi037, after pbi036, 3d
+    PBI-038 View status and history (after 035 and 037) :pbi038, after pbi037, 2d

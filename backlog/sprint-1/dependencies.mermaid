@@ -1,0 +1,178 @@
+flowchart LR
+    %% Transitive-reduced dependency view for readability
+
+    classDef anchor fill:#f3f4f6,stroke:#6b7280,color:#111827,stroke-dasharray: 5 5;
+    classDef model fill:#fff7cc,stroke:#b58900,color:#111827;
+    classDef build fill:#dbeafe,stroke:#2563eb,color:#111827;
+    classDef security fill:#ffedd5,stroke:#ea580c,color:#111827;
+    classDef qa fill:#dcfce7,stroke:#16a34a,color:#111827;
+
+    subgraph S0["Upstream story anchors"]
+        direction TB
+        PBI031["PBI-031<br/>Member org registration"]
+        PBI032["PBI-032<br/>Role catalog / management"]
+        PBI033["PBI-033<br/>Role assignment"]
+        PBI034["PBI-034<br/>Deactivated-member blocking"]
+        PBI035["PBI-035<br/>Review request submission"]
+        PBI036["PBI-036<br/>Checklist completion"]
+        PBI037["PBI-037<br/>Decision capture"]
+        PBI038["PBI-038<br/>Status & history view"]
+    end
+
+    subgraph S1["Member organization"]
+        direction TB
+        PBI039["PBI-039<br/>Define member org schema"]
+        PBI040["PBI-040<br/>Create org API"]
+        PBI041["PBI-041<br/>Admin registration UI"]
+        PBI042["PBI-042<br/>Auth, audit, data handling"]
+        PBI043["PBI-043<br/>E2E validation, docs, evidence"]
+    end
+
+    subgraph S2["Role catalog"]
+        direction TB
+        PBI044["PBI-044<br/>Define role model"]
+        PBI045["PBI-045<br/>Role management API"]
+        PBI046["PBI-046<br/>Role management UI"]
+        PBI047["PBI-047<br/>Role auth, audit, status checks"]
+        PBI048["PBI-048<br/>E2E validation, docs, evidence"]
+    end
+
+    subgraph S3["Role assignment"]
+        direction TB
+        PBI049["PBI-049<br/>Define assignment rules"]
+        PBI050["PBI-050<br/>Assignment service"]
+        PBI051["PBI-051<br/>Assignment UI"]
+        PBI052["PBI-052<br/>Permission checks, audit, prevention"]
+        PBI053["PBI-053<br/>Seeded testing, docs, evidence"]
+    end
+
+    subgraph S4["Deactivation enforcement"]
+        direction TB
+        PBI054["PBI-054<br/>Define deactivation rules"]
+        PBI055["PBI-055<br/>Deactivation-aware access service"]
+        PBI056["PBI-056<br/>Protected endpoints and UI guards"]
+        PBI057["PBI-057<br/>Audit logging and safeguards"]
+        PBI058["PBI-058<br/>Validation, docs, evidence"]
+    end
+
+    subgraph S5["Review submission"]
+        direction TB
+        PBI059["PBI-059<br/>Define review-request schema"]
+        PBI060["PBI-060<br/>Submission API"]
+        PBI061["PBI-061<br/>Submission UI"]
+        PBI062["PBI-062<br/>Access control, audit, attachments"]
+        PBI063["PBI-063<br/>Validation, docs, evidence"]
+    end
+
+    subgraph S6["Checklist"]
+        direction TB
+        PBI064["PBI-064<br/>Define checklist structure"]
+        PBI065["PBI-065<br/>Checklist API"]
+        PBI066["PBI-066<br/>Checklist UI"]
+        PBI067["PBI-067<br/>Checklist auth, audit, state guards"]
+        PBI068["PBI-068<br/>Validation, docs, evidence"]
+    end
+
+    subgraph S7["Decisioning"]
+        direction TB
+        PBI069["PBI-069<br/>Define decision states"]
+        PBI070["PBI-070<br/>Decision API"]
+        PBI071["PBI-071<br/>Decision UI"]
+        PBI072["PBI-072<br/>Decision auth, audit, state guards"]
+        PBI073["PBI-073<br/>Validation, docs, evidence"]
+    end
+
+    subgraph S8["Status and history"]
+        direction TB
+        PBI074["PBI-074<br/>Define status-history query model"]
+        PBI075["PBI-075<br/>Status-history API"]
+        PBI076["PBI-076<br/>Status-history UI"]
+        PBI077["PBI-077<br/>View permissions, read audit, hardening"]
+        PBI078["PBI-078<br/>Validation, docs, evidence"]
+    end
+
+    %% Member organization
+    PBI031 --> PBI039
+    PBI039 --> PBI040
+    PBI039 --> PBI041
+    PBI040 --> PBI042
+    PBI040 --> PBI043
+    PBI041 --> PBI043
+    PBI042 --> PBI043
+
+    %% Role catalog
+    PBI032 --> PBI044
+    PBI044 --> PBI045
+    PBI044 --> PBI046
+    PBI045 --> PBI047
+    PBI045 --> PBI048
+    PBI046 --> PBI048
+    PBI047 --> PBI048
+
+    %% Role assignment
+    PBI031 --> PBI049
+    PBI032 --> PBI049
+    PBI033 --> PBI049
+    PBI049 --> PBI050
+    PBI040 --> PBI050
+    PBI045 --> PBI050
+    PBI050 --> PBI051
+    PBI050 --> PBI052
+    PBI051 --> PBI053
+    PBI052 --> PBI053
+
+    %% Deactivation enforcement
+    PBI031 --> PBI054
+    PBI034 --> PBI054
+    PBI054 --> PBI055
+    PBI050 --> PBI055
+    PBI055 --> PBI056
+    PBI055 --> PBI057
+    PBI056 --> PBI058
+    PBI057 --> PBI058
+
+    %% Review submission
+    PBI035 --> PBI059
+    PBI059 --> PBI060
+    PBI059 --> PBI061
+    PBI060 --> PBI062
+    PBI060 --> PBI063
+    PBI061 --> PBI063
+    PBI062 --> PBI063
+
+    %% Checklist
+    PBI035 --> PBI064
+    PBI036 --> PBI064
+    PBI059 --> PBI064
+    PBI064 --> PBI065
+    PBI060 --> PBI065
+    PBI065 --> PBI066
+    PBI065 --> PBI067
+    PBI066 --> PBI068
+    PBI067 --> PBI068
+
+    %% Decisioning
+    PBI037 --> PBI069
+    PBI064 --> PBI069
+    PBI069 --> PBI070
+    PBI065 --> PBI070
+    PBI070 --> PBI071
+    PBI070 --> PBI072
+    PBI071 --> PBI073
+    PBI072 --> PBI073
+
+    %% Status and history
+    PBI038 --> PBI074
+    PBI069 --> PBI074
+    PBI074 --> PBI075
+    PBI070 --> PBI075
+    PBI075 --> PBI076
+    PBI075 --> PBI077
+    PBI076 --> PBI078
+    PBI077 --> PBI078
+
+    class PBI031,PBI032,PBI033,PBI034,PBI035,PBI036,PBI037,PBI038 anchor;
+    class PBI039,PBI044,PBI049,PBI054,PBI059,PBI064,PBI069,PBI074 model;
+    class PBI040,PBI041,PBI045,PBI046,PBI050,PBI051,PBI055,PBI056,PBI060,PBI061,PBI065,PBI066,PBI070,PBI071,PBI075,PBI076 build;
+    class PBI042,PBI047,PBI052,PBI057,PBI062,PBI067,PBI072,PBI077 security;
+    class PBI043,PBI048,PBI053,PBI058,PBI063,PBI068,PBI073,PBI078 qa;

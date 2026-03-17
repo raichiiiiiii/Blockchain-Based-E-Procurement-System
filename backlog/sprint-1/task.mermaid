@@ -1,0 +1,64 @@
+gantt
+    title Sprint 1 Task Execution Plan by Parent User Story
+    dateFormat  YYYY-MM-DD
+    axisFormat  %d %b
+    excludes weekends
+
+    %% For tasks with multiple prerequisites, the bar is anchored to the latest dependency.
+    %% The task label notes the broader dependency context where helpful.
+
+    section PBI-031 - Register member organization
+    PBI-039 Define org schema, uniqueness, status model            :crit, pbi039, 2026-03-16, 2d
+    PBI-040 Implement org creation API and validation              :crit, pbi040, after pbi039, 3d
+    PBI-041 Implement admin registration UI and feedback           :pbi041, after pbi039, 2d
+    PBI-042 Add authorization, audit logging, data handling        :pbi042, after pbi040, 2d
+    PBI-043 E2E validation, regression, docs, demo evidence       :pbi043, after pbi042, 2d
+
+    section PBI-032 - Define and maintain platform roles
+    PBI-044 Define role catalog model and constraints              :crit, pbi044, 2026-03-16, 2d
+    PBI-045 Implement role management API and validation           :crit, pbi045, after pbi044, 3d
+    PBI-046 Implement admin role management UI and feedback        :pbi046, after pbi044, 2d
+    PBI-047 Add authorization, audit logging, role status checks   :pbi047, after pbi045, 2d
+    PBI-048 E2E validation, regression, docs, demo evidence       :pbi048, after pbi047, 2d
+
+    section PBI-033 - Assign platform roles to member users
+    PBI-049 Define assignment rules and preconditions (after 031+032 models) :crit, pbi049, after pbi044, 2d
+    PBI-050 Implement assign/change/remove role service (after 040+045+049)  :crit, pbi050, after pbi045, 3d
+    PBI-051 Implement role-assignment UI and feedback              :pbi051, after pbi050, 2d
+    PBI-052 Add permission checks, audit logging, invalid-assignment prevention :pbi052, after pbi050, 2d
+    PBI-053 Seeded validation, docs, demo evidence                :pbi053, after pbi052, 2d
+
+    section PBI-034 - Block access for deactivated members
+    PBI-054 Define deactivation rules and protected-function list  :crit, pbi054, after pbi039, 2d
+    PBI-055 Implement deactivation-aware access-control service (after 050+054) :crit, pbi055, after pbi050, 3d
+    PBI-056 Integrate protected endpoints and UI guards            :pbi056, after pbi055, 2d
+    PBI-057 Add audit logging, regression safeguards, config       :pbi057, after pbi055, 2d
+    PBI-058 Access-control validation, docs, demo evidence        :pbi058, after pbi057, 2d
+
+    section PBI-035 - Submit PLS item for Shariah review
+    PBI-059 Define review-request schema and Submitted-state rules :crit, pbi059, 2026-03-16, 2d
+    PBI-060 Implement review-request API and validation            :crit, pbi060, after pbi059, 3d
+    PBI-061 Implement coordinator submission UI and feedback       :pbi061, after pbi059, 2d
+    PBI-062 Add access control, audit logging, reference handling  :pbi062, after pbi060, 2d
+    PBI-063 E2E submission validation, docs, demo evidence        :pbi063, after pbi062, 2d
+
+    section PBI-036 - Record review checklist outcome
+    PBI-064 Define checklist structure and completion rules (after 035 request model) :crit, pbi064, after pbi059, 2d
+    PBI-065 Implement checklist API and persistence (after 060+064) :crit, pbi065, after pbi060, 3d
+    PBI-066 Implement reviewer checklist UI and feedback           :pbi066, after pbi065, 2d
+    PBI-067 Add checklist access control, audit logging, state guards :pbi067, after pbi065, 2d
+    PBI-068 Checklist validation, docs, demo evidence             :pbi068, after pbi067, 2d
+
+    section PBI-037 - Record approve/reject/conditional-approve decisions
+    PBI-069 Define decision states, rationale rules, conditional constraints :crit, pbi069, after pbi064, 2d
+    PBI-070 Implement decision API and state-transition logic (after 065+069) :crit, pbi070, after pbi065, 3d
+    PBI-071 Implement reviewer decision UI and feedback            :pbi071, after pbi070, 2d
+    PBI-072 Add decision access control, audit logging, state guards :pbi072, after pbi070, 2d
+    PBI-073 Decision-flow validation, docs, demo evidence         :pbi073, after pbi072, 2d
+
+    section PBI-038 - View current approval status and decision history
+    PBI-074 Define status-history query model and progression contract :crit, pbi074, after pbi069, 2d
+    PBI-075 Implement status-history API and query service (after 070+074) :crit, pbi075, after pbi070, 3d
+    PBI-076 Implement coordinator status-history UI               :pbi076, after pbi075, 2d
+    PBI-077 Add view permissions, read-audit logging, response hardening :pbi077, after pbi075, 2d
+    PBI-078 Status-history validation, docs, demo evidence       :pbi078, after pbi077, 2d
