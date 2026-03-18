@@ -8,7 +8,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/app/server.js",
-    "dev": "node --loader ts-node/esm src/app/server.ts"
+    "dev": "node --loader ts-node/esm src/app/server.ts",
+    "test": "node --test --loader ts-node/esm src/modules/membership/api/routes.test.ts"
   },
   "dependencies": {
     "fastify": "^4.26.0"
