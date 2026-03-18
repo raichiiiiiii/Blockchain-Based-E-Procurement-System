@@ -1,5 +1,6 @@
 import type { MemberOrganization } from '../domain/member-organization.js';
 import { createMemberOrganizationDraft } from '../domain/member-organization.js';
+import type { MemberOrganizationRepository } from './member-organization-repository.js';
 
 export type CreateMemberOrgInput = {
   registrationNumber: string;
@@ -17,7 +18,7 @@ export type CreateMemberOrgResult =
   | { status: 'invalidInput'; issues: string[] }
   | { status: 'draftPrepared'; organization: MemberOrganization };
 
-export async function createMemberOrganization(input: CreateMemberOrgInput): Promise<CreateMemberOrgResult> {
+export async function createMemberOrganization(input: CreateMemberOrgInput, repository: MemberOrganizationRepository): Promise<CreateMemberOrgResult> {
   // Trim all string fields
   const trimmedInput = {
     registrationNumber: input.registrationNumber.trim(),
@@ -53,6 +54,9 @@ export async function createMemberOrganization(input: CreateMemberOrgInput): Pro
 
   // Create domain draft to validate structure
   const draft = createMemberOrganizationDraft(trimmedInput);
+
+  // Save the draft through the repository
+  await repository.saveDraft(draft);
 
   // Return the prepared draft
   return { status: 'draftPrepared', organization: draft };

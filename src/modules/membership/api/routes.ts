@@ -35,7 +35,7 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
       }
     },
     async (request, reply) => {
-      const result = await createMemberOrganization(request.body);
+      const result = await createMemberOrganization(request.body, options.repository);
       
       // Handle invalid input
       if (result.status === 'invalidInput') {
