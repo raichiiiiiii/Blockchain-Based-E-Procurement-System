@@ -1,19 +1,9 @@
 import type { FastifyPluginAsync } from 'fastify';
-
-interface CreateMemberOrgRequest {
-  registrationNumber: string;
-  legalName: string;
-  displayName?: string;
-  organizationType: string;
-  businessType?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  countryCode?: string;
-  notes?: string;
-}
+import type { CreateMemberOrgInput } from '../application/create-member-organization.js';
+import { createMemberOrganization } from '../application/create-member-organization.js';
 
 const registerMembershipRoutes: FastifyPluginAsync = async (fastify) => {
-  fastify.post<{ Body: CreateMemberOrgRequest }>(
+  fastify.post<{ Body: CreateMemberOrgInput }>(
     '/member-organizations',
     {
       schema: {
@@ -34,7 +24,8 @@ const registerMembershipRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
     },
-    async (_request, reply) => {
+    async (request, reply) => {
+      await createMemberOrganization(request.body);
       return reply.code(501).send({
         message: 'Membership organization creation endpoint registered but not yet implemented'
       });
