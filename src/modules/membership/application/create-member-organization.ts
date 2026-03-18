@@ -10,11 +10,44 @@ export type CreateMemberOrgInput = {
   notes?: string;
 };
 
-export type CreateMemberOrgResult = {
-  status: 'notImplemented';
-};
+export type CreateMemberOrgResult = 
+  | { status: 'invalidInput'; issues: string[] }
+  | { status: 'notImplemented' };
 
-export async function createMemberOrganization(_input: CreateMemberOrgInput): Promise<CreateMemberOrgResult> {
-  // Stub implementation - does nothing in this slice
+export async function createMemberOrganization(input: CreateMemberOrgInput): Promise<CreateMemberOrgResult> {
+  // Trim all string fields
+  const trimmedInput = {
+    registrationNumber: input.registrationNumber.trim(),
+    legalName: input.legalName.trim(),
+    displayName: input.displayName?.trim() || undefined,
+    organizationType: input.organizationType.trim(),
+    businessType: input.businessType?.trim() || undefined,
+    contactEmail: input.contactEmail?.trim() || undefined,
+    contactPhone: input.contactPhone?.trim() || undefined,
+    countryCode: input.countryCode?.trim() || undefined,
+    notes: input.notes?.trim() || undefined,
+  };
+
+  // Check for empty required fields after trimming
+  const issues: string[] = [];
+  
+  if (!trimmedInput.registrationNumber) {
+    issues.push('Registration number must not be empty');
+  }
+  
+  if (!trimmedInput.legalName) {
+    issues.push('Legal name must not be empty');
+  }
+  
+  if (!trimmedInput.organizationType) {
+    issues.push('Organization type must not be empty');
+  }
+
+  // Return validation errors if any
+  if (issues.length > 0) {
+    return { status: 'invalidInput', issues };
+  }
+
+  // Still not implemented
   return { status: 'notImplemented' };
 }
