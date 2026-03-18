@@ -14,6 +14,15 @@ test('should return 400 for missing required fields', async () => {
   });
 
   assert.strictEqual(response.statusCode, 400);
+  
+  // Parse response body to check structure
+  const responseBody = response.json();
+  
+  // Assert basic structure of Fastify validation error
+  assert(typeof responseBody.message === 'string', 'Response should have a message string');
+  
+  // Assert this is NOT using the custom application format
+  assert.strictEqual(responseBody.issues, undefined, 'Should not have issues array in Fastify validation error');
 });
 
 test('should return 400 for whitespace-only required fields', async () => {
