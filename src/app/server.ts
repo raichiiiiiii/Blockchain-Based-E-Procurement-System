@@ -1,10 +1,18 @@
 import fastify from 'fastify';
 import { fileURLToPath } from 'node:url';
 import { registerMembershipRoutes } from '../modules/membership/api/routes.js';
+import { InMemoryMemberOrganizationRepository } from '../modules/membership/infrastructure/in-memory-member-organization-repository.js';
 
 const server = fastify();
 
-server.register(registerMembershipRoutes, { prefix: '/api/v1' });
+// Instantiate the repository once at server setup time
+const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+// Pass it into registerMembershipRoutes via Fastify plugin options
+server.register(registerMembershipRoutes, { 
+  prefix: '/api/v1',
+  repository: memberOrganizationRepository
+});
 
 const PORT = Number(process.env.PORT ?? 3000);
 

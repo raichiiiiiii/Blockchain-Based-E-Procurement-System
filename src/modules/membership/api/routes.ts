@@ -1,8 +1,18 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { CreateMemberOrgInput } from '../application/create-member-organization.js';
 import { createMemberOrganization } from '../application/create-member-organization.js';
+import type { MemberOrganizationRepository } from '../application/member-organization-repository.js';
 
-const registerMembershipRoutes: FastifyPluginAsync = async (fastify) => {
+// Introduce a typed plugin options interface for the membership routes
+interface MembershipRoutesOptions {
+  repository: MemberOrganizationRepository;
+}
+
+// Update the route plugin type/signature so it accepts the typed options
+const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = async (fastify, options) => {
+  // Access the repository through options.repository (not used yet)
+  // Keeping the repository in options for future use
+  
   fastify.post<{ Body: CreateMemberOrgInput }>(
     '/member-organizations',
     {
