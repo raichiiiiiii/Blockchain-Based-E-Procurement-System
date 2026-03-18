@@ -1,3 +1,4 @@
+import type { MemberOrganization } from '../domain/member-organization.js';
 import { createMemberOrganizationDraft } from '../domain/member-organization.js';
 
 export type CreateMemberOrgInput = {
@@ -14,7 +15,7 @@ export type CreateMemberOrgInput = {
 
 export type CreateMemberOrgResult = 
   | { status: 'invalidInput'; issues: string[] }
-  | { status: 'notImplemented' };
+  | { status: 'draftPrepared'; organization: MemberOrganization };
 
 export async function createMemberOrganization(input: CreateMemberOrgInput): Promise<CreateMemberOrgResult> {
   // Trim all string fields
@@ -50,9 +51,9 @@ export async function createMemberOrganization(input: CreateMemberOrgInput): Pro
     return { status: 'invalidInput', issues };
   }
 
-  // Create domain draft to validate structure (but don't persist)
-  createMemberOrganizationDraft(trimmedInput);
+  // Create domain draft to validate structure
+  const draft = createMemberOrganizationDraft(trimmedInput);
 
-  // Still not implemented
-  return { status: 'notImplemented' };
+  // Return the prepared draft
+  return { status: 'draftPrepared', organization: draft };
 }
