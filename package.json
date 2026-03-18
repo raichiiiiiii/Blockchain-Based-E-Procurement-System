@@ -1,0 +1,24 @@
+{
+  "name": "pls-platform",
+  "version": "1.0.0",
+  "description": "PLS Platform - Sprint 1 Baseline",
+  "private": true,
+  "type": "module",
+  "main": "dist/app/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/app/server.js",
+    "dev": "node --loader ts-node/esm src/app/server.ts"
+  },
+  "dependencies": {
+    "fastify": "^4.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
