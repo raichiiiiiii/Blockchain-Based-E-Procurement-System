@@ -1,9 +1,9 @@
 import fastify from 'fastify';
+import { fileURLToPath } from 'node:url';
 import { registerMembershipRoutes } from '../modules/membership/api/routes.js';
 
 const server = fastify();
 
-// Register membership routes
 server.register(registerMembershipRoutes, { prefix: '/api/v1' });
 
 const PORT = Number(process.env.PORT ?? 3000);
@@ -18,4 +18,8 @@ const start = async () => {
   }
 };
 
-start();
+export { server, start };
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  start();
+}
