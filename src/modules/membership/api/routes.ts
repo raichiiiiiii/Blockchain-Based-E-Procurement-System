@@ -25,7 +25,16 @@ const registerMembershipRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
     async (request, reply) => {
-      await createMemberOrganization(request.body);
+      const result = await createMemberOrganization(request.body);
+      
+      // Check if the operation is not implemented
+      if (result.status === 'notImplemented') {
+        return reply.code(501).send({
+          message: 'Membership organization creation endpoint registered but not yet implemented'
+        });
+      }
+      
+      // This shouldn't be reached with the current stub implementation
       return reply.code(501).send({
         message: 'Membership organization creation endpoint registered but not yet implemented'
       });

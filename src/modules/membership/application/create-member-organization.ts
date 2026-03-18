@@ -10,7 +10,11 @@ export type CreateMemberOrgInput = {
   notes?: string;
 };
 
-export async function createMemberOrganization(_input: CreateMemberOrgInput): Promise<void> {
+export type CreateMemberOrgResult = {
+  status: 'notImplemented';
+};
+
+export async function createMemberOrganization(_input: CreateMemberOrgInput): Promise<CreateMemberOrgResult> {
   // Stub implementation - does nothing in this slice
-  return Promise.resolve();
+  return { status: 'notImplemented' };
 }
