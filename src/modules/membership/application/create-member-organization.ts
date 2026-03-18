@@ -1,3 +1,5 @@
+import { createMemberOrganizationDraft } from '../domain/member-organization.js';
+
 export type CreateMemberOrgInput = {
   registrationNumber: string;
   legalName: string;
@@ -47,6 +49,9 @@ export async function createMemberOrganization(input: CreateMemberOrgInput): Pro
   if (issues.length > 0) {
     return { status: 'invalidInput', issues };
   }
+
+  // Create domain draft to validate structure (but don't persist)
+  createMemberOrganizationDraft(trimmedInput);
 
   // Still not implemented
   return { status: 'notImplemented' };
