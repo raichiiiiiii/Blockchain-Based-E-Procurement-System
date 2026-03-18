@@ -1,14 +1,20 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert/strict';
 import { createMemberOrganization } from './create-member-organization.js';
-import type { MemberOrganizationRepository } from './member-organization-repository.js';
+import type { MemberOrganizationRepository, PersistedMemberOrganizationDraft } from './member-organization-repository.js';
 
 // Simple test stub repository that tracks call count
 class TestMemberOrganizationRepository implements MemberOrganizationRepository {
   public saveDraftCallCount = 0;
   
-  async saveDraft(): Promise<void> {
+  async saveDraft(organization: any): Promise<PersistedMemberOrganizationDraft> {
     this.saveDraftCallCount++;
+    return {
+      ...organization,
+      id: 'test-id',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z'
+    };
   }
 }
 

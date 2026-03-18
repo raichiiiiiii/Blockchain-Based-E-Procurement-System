@@ -1,5 +1,11 @@
 import type { MemberOrganization } from '../domain/member-organization.js';
 
+export type PersistedMemberOrganizationDraft = MemberOrganization & {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export interface MemberOrganizationRepository {
-  saveDraft(organization: MemberOrganization): Promise<void>;
+  saveDraft(organization: MemberOrganization): Promise<PersistedMemberOrganizationDraft>;
 }
