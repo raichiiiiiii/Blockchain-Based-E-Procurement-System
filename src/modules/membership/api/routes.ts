@@ -47,9 +47,19 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
       
       // Handle draft prepared
       if (result.status === 'draftPrepared') {
-        // Still not implemented - return the same placeholder response
-        return reply.code(501).send({
-          message: 'Membership organization creation endpoint registered but not yet implemented'
+        // Return the created organization with proper API contract format
+        return reply.code(201).send({
+          data: {
+            id: result.organization.id,
+            registrationNumber: result.organization.registrationNumber,
+            legalName: result.organization.legalName,
+            displayName: result.organization.displayName,
+            organizationType: result.organization.organizationType,
+            businessType: result.organization.businessType,
+            status: result.organization.status,
+            createdAt: result.organization.createdAt,
+            updatedAt: result.organization.updatedAt
+          }
         });
       }
     }

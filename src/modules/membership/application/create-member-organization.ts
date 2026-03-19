@@ -1,6 +1,7 @@
 import type { MemberOrganization } from '../domain/member-organization.js';
 import { createMemberOrganizationDraft } from '../domain/member-organization.js';
 import type { MemberOrganizationRepository } from './member-organization-repository.js';
+import type { PersistedMemberOrganizationDraft } from './member-organization-repository.js';
 
 export type CreateMemberOrgInput = {
   registrationNumber: string;
@@ -16,7 +17,7 @@ export type CreateMemberOrgInput = {
 
 export type CreateMemberOrgResult = 
   | { status: 'invalidInput'; issues: string[] }
-  | { status: 'draftPrepared'; organization: MemberOrganization };
+  | { status: 'draftPrepared'; organization: PersistedMemberOrganizationDraft };
 
 export async function createMemberOrganization(input: CreateMemberOrgInput, repository: MemberOrganizationRepository): Promise<CreateMemberOrgResult> {
   // Trim all string fields
@@ -55,9 +56,9 @@ export async function createMemberOrganization(input: CreateMemberOrgInput, repo
   // Create domain draft to validate structure
   const draft = createMemberOrganizationDraft(trimmedInput);
 
-  // Save the draft through the repository
-  await repository.saveDraft(draft);
+  // Save the draft through the repository and get the persisted version
+  const persistedDraft = await repository.saveDraft(draft);
 
   // Return the prepared draft
-  return { status: 'draftPrepared', organization: draft };
+  return { status: 'draftPrepared', organization: persistedDraft };
 }
