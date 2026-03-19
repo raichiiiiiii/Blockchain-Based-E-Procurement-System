@@ -95,3 +95,117 @@ test('should normalize empty optional fields to undefined and call saveDraft onc
   // Verify saveDraft was called exactly once
   assert.strictEqual(repository.saveDraftCallCount, 1);
 });
+
+test('should preserve Unicode characters in all string fields and call saveDraft once', async () => {
+  const repository = new TestMemberOrganizationRepository();
+  
+  const result = await createMemberOrganization({
+    registrationNumber: '  REGüñíçóðé123  ',
+    legalName: '  Tëst Örgänizåtiön  ',
+    organizationType: '  Cörpöråtiön  ',
+    displayName: '  Dispłày Nâmé  ',
+    businessType: '  LLÇ  '
+  }, repository);
+
+  assert.strictEqual(result.status, 'draftPrepared');
+  assert.strictEqual(result.organization.registrationNumber, 'REGüñíçóðé123');
+  assert.strictEqual(result.organization.legalName, 'Tëst Örgänizåtiön');
+  assert.strictEqual(result.organization.organizationType, 'Cörpöråtiön');
+  assert.strictEqual(result.organization.displayName, 'Dispłày Nâmé');
+  assert.strictEqual(result.organization.businessType, 'LLÇ');
+  
+  // Verify saveDraft was called exactly once
+  assert.strictEqual(repository.saveDraftCallCount, 1);
+});
+
+test('should preserve ordinary special characters in string fields and call saveDraft once', async () => {
+  const repository = new TestMemberOrganizationRepository();
+  
+  const result = await createMemberOrganization({
+    registrationNumber: '  REG-123#456  ',
+    legalName: '  Test "Organization" & Co.  ',
+    organizationType: '  Corp/Division (Ltd.)  ',
+    displayName: '  Display: Name; Division  ',
+    businessType: '  LLC & Partners  '
+  }, repository);
+
+  assert.strictEqual(result.status, 'draftPrepared');
+  assert.strictEqual(result.organization.registrationNumber, 'REG-123#456');
+  assert.strictEqual(result.organization.legalName, 'Test "Organization" & Co.');
+  assert.strictEqual(result.organization.organizationType, 'Corp/Division (Ltd.)');
+  assert.strictEqual(result.organization.displayName, 'Display: Name; Division');
+  assert.strictEqual(result.organization.businessType, 'LLC & Partners');
+  
+  // Verify saveDraft was called exactly once
+  assert.strictEqual(repository.saveDraftCallCount, 1);
+});
+
+test('should accept long strings without truncation and call saveDraft once', async () => {
+  const repository = new TestMemberOrganizationRepository();
+  
+  const longString = 'A'.repeat(1000);
+  const longOptionalString = 'B'.repeat(500);
+  
+  const result = await createMemberOrganization({
+    registrationNumber: `  ${longString}  `,
+    legalName: `  ${longString}  `,
+    organizationType: `  ${longString}  `,
+    displayName: `  ${longOptionalString}  `,
+    businessType: `  ${longOptionalString}  `
+  }, repository);
+
+  assert.strictEqual(result.status, 'draftPrepared');
+  assert.strictEqual(result.organization.registrationNumber, longString);
+  assert.strictEqual(result.organization.legalName, longString);
+  assert.strictEqual(result.organization.organizationType, longString);
+  assert.strictEqual(result.organization.displayName, longOptionalString);
+  assert.strictEqual(result.organization.businessType, longOptionalString);
+  
+  // Verify saveDraft was called exactly once
+  assert.strictEqual(repository.saveDraftCallCount, 1);
+});
+
+test('should normalize complex whitespace consistently and call saveDraft once', async () => {
+  const repository = new TestMemberOrganizationRepository();
+  
+  const result = await createMemberOrganization({
+    registrationNumber: '  \t REG123 \n  ',
+    legalName: '  \n Test\tOrganization  \r\n  ',
+    organizationType: '  \r Corporation \t  ',
+    displayName: '  \t Display \n Name \r  ',
+    businessType: '  \r\n LLC \t  '
+  }, repository);
+
+  assert.strictEqual(result.status, 'draftPrepared');
+  assert.strictEqual(result.organization.registrationNumber, 'REG123');
+  assert.strictEqual(result.organization.legalName, 'Test\tOrganization');
+  assert.strictEqual(result.organization.organizationType, 'Corporation');
+  assert.strictEqual(result.organization.displayName, 'Display \n Name');
+  assert.strictEqual(result.organization.businessType, 'LLC');
+  
+  // Verify saveDraft was called exactly once
+  assert.strictEqual(repository.saveDraftCallCount, 1);
+});
+
+test('should normalize optional empty/whitespace-only strings to undefined and call saveDraft once', async () => {
+  const repository = new TestMemberOrganizationRepository();
+  
+  const result = await createMemberOrganization({
+    registrationNumber: 'REG123',
+    legalName: 'Test Organization',
+    organizationType: 'Corporation',
+    displayName: '   \t\n  ',
+    businessType: '   \r\n  ',
+    contactEmail: '',
+    contactPhone: '   '
+  }, repository);
+
+  assert.strictEqual(result.status, 'draftPrepared');
+  assert.strictEqual(result.organization.displayName, undefined);
+  assert.strictEqual(result.organization.businessType, undefined);
+  assert.strictEqual(result.organization.contactEmail, undefined);
+  assert.strictEqual(result.organization.contactPhone, undefined);
+  
+  // Verify saveDraft was called exactly once
+  assert.strictEqual(repository.saveDraftCallCount, 1);
+});

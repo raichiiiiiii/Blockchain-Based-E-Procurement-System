@@ -2,17 +2,34 @@ import fastify from 'fastify';
 import { fileURLToPath } from 'node:url';
 import { registerMembershipRoutes } from '../modules/membership/api/routes.js';
 import { InMemoryMemberOrganizationRepository } from '../modules/membership/infrastructure/in-memory-member-organization-repository.js';
+import type { MemberOrganizationRepository } from '../modules/membership/application/member-organization-repository.js';
+import type { MemberOrgCreateAuditEvent } from '../modules/membership/api/routes.js';
 
-const server = fastify();
+// Factory function for creating testable servers
+export function createTestableServer(options?: {
+  audit?: (event: MemberOrgCreateAuditEvent) => void;
+  repository?: MemberOrganizationRepository;
+}) {
+  const server = fastify();
+  
+  // Use provided dependencies or defaults
+  const memberOrganizationRepository = options?.repository ?? new InMemoryMemberOrganizationRepository();
+  const auditCallback = options?.audit ?? ((event: MemberOrgCreateAuditEvent) => {
+    console.info('AUDIT EVENT:', JSON.stringify(event));
+  });
 
-// Instantiate the repository once at server setup time
-const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+  // Pass both repository and audit callback into registerMembershipRoutes
+  server.register(registerMembershipRoutes, { 
+    prefix: '/api/v1',
+    repository: memberOrganizationRepository,
+    audit: auditCallback
+  });
 
-// Pass it into registerMembershipRoutes via Fastify plugin options
-server.register(registerMembershipRoutes, { 
-  prefix: '/api/v1',
-  repository: memberOrganizationRepository
-});
+  return server;
+}
+
+// Existing singleton server for normal runtime
+const server = createTestableServer();
 
 const PORT = Number(process.env.PORT ?? 3000);
 
