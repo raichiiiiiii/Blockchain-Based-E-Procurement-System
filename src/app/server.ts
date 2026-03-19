@@ -8,10 +8,16 @@ const server = fastify();
 // Instantiate the repository once at server setup time
 const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
 
-// Pass it into registerMembershipRoutes via Fastify plugin options
+// Create a minimal audit callback for provisional audit logging
+const auditCallback = (event: any) => {
+  console.info('AUDIT EVENT:', JSON.stringify(event));
+};
+
+// Pass both repository and audit callback into registerMembershipRoutes
 server.register(registerMembershipRoutes, { 
   prefix: '/api/v1',
-  repository: memberOrganizationRepository
+  repository: memberOrganizationRepository,
+  audit: auditCallback
 });
 
 const PORT = Number(process.env.PORT ?? 3000);
