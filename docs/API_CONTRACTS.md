@@ -115,6 +115,17 @@ Request:
 }
 ```
 
+Validation and sanitization behavior:
+- Leading and trailing whitespace is trimmed from all string fields
+- Required fields (`registrationNumber`, `legalName`, `organizationType`) must not be empty after trimming
+- Optional string fields that are empty or contain only whitespace are treated as absent
+- Unicode characters are preserved in all string fields
+- Ordinary punctuation and special characters are accepted in all string fields
+- Field lengths are not currently limited by validation
+- Email format is not currently enforced for `contactEmail`
+- Country code format is not currently enforced for `countryCode`
+- Character whitelisting is not currently enforced
+
 Response:
 
 ```json
