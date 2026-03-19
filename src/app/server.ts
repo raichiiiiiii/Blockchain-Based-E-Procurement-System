@@ -3,17 +3,18 @@ import { fileURLToPath } from 'node:url';
 import { registerMembershipRoutes } from '../modules/membership/api/routes.js';
 import { InMemoryMemberOrganizationRepository } from '../modules/membership/infrastructure/in-memory-member-organization-repository.js';
 import type { MemberOrganizationRepository } from '../modules/membership/application/member-organization-repository.js';
+import type { MemberOrgCreateAuditEvent } from '../modules/membership/api/routes.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
-  audit?: (event: any) => void;
+  audit?: (event: MemberOrgCreateAuditEvent) => void;
   repository?: MemberOrganizationRepository;
 }) {
   const server = fastify();
   
   // Use provided dependencies or defaults
   const memberOrganizationRepository = options?.repository ?? new InMemoryMemberOrganizationRepository();
-  const auditCallback = options?.audit ?? ((event: any) => {
+  const auditCallback = options?.audit ?? ((event: MemberOrgCreateAuditEvent) => {
     console.info('AUDIT EVENT:', JSON.stringify(event));
   });
 

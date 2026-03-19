@@ -3,10 +3,21 @@ import type { CreateMemberOrgInput } from '../application/create-member-organiza
 import { createMemberOrganization } from '../application/create-member-organization.js';
 import type { MemberOrganizationRepository } from '../application/member-organization-repository.js';
 
-// Extend the plugin options interface to include audit callback
+// Define the audit event interface for member organization creation
+export interface MemberOrgCreateAuditEvent {
+  action: 'createMemberOrganization';
+  targetType: 'memberOrganization';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success';
+  actorId: string;
+}
+
+// Extend the plugin options interface to include typed audit callback
 interface MembershipRoutesOptions {
   repository: MemberOrganizationRepository;
-  audit: (event: any) => void;
+  audit: (event: MemberOrgCreateAuditEvent) => void;
 }
 
 // Update the route plugin type/signature so it accepts the typed options
@@ -48,15 +59,30 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
       
       // Handle draft prepared
       if (result.status === 'draftPrepared') {
-        // Emit provisional audit event
-        const auditEvent = {
+        // Normalize x-actor-id header to always be a string
+        const rawActorId = request.headers['x-actor-id'];
+        let actorId: string;
+        
+        if (Array.isArray(rawActorId)) {
+          // Take the first value if it's an array
+          actorId = rawActorId[0] || 'unknown';
+        } else if (typeof rawActorId === 'string') {
+          // Use the string value
+          actorId = rawActorId;
+        } else {
+          // Default to 'unknown' for undefined/null cases
+          actorId = 'unknown';
+        }
+        
+        // Emit provisional audit event with typed interface
+        const auditEvent: MemberOrgCreateAuditEvent = {
           action: 'createMemberOrganization',
           targetType: 'memberOrganization',
           targetId: result.organization.id,
           timestamp: new Date().toISOString(),
           requestId: request.id,
           outcome: 'success',
-          actorId: request.headers['x-actor-id'] || 'unknown'
+          actorId: actorId
         };
         
         // Call the audit callback
