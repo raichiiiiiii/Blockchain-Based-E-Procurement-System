@@ -250,6 +250,15 @@ Rules:
 - only active roles may be newly assigned
 - inactive roles remain historically visible
 
+Provisional Sprint 1 assumptions:
+- `scope` is provisionally limited to `organization` for Sprint 1
+- `status` values are provisionally defined as `active` and `inactive`
+- `roleCode` is provisionally assumed unique within its scope
+- `isSystemReserved` defaults to false for custom roles
+
+[FLAG-ROLE-CATALOG]
+Role codes, reserved-role policy, and the exact permission inventory are not yet frozen, but the role contract shape is stable enough for Sprint 1 scaffolding.
+
 ### 6.2 Update role
 
 `PATCH /api/v1/roles/{roleId}`
