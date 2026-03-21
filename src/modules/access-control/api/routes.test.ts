@@ -26,6 +26,9 @@ describe('POST /api/v1/roles', () => {
     const responseBody = response.json();
     assert.ok(responseBody.data);
     
+    // Assert that the id is present and is a string
+    assert.ok(typeof responseBody.data.id === 'string');
+    
     assert.strictEqual(responseBody.data.roleCode, rolePayload.roleCode);
     assert.strictEqual(responseBody.data.displayName, rolePayload.displayName);
     assert.strictEqual(responseBody.data.scope, rolePayload.scope);
@@ -146,6 +149,9 @@ describe('POST /api/v1/roles', () => {
     assert.strictEqual(response.statusCode, 201);
     const responseBody = response.json();
     assert.strictEqual(responseBody.data.description, undefined);
+    
+    // Assert that the id is present and is a string
+    assert.ok(typeof responseBody.data.id === 'string');
   });
 });
 
@@ -216,6 +222,7 @@ describe('GET /api/v1/roles', () => {
 
     // Verify the shape of returned roles
     const adminRole = responseBody.data.find((role: any) => role.roleCode === 'admin');
+    assert.ok(typeof adminRole.id === 'string'); // Assert id is present and a string
     assert.strictEqual(adminRole.displayName, 'Administrator');
     assert.strictEqual(adminRole.scope, 'organization');
     assert.deepStrictEqual(adminRole.permissions, ['read', 'write', 'delete']);
@@ -223,6 +230,7 @@ describe('GET /api/v1/roles', () => {
     assert.strictEqual(adminRole.isSystemReserved, false);
 
     const viewerRole = responseBody.data.find((role: any) => role.roleCode === 'viewer');
+    assert.ok(typeof viewerRole.id === 'string'); // Assert id is present and a string
     assert.strictEqual(viewerRole.displayName, 'Viewer');
     assert.strictEqual(viewerRole.scope, 'organization');
     assert.deepStrictEqual(viewerRole.permissions, ['read']);
