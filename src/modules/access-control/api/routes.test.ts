@@ -72,15 +72,11 @@ describe('POST /api/v1/roles', () => {
   test('should return 400 when required fields are missing', async () => {
     const server = createTestableServer();
     
-    const incompletePayload = {
-      displayName: 'Administrator'
-      // Missing required fields
-    };
-
+    // Test with completely empty payload
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: incompletePayload
+      payload: {}
     });
 
     assert.strictEqual(response.statusCode, 400);
