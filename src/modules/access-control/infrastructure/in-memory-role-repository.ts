@@ -17,4 +17,8 @@ export class InMemoryRoleRepository implements RoleRepository {
     const key = this.getKey(roleCode, scope);
     return this.roles.get(key) ?? null;
   }
+
+  async findAll(): Promise<Role[]> {
+    return Array.from(this.roles.values());
+  }
 }

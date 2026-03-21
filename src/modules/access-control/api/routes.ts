@@ -54,6 +54,17 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       }
     }
   );
+
+  // GET /api/v1/roles - List all roles
+  fastify.get(
+    '/roles',
+    async (_request, reply) => {
+      const roles = await repository.findAll();
+      return reply.code(200).send({
+        data: roles
+      });
+    }
+  );
 };
 
 export { registerAccessControlRoutes };
