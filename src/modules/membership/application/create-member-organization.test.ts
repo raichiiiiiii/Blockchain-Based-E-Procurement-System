@@ -16,6 +16,10 @@ class TestMemberOrganizationRepository implements MemberOrganizationRepository {
       updatedAt: '2026-01-01T00:00:00.000Z'
     };
   }
+  
+  async findById(id: string): Promise<PersistedMemberOrganizationDraft | null> {
+    return null;
+  }
 }
 
 test('should return invalidInput for whitespace-only required fields and not call saveDraft', async () => {

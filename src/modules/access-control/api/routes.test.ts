@@ -1,11 +1,15 @@
 import { test, describe } from 'node:test';
 import { strict as assert } from 'node:assert/strict';
 import { createTestableServer } from '../../../app/server.js';
+import { InMemoryRoleAssignmentRepository } from '../infrastructure/in-memory-role-assignment-repository.js';
+import { InMemoryRoleRepository } from '../infrastructure/in-memory-role-repository.js';
+import { InMemoryMemberOrganizationRepository } from '../../membership/infrastructure/in-memory-member-organization-repository.js';
+import type { MemberOrganization } from '../../membership/domain/member-organization.js';
 
 describe('POST /api/v1/roles', () => {
   test('should create a role successfully', async () => {
     const server = createTestableServer();
-    
+
     const rolePayload = {
       roleCode: 'admin',
       displayName: 'Administrator',
@@ -28,10 +32,10 @@ describe('POST /api/v1/roles', () => {
     assert.strictEqual(response.statusCode, 201);
     const responseBody = response.json();
     assert.ok(responseBody.data);
-    
+
     // Assert that the id is present and is a string
     assert.ok(typeof responseBody.data.id === 'string');
-    
+
     assert.strictEqual(responseBody.data.roleCode, rolePayload.roleCode);
     assert.strictEqual(responseBody.data.displayName, rolePayload.displayName);
     assert.strictEqual(responseBody.data.scope, rolePayload.scope);
@@ -43,7 +47,7 @@ describe('POST /api/v1/roles', () => {
 
   test('should return conflict when creating duplicate role', async () => {
     const server = createTestableServer();
-    
+
     const rolePayload = {
       roleCode: 'viewer',
       displayName: 'Viewer',
@@ -83,7 +87,7 @@ describe('POST /api/v1/roles', () => {
 
   test('should return 400 when required fields are missing', async () => {
     const server = createTestableServer();
-    
+
     // Test with completely empty payload
     const response = await server.inject({
       method: 'POST',
@@ -99,7 +103,7 @@ describe('POST /api/v1/roles', () => {
 
   test('should return 400 when scope is invalid', async () => {
     const server = createTestableServer();
-    
+
     const invalidScopePayload = {
       roleCode: 'admin',
       displayName: 'Administrator',
@@ -123,7 +127,7 @@ describe('POST /api/v1/roles', () => {
 
   test('should return 400 when status is invalid', async () => {
     const server = createTestableServer();
-    
+
     const invalidStatusPayload = {
       roleCode: 'admin',
       displayName: 'Administrator',
@@ -147,7 +151,7 @@ describe('POST /api/v1/roles', () => {
 
   test('should handle omitted description correctly', async () => {
     const server = createTestableServer();
-    
+
     const rolePayload = {
       roleCode: 'moderator',
       displayName: 'Moderator',
@@ -170,7 +174,7 @@ describe('POST /api/v1/roles', () => {
     assert.strictEqual(response.statusCode, 201);
     const responseBody = response.json();
     assert.strictEqual(responseBody.data.description, undefined);
-    
+
     // Assert that the id is present and is a string
     assert.ok(typeof responseBody.data.id === 'string');
   });
@@ -178,7 +182,7 @@ describe('POST /api/v1/roles', () => {
   // New test: non-admin create denied
   test('should deny role creation for non-admin users', async () => {
     const server = createTestableServer();
-    
+
     const rolePayload = {
       roleCode: 'test-role',
       displayName: 'Test Role',
@@ -206,7 +210,7 @@ describe('POST /api/v1/roles', () => {
   // New test: admin create still succeeds
   test('should allow role creation for admin users', async () => {
     const server = createTestableServer();
-    
+
     const rolePayload = {
       roleCode: 'admin-test',
       displayName: 'Admin Test Role',
@@ -230,16 +234,16 @@ describe('POST /api/v1/roles', () => {
     assert.ok(responseBody.data);
     assert.strictEqual(responseBody.data.roleCode, rolePayload.roleCode);
   });
-  
+
   // New audit test: successful create emits audit
   test('should emit audit event on successful role creation', async () => {
     let auditEvents: any[] = [];
     const auditCallback = (event: any) => {
       auditEvents.push(event);
     };
-    
+
     const server = createTestableServer({ roleAudit: auditCallback });
-    
+
     const rolePayload = {
       roleCode: 'audit-test',
       displayName: 'Audit Test Role',
@@ -261,7 +265,7 @@ describe('POST /api/v1/roles', () => {
 
     assert.strictEqual(response.statusCode, 201);
     assert.strictEqual(auditEvents.length, 1);
-    
+
     const auditEvent = auditEvents[0];
     assert.strictEqual(auditEvent.action, 'createRole');
     assert.strictEqual(auditEvent.targetType, 'role');
@@ -271,16 +275,16 @@ describe('POST /api/v1/roles', () => {
     assert.ok(typeof auditEvent.requestId === 'string');
     assert.ok(typeof auditEvent.timestamp === 'string');
   });
-  
+
   // New audit test: duplicate create emits conflict audit
   test('should emit audit event on duplicate role creation attempt', async () => {
     let auditEvents: any[] = [];
     const auditCallback = (event: any) => {
       auditEvents.push(event);
     };
-    
+
     const server = createTestableServer({ roleAudit: auditCallback });
-    
+
     const rolePayload = {
       roleCode: 'duplicate-test',
       displayName: 'Duplicate Test Role',
@@ -316,7 +320,7 @@ describe('POST /api/v1/roles', () => {
     // Filter to just the conflict audit events
     const conflictAudits = auditEvents.filter(e => e.outcome === 'conflict');
     assert.strictEqual(conflictAudits.length, 1);
-    
+
     const auditEvent = conflictAudits[0];
     assert.strictEqual(auditEvent.action, 'createRole');
     assert.strictEqual(auditEvent.targetType, 'role');
@@ -326,16 +330,16 @@ describe('POST /api/v1/roles', () => {
     assert.ok(typeof auditEvent.requestId === 'string');
     assert.ok(typeof auditEvent.timestamp === 'string');
   });
-  
+
   // New audit test: forbidden create does not emit audit
   test('should not emit audit event on forbidden role creation', async () => {
     let auditEvents: any[] = [];
     const auditCallback = (event: any) => {
       auditEvents.push(event);
     };
-    
+
     const server = createTestableServer({ roleAudit: auditCallback });
-    
+
     const rolePayload = {
       roleCode: 'forbidden-test',
       displayName: 'Forbidden Test Role',
@@ -357,16 +361,16 @@ describe('POST /api/v1/roles', () => {
     assert.strictEqual(response.statusCode, 403);
     assert.strictEqual(auditEvents.length, 0);
   });
-  
+
   // New test: invalid POST status does not emit audit
   test('should not emit audit event on invalid role creation with bad status', async () => {
     let auditEvents: any[] = [];
     const auditCallback = (event: any) => {
       auditEvents.push(event);
     };
-    
+
     const server = createTestableServer({ roleAudit: auditCallback });
-    
+
     const rolePayload = {
       roleCode: 'audit-test',
       displayName: 'Audit Test Role',
@@ -388,16 +392,16 @@ describe('POST /api/v1/roles', () => {
     assert.strictEqual(response.statusCode, 400);
     assert.strictEqual(auditEvents.length, 0);
   });
-  
+
   // New test: invalid POST scope does not emit audit
   test('should not emit audit event on invalid role creation with bad scope', async () => {
     let auditEvents: any[] = [];
     const auditCallback = (event: any) => {
       auditEvents.push(event);
     };
-    
+
     const server = createTestableServer({ roleAudit: auditCallback });
-    
+
     const rolePayload = {
       roleCode: 'audit-test',
       displayName: 'Audit Test Role',
@@ -424,7 +428,7 @@ describe('POST /api/v1/roles', () => {
 describe('PATCH /api/v1/roles/{roleId}', () => {
   test('should update a role successfully', async () => {
     const server = createTestableServer();
-    
+
     // First create a role
     const createResponse = await server.inject({
       method: 'POST',
@@ -462,15 +466,15 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
 
     assert.strictEqual(updateResponse.statusCode, 200);
     const updatedRole = updateResponse.json().data;
-    
+
     // Check that the ID remains the same
     assert.strictEqual(updatedRole.id, roleId);
-    
+
     // Check that mutable fields were updated
     assert.strictEqual(updatedRole.displayName, 'Senior Tester');
     assert.deepStrictEqual(updatedRole.permissions, ['read', 'write']);
     assert.strictEqual(updatedRole.status, 'inactive');
-    
+
     // Check that immutable fields remained unchanged
     assert.strictEqual(updatedRole.roleCode, 'tester');
     assert.strictEqual(updatedRole.scope, 'organization');
@@ -479,7 +483,7 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
 
   test('should return 404 when trying to update a non-existent role', async () => {
     const server = createTestableServer();
-    
+
     // First create a role as admin
     const createResponse = await server.inject({
       method: 'POST',
@@ -520,7 +524,7 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
 
   test('should return 400 when trying to update with immutable fields', async () => {
     const server = createTestableServer();
-    
+
     // First create a role
     const createResponse = await server.inject({
       method: 'POST',
@@ -559,7 +563,7 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
 
   test('should return 400 when trying to update with invalid status', async () => {
     const server = createTestableServer();
-    
+
     // First create a role
     const createResponse = await server.inject({
       method: 'POST',
@@ -598,7 +602,7 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
 
   test('should return 400 when trying to update with empty body', async () => {
     const server = createTestableServer();
-    
+
     // First create a role
     const createResponse = await server.inject({
       method: 'POST',
@@ -636,7 +640,7 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
   // New test: non-admin update denied
   test('should deny role update for non-admin users', async () => {
     const server = createTestableServer();
-    
+
     // First create a role as admin
     const createResponse = await server.inject({
       method: 'POST',
@@ -679,7 +683,7 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
   // New test: admin update still succeeds
   test('should allow role update for admin users', async () => {
     const server = createTestableServer();
-    
+
     // First create a role as admin
     const createResponse = await server.inject({
       method: 'POST',
@@ -718,16 +722,16 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
     assert.ok(responseBody.data);
     assert.strictEqual(responseBody.data.displayName, 'Updated by admin');
   });
-  
+
   // New audit test: successful update emits audit
   test('should emit audit event on successful role update', async () => {
     let auditEvents: any[] = [];
     const auditCallback = (event: any) => {
       auditEvents.push(event);
     };
-    
+
     const server = createTestableServer({ roleAudit: auditCallback });
-    
+
     // First create a role
     const createResponse = await server.inject({
       method: 'POST',
@@ -763,11 +767,11 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
     });
 
     assert.strictEqual(updateResponse.statusCode, 200);
-    
+
     // Filter to just the update audit events
     const updateAudits = auditEvents.filter(e => e.action === 'updateRole');
     assert.strictEqual(updateAudits.length, 1);
-    
+
     const auditEvent = updateAudits[0];
     assert.strictEqual(auditEvent.action, 'updateRole');
     assert.strictEqual(auditEvent.targetType, 'role');
@@ -777,16 +781,16 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
     assert.ok(typeof auditEvent.requestId === 'string');
     assert.ok(typeof auditEvent.timestamp === 'string');
   });
-  
+
   // New audit test: notFound update emits audit
   test('should emit audit event when updating non-existent role', async () => {
     let auditEvents: any[] = [];
     const auditCallback = (event: any) => {
       auditEvents.push(event);
     };
-    
+
     const server = createTestableServer({ roleAudit: auditCallback });
-    
+
     const response = await server.inject({
       method: 'PATCH',
       url: '/api/v1/roles/non-existent-id',
@@ -800,11 +804,11 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
     });
 
     assert.strictEqual(response.statusCode, 404);
-    
+
     // Filter to just the update audit events with notFound outcome
     const notFoundAudits = auditEvents.filter(e => e.action === 'updateRole' && e.outcome === 'notFound');
     assert.strictEqual(notFoundAudits.length, 1);
-    
+
     const auditEvent = notFoundAudits[0];
     assert.strictEqual(auditEvent.action, 'updateRole');
     assert.strictEqual(auditEvent.targetType, 'role');
@@ -814,16 +818,16 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
     assert.ok(typeof auditEvent.requestId === 'string');
     assert.ok(typeof auditEvent.timestamp === 'string');
   });
-  
+
   // New audit test: forbidden update does not emit audit
   test('should not emit audit event on forbidden role update', async () => {
     let auditEvents: any[] = [];
     const auditCallback = (event: any) => {
       auditEvents.push(event);
     };
-    
+
     const server = createTestableServer({ roleAudit: auditCallback });
-    
+
     // First create a role as admin
     const createResponse = await server.inject({
       method: 'POST',
@@ -858,21 +862,21 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
     });
 
     assert.strictEqual(updateResponse.statusCode, 403);
-    
+
     // Filter to just the update audit events
     const updateAudits = auditEvents.filter(e => e.action === 'updateRole');
     assert.strictEqual(updateAudits.length, 0);
   });
-  
+
   // New audit test: invalid PATCH status does not emit update audit
   test('should not emit audit event on invalid role update with bad status', async () => {
     let auditEvents: any[] = [];
     const auditCallback = (event: any) => {
       auditEvents.push(event);
     };
-    
+
     const server = createTestableServer({ roleAudit: auditCallback });
-    
+
     // First create a role
     const createResponse = await server.inject({
       method: 'POST',
@@ -907,21 +911,21 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
     });
 
     assert.strictEqual(response.statusCode, 400);
-    
+
     // Filter to just the update audit events
     const updateAudits = auditEvents.filter(e => e.action === 'updateRole');
     assert.strictEqual(updateAudits.length, 0);
   });
-  
+
   // New audit test: empty PATCH body does not emit update audit
   test('should not emit audit event on invalid role update with empty body', async () => {
     let auditEvents: any[] = [];
     const auditCallback = (event: any) => {
       auditEvents.push(event);
     };
-    
+
     const server = createTestableServer({ roleAudit: auditCallback });
-    
+
     // First create a role
     const createResponse = await server.inject({
       method: 'POST',
@@ -954,7 +958,7 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
     });
 
     assert.strictEqual(response.statusCode, 400);
-    
+
     // Filter to just the update audit events
     const updateAudits = auditEvents.filter(e => e.action === 'updateRole');
     assert.strictEqual(updateAudits.length, 0);
@@ -1063,5 +1067,322 @@ describe('GET /api/v1/roles', () => {
     assert.ok(typeof responseBody === 'object');
     assert.ok('data' in responseBody);
     assert.ok(Array.isArray(responseBody.data));
+  });
+});
+
+describe('POST /api/v1/role-assignments', () => {
+  test('should create a role assignment successfully', async () => {
+    const server = createTestableServer();
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: roleId
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(response.statusCode, 201);
+    const responseBody = response.json();
+    assert.ok(responseBody.data);
+
+    // Assert that the response contains the correct data
+    assert.strictEqual(responseBody.data.userId, assignmentPayload.userId);
+    assert.strictEqual(responseBody.data.organizationId, assignmentPayload.organizationId);
+    assert.strictEqual(responseBody.data.roleId, assignmentPayload.roleId);
+    assert.strictEqual(responseBody.data.status, 'active');
+  });
+
+  test('should return conflict when creating duplicate active role assignment', async () => {
+    const server = createTestableServer();
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: roleId
+    };
+
+    // First request
+    const firstResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(firstResponse.statusCode, 201);
+
+    // Second request with same userId, organizationId, and roleId
+    const secondResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(secondResponse.statusCode, 409);
+    const responseBody = secondResponse.json();
+    assert.strictEqual(responseBody.error.code, 'CONFLICT');
+    assert.strictEqual(responseBody.error.message, 'Role assignment already exists');
+  });
+
+  test('should return 400 when required fields are missing', async () => {
+    const server = createTestableServer();
+
+    // Test with missing userId
+    const response1 = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: {
+        organizationId: 'org_456',
+        roleId: 'role_789'
+      }
+    });
+
+    assert.strictEqual(response1.statusCode, 400);
+
+    // Test with missing organizationId
+    const response2 = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: {
+        userId: 'user_123',
+        roleId: 'role_789'
+      }
+    });
+
+    assert.strictEqual(response2.statusCode, 400);
+
+    // Test with missing roleId
+    const response3 = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: {
+        userId: 'user_123',
+        organizationId: 'org_456'
+      }
+    });
+
+    assert.strictEqual(response3.statusCode, 400);
+
+    // Test with completely empty payload
+    const response4 = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: {}
+    });
+
+    assert.strictEqual(response4.statusCode, 400);
+  });
+
+  test('should allow new assignment when previous assignment was revoked', async () => {
+    const assignmentRepository = new InMemoryRoleAssignmentRepository();
+    const roleRepository = new InMemoryRoleRepository();
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    const server = createTestableServer({
+      roleRepository,
+      roleAssignmentRepository: assignmentRepository,
+      memberRepository: memberOrganizationRepository
+    });
+
+    // create role through the same server
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    const organization: MemberOrganization = {
+      registrationNumber: 'REG123',
+      legalName: 'Test Organization',
+      organizationType: 'Corporation',
+      status: 'pendingReview'
+    };
+
+    const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
+
+    await assignmentRepository.save({
+      userId: 'user_123',
+      organizationId: persistedOrganization.id,
+      roleId,
+      status: 'revoked'
+    });
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: {
+        userId: 'user_123',
+        organizationId: persistedOrganization.id,
+        roleId
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 201);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.data.userId, 'user_123');
+    assert.strictEqual(responseBody.data.organizationId, persistedOrganization.id);
+    assert.strictEqual(responseBody.data.roleId, roleId);
+    assert.strictEqual(responseBody.data.status, 'active');
+  });
+
+  test('should return 400 when role does not exist', async () => {
+    const server = createTestableServer();
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: 'non-existent-role-id'
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(response.statusCode, 400);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
+    assert.strictEqual(responseBody.error.message, 'Invalid roleId: Role does not exist');
+  });
+
+  test('should return 400 when organization does not exist', async () => {
+    const server = createTestableServer();
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: 'non-existent-org-id',
+      roleId: roleId
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(response.statusCode, 400);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
+    assert.strictEqual(responseBody.error.message, 'Invalid organizationId: Member organization does not exist');
   });
 });
