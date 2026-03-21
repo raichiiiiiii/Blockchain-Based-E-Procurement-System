@@ -36,4 +36,22 @@ export class InMemoryRoleRepository implements RoleRepository {
     }
     return null;
   }
+
+  async update(role: PersistedRole): Promise<PersistedRole | null> {
+    // Find the existing role by id
+    const existingRole = await this.findById(role.id);
+    
+    // If role doesn't exist, return null
+    if (!existingRole) {
+      return null;
+    }
+    
+    // Preserve the identity key mapping
+    const key = this.getKey(existingRole.roleCode, existingRole.scope);
+    
+    // Update the role in the map while preserving the id
+    this.roles.set(key, role);
+    
+    return role;
+  }
 }

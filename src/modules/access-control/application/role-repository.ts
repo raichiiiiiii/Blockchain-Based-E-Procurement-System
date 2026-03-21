@@ -7,4 +7,5 @@ export interface RoleRepository {
   findByRoleCode(roleCode: string, scope: RoleScope): Promise<PersistedRole | null>;
   findAll(): Promise<PersistedRole[]>;
   findById(id: string): Promise<PersistedRole | null>;
+  update(role: PersistedRole): Promise<PersistedRole | null>;
 }
