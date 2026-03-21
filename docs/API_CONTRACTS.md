@@ -439,6 +439,27 @@ The source of truth for `userId` is not confirmed.
 [FLAG-ASSIGNMENT-MULTIPLICITY]
 General many-to-many assignment is the current working assumption, but internal-vs-member dual-role constraints are not yet frozen.
 
+### 7.3 Assignment contract baseline
+
+This section documents the minimal assignment contract baseline needed to support safe implementation of role assignment features. It serves as a prerequisite for PBI-050 and subsequent assignment work.
+
+#### Concept
+A role assignment depends on:
+- a user reference
+- an organization reference
+- a role reference
+
+#### Operational states
+- only `active` assignments are operational
+- `revoked` assignments remain historical / visible for auditability
+
+#### Provisional assumptions
+- user identity semantics are still provisional
+- assignment multiplicity policy is still unresolved
+- assignment implementation must not assume a final multiplicity rule until the flag is resolved
+
+This baseline exists to support safe future assignment implementation, not to finalize the full assignment feature contract yet.
+
 ## 8. Deactivation and protected-access contracts
 
 ### 8.1 Protected action failure

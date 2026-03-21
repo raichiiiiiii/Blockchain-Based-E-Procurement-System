@@ -89,26 +89,28 @@ Whether there are system-reserved roles and the exact role inventory are not yet
 
 ## 6. Role assignment state model
 
+### concept
+A role assignment links:
+- a user reference
+- an organization reference
+- a role reference
+
 ### states
 - `active`
 - `revoked`
-- `expired`
 
 ### rules
-- assignment requires valid user, valid organization context, and active role
-- duplicate active assignment of the same role to the same user in the same organization is not allowed
-- revoked assignments remain auditable
-- expired assignments are read-only historical records
-
-### provisional multiplicity assumption
-- one user may hold multiple distinct active roles in one organization
-- one user may hold roles across multiple organizations
+- revoked assignments remain historically visible
+- an assignment is only meaningful when it references:
+  - a user reference
+  - an organization
+  - a role
 
 [FLAG-USER-IDENTITY]
-Assignment validity cannot be finalized until the user identity baseline is frozen.
+User identity semantics are not yet fully frozen. Assignment implementation must not assume a final user identity model.
 
 [FLAG-ASSIGNMENT-MULTIPLICITY]
-Internal-vs-member dual-role restrictions and separation-of-duties rules are not yet frozen.
+Assignment multiplicity policy is not yet fully frozen. Assignment implementation must not assume a final multiplicity policy until this flag is resolved.
 
 ## 7. Review request workflow state model
 
