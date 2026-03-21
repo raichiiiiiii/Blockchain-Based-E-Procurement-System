@@ -656,6 +656,200 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
     assert.ok(responseBody.data);
     assert.strictEqual(responseBody.data.displayName, 'Updated by admin');
   });
+  
+  // New audit test: successful update emits audit
+  test('should emit audit event on successful role update', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    // First create a role
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'audit-update-test',
+        displayName: 'Audit Update Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Now update the role
+    const updateResponse = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        displayName: 'Updated Name'
+      },
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-user-789'
+      }
+    });
+
+    assert.strictEqual(updateResponse.statusCode, 200);
+    
+    // Filter to just the update audit events
+    const updateAudits = auditEvents.filter(e => e.action === 'updateRole');
+    assert.strictEqual(updateAudits.length, 1);
+    
+    const auditEvent = updateAudits[0];
+    assert.strictEqual(auditEvent.action, 'updateRole');
+    assert.strictEqual(auditEvent.targetType, 'role');
+    assert.strictEqual(auditEvent.outcome, 'success');
+    assert.strictEqual(auditEvent.actorId, 'test-user-789');
+    assert.strictEqual(auditEvent.targetId, roleId);
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+  
+  // New audit test: notFound update emits audit
+  test('should emit audit event when updating non-existent role', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    const response = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/roles/non-existent-id',
+      payload: {
+        displayName: 'Updated Name'
+      },
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-user-999'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 404);
+    
+    // Filter to just the update audit events with notFound outcome
+    const notFoundAudits = auditEvents.filter(e => e.action === 'updateRole' && e.outcome === 'notFound');
+    assert.strictEqual(notFoundAudits.length, 1);
+    
+    const auditEvent = notFoundAudits[0];
+    assert.strictEqual(auditEvent.action, 'updateRole');
+    assert.strictEqual(auditEvent.targetType, 'role');
+    assert.strictEqual(auditEvent.outcome, 'notFound');
+    assert.strictEqual(auditEvent.actorId, 'test-user-999');
+    assert.strictEqual(auditEvent.targetId, 'non-existent-id');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+  
+  // New audit test: forbidden update does not emit audit
+  test('should not emit audit event on forbidden role update', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    // First create a role as admin
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'forbidden-update-test',
+        displayName: 'Forbidden Update Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Try to update the role as non-admin
+    const updateResponse = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        displayName: 'Updated by non-admin'
+      },
+      headers: {
+        'x-actor-role': 'user' // Non-admin role
+      }
+    });
+
+    assert.strictEqual(updateResponse.statusCode, 403);
+    
+    // Filter to just the update audit events
+    const updateAudits = auditEvents.filter(e => e.action === 'updateRole');
+    assert.strictEqual(updateAudits.length, 0);
+  });
+  
+  // New audit test: invalid update does not emit audit
+  test('should not emit audit event on invalid role update', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    // First create a role as admin
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'invalid-update-test',
+        displayName: 'Invalid Update Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Try to update with invalid status
+    const response = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        status: 'invalid-status'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 400);
+    
+    // Filter to just the update audit events
+    const updateAudits = auditEvents.filter(e => e.action === 'updateRole');
+    assert.strictEqual(updateAudits.length, 0);
+  });
 });
 
 describe('GET /api/v1/roles', () => {
