@@ -1,24 +1,39 @@
 import type { RoleRepository } from '../application/role-repository.js';
 import type { Role, RoleScope } from '../domain/role.js';
+import type { PersistedRole } from '../application/role-repository.js';
 
 export class InMemoryRoleRepository implements RoleRepository {
-  private readonly roles = new Map<string, Role>();
+  private readonly roles = new Map<string, PersistedRole>();
 
   private getKey(roleCode: string, scope: RoleScope): string {
     return `${roleCode}:${scope}`;
   }
 
-  async save(role: Role): Promise<void> {
+  async save(role: Role): Promise<PersistedRole> {
     const key = this.getKey(role.roleCode, role.scope);
-    this.roles.set(key, role);
+    const persistedRole: PersistedRole = {
+      ...role,
+      id: `role_${Math.random().toString(36).substring(2, 15)}`
+    };
+    this.roles.set(key, persistedRole);
+    return persistedRole;
   }
 
-  async findByRoleCode(roleCode: string, scope: RoleScope): Promise<Role | null> {
+  async findByRoleCode(roleCode: string, scope: RoleScope): Promise<PersistedRole | null> {
     const key = this.getKey(roleCode, scope);
     return this.roles.get(key) ?? null;
   }
 
-  async findAll(): Promise<Role[]> {
+  async findAll(): Promise<PersistedRole[]> {
     return Array.from(this.roles.values());
+  }
+
+  async findById(id: string): Promise<PersistedRole | null> {
+    for (const role of this.roles.values()) {
+      if (role.id === id) {
+        return role;
+      }
+    }
+    return null;
   }
 }
