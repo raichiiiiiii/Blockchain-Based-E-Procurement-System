@@ -3,6 +3,9 @@ import { createRole } from '../application/create-role.js';
 import { updateRole } from '../application/update-role.js';
 import type { RoleRepository } from '../application/role-repository.js';
 import type { Role } from '../domain/role.js';
+import { createRoleAssignment } from '../application/create-role-assignment.js';
+import type { RoleAssignmentRepository } from '../application/role-assignment-repository.js';
+import type { RoleAssignment } from '../domain/role-assignment.js';
 
 // Define the audit event interface for role creation
 export interface RoleCreateAuditEvent {
@@ -32,12 +35,13 @@ export type RoleAuditEvent = RoleCreateAuditEvent | RoleUpdateAuditEvent;
 // Define plugin options interface
 interface AccessControlRoutesOptions {
   repository: RoleRepository;
+  assignmentRepository: RoleAssignmentRepository;
   audit: (event: RoleAuditEvent) => void;
 }
 
 // Create the Fastify plugin for access-control routes
 const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions> = async (fastify, options) => {
-  const { repository, audit } = options;
+  const { repository, assignmentRepository, audit } = options;
 
   // POST /api/v1/roles - Create a new role
   fastify.post<{ Body: Role }>(
@@ -260,6 +264,50 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       return reply.code(200).send({
         data: roles
       });
+    }
+  );
+
+  // POST /api/v1/role-assignments - Create a new role assignment
+  fastify.post<{ Body: { userId: string; organizationId: string; roleId: string } }>(
+    '/role-assignments',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['userId', 'organizationId', 'roleId'],
+          properties: {
+            userId: { type: 'string' },
+            organizationId: { type: 'string' },
+            roleId: { type: 'string' }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      // Construct a RoleAssignment with status 'active'
+      const assignment: RoleAssignment = {
+        userId: request.body.userId,
+        organizationId: request.body.organizationId,
+        roleId: request.body.roleId,
+        status: 'active'
+      };
+
+      // Call the application service
+      const result = await createRoleAssignment(assignment, assignmentRepository);
+
+      // Map result to HTTP responses
+      if (result.status === 'created') {
+        return reply.code(201).send({
+          data: result.assignment
+        });
+      } else if (result.status === 'duplicate') {
+        return reply.code(409).send({
+          error: {
+            code: 'CONFLICT',
+            message: 'Role assignment already exists'
+          }
+        });
+      }
     }
   );
 };

@@ -1,6 +1,7 @@
 import { test, describe } from 'node:test';
 import { strict as assert } from 'node:assert/strict';
 import { createTestableServer } from '../../../app/server.js';
+import { InMemoryRoleAssignmentRepository } from '../infrastructure/in-memory-role-assignment-repository.js';
 
 describe('POST /api/v1/roles', () => {
   test('should create a role successfully', async () => {
@@ -1063,5 +1064,150 @@ describe('GET /api/v1/roles', () => {
     assert.ok(typeof responseBody === 'object');
     assert.ok('data' in responseBody);
     assert.ok(Array.isArray(responseBody.data));
+  });
+});
+
+describe('POST /api/v1/role-assignments', () => {
+  test('should create a role assignment successfully', async () => {
+    const server = createTestableServer();
+
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: 'org_456',
+      roleId: 'role_789'
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(response.statusCode, 201);
+    const responseBody = response.json();
+    assert.ok(responseBody.data);
+    
+    // Assert that the response contains the correct data
+    assert.strictEqual(responseBody.data.userId, assignmentPayload.userId);
+    assert.strictEqual(responseBody.data.organizationId, assignmentPayload.organizationId);
+    assert.strictEqual(responseBody.data.roleId, assignmentPayload.roleId);
+    assert.strictEqual(responseBody.data.status, 'active');
+  });
+
+  test('should return conflict when creating duplicate active role assignment', async () => {
+    const server = createTestableServer();
+
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: 'org_456',
+      roleId: 'role_789'
+    };
+
+    // First request
+    const firstResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(firstResponse.statusCode, 201);
+
+    // Second request with same userId, organizationId, and roleId
+    const secondResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(secondResponse.statusCode, 409);
+    const responseBody = secondResponse.json();
+    assert.strictEqual(responseBody.error.code, 'CONFLICT');
+    assert.strictEqual(responseBody.error.message, 'Role assignment already exists');
+  });
+
+  test('should return 400 when required fields are missing', async () => {
+    const server = createTestableServer();
+    
+    // Test with missing userId
+    const response1 = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: {
+        organizationId: 'org_456',
+        roleId: 'role_789'
+      }
+    });
+
+    assert.strictEqual(response1.statusCode, 400);
+    
+    // Test with missing organizationId
+    const response2 = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: {
+        userId: 'user_123',
+        roleId: 'role_789'
+      }
+    });
+
+    assert.strictEqual(response2.statusCode, 400);
+    
+    // Test with missing roleId
+    const response3 = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: {
+        userId: 'user_123',
+        organizationId: 'org_456'
+      }
+    });
+
+    assert.strictEqual(response3.statusCode, 400);
+    
+    // Test with completely empty payload
+    const response4 = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: {}
+    });
+
+    assert.strictEqual(response4.statusCode, 400);
+  });
+
+  test('should allow new assignment when previous assignment was revoked', async () => {
+    // Create a server with a pre-seeded repository containing a revoked assignment
+    const assignmentRepository = new InMemoryRoleAssignmentRepository();
+    
+    // Manually seed a revoked assignment
+    await assignmentRepository.save({
+      userId: 'user_123',
+      organizationId: 'org_456',
+      roleId: 'role_789',
+      status: 'revoked'
+    });
+    
+    const server = createTestableServer({
+      roleAssignmentRepository: assignmentRepository
+    });
+
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: 'org_456',
+      roleId: 'role_789'
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(response.statusCode, 201);
+    const responseBody = response.json();
+    assert.ok(responseBody.data);
+    assert.strictEqual(responseBody.data.userId, assignmentPayload.userId);
+    assert.strictEqual(responseBody.data.organizationId, assignmentPayload.organizationId);
+    assert.strictEqual(responseBody.data.roleId, assignmentPayload.roleId);
+    assert.strictEqual(responseBody.data.status, 'active');
   });
 });

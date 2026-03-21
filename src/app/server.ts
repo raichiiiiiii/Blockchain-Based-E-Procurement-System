@@ -8,6 +8,8 @@ import { registerAccessControlRoutes } from '../modules/access-control/api/route
 import { InMemoryRoleRepository } from '../modules/access-control/infrastructure/in-memory-role-repository.js';
 import type { RoleRepository } from '../modules/access-control/application/role-repository.js';
 import type { RoleAuditEvent } from '../modules/access-control/api/routes.js';
+import { InMemoryRoleAssignmentRepository } from '../modules/access-control/infrastructure/in-memory-role-assignment-repository.js';
+import type { RoleAssignmentRepository } from '../modules/access-control/application/role-assignment-repository.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -15,12 +17,14 @@ export function createTestableServer(options?: {
   memberRepository?: MemberOrganizationRepository;
   roleRepository?: RoleRepository;
   roleAudit?: (event: RoleAuditEvent) => void;
+  roleAssignmentRepository?: RoleAssignmentRepository;
 }) {
   const server = fastify();
   
   // Use provided dependencies or defaults
   const memberOrganizationRepository = options?.memberRepository ?? new InMemoryMemberOrganizationRepository();
   const roleRepository = options?.roleRepository ?? new InMemoryRoleRepository();
+  const roleAssignmentRepository = options?.roleAssignmentRepository ?? new InMemoryRoleAssignmentRepository();
   const auditCallback = options?.audit ?? ((event: MemberOrgCreateAuditEvent) => {
     console.info('AUDIT EVENT:', JSON.stringify(event));
   });
@@ -39,6 +43,7 @@ export function createTestableServer(options?: {
   server.register(registerAccessControlRoutes, {
     prefix: '/api/v1',
     repository: roleRepository,
+    assignmentRepository: roleAssignmentRepository,
     audit: roleAuditCallback
   });
 
