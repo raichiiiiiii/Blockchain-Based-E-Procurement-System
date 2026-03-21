@@ -16,4 +16,9 @@ export class InMemoryMemberOrganizationRepository implements MemberOrganizationR
     this.drafts.push(persistedDraft);
     return persistedDraft;
   }
+
+  async findById(id: string): Promise<PersistedMemberOrganizationDraft | null> {
+    const draft = this.drafts.find(draft => draft.id === id);
+    return draft || null;
+  }
 }
