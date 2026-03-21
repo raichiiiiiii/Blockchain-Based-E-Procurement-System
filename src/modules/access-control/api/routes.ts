@@ -293,7 +293,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       };
 
       // Call the application service
-      const result = await createRoleAssignment(assignment, assignmentRepository);
+      const result = await createRoleAssignment(assignment, assignmentRepository, repository);
 
       // Map result to HTTP responses
       if (result.status === 'created') {
@@ -305,6 +305,13 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           error: {
             code: 'CONFLICT',
             message: 'Role assignment already exists'
+          }
+        });
+      } else if (result.status === 'roleNotFound') {
+        return reply.code(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid roleId: Role does not exist'
           }
         });
       }

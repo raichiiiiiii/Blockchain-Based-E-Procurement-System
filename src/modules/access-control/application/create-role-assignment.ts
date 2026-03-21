@@ -1,15 +1,25 @@
 import { RoleAssignment } from '../domain/role-assignment.js';
 import type { RoleAssignmentRepository } from './role-assignment-repository.js';
+import type { RoleRepository } from './role-repository.js';
 
 export type CreateRoleAssignmentResult = 
   | { status: 'duplicate' }
-  | { status: 'created', assignment: RoleAssignment };
+  | { status: 'created', assignment: RoleAssignment }
+  | { status: 'roleNotFound' };
 
 export async function createRoleAssignment(
   assignment: RoleAssignment,
-  repository: RoleAssignmentRepository
+  assignmentRepository: RoleAssignmentRepository,
+  roleRepository: RoleRepository
 ): Promise<CreateRoleAssignmentResult> {
-  const existingAssignment = await repository.findActiveByUserOrganizationRole(
+  // First check if the role exists
+  const role = await roleRepository.findById(assignment.roleId);
+  if (!role) {
+    return { status: 'roleNotFound' };
+  }
+
+  // Then check for duplicate active assignment
+  const existingAssignment = await assignmentRepository.findActiveByUserOrganizationRole(
     assignment.userId,
     assignment.organizationId,
     assignment.roleId
@@ -19,6 +29,6 @@ export async function createRoleAssignment(
     return { status: 'duplicate' };
   }
 
-  await repository.save(assignment);
+  await assignmentRepository.save(assignment);
   return { status: 'created', assignment };
 }
