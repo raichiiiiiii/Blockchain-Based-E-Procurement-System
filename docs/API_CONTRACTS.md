@@ -211,6 +211,9 @@ The organization lifecycle used by this endpoint follows the current provisional
 
 ## 6. Role catalog contracts
 
+[FLAG-ROLE-CATALOG]
+Role catalog policy including reserved-role rules and exact permission vocabulary are not yet frozen.
+
 ### 6.1 Create role
 
 `POST /api/v1/roles`
@@ -224,11 +227,27 @@ Request:
   "scope": "organization",
   "description": "string",
   "permissions": ["string"],
-  "status": "active"
+  "status": "active",
+  "isSystemReserved": false
 }
 ```
 
-Response:
+Required fields:
+- `roleCode`
+- `displayName`
+- `scope`
+- `permissions`
+- `status`
+- `isSystemReserved`
+
+Allowed scope values:
+- `organization`
+
+Allowed status values:
+- `active`
+- `inactive`
+
+Response (success):
 
 ```json
 {
@@ -245,19 +264,22 @@ Response:
 }
 ```
 
-Rules:
-- `roleCode` must be unique
-- only active roles may be newly assigned
-- inactive roles remain historically visible
+Authorization:
+- Requires admin privileges
+- Non-admin requests receive `403 FORBIDDEN`
 
-Provisional Sprint 1 assumptions:
-- `scope` is provisionally limited to `organization` for Sprint 1
-- `status` values are provisionally defined as `active` and `inactive`
-- `roleCode` is provisionally assumed unique within its scope
-- `isSystemReserved` defaults to false for custom roles
+Error responses:
+- `409 CONFLICT` when attempting to create a role with a `roleCode` that already exists within the same `scope`
+- `400 VALIDATION_ERROR` when:
+  - Required fields are missing
+  - `scope` is not one of the allowed values
+  - `status` is not one of the allowed values
 
-[FLAG-ROLE-CATALOG]
-Role codes, reserved-role policy, and the exact permission inventory are not yet frozen, but the role contract shape is stable enough for Sprint 1 scaffolding.
+Audit behavior:
+- Successful creation emits a `createRole` audit event with `outcome: "success"`
+- Duplicate role creation attempts emit a `createRole` audit event with `outcome: "conflict"`
+- Forbidden attempts (non-admin) do not emit audit events
+- Invalid requests (validation failures) do not emit audit events
 
 ### 6.2 Update role
 
@@ -274,13 +296,83 @@ Request:
 }
 ```
 
-Rules:
-- `roleCode` is immutable after creation
-- `scope` is immutable after creation
-- `isSystemReserved = true` roles may be restricted from normal admin editing later
+Mutable fields:
+- `displayName`
+- `description`
+- `permissions`
+- `status`
 
-[FLAG-ROLE-CATALOG]
-Role codes, reserved-role policy, and the exact permission inventory are not yet frozen, but the role contract shape is stable enough for Sprint 1 scaffolding.
+Immutable fields (attempts to modify will result in `400 VALIDATION_ERROR`):
+- `roleCode`
+- `scope`
+- `isSystemReserved`
+
+Allowed status values:
+- `active`
+- `inactive`
+
+Response (success):
+
+```json
+{
+  "data": {
+    "id": "role_123",
+    "roleCode": "string",
+    "displayName": "string",
+    "scope": "organization",
+    "description": "string",
+    "permissions": ["string"],
+    "status": "inactive",
+    "isSystemReserved": false
+  }
+}
+```
+
+Authorization:
+- Requires admin privileges
+- Non-admin requests receive `403 FORBIDDEN`
+
+Error responses:
+- `404 NOT_FOUND` when attempting to update a role that does not exist
+- `400 VALIDATION_ERROR` when:
+  - Attempting to modify immutable fields
+  - `status` is not one of the allowed values
+  - Request body is empty
+
+Audit behavior:
+- Successful updates emit an `updateRole` audit event with `outcome: "success"`
+- Attempts to update non-existent roles emit an `updateRole` audit event with `outcome: "notFound"`
+- Forbidden attempts (non-admin) do not emit audit events
+- Invalid requests (validation failures) do not emit audit events
+
+### 6.3 List roles
+
+`GET /api/v1/roles`
+
+Response:
+
+```json
+{
+  "data": [
+    {
+      "id": "role_123",
+      "roleCode": "string",
+      "displayName": "string",
+      "scope": "organization",
+      "description": "string",
+      "permissions": ["string"],
+      "status": "active",
+      "isSystemReserved": false
+    }
+  ]
+}
+```
+
+Behavior:
+- Returns all roles in the system
+- No pagination is implemented
+- No filtering or sorting is supported
+- No admin authorization is currently enforced for this endpoint
 
 ## 7. Role assignment contracts
 
@@ -609,7 +701,7 @@ This patch assumes:
 
 1. protected endpoints already require `Authorization: Bearer <token>`
 2. authenticated runtime context can provide a stable opaque `userId`
-3. Sprint 1 does not support delegated “submit on behalf of another user” behavior as part of the public API contract
+3. Sprint 1 does not support delegated "submit on behalf of another user" behavior as part of the public API contract
 4. if delegated submission is needed later, it will be modeled explicitly with separate actor/subject semantics
 
 ## 4. Granular flaws being patched
