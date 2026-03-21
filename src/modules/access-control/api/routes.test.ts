@@ -155,6 +155,171 @@ describe('POST /api/v1/roles', () => {
   });
 });
 
+describe('PATCH /api/v1/roles/{roleId}', () => {
+  test('should update a role successfully', async () => {
+    const server = createTestableServer();
+    
+    // First create a role
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'tester',
+        displayName: 'Tester',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Now update the role
+    const updateResponse = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        displayName: 'Senior Tester',
+        permissions: ['read', 'write'],
+        status: 'inactive'
+      }
+    });
+
+    assert.strictEqual(updateResponse.statusCode, 200);
+    const updatedRole = updateResponse.json().data;
+    
+    // Check that the ID remains the same
+    assert.strictEqual(updatedRole.id, roleId);
+    
+    // Check that mutable fields were updated
+    assert.strictEqual(updatedRole.displayName, 'Senior Tester');
+    assert.deepStrictEqual(updatedRole.permissions, ['read', 'write']);
+    assert.strictEqual(updatedRole.status, 'inactive');
+    
+    // Check that immutable fields remained unchanged
+    assert.strictEqual(updatedRole.roleCode, 'tester');
+    assert.strictEqual(updatedRole.scope, 'organization');
+    assert.strictEqual(updatedRole.isSystemReserved, false);
+  });
+
+  test('should return 404 when trying to update a non-existent role', async () => {
+    const server = createTestableServer();
+    
+    const response = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/roles/non-existent-id',
+      payload: {
+        displayName: 'Updated Name'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 404);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.error.code, 'NOT_FOUND');
+    assert.strictEqual(responseBody.error.message, 'Role not found');
+  });
+
+  test('should return 400 when trying to update with immutable fields', async () => {
+    const server = createTestableServer();
+    
+    // First create a role
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'tester2',
+        displayName: 'Tester 2',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Try to update with immutable field
+    const response = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        roleCode: 'new-code' // This is immutable
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 400);
+  });
+
+  test('should return 400 when trying to update with invalid status', async () => {
+    const server = createTestableServer();
+    
+    // First create a role
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'tester3',
+        displayName: 'Tester 3',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Try to update with invalid status
+    const response = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        status: 'invalid-status'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 400);
+  });
+
+  test('should return 400 when trying to update with empty body', async () => {
+    const server = createTestableServer();
+    
+    // First create a role
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'tester4',
+        displayName: 'Tester 4',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Try to update with empty body
+    const response = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {}
+    });
+
+    assert.strictEqual(response.statusCode, 400);
+  });
+});
+
 describe('GET /api/v1/roles', () => {
   test('should return empty array when no roles exist', async () => {
     const server = createTestableServer();
