@@ -66,5 +66,4 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     }
   );
 };
-
 export { registerAccessControlRoutes };
