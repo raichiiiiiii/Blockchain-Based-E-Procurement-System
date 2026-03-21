@@ -19,7 +19,10 @@ describe('POST /api/v1/roles', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: rolePayload
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 201);
@@ -54,7 +57,10 @@ describe('POST /api/v1/roles', () => {
     const firstResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: rolePayload
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(firstResponse.statusCode, 201);
@@ -63,7 +69,10 @@ describe('POST /api/v1/roles', () => {
     const secondResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: rolePayload
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(secondResponse.statusCode, 409);
@@ -79,7 +88,10 @@ describe('POST /api/v1/roles', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: {}
+      payload: {},
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 400);
@@ -100,7 +112,10 @@ describe('POST /api/v1/roles', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: invalidScopePayload
+      payload: invalidScopePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 400);
@@ -121,7 +136,10 @@ describe('POST /api/v1/roles', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: invalidStatusPayload
+      payload: invalidStatusPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 400);
@@ -143,7 +161,10 @@ describe('POST /api/v1/roles', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: rolePayload
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 201);
@@ -152,6 +173,189 @@ describe('POST /api/v1/roles', () => {
     
     // Assert that the id is present and is a string
     assert.ok(typeof responseBody.data.id === 'string');
+  });
+
+  // New test: non-admin create denied
+  test('should deny role creation for non-admin users', async () => {
+    const server = createTestableServer();
+    
+    const rolePayload = {
+      roleCode: 'test-role',
+      displayName: 'Test Role',
+      scope: 'organization',
+      permissions: ['read'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'user' // Non-admin role
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 403);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
+    assert.strictEqual(responseBody.error.message, 'Admin access required');
+  });
+
+  // New test: admin create still succeeds
+  test('should allow role creation for admin users', async () => {
+    const server = createTestableServer();
+    
+    const rolePayload = {
+      roleCode: 'admin-test',
+      displayName: 'Admin Test Role',
+      scope: 'organization',
+      permissions: ['read', 'write'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin' // Admin role
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 201);
+    const responseBody = response.json();
+    assert.ok(responseBody.data);
+    assert.strictEqual(responseBody.data.roleCode, rolePayload.roleCode);
+  });
+  
+  // New audit test: successful create emits audit
+  test('should emit audit event on successful role creation', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    const rolePayload = {
+      roleCode: 'audit-test',
+      displayName: 'Audit Test Role',
+      scope: 'organization',
+      permissions: ['read'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-user-123'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 201);
+    assert.strictEqual(auditEvents.length, 1);
+    
+    const auditEvent = auditEvents[0];
+    assert.strictEqual(auditEvent.action, 'createRole');
+    assert.strictEqual(auditEvent.targetType, 'role');
+    assert.strictEqual(auditEvent.outcome, 'success');
+    assert.strictEqual(auditEvent.actorId, 'test-user-123');
+    assert.ok(typeof auditEvent.targetId === 'string');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+  
+  // New audit test: duplicate create emits conflict audit
+  test('should emit audit event on duplicate role creation attempt', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    const rolePayload = {
+      roleCode: 'duplicate-test',
+      displayName: 'Duplicate Test Role',
+      scope: 'organization',
+      permissions: ['read'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    // First request
+    await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-user-456'
+      }
+    });
+
+    // Second request (should conflict)
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-user-456'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 409);
+    // Filter to just the conflict audit events
+    const conflictAudits = auditEvents.filter(e => e.outcome === 'conflict');
+    assert.strictEqual(conflictAudits.length, 1);
+    
+    const auditEvent = conflictAudits[0];
+    assert.strictEqual(auditEvent.action, 'createRole');
+    assert.strictEqual(auditEvent.targetType, 'role');
+    assert.strictEqual(auditEvent.outcome, 'conflict');
+    assert.strictEqual(auditEvent.actorId, 'test-user-456');
+    assert.strictEqual(auditEvent.targetId, 'unknown');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+  
+  // New audit test: forbidden create does not emit audit
+  test('should not emit audit event on forbidden role creation', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    const rolePayload = {
+      roleCode: 'forbidden-test',
+      displayName: 'Forbidden Test Role',
+      scope: 'organization',
+      permissions: ['read'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'user' // Non-admin role
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 403);
+    assert.strictEqual(auditEvents.length, 0);
   });
 });
 
@@ -170,6 +374,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
         permissions: ['read'],
         status: 'active',
         isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -185,6 +392,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
         displayName: 'Senior Tester',
         permissions: ['read', 'write'],
         status: 'inactive'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -208,11 +418,35 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
   test('should return 404 when trying to update a non-existent role', async () => {
     const server = createTestableServer();
     
+    // First create a role as admin
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'temp-role',
+        displayName: 'Temp Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
     const response = await server.inject({
       method: 'PATCH',
       url: '/api/v1/roles/non-existent-id',
       payload: {
         displayName: 'Updated Name'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -236,6 +470,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
         permissions: ['read'],
         status: 'active',
         isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -249,6 +486,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
       url: `/api/v1/roles/${roleId}`,
       payload: {
         roleCode: 'new-code' // This is immutable
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -269,6 +509,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
         permissions: ['read'],
         status: 'active',
         isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -282,6 +525,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
       url: `/api/v1/roles/${roleId}`,
       payload: {
         status: 'invalid-status'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -302,6 +548,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
         permissions: ['read'],
         status: 'active',
         isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -313,10 +562,293 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
     const response = await server.inject({
       method: 'PATCH',
       url: `/api/v1/roles/${roleId}`,
-      payload: {}
+      payload: {},
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 400);
+  });
+
+  // New test: non-admin update denied
+  test('should deny role update for non-admin users', async () => {
+    const server = createTestableServer();
+    
+    // First create a role as admin
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role-update',
+        displayName: 'Test Role Update',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Try to update the role as non-admin
+    const updateResponse = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        displayName: 'Updated by non-admin'
+      },
+      headers: {
+        'x-actor-role': 'user' // Non-admin role
+      }
+    });
+
+    assert.strictEqual(updateResponse.statusCode, 403);
+    const responseBody = updateResponse.json();
+    assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
+    assert.strictEqual(responseBody.error.message, 'Admin access required');
+  });
+
+  // New test: admin update still succeeds
+  test('should allow role update for admin users', async () => {
+    const server = createTestableServer();
+    
+    // First create a role as admin
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'admin-test-update',
+        displayName: 'Admin Test Update',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Update the role as admin
+    const updateResponse = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        displayName: 'Updated by admin'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(updateResponse.statusCode, 200);
+    const responseBody = updateResponse.json();
+    assert.ok(responseBody.data);
+    assert.strictEqual(responseBody.data.displayName, 'Updated by admin');
+  });
+  
+  // New audit test: successful update emits audit
+  test('should emit audit event on successful role update', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    // First create a role
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'audit-update-test',
+        displayName: 'Audit Update Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Now update the role
+    const updateResponse = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        displayName: 'Updated Name'
+      },
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-user-789'
+      }
+    });
+
+    assert.strictEqual(updateResponse.statusCode, 200);
+    
+    // Filter to just the update audit events
+    const updateAudits = auditEvents.filter(e => e.action === 'updateRole');
+    assert.strictEqual(updateAudits.length, 1);
+    
+    const auditEvent = updateAudits[0];
+    assert.strictEqual(auditEvent.action, 'updateRole');
+    assert.strictEqual(auditEvent.targetType, 'role');
+    assert.strictEqual(auditEvent.outcome, 'success');
+    assert.strictEqual(auditEvent.actorId, 'test-user-789');
+    assert.strictEqual(auditEvent.targetId, roleId);
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+  
+  // New audit test: notFound update emits audit
+  test('should emit audit event when updating non-existent role', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    const response = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/roles/non-existent-id',
+      payload: {
+        displayName: 'Updated Name'
+      },
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-user-999'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 404);
+    
+    // Filter to just the update audit events with notFound outcome
+    const notFoundAudits = auditEvents.filter(e => e.action === 'updateRole' && e.outcome === 'notFound');
+    assert.strictEqual(notFoundAudits.length, 1);
+    
+    const auditEvent = notFoundAudits[0];
+    assert.strictEqual(auditEvent.action, 'updateRole');
+    assert.strictEqual(auditEvent.targetType, 'role');
+    assert.strictEqual(auditEvent.outcome, 'notFound');
+    assert.strictEqual(auditEvent.actorId, 'test-user-999');
+    assert.strictEqual(auditEvent.targetId, 'non-existent-id');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+  
+  // New audit test: forbidden update does not emit audit
+  test('should not emit audit event on forbidden role update', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    // First create a role as admin
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'forbidden-update-test',
+        displayName: 'Forbidden Update Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Try to update the role as non-admin
+    const updateResponse = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        displayName: 'Updated by non-admin'
+      },
+      headers: {
+        'x-actor-role': 'user' // Non-admin role
+      }
+    });
+
+    assert.strictEqual(updateResponse.statusCode, 403);
+    
+    // Filter to just the update audit events
+    const updateAudits = auditEvents.filter(e => e.action === 'updateRole');
+    assert.strictEqual(updateAudits.length, 0);
+  });
+  
+  // New audit test: invalid update does not emit audit
+  test('should not emit audit event on invalid role update', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    // First create a role as admin
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'invalid-update-test',
+        displayName: 'Invalid Update Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Try to update with invalid status
+    const response = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        status: 'invalid-status'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 400);
+    
+    // Filter to just the update audit events
+    const updateAudits = auditEvents.filter(e => e.action === 'updateRole');
+    assert.strictEqual(updateAudits.length, 0);
   });
 });
 
@@ -360,13 +892,19 @@ describe('GET /api/v1/roles', () => {
     await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: role1
+      payload: role1,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: role2
+      payload: role2,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     // Get all roles

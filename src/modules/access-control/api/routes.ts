@@ -4,19 +4,57 @@ import { updateRole } from '../application/update-role.js';
 import type { RoleRepository } from '../application/role-repository.js';
 import type { Role } from '../domain/role.js';
 
+// Define the audit event interface for role creation
+export interface RoleCreateAuditEvent {
+  action: 'createRole';
+  targetType: 'role';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success' | 'conflict';
+  actorId: string;
+}
+
+// Define the audit event interface for role updates
+export interface RoleUpdateAuditEvent {
+  action: 'updateRole';
+  targetType: 'role';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success' | 'notFound';
+  actorId: string;
+}
+
+// Union type for all role audit events
+export type RoleAuditEvent = RoleCreateAuditEvent | RoleUpdateAuditEvent;
+
 // Define plugin options interface
 interface AccessControlRoutesOptions {
   repository: RoleRepository;
+  audit: (event: RoleAuditEvent) => void;
 }
 
 // Create the Fastify plugin for access-control routes
 const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions> = async (fastify, options) => {
-  const { repository } = options;
+  const { repository, audit } = options;
 
   // POST /api/v1/roles - Create a new role
   fastify.post<{ Body: Role }>(
     '/roles',
     {
+      preHandler: async (request, reply) => {
+        // Check if the actor is an admin
+        const actorRole = request.headers['x-actor-role'];
+        if (actorRole !== 'admin') {
+          return reply.code(403).send({
+            error: {
+              code: 'FORBIDDEN',
+              message: 'Admin access required'
+            }
+          });
+        }
+      },
       schema: {
         body: {
           type: 'object',
@@ -40,12 +78,53 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       // Call the application service directly with the request body
       const result = await createRole(request.body, repository);
       
+      // Normalize x-actor-id header to always be a string
+      const rawActorId = request.headers['x-actor-id'];
+      let actorId: string;
+      
+      if (Array.isArray(rawActorId)) {
+        // Take the first value if it's an array
+        actorId = rawActorId[0] || 'unknown';
+      } else if (typeof rawActorId === 'string') {
+        // Use the string value
+        actorId = rawActorId;
+      } else {
+        // Default to 'unknown' for undefined/null cases
+        actorId = 'unknown';
+      }
+      
       // Map result to HTTP responses
       if (result.status === 'created') {
+        // Emit audit event for successful creation
+        const auditEvent: RoleCreateAuditEvent = {
+          action: 'createRole',
+          targetType: 'role',
+          targetId: result.role.id,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'success',
+          actorId: actorId
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(201).send({
           data: result.role
         });
       } else if (result.status === 'duplicate') {
+        // Emit audit event for conflict
+        const auditEvent: RoleCreateAuditEvent = {
+          action: 'createRole',
+          targetType: 'role',
+          targetId: 'unknown', // No persisted target exists for conflict
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'conflict',
+          actorId: actorId
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(409).send({
           error: {
             code: 'CONFLICT',
@@ -60,6 +139,18 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
   fastify.patch<{ Params: { roleId: string }; Body: Partial<Role> }>(
     '/roles/:roleId',
     {
+      preHandler: async (request, reply) => {
+        // Check if the actor is an admin
+        const actorRole = request.headers['x-actor-role'];
+        if (actorRole !== 'admin') {
+          return reply.code(403).send({
+            error: {
+              code: 'FORBIDDEN',
+              message: 'Admin access required'
+            }
+          });
+        }
+      },
       preValidation: async (request, reply) => {
         // Check for immutable fields in the request body before schema validation
         const immutableFields = ['roleCode', 'scope', 'isSystemReserved'];
@@ -104,12 +195,53 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       // Call the application service directly with the request params and body
       const result = await updateRole(request.params.roleId, request.body, repository);
       
+      // Normalize x-actor-id header to always be a string
+      const rawActorId = request.headers['x-actor-id'];
+      let actorId: string;
+      
+      if (Array.isArray(rawActorId)) {
+        // Take the first value if it's an array
+        actorId = rawActorId[0] || 'unknown';
+      } else if (typeof rawActorId === 'string') {
+        // Use the string value
+        actorId = rawActorId;
+      } else {
+        // Default to 'unknown' for undefined/null cases
+        actorId = 'unknown';
+      }
+      
       // Map result to HTTP responses
       if (result.status === 'updated') {
+        // Emit audit event for successful update
+        const auditEvent: RoleUpdateAuditEvent = {
+          action: 'updateRole',
+          targetType: 'role',
+          targetId: result.role.id,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'success',
+          actorId: actorId
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(200).send({
           data: result.role
         });
       } else if (result.status === 'notFound') {
+        // Emit audit event for not found
+        const auditEvent: RoleUpdateAuditEvent = {
+          action: 'updateRole',
+          targetType: 'role',
+          targetId: request.params.roleId,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'notFound',
+          actorId: actorId
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(404).send({
           error: {
             code: 'NOT_FOUND',
