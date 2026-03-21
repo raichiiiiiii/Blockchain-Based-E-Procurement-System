@@ -7,12 +7,14 @@ import type { MemberOrgCreateAuditEvent } from '../modules/membership/api/routes
 import { registerAccessControlRoutes } from '../modules/access-control/api/routes.js';
 import { InMemoryRoleRepository } from '../modules/access-control/infrastructure/in-memory-role-repository.js';
 import type { RoleRepository } from '../modules/access-control/application/role-repository.js';
+import type { RoleCreateAuditEvent } from '../modules/access-control/api/routes.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
   audit?: (event: MemberOrgCreateAuditEvent) => void;
   memberRepository?: MemberOrganizationRepository;
   roleRepository?: RoleRepository;
+  roleAudit?: (event: RoleCreateAuditEvent) => void;
 }) {
   const server = fastify();
   
@@ -21,6 +23,9 @@ export function createTestableServer(options?: {
   const roleRepository = options?.roleRepository ?? new InMemoryRoleRepository();
   const auditCallback = options?.audit ?? ((event: MemberOrgCreateAuditEvent) => {
     console.info('AUDIT EVENT:', JSON.stringify(event));
+  });
+  const roleAuditCallback = options?.roleAudit ?? ((event: RoleCreateAuditEvent) => {
+    console.info('ROLE AUDIT EVENT:', JSON.stringify(event));
   });
 
   // Register membership routes
@@ -33,7 +38,8 @@ export function createTestableServer(options?: {
   // Register access-control routes
   server.register(registerAccessControlRoutes, {
     prefix: '/api/v1',
-    repository: roleRepository
+    repository: roleRepository,
+    audit: roleAuditCallback
   });
 
   return server;

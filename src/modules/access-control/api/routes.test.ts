@@ -230,6 +230,133 @@ describe('POST /api/v1/roles', () => {
     assert.ok(responseBody.data);
     assert.strictEqual(responseBody.data.roleCode, rolePayload.roleCode);
   });
+  
+  // New audit test: successful create emits audit
+  test('should emit audit event on successful role creation', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    const rolePayload = {
+      roleCode: 'audit-test',
+      displayName: 'Audit Test Role',
+      scope: 'organization',
+      permissions: ['read'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-user-123'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 201);
+    assert.strictEqual(auditEvents.length, 1);
+    
+    const auditEvent = auditEvents[0];
+    assert.strictEqual(auditEvent.action, 'createRole');
+    assert.strictEqual(auditEvent.targetType, 'role');
+    assert.strictEqual(auditEvent.outcome, 'success');
+    assert.strictEqual(auditEvent.actorId, 'test-user-123');
+    assert.ok(typeof auditEvent.targetId === 'string');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+  
+  // New audit test: duplicate create emits conflict audit
+  test('should emit audit event on duplicate role creation attempt', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    const rolePayload = {
+      roleCode: 'duplicate-test',
+      displayName: 'Duplicate Test Role',
+      scope: 'organization',
+      permissions: ['read'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    // First request
+    await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-user-456'
+      }
+    });
+
+    // Second request (should conflict)
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-user-456'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 409);
+    // Filter to just the conflict audit events
+    const conflictAudits = auditEvents.filter(e => e.outcome === 'conflict');
+    assert.strictEqual(conflictAudits.length, 1);
+    
+    const auditEvent = conflictAudits[0];
+    assert.strictEqual(auditEvent.action, 'createRole');
+    assert.strictEqual(auditEvent.targetType, 'role');
+    assert.strictEqual(auditEvent.outcome, 'conflict');
+    assert.strictEqual(auditEvent.actorId, 'test-user-456');
+    assert.strictEqual(auditEvent.targetId, 'unknown');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+  
+  // New audit test: forbidden create does not emit audit
+  test('should not emit audit event on forbidden role creation', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+    
+    const server = createTestableServer({ roleAudit: auditCallback });
+    
+    const rolePayload = {
+      roleCode: 'forbidden-test',
+      displayName: 'Forbidden Test Role',
+      scope: 'organization',
+      permissions: ['read'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'user' // Non-admin role
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 403);
+    assert.strictEqual(auditEvents.length, 0);
+  });
 });
 
 describe('PATCH /api/v1/roles/{roleId}', () => {
