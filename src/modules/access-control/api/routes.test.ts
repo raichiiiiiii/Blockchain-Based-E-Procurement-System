@@ -19,7 +19,10 @@ describe('POST /api/v1/roles', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: rolePayload
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 201);
@@ -54,7 +57,10 @@ describe('POST /api/v1/roles', () => {
     const firstResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: rolePayload
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(firstResponse.statusCode, 201);
@@ -63,7 +69,10 @@ describe('POST /api/v1/roles', () => {
     const secondResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: rolePayload
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(secondResponse.statusCode, 409);
@@ -79,7 +88,10 @@ describe('POST /api/v1/roles', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: {}
+      payload: {},
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 400);
@@ -100,7 +112,10 @@ describe('POST /api/v1/roles', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: invalidScopePayload
+      payload: invalidScopePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 400);
@@ -121,7 +136,10 @@ describe('POST /api/v1/roles', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: invalidStatusPayload
+      payload: invalidStatusPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 400);
@@ -143,7 +161,10 @@ describe('POST /api/v1/roles', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: rolePayload
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 201);
@@ -152,6 +173,62 @@ describe('POST /api/v1/roles', () => {
     
     // Assert that the id is present and is a string
     assert.ok(typeof responseBody.data.id === 'string');
+  });
+
+  // New test: non-admin create denied
+  test('should deny role creation for non-admin users', async () => {
+    const server = createTestableServer();
+    
+    const rolePayload = {
+      roleCode: 'test-role',
+      displayName: 'Test Role',
+      scope: 'organization',
+      permissions: ['read'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'user' // Non-admin role
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 403);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
+    assert.strictEqual(responseBody.error.message, 'Admin access required');
+  });
+
+  // New test: admin create still succeeds
+  test('should allow role creation for admin users', async () => {
+    const server = createTestableServer();
+    
+    const rolePayload = {
+      roleCode: 'admin-test',
+      displayName: 'Admin Test Role',
+      scope: 'organization',
+      permissions: ['read', 'write'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'admin' // Admin role
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 201);
+    const responseBody = response.json();
+    assert.ok(responseBody.data);
+    assert.strictEqual(responseBody.data.roleCode, rolePayload.roleCode);
   });
 });
 
@@ -170,6 +247,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
         permissions: ['read'],
         status: 'active',
         isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -185,6 +265,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
         displayName: 'Senior Tester',
         permissions: ['read', 'write'],
         status: 'inactive'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -208,11 +291,35 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
   test('should return 404 when trying to update a non-existent role', async () => {
     const server = createTestableServer();
     
+    // First create a role as admin
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'temp-role',
+        displayName: 'Temp Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
     const response = await server.inject({
       method: 'PATCH',
       url: '/api/v1/roles/non-existent-id',
       payload: {
         displayName: 'Updated Name'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -236,6 +343,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
         permissions: ['read'],
         status: 'active',
         isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -249,6 +359,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
       url: `/api/v1/roles/${roleId}`,
       payload: {
         roleCode: 'new-code' // This is immutable
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -269,6 +382,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
         permissions: ['read'],
         status: 'active',
         isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -282,6 +398,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
       url: `/api/v1/roles/${roleId}`,
       payload: {
         status: 'invalid-status'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -302,6 +421,9 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
         permissions: ['read'],
         status: 'active',
         isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -313,10 +435,99 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
     const response = await server.inject({
       method: 'PATCH',
       url: `/api/v1/roles/${roleId}`,
-      payload: {}
+      payload: {},
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 400);
+  });
+
+  // New test: non-admin update denied
+  test('should deny role update for non-admin users', async () => {
+    const server = createTestableServer();
+    
+    // First create a role as admin
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role-update',
+        displayName: 'Test Role Update',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Try to update the role as non-admin
+    const updateResponse = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        displayName: 'Updated by non-admin'
+      },
+      headers: {
+        'x-actor-role': 'user' // Non-admin role
+      }
+    });
+
+    assert.strictEqual(updateResponse.statusCode, 403);
+    const responseBody = updateResponse.json();
+    assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
+    assert.strictEqual(responseBody.error.message, 'Admin access required');
+  });
+
+  // New test: admin update still succeeds
+  test('should allow role update for admin users', async () => {
+    const server = createTestableServer();
+    
+    // First create a role as admin
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'admin-test-update',
+        displayName: 'Admin Test Update',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Update the role as admin
+    const updateResponse = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        displayName: 'Updated by admin'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(updateResponse.statusCode, 200);
+    const responseBody = updateResponse.json();
+    assert.ok(responseBody.data);
+    assert.strictEqual(responseBody.data.displayName, 'Updated by admin');
   });
 });
 
@@ -360,13 +571,19 @@ describe('GET /api/v1/roles', () => {
     await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: role1
+      payload: role1,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
-      payload: role2
+      payload: role2,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     // Get all roles

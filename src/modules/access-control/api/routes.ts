@@ -17,6 +17,18 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
   fastify.post<{ Body: Role }>(
     '/roles',
     {
+      preHandler: async (request, reply) => {
+        // Check if the actor is an admin
+        const actorRole = request.headers['x-actor-role'];
+        if (actorRole !== 'admin') {
+          return reply.code(403).send({
+            error: {
+              code: 'FORBIDDEN',
+              message: 'Admin access required'
+            }
+          });
+        }
+      },
       schema: {
         body: {
           type: 'object',
@@ -60,6 +72,18 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
   fastify.patch<{ Params: { roleId: string }; Body: Partial<Role> }>(
     '/roles/:roleId',
     {
+      preHandler: async (request, reply) => {
+        // Check if the actor is an admin
+        const actorRole = request.headers['x-actor-role'];
+        if (actorRole !== 'admin') {
+          return reply.code(403).send({
+            error: {
+              code: 'FORBIDDEN',
+              message: 'Admin access required'
+            }
+          });
+        }
+      },
       preValidation: async (request, reply) => {
         // Check for immutable fields in the request body before schema validation
         const immutableFields = ['roleCode', 'scope', 'isSystemReserved'];
