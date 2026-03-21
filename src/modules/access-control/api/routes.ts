@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { createRole } from '../application/create-role.js';
+import { updateRole } from '../application/update-role.js';
 import type { RoleRepository } from '../application/role-repository.js';
 import type { Role } from '../domain/role.js';
 
@@ -49,6 +50,70 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           error: {
             code: 'CONFLICT',
             message: 'Role already exists'
+          }
+        });
+      }
+    }
+  );
+
+  // PATCH /api/v1/roles/{roleId} - Update an existing role
+  fastify.patch<{ Params: { roleId: string }; Body: Partial<Role> }>(
+    '/roles/:roleId',
+    {
+      preValidation: async (request, reply) => {
+        // Check for immutable fields in the request body before schema validation
+        const immutableFields = ['roleCode', 'scope', 'isSystemReserved'];
+        const requestBody = request.body as Record<string, unknown>;
+        
+        for (const field of immutableFields) {
+          if (field in requestBody) {
+            return reply.code(400).send({
+              error: {
+                code: 'VALIDATION_ERROR',
+                message: `Cannot update immutable field: ${field}`
+              }
+            });
+          }
+        }
+      },
+      schema: {
+        params: {
+          type: 'object',
+          required: ['roleId'],
+          properties: {
+            roleId: { type: 'string' }
+          }
+        },
+        body: {
+          type: 'object',
+          minProperties: 1,
+          additionalProperties: false,
+          properties: {
+            displayName: { type: 'string' },
+            description: { type: 'string' },
+            permissions: { 
+              type: 'array', 
+              items: { type: 'string' }
+            },
+            status: { type: 'string', enum: ['active', 'inactive'] }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      // Call the application service directly with the request params and body
+      const result = await updateRole(request.params.roleId, request.body, repository);
+      
+      // Map result to HTTP responses
+      if (result.status === 'updated') {
+        return reply.code(200).send({
+          data: result.role
+        });
+      } else if (result.status === 'notFound') {
+        return reply.code(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Role not found'
           }
         });
       }
