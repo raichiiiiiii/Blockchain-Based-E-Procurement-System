@@ -20,7 +20,7 @@ export function createTestableServer(options?: {
   roleAssignmentRepository?: RoleAssignmentRepository;
 }) {
   const server = fastify();
-  
+
   // Use provided dependencies or defaults
   const memberOrganizationRepository = options?.memberRepository ?? new InMemoryMemberOrganizationRepository();
   const roleRepository = options?.roleRepository ?? new InMemoryRoleRepository();
@@ -33,7 +33,7 @@ export function createTestableServer(options?: {
   });
 
   // Register membership routes
-  server.register(registerMembershipRoutes, { 
+  server.register(registerMembershipRoutes, {
     prefix: '/api/v1',
     repository: memberOrganizationRepository,
     audit: auditCallback
@@ -44,6 +44,7 @@ export function createTestableServer(options?: {
     prefix: '/api/v1',
     repository: roleRepository,
     assignmentRepository: roleAssignmentRepository,
+    memberOrganizationRepository: memberOrganizationRepository,
     audit: roleAuditCallback
   });
 

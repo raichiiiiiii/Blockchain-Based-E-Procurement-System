@@ -6,6 +6,7 @@ import type { Role } from '../domain/role.js';
 import { createRoleAssignment } from '../application/create-role-assignment.js';
 import type { RoleAssignmentRepository } from '../application/role-assignment-repository.js';
 import type { RoleAssignment } from '../domain/role-assignment.js';
+import type { MemberOrganizationRepository } from '../../membership/application/member-organization-repository.js';
 
 // Define the audit event interface for role creation
 export interface RoleCreateAuditEvent {
@@ -36,12 +37,13 @@ export type RoleAuditEvent = RoleCreateAuditEvent | RoleUpdateAuditEvent;
 interface AccessControlRoutesOptions {
   repository: RoleRepository;
   assignmentRepository: RoleAssignmentRepository;
+  memberOrganizationRepository: MemberOrganizationRepository;
   audit: (event: RoleAuditEvent) => void;
 }
 
 // Create the Fastify plugin for access-control routes
 const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions> = async (fastify, options) => {
-  const { repository, assignmentRepository, audit } = options;
+  const { repository, assignmentRepository, memberOrganizationRepository, audit } = options;
 
   // POST /api/v1/roles - Create a new role
   fastify.post<{ Body: Role }>(
@@ -293,7 +295,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       };
 
       // Call the application service
-      const result = await createRoleAssignment(assignment, assignmentRepository, repository);
+      const result = await createRoleAssignment(assignment, assignmentRepository, repository, memberOrganizationRepository);
 
       // Map result to HTTP responses
       if (result.status === 'created') {
@@ -312,6 +314,13 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           error: {
             code: 'VALIDATION_ERROR',
             message: 'Invalid roleId: Role does not exist'
+          }
+        });
+      } else if (result.status === 'organizationNotFound') {
+        return reply.code(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid organizationId: Member organization does not exist'
           }
         });
       }

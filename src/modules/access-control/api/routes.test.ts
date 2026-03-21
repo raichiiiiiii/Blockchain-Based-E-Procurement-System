@@ -3,6 +3,8 @@ import { strict as assert } from 'node:assert/strict';
 import { createTestableServer } from '../../../app/server.js';
 import { InMemoryRoleAssignmentRepository } from '../infrastructure/in-memory-role-assignment-repository.js';
 import { InMemoryRoleRepository } from '../infrastructure/in-memory-role-repository.js';
+import { InMemoryMemberOrganizationRepository } from '../../membership/infrastructure/in-memory-member-organization-repository.js';
+import type { MemberOrganization } from '../../membership/domain/member-organization.js';
 
 describe('POST /api/v1/roles', () => {
   test('should create a role successfully', async () => {
@@ -1092,9 +1094,23 @@ describe('POST /api/v1/role-assignments', () => {
     assert.strictEqual(roleResponse.statusCode, 201);
     const roleId = roleResponse.json().data.id;
 
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
     const assignmentPayload = {
       userId: 'user_123',
-      organizationId: 'org_456',
+      organizationId: orgId,
       roleId: roleId
     };
 
@@ -1138,9 +1154,23 @@ describe('POST /api/v1/role-assignments', () => {
     assert.strictEqual(roleResponse.statusCode, 201);
     const roleId = roleResponse.json().data.id;
 
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
     const assignmentPayload = {
       userId: 'user_123',
-      organizationId: 'org_456',
+      organizationId: orgId,
       roleId: roleId
     };
 
@@ -1218,12 +1248,15 @@ describe('POST /api/v1/role-assignments', () => {
   test('should allow new assignment when previous assignment was revoked', async () => {
     const assignmentRepository = new InMemoryRoleAssignmentRepository();
     const roleRepository = new InMemoryRoleRepository();
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
 
     const server = createTestableServer({
       roleRepository,
-      roleAssignmentRepository: assignmentRepository
+      roleAssignmentRepository: assignmentRepository,
+      memberRepository: memberOrganizationRepository
     });
 
+    // create role through the same server
     const roleResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/roles',
@@ -1243,9 +1276,18 @@ describe('POST /api/v1/role-assignments', () => {
     assert.strictEqual(roleResponse.statusCode, 201);
     const roleId = roleResponse.json().data.id;
 
+    const organization: MemberOrganization = {
+      registrationNumber: 'REG123',
+      legalName: 'Test Organization',
+      organizationType: 'Corporation',
+      status: 'pendingReview'
+    };
+
+    const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
+
     await assignmentRepository.save({
       userId: 'user_123',
-      organizationId: 'org_456',
+      organizationId: persistedOrganization.id,
       roleId,
       status: 'revoked'
     });
@@ -1255,7 +1297,7 @@ describe('POST /api/v1/role-assignments', () => {
       url: '/api/v1/role-assignments',
       payload: {
         userId: 'user_123',
-        organizationId: 'org_456',
+        organizationId: persistedOrganization.id,
         roleId
       }
     });
@@ -1263,7 +1305,7 @@ describe('POST /api/v1/role-assignments', () => {
     assert.strictEqual(response.statusCode, 201);
     const responseBody = response.json();
     assert.strictEqual(responseBody.data.userId, 'user_123');
-    assert.strictEqual(responseBody.data.organizationId, 'org_456');
+    assert.strictEqual(responseBody.data.organizationId, persistedOrganization.id);
     assert.strictEqual(responseBody.data.roleId, roleId);
     assert.strictEqual(responseBody.data.status, 'active');
   });
@@ -1271,9 +1313,23 @@ describe('POST /api/v1/role-assignments', () => {
   test('should return 400 when role does not exist', async () => {
     const server = createTestableServer();
 
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
     const assignmentPayload = {
       userId: 'user_123',
-      organizationId: 'org_456',
+      organizationId: orgId,
       roleId: 'non-existent-role-id'
     };
 
@@ -1287,5 +1343,46 @@ describe('POST /api/v1/role-assignments', () => {
     const responseBody = response.json();
     assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
     assert.strictEqual(responseBody.error.message, 'Invalid roleId: Role does not exist');
+  });
+
+  test('should return 400 when organization does not exist', async () => {
+    const server = createTestableServer();
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: 'non-existent-org-id',
+      roleId: roleId
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(response.statusCode, 400);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
+    assert.strictEqual(responseBody.error.message, 'Invalid organizationId: Member organization does not exist');
   });
 });
