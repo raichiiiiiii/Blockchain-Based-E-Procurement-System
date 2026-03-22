@@ -141,6 +141,12 @@ For Sprint 1, `approved`, `rejected`, and `conditionalApproved` are treated as f
 [FLAG-WORKFLOW-INTERMEDIATE-STATES]
 `checklistInProgress` is currently explicit. If later simplified, the history model must still preserve in-progress evidence.
 
+### initial state rule
+All newly accepted review requests begin in `submitted` state.
+
+[FLAG-SHARIAH-SUBMISSION-METADATA]
+While richer submission metadata requirements remain provisional, the initial state rule for review requests is stable and independent of metadata completeness.
+
 ## 8. Checklist completion state rules
 
 ### provisional source assumption

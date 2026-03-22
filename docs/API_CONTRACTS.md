@@ -506,12 +506,8 @@ Request:
 ```json
 {
   "organizationId": "org_123",
-  "submissionReference": "string",
   "title": "string",
   "summary": "string",
-  "productType": "string",
-  "contractType": "string",
-  "effectiveDate": "2026-03-15",
   "references": [
     {
       "type": "attachment",
@@ -531,7 +527,8 @@ Response:
   "data": {
     "id": "review_123",
     "organizationId": "org_123",
-    "submissionReference": "string",
+    "title": "string",
+    "summary": "string",
     "status": "submitted",
     "submittedByUserId": "user_123",
     "createdAt": "2026-03-15T00:00:00Z"
@@ -540,9 +537,8 @@ Response:
 ```
 
 Provisional Sprint 1 rules:
-- required request fields: `organizationId`, `submissionReference`, `title`, `summary`
+- required request fields: `organizationId`, `title`, `summary`
 - initial workflow state is `submitted`
-- `submissionReference` should be unique within an organization
 - `references` are optional in the transport contract, but reference metadata is supported from Sprint 1
 - attachment handling in Sprint 1 guarantees reference metadata only; storage backend details are not part of this public contract
 - submitting actor is derived from authenticated server-side context
@@ -550,7 +546,7 @@ Provisional Sprint 1 rules:
 - submitting actor must have permission to submit a review for the organization
 
 [FLAG-SHARIAH-SUBMISSION-METADATA]
-Mandatory metadata is not yet fully approved. The current shape is a structured provisional baseline.
+Mandatory metadata is not yet fully approved. The current shape represents a minimal baseline with richer metadata remaining provisional.
 
 [FLAG-REFERENCE-HANDLING]
 Reference vs attachment storage policy is not yet finalized beyond metadata-level support.
