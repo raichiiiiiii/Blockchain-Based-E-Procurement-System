@@ -81,6 +81,7 @@ Current working assumptions:
 - review outcomes baseline: `approved | rejected | conditionalApproved`
 - audit baseline: minimum event scaffolding exists, but full policy remains open
 - submission actor baseline: review submission actor is derived from authenticated context, not client-supplied request body data
+- submission metadata baseline: `organizationId`, `title`, and `summary` are required; `references` are optional; richer metadata remains provisional
 
 These baselines are usable for Sprint 1 planning and early implementation, but they remain revisable where flagged.
 
@@ -337,12 +338,13 @@ Blocks:
 - PBI-058
 
 ### `FLAG-SHARIAH-SUBMISSION-METADATA`
-Blocks:
-- PBI-059
+Affects:
 - PBI-060
 - PBI-061
 - PBI-062
 - PBI-063
+
+PBI-059 is complete for the minimum contract baseline. Richer submission metadata remains provisional and affects downstream tasks.
 
 ### `FLAG-CHECKLIST-SOURCE`
 Blocks:
