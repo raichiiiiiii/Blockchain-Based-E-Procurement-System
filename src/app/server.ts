@@ -10,6 +10,9 @@ import type { RoleRepository } from '../modules/access-control/application/role-
 import type { RoleAuditEvent } from '../modules/access-control/api/routes.js';
 import { InMemoryRoleAssignmentRepository } from '../modules/access-control/infrastructure/in-memory-role-assignment-repository.js';
 import type { RoleAssignmentRepository } from '../modules/access-control/application/role-assignment-repository.js';
+import { registerShariahReviewRoutes } from '../modules/shariah-review/api/routes.js';
+import { InMemoryShariahReviewRepository } from '../modules/shariah-review/infrastructure/in-memory-shariah-review-repository.js';
+import type { ShariahReviewRepository } from '../modules/shariah-review/application/shariah-review-repository.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -18,6 +21,7 @@ export function createTestableServer(options?: {
   roleRepository?: RoleRepository;
   roleAudit?: (event: RoleAuditEvent) => void;
   roleAssignmentRepository?: RoleAssignmentRepository;
+  shariahReviewRepository?: ShariahReviewRepository;
 }) {
   const server = fastify();
 
@@ -25,6 +29,7 @@ export function createTestableServer(options?: {
   const memberOrganizationRepository = options?.memberRepository ?? new InMemoryMemberOrganizationRepository();
   const roleRepository = options?.roleRepository ?? new InMemoryRoleRepository();
   const roleAssignmentRepository = options?.roleAssignmentRepository ?? new InMemoryRoleAssignmentRepository();
+  const shariahReviewRepository = options?.shariahReviewRepository ?? new InMemoryShariahReviewRepository();
   const auditCallback = options?.audit ?? ((event: MemberOrgCreateAuditEvent) => {
     console.info('AUDIT EVENT:', JSON.stringify(event));
   });
@@ -46,6 +51,12 @@ export function createTestableServer(options?: {
     assignmentRepository: roleAssignmentRepository,
     memberOrganizationRepository: memberOrganizationRepository,
     audit: roleAuditCallback
+  });
+
+  // Register shariah-review routes
+  server.register(registerShariahReviewRoutes, {
+    prefix: '/api/v1',
+    repository: shariahReviewRepository
   });
 
   return server;
