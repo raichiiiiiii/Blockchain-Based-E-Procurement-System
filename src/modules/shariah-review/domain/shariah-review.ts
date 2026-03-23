@@ -1,5 +1,13 @@
 export type ShariahReviewStatus = 'submitted';
 
+export interface ShariahReviewReference {
+  type: string;
+  name: string;
+  uri: string;
+  description: string;
+  mediaType: string;
+}
+
 export interface ShariahReview {
   id: string;
   organizationId: string;
@@ -8,4 +16,5 @@ export interface ShariahReview {
   status: ShariahReviewStatus;
   submittedByUserId: string;
   createdAt: string;
+  references?: ShariahReviewReference[];
 }
