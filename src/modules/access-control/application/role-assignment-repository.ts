@@ -7,4 +7,8 @@ export interface RoleAssignmentRepository {
     organizationId: string,
     roleId: string
   ): Promise<RoleAssignment | null>;
+  existsActiveAssignmentByUserAndOrganization(
+    userId: string,
+    organizationId: string
+  ): Promise<boolean>;
 }

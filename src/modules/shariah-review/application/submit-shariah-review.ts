@@ -1,4 +1,4 @@
-import type { ShariahReview } from '../domain/shariah-review.js';
+import type { ShariahReview, ShariahReviewReference } from '../domain/shariah-review.js';
 import type { ShariahReviewRepository } from './shariah-review-repository.js';
 
 export type SubmitShariahReviewInput = {
@@ -6,6 +6,7 @@ export type SubmitShariahReviewInput = {
   title: string;
   summary: string;
   submittedByUserId: string;
+  references?: ShariahReviewReference[];
 };
 
 export type SubmitShariahReviewResult =
@@ -35,7 +36,8 @@ export async function submitShariahReview(
     organizationId: input.organizationId.trim(),
     title: input.title.trim(),
     summary: input.summary.trim(),
-    submittedByUserId: input.submittedByUserId.trim()
+    submittedByUserId: input.submittedByUserId.trim(),
+    references: input.references
   };
 
   // Create the ShariahReview entity
@@ -46,7 +48,8 @@ export async function submitShariahReview(
     summary: trimmedInput.summary,
     status: 'submitted',
     submittedByUserId: trimmedInput.submittedByUserId,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    references: trimmedInput.references
   };
 
   // Save the review using the repository

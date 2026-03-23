@@ -2,15 +2,29 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { ShariahReviewRepository } from '../application/shariah-review-repository.js';
 import { submitShariahReview, type SubmitShariahReviewInput } from '../application/submit-shariah-review.js';
 import type { ShariahReview } from '../domain/shariah-review.js';
+import type { RoleAssignmentRepository } from '../../access-control/application/role-assignment-repository.js';
+
+// Define the audit event interface for shariah review submission
+export interface ShariahReviewSubmitAuditEvent {
+  action: 'submitShariahReview';
+  targetType: 'shariahReview';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success';
+  actorId: string;
+}
 
 // Define plugin options interface
 interface ShariahReviewRoutesOptions {
   repository: ShariahReviewRepository;
+  roleAssignmentRepository: RoleAssignmentRepository;
+  audit: (event: ShariahReviewSubmitAuditEvent) => void;
 }
 
 // Create the Fastify plugin for shariah-review routes
 const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions> = async (fastify, options) => {
-  const { repository } = options;
+  const { repository, roleAssignmentRepository, audit } = options;
 
   // POST /api/v1/shariah-reviews - Submit a new Shariah review
   fastify.post<{ Body: Omit<SubmitShariahReviewInput, 'submittedByUserId'> }>(
@@ -23,7 +37,21 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           properties: {
             organizationId: { type: 'string' },
             title: { type: 'string' },
-            summary: { type: 'string' }
+            summary: { type: 'string' },
+            references: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string' },
+                  name: { type: 'string' },
+                  uri: { type: 'string' },
+                  description: { type: 'string' },
+                  mediaType: { type: 'string' }
+                },
+                required: ['type', 'name', 'uri', 'description', 'mediaType']
+              }
+            }
           }
         }
       }
@@ -48,12 +76,28 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         });
       }
 
+      // Check if user has active role assignment in the target organization
+      const hasActiveAssignment = await roleAssignmentRepository.existsActiveAssignmentByUserAndOrganization(
+        actorId,
+        request.body.organizationId
+      );
+
+      if (!hasActiveAssignment) {
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'User does not have required permissions for this organization'
+          }
+        });
+      }
+
       // Construct the input for the application service
       const input: SubmitShariahReviewInput = {
         organizationId: request.body.organizationId,
         title: request.body.title,
         summary: request.body.summary,
-        submittedByUserId: actorId
+        submittedByUserId: actorId,
+        ...(request.body.references && { references: request.body.references })
       };
 
       // Call the application service
@@ -61,6 +105,19 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
 
       // Map result to HTTP responses
       if (result.status === 'submitted') {
+        // Emit audit event for successful submission
+        const auditEvent: ShariahReviewSubmitAuditEvent = {
+          action: 'submitShariahReview',
+          targetType: 'shariahReview',
+          targetId: result.review.id,
+          timestamp: result.review.createdAt,
+          requestId: request.id,
+          outcome: 'success',
+          actorId: actorId
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(201).send({
           data: result.review
         });

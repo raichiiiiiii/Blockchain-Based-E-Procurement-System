@@ -172,4 +172,50 @@ describe('submitShariahReview', () => {
     assert.strictEqual(repository.savedReviews.length, 1);
     assert.strictEqual(repository.savedReviews[0], result.review);
   });
+
+  it('should store references when provided', async () => {
+    const repository = new TestShariahReviewRepository();
+    const input: SubmitShariahReviewInput = {
+      organizationId: 'org123',
+      title: 'Test Review',
+      summary: 'This is a test summary.',
+      submittedByUserId: 'user456',
+      references: [
+        {
+          type: 'attachment',
+          name: 'document.pdf',
+          uri: 'https://example.com/document.pdf',
+          description: 'Test document',
+          mediaType: 'application/pdf'
+        }
+      ]
+    };
+
+    const result = await submitShariahReview(input, repository);
+
+    assert.strictEqual(result.status, 'submitted');
+    assert.ok(result.review);
+    assert.deepStrictEqual(result.review.references, input.references);
+    assert.strictEqual(repository.savedReviews.length, 1);
+    assert.strictEqual(repository.savedReviews[0], result.review);
+  });
+
+  it('should not require references and preserve existing behavior', async () => {
+    const repository = new TestShariahReviewRepository();
+    const input: SubmitShariahReviewInput = {
+      organizationId: 'org123',
+      title: 'Test Review',
+      summary: 'This is a test summary.',
+      submittedByUserId: 'user456'
+      // No references provided
+    };
+
+    const result = await submitShariahReview(input, repository);
+
+    assert.strictEqual(result.status, 'submitted');
+    assert.ok(result.review);
+    assert.strictEqual(result.review.references, undefined);
+    assert.strictEqual(repository.savedReviews.length, 1);
+    assert.strictEqual(repository.savedReviews[0], result.review);
+  });
 });
