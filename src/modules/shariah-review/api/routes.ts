@@ -37,7 +37,21 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           properties: {
             organizationId: { type: 'string' },
             title: { type: 'string' },
-            summary: { type: 'string' }
+            summary: { type: 'string' },
+            references: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string' },
+                  name: { type: 'string' },
+                  uri: { type: 'string' },
+                  description: { type: 'string' },
+                  mediaType: { type: 'string' }
+                },
+                required: ['type', 'name', 'uri', 'description', 'mediaType']
+              }
+            }
           }
         }
       }
@@ -82,7 +96,8 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         organizationId: request.body.organizationId,
         title: request.body.title,
         summary: request.body.summary,
-        submittedByUserId: actorId
+        submittedByUserId: actorId,
+        ...(request.body.references && { references: request.body.references })
       };
 
       // Call the application service
