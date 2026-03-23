@@ -4,15 +4,27 @@ import { submitShariahReview, type SubmitShariahReviewInput } from '../applicati
 import type { ShariahReview } from '../domain/shariah-review.js';
 import type { RoleAssignmentRepository } from '../../access-control/application/role-assignment-repository.js';
 
+// Define the audit event interface for shariah review submission
+export interface ShariahReviewSubmitAuditEvent {
+  action: 'submitShariahReview';
+  targetType: 'shariahReview';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success';
+  actorId: string;
+}
+
 // Define plugin options interface
 interface ShariahReviewRoutesOptions {
   repository: ShariahReviewRepository;
   roleAssignmentRepository: RoleAssignmentRepository;
+  audit: (event: ShariahReviewSubmitAuditEvent) => void;
 }
 
 // Create the Fastify plugin for shariah-review routes
 const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions> = async (fastify, options) => {
-  const { repository, roleAssignmentRepository } = options;
+  const { repository, roleAssignmentRepository, audit } = options;
 
   // POST /api/v1/shariah-reviews - Submit a new Shariah review
   fastify.post<{ Body: Omit<SubmitShariahReviewInput, 'submittedByUserId'> }>(
@@ -78,6 +90,19 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
 
       // Map result to HTTP responses
       if (result.status === 'submitted') {
+        // Emit audit event for successful submission
+        const auditEvent: ShariahReviewSubmitAuditEvent = {
+          action: 'submitShariahReview',
+          targetType: 'shariahReview',
+          targetId: result.review.id,
+          timestamp: result.review.createdAt,
+          requestId: request.id,
+          outcome: 'success',
+          actorId: actorId
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(201).send({
           data: result.review
         });
