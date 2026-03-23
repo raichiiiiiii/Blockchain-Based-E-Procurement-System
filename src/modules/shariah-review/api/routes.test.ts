@@ -2,11 +2,25 @@ import { test, describe } from 'node:test';
 import { strict as assert } from 'node:assert/strict';
 import { createTestableServer } from '../../../app/server.js';
 import { InMemoryShariahReviewRepository } from '../infrastructure/in-memory-shariah-review-repository.js';
+import { InMemoryRoleAssignmentRepository } from '../../access-control/infrastructure/in-memory-role-assignment-repository.js';
 
 describe('POST /api/v1/shariah-reviews', () => {
   test('should submit a review successfully with valid body and x-actor-id', async () => {
     const repository = new InMemoryShariahReviewRepository();
-    const server = createTestableServer({ shariahReviewRepository: repository });
+    const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
+    
+    // Create an active assignment for the user
+    await roleAssignmentRepository.save({
+      userId: 'user456',
+      organizationId: 'org123',
+      roleId: 'role123',
+      status: 'active'
+    });
+    
+    const server = createTestableServer({ 
+      shariahReviewRepository: repository,
+      roleAssignmentRepository: roleAssignmentRepository
+    });
 
     const payload = {
       organizationId: 'org123',
@@ -85,7 +99,20 @@ describe('POST /api/v1/shariah-reviews', () => {
 
   test('should return 400 when required body fields are missing', async () => {
     const repository = new InMemoryShariahReviewRepository();
-    const server = createTestableServer({ shariahReviewRepository: repository });
+    const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
+    
+    // Create an active assignment for the user
+    await roleAssignmentRepository.save({
+      userId: 'user456',
+      organizationId: 'org123',
+      roleId: 'role123',
+      status: 'active'
+    });
+    
+    const server = createTestableServer({ 
+      shariahReviewRepository: repository,
+      roleAssignmentRepository: roleAssignmentRepository
+    });
 
     // Test with completely empty payload
     const response = await server.inject({
@@ -105,7 +132,20 @@ describe('POST /api/v1/shariah-reviews', () => {
 
   test('should return 400 when title is whitespace-only (service invalidInput)', async () => {
     const repository = new InMemoryShariahReviewRepository();
-    const server = createTestableServer({ shariahReviewRepository: repository });
+    const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
+    
+    // Create an active assignment for the user
+    await roleAssignmentRepository.save({
+      userId: 'user456',
+      organizationId: 'org123',
+      roleId: 'role123',
+      status: 'active'
+    });
+    
+    const server = createTestableServer({ 
+      shariahReviewRepository: repository,
+      roleAssignmentRepository: roleAssignmentRepository
+    });
 
     const payload = {
       organizationId: 'org123',
@@ -130,7 +170,20 @@ describe('POST /api/v1/shariah-reviews', () => {
 
   test('submittedByUserId in the success response should match x-actor-id', async () => {
     const repository = new InMemoryShariahReviewRepository();
-    const server = createTestableServer({ shariahReviewRepository: repository });
+    const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
+    
+    // Create an active assignment for the user
+    await roleAssignmentRepository.save({
+      userId: 'specific-user-id',
+      organizationId: 'org789',
+      roleId: 'role123',
+      status: 'active'
+    });
+    
+    const server = createTestableServer({ 
+      shariahReviewRepository: repository,
+      roleAssignmentRepository: roleAssignmentRepository
+    });
 
     const payload = {
       organizationId: 'org789',
@@ -150,5 +203,72 @@ describe('POST /api/v1/shariah-reviews', () => {
     assert.strictEqual(response.statusCode, 201);
     const responseBody = response.json();
     assert.strictEqual(responseBody.data.submittedByUserId, 'specific-user-id');
+  });
+
+  test('should return 403 when user has no assignments in the target organization', async () => {
+    const repository = new InMemoryShariahReviewRepository();
+    const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
+    const server = createTestableServer({ 
+      shariahReviewRepository: repository,
+      roleAssignmentRepository: roleAssignmentRepository
+    });
+
+    const payload = {
+      organizationId: 'org123',
+      title: 'Test Review',
+      summary: 'This is a test summary.'
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/shariah-reviews',
+      payload: payload,
+      headers: {
+        'x-actor-id': 'user456'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 403);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
+    assert.strictEqual(responseBody.error.message, 'User does not have required permissions for this organization');
+  });
+
+  test('should return 403 when user only has revoked assignments in the target organization', async () => {
+    const repository = new InMemoryShariahReviewRepository();
+    const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
+    
+    // Create a revoked assignment for the user
+    await roleAssignmentRepository.save({
+      userId: 'user456',
+      organizationId: 'org123',
+      roleId: 'role123',
+      status: 'revoked'
+    });
+    
+    const server = createTestableServer({ 
+      shariahReviewRepository: repository,
+      roleAssignmentRepository: roleAssignmentRepository
+    });
+
+    const payload = {
+      organizationId: 'org123',
+      title: 'Test Review',
+      summary: 'This is a test summary.'
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/shariah-reviews',
+      payload: payload,
+      headers: {
+        'x-actor-id': 'user456'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 403);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
+    assert.strictEqual(responseBody.error.message, 'User does not have required permissions for this organization');
   });
 });

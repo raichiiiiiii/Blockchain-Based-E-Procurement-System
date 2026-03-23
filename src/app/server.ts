@@ -56,7 +56,8 @@ export function createTestableServer(options?: {
   // Register shariah-review routes
   server.register(registerShariahReviewRoutes, {
     prefix: '/api/v1',
-    repository: shariahReviewRepository
+    repository: shariahReviewRepository,
+    roleAssignmentRepository: roleAssignmentRepository
   });
 
   return server;

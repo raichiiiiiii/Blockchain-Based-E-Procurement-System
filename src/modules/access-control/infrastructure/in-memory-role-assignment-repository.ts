@@ -25,4 +25,20 @@ export class InMemoryRoleAssignmentRepository implements RoleAssignmentRepositor
     }
     return null;
   }
+
+  async existsActiveAssignmentByUserAndOrganization(
+    userId: string,
+    organizationId: string
+  ): Promise<boolean> {
+    for (const assignment of this.assignments) {
+      if (
+        assignment.userId === userId &&
+        assignment.organizationId === organizationId &&
+        assignment.status === 'active'
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

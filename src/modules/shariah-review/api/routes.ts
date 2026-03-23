@@ -2,15 +2,17 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { ShariahReviewRepository } from '../application/shariah-review-repository.js';
 import { submitShariahReview, type SubmitShariahReviewInput } from '../application/submit-shariah-review.js';
 import type { ShariahReview } from '../domain/shariah-review.js';
+import type { RoleAssignmentRepository } from '../../access-control/application/role-assignment-repository.js';
 
 // Define plugin options interface
 interface ShariahReviewRoutesOptions {
   repository: ShariahReviewRepository;
+  roleAssignmentRepository: RoleAssignmentRepository;
 }
 
 // Create the Fastify plugin for shariah-review routes
 const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions> = async (fastify, options) => {
-  const { repository } = options;
+  const { repository, roleAssignmentRepository } = options;
 
   // POST /api/v1/shariah-reviews - Submit a new Shariah review
   fastify.post<{ Body: Omit<SubmitShariahReviewInput, 'submittedByUserId'> }>(
@@ -44,6 +46,21 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           error: {
             code: 'VALIDATION_ERROR',
             message: 'Missing or invalid x-actor-id header'
+          }
+        });
+      }
+
+      // Check if user has active role assignment in the target organization
+      const hasActiveAssignment = await roleAssignmentRepository.existsActiveAssignmentByUserAndOrganization(
+        actorId,
+        request.body.organizationId
+      );
+
+      if (!hasActiveAssignment) {
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'User does not have required permissions for this organization'
           }
         });
       }
