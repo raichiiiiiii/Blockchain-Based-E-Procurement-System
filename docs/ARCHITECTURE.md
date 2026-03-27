@@ -41,16 +41,16 @@ Rules:
 ## 5. Current repo shape
 
 ```text
-app/
-database/
-modules/
-  access-control/
-  membership/
-  shared/
-  shariah-review/
-test/
-  integration/
-  e2e/
+backlog/
+docs/
+feature/
+src/
+  app/
+  modules/
+    access-control/
+    membership/
+    shared/
+    shariah-review/
 ```
 
 ## 6. Module ownership
