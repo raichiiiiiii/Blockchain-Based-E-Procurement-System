@@ -539,7 +539,7 @@ Response:
 Provisional Sprint 1 rules:
 - required request fields: `organizationId`, `title`, `summary`
 - initial workflow state is `submitted`
-- `references` are optional in the transport contract, but reference metadata is supported from Sprint 1
+- `references` are optional in the transport contract, but reference metadata is supported from Sprint 1. Reference metadata provides information about attachments or links but does not include the attachment data itself.
 - attachment handling in Sprint 1 guarantees reference metadata only; storage backend details are not part of this public contract
 - submitting actor is derived from authenticated server-side context
 - `submittedByUserId` is a server-derived field and must not be accepted from the request body

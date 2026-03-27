@@ -95,7 +95,7 @@ If external integration later requires snake_case, add explicit mapping at the t
 - Map known business failures to stable error codes.
 - Include request correlation data where the platform already supports it.
 
-Expected categories:
+Expected categories (aligned with API_CONTRACTS.md):
 - validation
 - unauthorized
 - forbidden
@@ -128,8 +128,10 @@ Every audit event created in Sprint 1 should be able to carry:
 - `outcome`
 - `requestId`
 
+These fields are present in current implementations (e.g., `ShariahReviewSubmitAuditEvent`, `RoleCreateAuditEvent`).
+
 [FLAG-AUDIT-POLICY]
-Do not finalize audit implementation details until the audit research outcome is approved.
+Do not finalize audit implementation details until the audit research outcome is approved. The specific events logged and their structure remain provisional.
 
 ## 9. HTTP/API rules
 
