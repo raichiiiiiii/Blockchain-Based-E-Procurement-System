@@ -6,7 +6,7 @@ import type { Role } from '../domain/role.js';
 
 test('successful role creation', async () => {
   const repository = new InMemoryRoleRepository();
-  
+
   const role: Role = {
     roleCode: 'admin',
     displayName: 'Administrator',
@@ -18,9 +18,23 @@ test('successful role creation', async () => {
   };
 
   const result = await createRole(role, repository);
-  
+
   assert.strictEqual(result.status, 'created');
-  assert.deepStrictEqual(result.role, role);
+  assert.ok(result.role.id);
+  assert.match(result.role.id, /^role_/);
+
+  assert.deepStrictEqual(
+    {
+      roleCode: result.role.roleCode,
+      displayName: result.role.displayName,
+      scope: result.role.scope,
+      description: result.role.description,
+      permissions: result.role.permissions,
+      status: result.role.status,
+      isSystemReserved: result.role.isSystemReserved
+    },
+    role
+  );
 });
 
 test('duplicate role detection', async () => {
