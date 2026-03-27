@@ -9,7 +9,7 @@
     "build": "tsc",
     "start": "node dist/app/server.js",
     "dev": "node --loader ts-node/esm src/app/server.ts",
-    "test": "node --test --loader ts-node/esm src/modules/membership/api/routes.test.ts src/modules/membership/application/create-member-organization.test.ts src/modules/access-control/api/routes.test.ts src/modules/access-control/application/create-role-assignment.test.ts src/modules/shariah-review/api/routes.test.ts src/modules/shariah-review/application/submit-shariah-review.test.ts"
+    "test": "node scripts/run-tests.mjs"
   },
   "dependencies": {
     "fastify": "^4.26.0"
