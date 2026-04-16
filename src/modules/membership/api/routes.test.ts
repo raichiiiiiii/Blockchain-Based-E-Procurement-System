@@ -18,7 +18,7 @@ before(async () => {
 test('should return 400 for missing required fields', async () => {
   // Reset captured events
   capturedAuditEvents = [];
-  
+
   const response = await testServer.inject({
     method: 'POST',
     url: '/api/v1/member-organizations',
@@ -26,16 +26,16 @@ test('should return 400 for missing required fields', async () => {
   });
 
   assert.strictEqual(response.statusCode, 400);
-  
+
   // Parse response body to check structure
   const responseBody = response.json();
-  
+
   // Assert basic structure of Fastify validation error
   assert(typeof responseBody.message === 'string', 'Response should have a message string');
-  
+
   // Assert this is NOT using the custom application format
   assert.strictEqual(responseBody.issues, undefined, 'Should not have issues array in Fastify validation error');
-  
+
   // No audit events should be emitted for invalid input
   assert.strictEqual(capturedAuditEvents.length, 0, 'No audit events should be emitted for invalid input');
 });
@@ -43,7 +43,7 @@ test('should return 400 for missing required fields', async () => {
 test('should return 400 for whitespace-only required fields', async () => {
   // Reset captured events
   capturedAuditEvents = [];
-  
+
   const response = await testServer.inject({
     method: 'POST',
     url: '/api/v1/member-organizations',
@@ -55,12 +55,12 @@ test('should return 400 for whitespace-only required fields', async () => {
   });
 
   assert.strictEqual(response.statusCode, 400);
-  
+
   const responseBody = response.json();
   assert.strictEqual(responseBody.message, 'Invalid input');
   assert(Array.isArray(responseBody.issues));
   assert(responseBody.issues.length > 0);
-  
+
   // No audit events should be emitted for invalid input
   assert.strictEqual(capturedAuditEvents.length, 0, 'No audit events should be emitted for invalid input');
 });
@@ -68,7 +68,7 @@ test('should return 400 for whitespace-only required fields', async () => {
 test('should return 201 for valid input without x-actor-id header', async () => {
   // Reset captured events
   capturedAuditEvents = [];
-  
+
   const response = await testServer.inject({
     method: 'POST',
     url: '/api/v1/member-organizations',
@@ -86,9 +86,9 @@ test('should return 201 for valid input without x-actor-id header', async () => 
   });
 
   assert.strictEqual(response.statusCode, 201);
-  
+
   const responseBody = response.json();
-  
+
   // Assert response structure
   assert.strictEqual(typeof responseBody.data, 'object');
   assert.strictEqual(typeof responseBody.data.id, 'string');
@@ -100,16 +100,16 @@ test('should return 201 for valid input without x-actor-id header', async () => 
   assert.strictEqual(responseBody.data.status, 'pendingReview');
   assert.strictEqual(typeof responseBody.data.createdAt, 'string');
   assert.strictEqual(typeof responseBody.data.updatedAt, 'string');
-  
+
   // Assert that excluded fields are not present
   assert.strictEqual(responseBody.data.contactEmail, undefined);
   assert.strictEqual(responseBody.data.contactPhone, undefined);
   assert.strictEqual(responseBody.data.countryCode, undefined);
   assert.strictEqual(responseBody.data.notes, undefined);
-  
+
   // Assert exactly one audit event was emitted
   assert.strictEqual(capturedAuditEvents.length, 1, 'Exactly one audit event should be emitted');
-  
+
   // Assert audit event structure and values
   const auditEvent = capturedAuditEvents[0];
   assert.strictEqual(auditEvent.action, 'createMemberOrganization');
@@ -124,7 +124,7 @@ test('should return 201 for valid input without x-actor-id header', async () => 
 test('should return 201 for valid input with x-actor-id header', async () => {
   // Reset captured events
   capturedAuditEvents = [];
-  
+
   const response = await testServer.inject({
     method: 'POST',
     url: '/api/v1/member-organizations',
@@ -140,9 +140,9 @@ test('should return 201 for valid input with x-actor-id header', async () => {
   });
 
   assert.strictEqual(response.statusCode, 201);
-  
+
   const responseBody = response.json();
-  
+
   // Assert response structure
   assert.strictEqual(typeof responseBody.data, 'object');
   assert.strictEqual(typeof responseBody.data.id, 'string');
@@ -153,10 +153,10 @@ test('should return 201 for valid input with x-actor-id header', async () => {
   assert.strictEqual(responseBody.data.status, 'pendingReview');
   assert.strictEqual(typeof responseBody.data.createdAt, 'string');
   assert.strictEqual(typeof responseBody.data.updatedAt, 'string');
-  
+
   // Assert exactly one audit event was emitted
   assert.strictEqual(capturedAuditEvents.length, 1, 'Exactly one audit event should be emitted');
-  
+
   // Assert audit event structure and values
   const auditEvent = capturedAuditEvents[0];
   assert.strictEqual(auditEvent.action, 'createMemberOrganization');
@@ -167,4 +167,91 @@ test('should return 201 for valid input with x-actor-id header', async () => {
   assert.strictEqual(typeof auditEvent.requestId, 'string');
   assert.strictEqual(typeof auditEvent.timestamp, 'string');
   assert.strictEqual(auditEvent.targetId, responseBody.data.id); // Should match created org ID
+});
+
+test('should return 409 for duplicate registrationNumber', async () => {
+  // Reset captured events
+  capturedAuditEvents = [];
+
+  // First, create an organization
+  await testServer.inject({
+    method: 'POST',
+    url: '/api/v1/member-organizations',
+    payload: {
+      registrationNumber: 'DUPLICATE123',
+      legalName: 'First Organization',
+      organizationType: 'Corporation'
+    }
+  });
+
+  // Try to create another organization with the same registrationNumber
+  const response = await testServer.inject({
+    method: 'POST',
+    url: '/api/v1/member-organizations',
+    payload: {
+      registrationNumber: 'DUPLICATE123',
+      legalName: 'Second Organization',
+      organizationType: 'LLC'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 409);
+
+  const responseBody = response.json();
+  assert.strictEqual(responseBody.error.code, 'CONFLICT');
+  assert.strictEqual(
+    responseBody.error.message,
+    'A member organization with this registration number already exists'
+  );
+});
+
+test('should return 201 for unique registrationNumber after duplicate attempt', async () => {
+  // Reset captured events
+  capturedAuditEvents = [];
+
+  // First, create an organization
+  await testServer.inject({
+    method: 'POST',
+    url: '/api/v1/member-organizations',
+    payload: {
+      registrationNumber: 'UNIQUE123',
+      legalName: 'First Organization',
+      organizationType: 'Corporation'
+    }
+  });
+
+  // Try to create another organization with a different registrationNumber
+  const response = await testServer.inject({
+    method: 'POST',
+    url: '/api/v1/member-organizations',
+    payload: {
+      registrationNumber: 'UNIQUE456',
+      legalName: 'Second Organization',
+      organizationType: 'LLC'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 201);
+
+  const responseBody = response.json();
+
+  // Assert response structure
+  assert.strictEqual(typeof responseBody.data, 'object');
+  assert.strictEqual(typeof responseBody.data.id, 'string');
+  assert.strictEqual(responseBody.data.registrationNumber, 'UNIQUE456');
+  assert.strictEqual(responseBody.data.legalName, 'Second Organization');
+  assert.strictEqual(responseBody.data.organizationType, 'LLC');
+  assert.strictEqual(responseBody.data.status, 'pendingReview');
+  assert.strictEqual(typeof responseBody.data.createdAt, 'string');
+  assert.strictEqual(typeof responseBody.data.updatedAt, 'string');
+
+  // Assert exactly one audit event was emitted for the second creation
+  assert.strictEqual(capturedAuditEvents.length, 2, 'Two audit events should be emitted total');
+
+  // Assert audit event structure and values for the second event
+  const auditEvent = capturedAuditEvents[1];
+  assert.strictEqual(auditEvent.action, 'createMemberOrganization');
+  assert.strictEqual(auditEvent.targetType, 'memberOrganization');
+  assert.strictEqual(typeof auditEvent.targetId, 'string');
+  assert.strictEqual(auditEvent.outcome, 'success');
 });

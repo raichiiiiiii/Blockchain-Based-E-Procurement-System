@@ -24,7 +24,7 @@ interface MembershipRoutesOptions {
 const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = async (fastify, options) => {
   // Access the repository through options.repository (not used yet)
   // Keeping the repository in options for future use
-  
+
   fastify.post<{ Body: CreateMemberOrgInput }>(
     '/member-organizations',
     {
@@ -48,7 +48,7 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
     },
     async (request, reply) => {
       const result = await createMemberOrganization(request.body, options.repository);
-      
+
       // Handle invalid input
       if (result.status === 'invalidInput') {
         return reply.code(400).send({
@@ -56,13 +56,23 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
           issues: result.issues
         });
       }
-      
+
+      // Handle duplicate registration number
+      if (result.status === 'duplicate') {
+        return reply.code(409).send({
+          error: {
+            code: 'CONFLICT',
+            message: 'A member organization with this registration number already exists'
+          }
+        });
+      }
+
       // Handle draft prepared
       if (result.status === 'draftPrepared') {
         // Normalize x-actor-id header to always be a string
         const rawActorId = request.headers['x-actor-id'];
         let actorId: string;
-        
+
         if (Array.isArray(rawActorId)) {
           // Take the first value if it's an array
           actorId = rawActorId[0] || 'unknown';
@@ -73,7 +83,7 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
           // Default to 'unknown' for undefined/null cases
           actorId = 'unknown';
         }
-        
+
         // Emit provisional audit event with typed interface
         const auditEvent: MemberOrgCreateAuditEvent = {
           action: 'createMemberOrganization',
@@ -84,10 +94,10 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
           outcome: 'success',
           actorId: actorId
         };
-        
+
         // Call the audit callback
         options.audit(auditEvent);
-        
+
         // Return the created organization with proper API contract format
         return reply.code(201).send({
           data: {

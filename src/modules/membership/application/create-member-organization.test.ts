@@ -6,7 +6,12 @@ import type { MemberOrganizationRepository, PersistedMemberOrganizationDraft } f
 // Simple test stub repository that tracks call count
 class TestMemberOrganizationRepository implements MemberOrganizationRepository {
   public saveDraftCallCount = 0;
-  
+  private existingOrg: PersistedMemberOrganizationDraft | null = null;
+
+  setExistingOrg(org: PersistedMemberOrganizationDraft | null) {
+    this.existingOrg = org;
+  }
+
   async saveDraft(organization: any): Promise<PersistedMemberOrganizationDraft> {
     this.saveDraftCallCount++;
     return {
@@ -16,9 +21,13 @@ class TestMemberOrganizationRepository implements MemberOrganizationRepository {
       updatedAt: '2026-01-01T00:00:00.000Z'
     };
   }
-  
+
   async findById(id: string): Promise<PersistedMemberOrganizationDraft | null> {
     return null;
+  }
+
+  async findByRegistrationNumber(registrationNumber: string): Promise<PersistedMemberOrganizationDraft | null> {
+    return this.existingOrg;
   }
 }
 
@@ -211,5 +220,42 @@ test('should normalize optional empty/whitespace-only strings to undefined and c
   assert.strictEqual(result.organization.contactPhone, undefined);
   
   // Verify saveDraft was called exactly once
+  assert.strictEqual(repository.saveDraftCallCount, 1);
+});
+
+test('should return duplicate when registrationNumber already exists', async () => {
+  const repository = new TestMemberOrganizationRepository();
+
+  repository.setExistingOrg({
+    id: 'existing-id',
+    registrationNumber: 'REG123',
+    legalName: 'Existing Organization',
+    organizationType: 'Corporation',
+    status: 'pendingReview',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z'
+  });
+
+  const result = await createMemberOrganization({
+    registrationNumber: 'REG123',
+    legalName: 'New Organization',
+    organizationType: 'Corporation'
+  }, repository);
+
+  assert.strictEqual(result.status, 'duplicate');
+  assert.strictEqual(repository.saveDraftCallCount, 0);
+});
+
+test('should still return draftPrepared when registrationNumber is unique', async () => {
+  const repository = new TestMemberOrganizationRepository();
+  repository.setExistingOrg(null);
+
+  const result = await createMemberOrganization({
+    registrationNumber: 'REG999',
+    legalName: 'Unique Organization',
+    organizationType: 'Corporation'
+  }, repository);
+
+  assert.strictEqual(result.status, 'draftPrepared');
   assert.strictEqual(repository.saveDraftCallCount, 1);
 });

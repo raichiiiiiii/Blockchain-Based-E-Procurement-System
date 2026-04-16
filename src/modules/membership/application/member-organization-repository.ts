@@ -9,4 +9,5 @@ export type PersistedMemberOrganizationDraft = MemberOrganization & {
 export interface MemberOrganizationRepository {
   saveDraft(organization: MemberOrganization): Promise<PersistedMemberOrganizationDraft>;
   findById(id: string): Promise<PersistedMemberOrganizationDraft | null>;
+  findByRegistrationNumber(registrationNumber: string): Promise<PersistedMemberOrganizationDraft | null>;
 }

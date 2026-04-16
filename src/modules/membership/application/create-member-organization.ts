@@ -17,7 +17,8 @@ export type CreateMemberOrgInput = {
 
 export type CreateMemberOrgResult = 
   | { status: 'invalidInput'; issues: string[] }
-  | { status: 'draftPrepared'; organization: PersistedMemberOrganizationDraft };
+  | { status: 'draftPrepared'; organization: PersistedMemberOrganizationDraft }
+  | { status: 'duplicate' };
 
 export async function createMemberOrganization(input: CreateMemberOrgInput, repository: MemberOrganizationRepository): Promise<CreateMemberOrgResult> {
   // Trim all string fields
@@ -51,6 +52,12 @@ export async function createMemberOrganization(input: CreateMemberOrgInput, repo
   // Return validation errors if any
   if (issues.length > 0) {
     return { status: 'invalidInput', issues };
+  }
+
+  // Check for duplicate registration number
+  const existingOrg = await repository.findByRegistrationNumber(trimmedInput.registrationNumber);
+  if (existingOrg) {
+    return { status: 'duplicate' };
   }
 
   // Create domain draft to validate structure
