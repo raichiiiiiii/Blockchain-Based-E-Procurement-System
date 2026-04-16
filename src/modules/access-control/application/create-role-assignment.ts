@@ -2,6 +2,14 @@ import { RoleAssignment } from '../domain/role-assignment.js';
 import type { RoleAssignmentRepository } from './role-assignment-repository.js';
 import type { RoleRepository } from './role-repository.js';
 import type { MemberOrganizationRepository } from '../../membership/application/member-organization-repository.js';
+import type { UserExistenceLookup } from '../../shared/application/user-existence-lookup.js';
+import type { OrganizationMembershipLookup } from '../../shared/application/organization-membership-lookup.js';
+
+// Define a type for the lookup dependencies to create a typed seam
+export type AssignmentValidationLookups = {
+  userExistence: UserExistenceLookup;
+  organizationMembership: OrganizationMembershipLookup;
+};
 
 export type CreateRoleAssignmentResult = 
   | { status: 'duplicate' }
@@ -13,7 +21,8 @@ export async function createRoleAssignment(
   assignment: RoleAssignment,
   assignmentRepository: RoleAssignmentRepository,
   roleRepository: RoleRepository,
-  memberOrganizationRepository: MemberOrganizationRepository
+  memberOrganizationRepository: MemberOrganizationRepository,
+  lookups?: AssignmentValidationLookups
 ): Promise<CreateRoleAssignmentResult> {
   // First check if the role exists
   const role = await roleRepository.findById(assignment.roleId);

@@ -1,12 +1,28 @@
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert/strict';
-import { createRoleAssignment } from './create-role-assignment.js';
+import { createRoleAssignment, type AssignmentValidationLookups } from './create-role-assignment.js';
 import { InMemoryRoleAssignmentRepository } from '../infrastructure/in-memory-role-assignment-repository.js';
 import { InMemoryRoleRepository } from '../infrastructure/in-memory-role-repository.js';
 import { InMemoryMemberOrganizationRepository } from '../../membership/infrastructure/in-memory-member-organization-repository.js';
 import type { RoleAssignment } from '../domain/role-assignment.js';
 import type { Role } from '../domain/role.js';
 import type { MemberOrganization } from '../../membership/domain/member-organization.js';
+import type { UserExistenceLookup } from '../../shared/application/user-existence-lookup.js';
+import type { OrganizationMembershipLookup } from '../../shared/application/organization-membership-lookup.js';
+
+// Create minimal stub objects that satisfy the lookup interfaces
+const stubUserExistenceLookup: UserExistenceLookup = {
+  userExists: async () => true
+};
+
+const stubOrganizationMembershipLookup: OrganizationMembershipLookup = {
+  isUserMemberOfOrganization: async () => true
+};
+
+const stubLookups: AssignmentValidationLookups = {
+  userExistence: stubUserExistenceLookup,
+  organizationMembership: stubOrganizationMembershipLookup
+};
 
 test('should create a role assignment successfully when role and organization exist', async () => {
   const assignmentRepository = new InMemoryRoleAssignmentRepository();
@@ -42,7 +58,7 @@ test('should create a role assignment successfully when role and organization ex
     status: 'active'
   };
 
-  const result = await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository);
+  const result = await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository, stubLookups);
 
   assert.equal(result.status, 'created');
   assert.deepEqual(result.assignment, assignment);
@@ -83,10 +99,10 @@ test('should detect duplicate active assignment when role and organization exist
   };
 
   // Create the first assignment
-  await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository);
+  await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository, stubLookups);
 
   // Try to create the same assignment again
-  const result = await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository);
+  const result = await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository, stubLookups);
 
   assert.equal(result.status, 'duplicate');
 });
@@ -134,7 +150,7 @@ test('should allow new active assignment when existing is revoked and role and o
     roleId: persistedRole.id,
     status: 'active'
   };
-  const result = await createRoleAssignment(activeAssignment, assignmentRepository, roleRepository, memberOrganizationRepository);
+  const result = await createRoleAssignment(activeAssignment, assignmentRepository, roleRepository, memberOrganizationRepository, stubLookups);
 
   assert.equal(result.status, 'created');
   assert.deepEqual(result.assignment, activeAssignment);
@@ -162,7 +178,7 @@ test('should return roleNotFound when role does not exist', async () => {
     status: 'active'
   };
 
-  const result = await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository);
+  const result = await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository, stubLookups);
 
   assert.equal(result.status, 'roleNotFound');
 });
@@ -191,7 +207,7 @@ test('should return organizationNotFound when organization does not exist', asyn
     status: 'active'
   };
 
-  const result = await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository);
+  const result = await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository, stubLookups);
 
   assert.equal(result.status, 'organizationNotFound');
 });
