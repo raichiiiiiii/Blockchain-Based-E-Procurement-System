@@ -15,7 +15,9 @@ export type CreateRoleAssignmentResult =
   | { status: 'duplicate' }
   | { status: 'created', assignment: RoleAssignment }
   | { status: 'roleNotFound' }
-  | { status: 'organizationNotFound' };
+  | { status: 'organizationNotFound' }
+  | { status: 'userNotFound' }
+  | { status: 'userNotMember' };
 
 export async function createRoleAssignment(
   assignment: RoleAssignment,
@@ -34,6 +36,23 @@ export async function createRoleAssignment(
   const organization = await memberOrganizationRepository.findById(assignment.organizationId);
   if (!organization) {
     return { status: 'organizationNotFound' };
+  }
+
+  // Then check if the user exists
+  if (lookups) {
+    const userExists = await lookups.userExistence.userExists(assignment.userId);
+    if (!userExists) {
+      return { status: 'userNotFound' };
+    }
+
+    // Then check if the user is a member of the organization
+    const isMember = await lookups.organizationMembership.isUserMemberOfOrganization(
+      assignment.userId,
+      assignment.organizationId
+    );
+    if (!isMember) {
+      return { status: 'userNotMember' };
+    }
   }
 
   // Then check for duplicate active assignment

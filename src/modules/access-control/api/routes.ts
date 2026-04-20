@@ -7,6 +7,8 @@ import { createRoleAssignment } from '../application/create-role-assignment.js';
 import type { RoleAssignmentRepository } from '../application/role-assignment-repository.js';
 import type { RoleAssignment } from '../domain/role-assignment.js';
 import type { MemberOrganizationRepository } from '../../membership/application/member-organization-repository.js';
+import type { UserExistenceLookup } from '../../shared/application/user-existence-lookup.js';
+import type { OrganizationMembershipLookup } from '../../shared/application/organization-membership-lookup.js';
 
 // Define the audit event interface for role creation
 export interface RoleCreateAuditEvent {
@@ -39,11 +41,13 @@ interface AccessControlRoutesOptions {
   assignmentRepository: RoleAssignmentRepository;
   memberOrganizationRepository: MemberOrganizationRepository;
   audit: (event: RoleAuditEvent) => void;
+  userExistenceLookup?: UserExistenceLookup;
+  organizationMembershipLookup?: OrganizationMembershipLookup;
 }
 
 // Create the Fastify plugin for access-control routes
 const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions> = async (fastify, options) => {
-  const { repository, assignmentRepository, memberOrganizationRepository, audit } = options;
+  const { repository, assignmentRepository, memberOrganizationRepository, audit, userExistenceLookup, organizationMembershipLookup } = options;
 
   // POST /api/v1/roles - Create a new role
   fastify.post<{ Body: Role }>(
@@ -294,8 +298,14 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         status: 'active'
       };
 
+      // Prepare lookup dependencies if both are provided
+      const lookups = userExistenceLookup && organizationMembershipLookup ? {
+        userExistence: userExistenceLookup,
+        organizationMembership: organizationMembershipLookup
+      } : undefined;
+
       // Call the application service
-      const result = await createRoleAssignment(assignment, assignmentRepository, repository, memberOrganizationRepository);
+      const result = await createRoleAssignment(assignment, assignmentRepository, repository, memberOrganizationRepository, lookups);
 
       // Map result to HTTP responses
       if (result.status === 'created') {
@@ -321,6 +331,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           error: {
             code: 'VALIDATION_ERROR',
             message: 'Invalid organizationId: Member organization does not exist'
+          }
+        });
+      } else if (result.status === 'userNotFound') {
+        return reply.code(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid userId: User does not exist'
+          }
+        });
+      } else if (result.status === 'userNotMember') {
+        return reply.code(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid userId: User is not a member of the specified organization'
           }
         });
       }

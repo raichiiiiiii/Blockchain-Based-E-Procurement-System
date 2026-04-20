@@ -211,3 +211,151 @@ test('should return organizationNotFound when organization does not exist', asyn
 
   assert.equal(result.status, 'organizationNotFound');
 });
+
+test('should return userNotFound when user does not exist', async () => {
+  const assignmentRepository = new InMemoryRoleAssignmentRepository();
+  const roleRepository = new InMemoryRoleRepository();
+  const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+  // Create a role
+  const role: Role = {
+    roleCode: 'test-role',
+    displayName: 'Test Role',
+    scope: 'organization',
+    permissions: ['read'],
+    status: 'active',
+    isSystemReserved: false
+  };
+
+  const persistedRole = await roleRepository.save(role);
+
+  // Create an organization
+  const organization: MemberOrganization = {
+    registrationNumber: 'REG123',
+    legalName: 'Test Organization',
+    organizationType: 'Corporation',
+    status: 'pendingReview'
+  };
+
+  const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
+
+  // Create lookups that report user doesn't exist
+  const lookups: AssignmentValidationLookups = {
+    userExistence: {
+      userExists: async () => false
+    },
+    organizationMembership: {
+      isUserMemberOfOrganization: async () => true
+    }
+  };
+
+  const assignment: RoleAssignment = {
+    userId: 'non-existent-user',
+    organizationId: persistedOrganization.id,
+    roleId: persistedRole.id,
+    status: 'active'
+  };
+
+  const result = await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository, lookups);
+
+  assert.equal(result.status, 'userNotFound');
+});
+
+test('should return userNotMember when user is not a member of the organization', async () => {
+  const assignmentRepository = new InMemoryRoleAssignmentRepository();
+  const roleRepository = new InMemoryRoleRepository();
+  const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+  // Create a role
+  const role: Role = {
+    roleCode: 'test-role',
+    displayName: 'Test Role',
+    scope: 'organization',
+    permissions: ['read'],
+    status: 'active',
+    isSystemReserved: false
+  };
+
+  const persistedRole = await roleRepository.save(role);
+
+  // Create an organization
+  const organization: MemberOrganization = {
+    registrationNumber: 'REG123',
+    legalName: 'Test Organization',
+    organizationType: 'Corporation',
+    status: 'pendingReview'
+  };
+
+  const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
+
+  // Create lookups that report user exists but is not a member
+  const lookups: AssignmentValidationLookups = {
+    userExistence: {
+      userExists: async () => true
+    },
+    organizationMembership: {
+      isUserMemberOfOrganization: async () => false
+    }
+  };
+
+  const assignment: RoleAssignment = {
+    userId: 'user1',
+    organizationId: persistedOrganization.id,
+    roleId: persistedRole.id,
+    status: 'active'
+  };
+
+  const result = await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository, lookups);
+
+  assert.equal(result.status, 'userNotMember');
+});
+
+test('should proceed with existing validation when user exists and is a member', async () => {
+  const assignmentRepository = new InMemoryRoleAssignmentRepository();
+  const roleRepository = new InMemoryRoleRepository();
+  const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+  // Create a role
+  const role: Role = {
+    roleCode: 'test-role',
+    displayName: 'Test Role',
+    scope: 'organization',
+    permissions: ['read'],
+    status: 'active',
+    isSystemReserved: false
+  };
+
+  const persistedRole = await roleRepository.save(role);
+
+  // Create an organization
+  const organization: MemberOrganization = {
+    registrationNumber: 'REG123',
+    legalName: 'Test Organization',
+    organizationType: 'Corporation',
+    status: 'pendingReview'
+  };
+
+  const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
+
+  // Create lookups that report user exists and is a member
+  const lookups: AssignmentValidationLookups = {
+    userExistence: {
+      userExists: async () => true
+    },
+    organizationMembership: {
+      isUserMemberOfOrganization: async () => true
+    }
+  };
+
+  const assignment: RoleAssignment = {
+    userId: 'user1',
+    organizationId: persistedOrganization.id,
+    roleId: persistedRole.id,
+    status: 'active'
+  };
+
+  const result = await createRoleAssignment(assignment, assignmentRepository, roleRepository, memberOrganizationRepository, lookups);
+
+  assert.equal(result.status, 'created');
+  assert.deepEqual(result.assignment, assignment);
+});

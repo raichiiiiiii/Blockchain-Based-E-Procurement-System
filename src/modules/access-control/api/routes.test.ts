@@ -5,6 +5,8 @@ import { InMemoryRoleAssignmentRepository } from '../infrastructure/in-memory-ro
 import { InMemoryRoleRepository } from '../infrastructure/in-memory-role-repository.js';
 import { InMemoryMemberOrganizationRepository } from '../../membership/infrastructure/in-memory-member-organization-repository.js';
 import type { MemberOrganization } from '../../membership/domain/member-organization.js';
+import { InMemoryUserExistenceLookup } from '../../membership/infrastructure/in-memory-user-existence-lookup.js';
+import { InMemoryOrganizationMembershipLookup } from '../../membership/infrastructure/in-memory-organization-membership-lookup.js';
 
 describe('POST /api/v1/roles', () => {
   test('should create a role successfully', async () => {
@@ -1384,5 +1386,217 @@ describe('POST /api/v1/role-assignments', () => {
     const responseBody = response.json();
     assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
     assert.strictEqual(responseBody.error.message, 'Invalid organizationId: Member organization does not exist');
+  });
+
+  test('should return 400 for non-existent user in role assignment', async () => {
+    // Create lookup implementations
+    const userExistenceLookup = new InMemoryUserExistenceLookup({
+      existingUserIds: [] // No existing users
+    });
+    
+    const organizationMembershipLookup = new InMemoryOrganizationMembershipLookup({
+      memberships: [] // No memberships
+    });
+
+    // Create test server with injected lookups
+    const server = createTestableServer({
+      userExistenceLookup,
+      organizationMembershipLookup
+    });
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Try to create a role assignment with a non-existent user
+    const assignmentPayload = {
+      userId: 'non-existent-user',
+      organizationId: orgId,
+      roleId: roleId
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    // Assertions
+    assert.strictEqual(response.statusCode, 400);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
+    assert.strictEqual(responseBody.error.message, 'Invalid userId: User does not exist');
+  });
+
+  test('should return 400 for user not member of organization in role assignment', async () => {
+    // Create lookup implementations
+    const userExistenceLookup = new InMemoryUserExistenceLookup({
+      existingUserIds: ['user1'] // User exists
+    });
+    
+    const organizationMembershipLookup = new InMemoryOrganizationMembershipLookup({
+      memberships: [] // No memberships, so user1 is not a member of any organization
+    });
+
+    // Create test server with injected lookups
+    const server = createTestableServer({
+      userExistenceLookup,
+      organizationMembershipLookup
+    });
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Try to create a role assignment with a user that is not a member of the organization
+    const assignmentPayload = {
+      userId: 'user1',
+      organizationId: orgId,
+      roleId: roleId
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    // Assertions
+    assert.strictEqual(response.statusCode, 400);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
+    assert.strictEqual(responseBody.error.message, 'Invalid userId: User is not a member of the specified organization');
+  });
+
+  test('should create role assignment when user exists and is member of organization', async () => {
+    // Create an InMemoryMemberOrganizationRepository directly in the test
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+    
+    // Save a draft organization and capture its ID
+    const organization: MemberOrganization = {
+      registrationNumber: 'REG123',
+      legalName: 'Test Organization',
+      organizationType: 'Corporation',
+      status: 'pendingReview'
+    };
+    
+    const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
+    
+    // Create lookup implementations
+    const userExistenceLookup = new InMemoryUserExistenceLookup({
+      existingUserIds: ['user1'] // User exists
+    });
+    
+    const organizationMembershipLookup = new InMemoryOrganizationMembershipLookup({
+      memberships: [{ userId: 'user1', organizationId: persistedOrganization.id }] // User is member of organization
+    });
+
+    // Create test server with injected lookups
+    const server = createTestableServer({
+      memberRepository: memberOrganizationRepository,
+      userExistenceLookup,
+      organizationMembershipLookup
+    });
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a role assignment with a user that exists and is a member of the organization
+    const assignmentPayload = {
+      userId: 'user1',
+      organizationId: persistedOrganization.id,
+      roleId: roleId
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    // Assertions
+    assert.strictEqual(response.statusCode, 201);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.data.userId, 'user1');
+    assert.strictEqual(responseBody.data.organizationId, persistedOrganization.id);
+    assert.strictEqual(responseBody.data.roleId, roleId);
+    assert.strictEqual(responseBody.data.status, 'active');
   });
 });

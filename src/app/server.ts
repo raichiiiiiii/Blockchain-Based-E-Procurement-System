@@ -14,6 +14,8 @@ import { registerShariahReviewRoutes } from '../modules/shariah-review/api/route
 import { InMemoryShariahReviewRepository } from '../modules/shariah-review/infrastructure/in-memory-shariah-review-repository.js';
 import type { ShariahReviewRepository } from '../modules/shariah-review/application/shariah-review-repository.js';
 import type { ShariahReviewSubmitAuditEvent } from '../modules/shariah-review/api/routes.js';
+import type { UserExistenceLookup } from '../modules/shared/application/user-existence-lookup.js';
+import type { OrganizationMembershipLookup } from '../modules/shared/application/organization-membership-lookup.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -24,6 +26,8 @@ export function createTestableServer(options?: {
   roleAssignmentRepository?: RoleAssignmentRepository;
   shariahReviewRepository?: ShariahReviewRepository;
   shariahReviewAudit?: (event: ShariahReviewSubmitAuditEvent) => void;
+  userExistenceLookup?: UserExistenceLookup;
+  organizationMembershipLookup?: OrganizationMembershipLookup;
 }) {
   const server = fastify();
 
@@ -41,6 +45,8 @@ export function createTestableServer(options?: {
   const shariahReviewAuditCallback = options?.shariahReviewAudit ?? ((event: ShariahReviewSubmitAuditEvent) => {
     console.info('SHARIAH REVIEW AUDIT EVENT:', JSON.stringify(event));
   });
+  const userExistenceLookup = options?.userExistenceLookup;
+  const organizationMembershipLookup = options?.organizationMembershipLookup;
 
   // Register membership routes
   server.register(registerMembershipRoutes, {
@@ -55,7 +61,9 @@ export function createTestableServer(options?: {
     repository: roleRepository,
     assignmentRepository: roleAssignmentRepository,
     memberOrganizationRepository: memberOrganizationRepository,
-    audit: roleAuditCallback
+    audit: roleAuditCallback,
+    userExistenceLookup,
+    organizationMembershipLookup
   });
 
   // Register shariah-review routes
