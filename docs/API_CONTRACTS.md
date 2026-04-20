@@ -413,6 +413,7 @@ Provisional Sprint 1 rules:
 - duplicate active assignment of the same `roleId` to the same `userId` in the same `organizationId` returns `CONFLICT`
 - one user may hold multiple distinct active roles in the same organization unless a later separation-of-duties rule forbids a specific combination
 - one user may hold roles across multiple organizations
+- assignment requires that the user exists and is a member of the specified organization, otherwise returns `400 VALIDATION_ERROR`
 
 ### 7.2 Remove role assignment
 
