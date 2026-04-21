@@ -1600,3 +1600,618 @@ describe('POST /api/v1/role-assignments', () => {
     assert.strictEqual(responseBody.data.status, 'active');
   });
 });
+
+describe('DELETE /api/v1/role-assignments', () => {
+  test('should remove (revoke) an active role assignment successfully', async () => {
+    const assignmentRepository = new InMemoryRoleAssignmentRepository();
+    const roleRepository = new InMemoryRoleRepository();
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    const server = createTestableServer({
+      roleRepository,
+      roleAssignmentRepository: assignmentRepository,
+      memberRepository: memberOrganizationRepository
+    });
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Create a role assignment
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: roleId
+    };
+
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+
+    // Remove the role assignment
+    const removeResponse = await server.inject({
+      method: 'DELETE',
+      url: `/api/v1/role-assignments?userId=user_123&organizationId=${orgId}&roleId=${roleId}`
+    });
+
+    assert.strictEqual(removeResponse.statusCode, 200);
+    const responseBody = removeResponse.json();
+    assert.ok(responseBody.data);
+    assert.strictEqual(responseBody.data.userId, 'user_123');
+    assert.strictEqual(responseBody.data.organizationId, orgId);
+    assert.strictEqual(responseBody.data.roleId, roleId);
+    assert.strictEqual(responseBody.data.status, 'revoked');
+  });
+
+  test('should return 404 when trying to remove a non-existent role assignment', async () => {
+    const server = createTestableServer();
+
+    const removeResponse = await server.inject({
+      method: 'DELETE',
+      url: '/api/v1/role-assignments?userId=user_123&organizationId=org_123&roleId=role_123'
+    });
+
+    assert.strictEqual(removeResponse.statusCode, 404);
+    const responseBody = removeResponse.json();
+    assert.strictEqual(responseBody.error.code, 'NOT_FOUND');
+    assert.strictEqual(responseBody.error.message, 'Role assignment not found');
+  });
+
+  test('should return 200 when trying to remove an already revoked role assignment', async () => {
+    const assignmentRepository = new InMemoryRoleAssignmentRepository();
+    const roleRepository = new InMemoryRoleRepository();
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    const server = createTestableServer({
+      roleRepository,
+      roleAssignmentRepository: assignmentRepository,
+      memberRepository: memberOrganizationRepository
+    });
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Manually save a revoked assignment
+    await assignmentRepository.save({
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: roleId,
+      status: 'revoked'
+    });
+
+    // Try to remove the already revoked assignment
+    const removeResponse = await server.inject({
+      method: 'DELETE',
+      url: `/api/v1/role-assignments?userId=user_123&organizationId=${orgId}&roleId=${roleId}`
+    });
+
+    assert.strictEqual(removeResponse.statusCode, 200);
+    const responseBody = removeResponse.json();
+    assert.ok(responseBody.data);
+    assert.strictEqual(responseBody.data.userId, 'user_123');
+    assert.strictEqual(responseBody.data.organizationId, orgId);
+    assert.strictEqual(responseBody.data.roleId, roleId);
+    assert.strictEqual(responseBody.data.status, 'revoked');
+  });
+
+  test('should return 400 when required query parameters are missing', async () => {
+    const server = createTestableServer();
+
+    // Test with missing userId
+    const response1 = await server.inject({
+      method: 'DELETE',
+      url: '/api/v1/role-assignments?organizationId=org_123&roleId=role_123'
+    });
+
+    assert.strictEqual(response1.statusCode, 400);
+
+    // Test with missing organizationId
+    const response2 = await server.inject({
+      method: 'DELETE',
+      url: '/api/v1/role-assignments?userId=user_123&roleId=role_123'
+    });
+
+    assert.strictEqual(response2.statusCode, 400);
+
+    // Test with missing roleId
+    const response3 = await server.inject({
+      method: 'DELETE',
+      url: '/api/v1/role-assignments?userId=user_123&organizationId=org_123'
+    });
+
+    assert.strictEqual(response3.statusCode, 400);
+
+    // Test with completely empty query
+    const response4 = await server.inject({
+      method: 'DELETE',
+      url: '/api/v1/role-assignments'
+    });
+
+    assert.strictEqual(response4.statusCode, 400);
+  });
+});
+
+describe('PATCH /api/v1/role-assignments/change', () => {
+  test('should change role assignment successfully', async () => {
+    const server = createTestableServer();
+
+    // First create two roles
+    const currentRoleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'current-role',
+        displayName: 'Current Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(currentRoleResponse.statusCode, 201);
+    const currentRoleId = currentRoleResponse.json().data.id;
+
+    const newRoleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'new-role',
+        displayName: 'New Role',
+        scope: 'organization',
+        permissions: ['read', 'write'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(newRoleResponse.statusCode, 201);
+    const newRoleId = newRoleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Create a role assignment
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: currentRoleId
+    };
+
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+
+    // Change the role assignment
+    const changePayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      currentRoleId: currentRoleId,
+      newRoleId: newRoleId
+    };
+
+    const changeResponse = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: changePayload
+    });
+
+    assert.strictEqual(changeResponse.statusCode, 200);
+    const responseBody = changeResponse.json();
+    assert.ok(responseBody.data);
+    assert.ok(responseBody.data.oldAssignment);
+    assert.ok(responseBody.data.newAssignment);
+    assert.strictEqual(responseBody.data.oldAssignment.status, 'revoked');
+    assert.strictEqual(responseBody.data.newAssignment.status, 'active');
+    assert.strictEqual(responseBody.data.newAssignment.roleId, newRoleId);
+  });
+
+  test('should return 404 when current assignment does not exist', async () => {
+    const server = createTestableServer();
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Try to change a non-existent assignment
+    const changePayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      currentRoleId: 'non-existent-role-id',
+      newRoleId: roleId
+    };
+
+    const changeResponse = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: changePayload
+    });
+
+    assert.strictEqual(changeResponse.statusCode, 404);
+    const responseBody = changeResponse.json();
+    assert.strictEqual(responseBody.error.code, 'NOT_FOUND');
+    assert.strictEqual(responseBody.error.message, 'Role assignment not found');
+  });
+
+  test('should return 400 when new role does not exist', async () => {
+    const server = createTestableServer();
+
+    // First create a role
+    const currentRoleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'current-role',
+        displayName: 'Current Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(currentRoleResponse.statusCode, 201);
+    const currentRoleId = currentRoleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Create a role assignment
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: currentRoleId
+    };
+
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+
+    // Try to change to a non-existent role
+    const changePayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      currentRoleId: currentRoleId,
+      newRoleId: 'non-existent-role-id'
+    };
+
+    const changeResponse = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: changePayload
+    });
+
+    assert.strictEqual(changeResponse.statusCode, 400);
+    const responseBody = changeResponse.json();
+    assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
+    assert.strictEqual(responseBody.error.message, 'Invalid newRoleId: Role does not exist');
+  });
+
+  test('should return 409 when target role is already active', async () => {
+    const server = createTestableServer();
+
+    // First create two roles
+    const currentRoleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'current-role',
+        displayName: 'Current Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(currentRoleResponse.statusCode, 201);
+    const currentRoleId = currentRoleResponse.json().data.id;
+
+    const newRoleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'new-role',
+        displayName: 'New Role',
+        scope: 'organization',
+        permissions: ['read', 'write'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(newRoleResponse.statusCode, 201);
+    const newRoleId = newRoleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Create a role assignment with current role
+    const currentAssignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: currentRoleId
+    };
+
+    const currentAssignmentResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: currentAssignmentPayload
+    });
+
+    assert.strictEqual(currentAssignmentResponse.statusCode, 201);
+
+    // Create a role assignment with new role (simulating the duplicate)
+    const newAssignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: newRoleId
+    };
+
+    const newAssignmentResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: newAssignmentPayload
+    });
+
+    assert.strictEqual(newAssignmentResponse.statusCode, 201);
+
+    // Try to change to the role that's already assigned
+    const changePayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      currentRoleId: currentRoleId,
+      newRoleId: newRoleId
+    };
+
+    const changeResponse = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: changePayload
+    });
+
+    assert.strictEqual(changeResponse.statusCode, 409);
+    const responseBody = changeResponse.json();
+    assert.strictEqual(responseBody.error.code, 'CONFLICT');
+    assert.strictEqual(responseBody.error.message, 'Target role assignment already exists');
+  });
+
+  test('should return 400 when currentRoleId equals newRoleId', async () => {
+    const server = createTestableServer();
+
+    // Try to change to the same role
+    const changePayload = {
+      userId: 'user_123',
+      organizationId: 'org_123',
+      currentRoleId: 'some-role-id',
+      newRoleId: 'some-role-id'
+    };
+
+    const changeResponse = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: changePayload
+    });
+
+    assert.strictEqual(changeResponse.statusCode, 400);
+    const responseBody = changeResponse.json();
+    assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
+    assert.strictEqual(responseBody.error.message, 'Current and new role IDs must be different');
+  });
+
+  test('should return 400 when required body fields are missing', async () => {
+    const server = createTestableServer();
+
+    // Test with missing userId
+    const response1 = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: {
+        organizationId: 'org_123',
+        currentRoleId: 'current-role-id',
+        newRoleId: 'new-role-id'
+      }
+    });
+
+    assert.strictEqual(response1.statusCode, 400);
+
+    // Test with missing organizationId
+    const response2 = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: {
+        userId: 'user_123',
+        currentRoleId: 'current-role-id',
+        newRoleId: 'new-role-id'
+      }
+    });
+
+    assert.strictEqual(response2.statusCode, 400);
+
+    // Test with missing currentRoleId
+    const response3 = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: {
+        userId: 'user_123',
+        organizationId: 'org_123',
+        newRoleId: 'new-role-id'
+      }
+    });
+
+    assert.strictEqual(response3.statusCode, 400);
+
+    // Test with missing newRoleId
+    const response4 = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: {
+        userId: 'user_123',
+        organizationId: 'org_123',
+        currentRoleId: 'current-role-id'
+      }
+    });
+
+    assert.strictEqual(response4.statusCode, 400);
+
+    // Test with completely empty payload
+    const response5 = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: {}
+    });
+
+    assert.strictEqual(response5.statusCode, 400);
+  });
+});

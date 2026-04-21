@@ -11,4 +11,6 @@ export interface RoleAssignmentRepository {
     userId: string,
     organizationId: string
   ): Promise<boolean>;
+  findById(id: string): Promise<RoleAssignment | null>;
+  update(assignment: RoleAssignment): Promise<void>;
 }

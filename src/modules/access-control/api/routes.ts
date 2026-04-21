@@ -4,6 +4,8 @@ import { updateRole } from '../application/update-role.js';
 import type { RoleRepository } from '../application/role-repository.js';
 import type { Role } from '../domain/role.js';
 import { createRoleAssignment } from '../application/create-role-assignment.js';
+import { removeRoleAssignment } from '../application/remove-role-assignment.js';
+import { changeRoleAssignment } from '../application/change-role-assignment.js';
 import type { RoleAssignmentRepository } from '../application/role-assignment-repository.js';
 import type { RoleAssignment } from '../domain/role-assignment.js';
 import type { MemberOrganizationRepository } from '../../membership/application/member-organization-repository.js';
@@ -345,6 +347,118 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           error: {
             code: 'VALIDATION_ERROR',
             message: 'Invalid userId: User is not a member of the specified organization'
+          }
+        });
+      }
+    }
+  );
+
+  // DELETE /api/v1/role-assignments - Remove (revoke) a role assignment
+  fastify.delete(
+    '/role-assignments',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          required: ['userId', 'organizationId', 'roleId'],
+          properties: {
+            userId: { type: 'string' },
+            organizationId: { type: 'string' },
+            roleId: { type: 'string' }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      const { userId, organizationId, roleId } = request.query as { 
+        userId: string; 
+        organizationId: string; 
+        roleId: string; 
+      };
+
+      // Call the remove role assignment service
+      const result = await removeRoleAssignment(userId, organizationId, roleId, assignmentRepository);
+
+      // Map result to HTTP responses
+      if (result.status === 'removed' || result.status === 'alreadyRevoked') {
+        return reply.code(200).send({
+          data: result.assignment
+        });
+      } else if (result.status === 'notFound') {
+        return reply.code(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Role assignment not found'
+          }
+        });
+      }
+    }
+  );
+
+  // PATCH /api/v1/role-assignments/change - Change a role assignment
+  fastify.patch<{ Body: { userId: string; organizationId: string; currentRoleId: string; newRoleId: string } }>(
+    '/role-assignments/change',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['userId', 'organizationId', 'currentRoleId', 'newRoleId'],
+          properties: {
+            userId: { type: 'string' },
+            organizationId: { type: 'string' },
+            currentRoleId: { type: 'string' },
+            newRoleId: { type: 'string' }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      const { userId, organizationId, currentRoleId, newRoleId } = request.body;
+
+      // Call the change role assignment service
+      const result = await changeRoleAssignment(
+        userId,
+        organizationId,
+        currentRoleId,
+        newRoleId,
+        assignmentRepository,
+        repository
+      );
+
+      // Map result to HTTP responses
+      if (result.status === 'changed') {
+        return reply.code(200).send({
+          data: {
+            oldAssignment: result.oldAssignment,
+            newAssignment: result.newAssignment
+          }
+        });
+      } else if (result.status === 'notFound') {
+        return reply.code(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Role assignment not found'
+          }
+        });
+      } else if (result.status === 'roleNotFound') {
+        return reply.code(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid newRoleId: Role does not exist'
+          }
+        });
+      } else if (result.status === 'duplicate') {
+        return reply.code(409).send({
+          error: {
+            code: 'CONFLICT',
+            message: 'Target role assignment already exists'
+          }
+        });
+      } else if (result.status === 'sameRole') {
+        return reply.code(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Current and new role IDs must be different'
           }
         });
       }
