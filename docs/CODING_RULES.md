@@ -202,5 +202,5 @@ For every story completion:
 - No framework imports in domain layer.
 - No hidden status values not documented in `STATE_MODELS.md`.
 - No silent fallback behavior for authorization failures.
-- No “temporary” contract fields merged without doc updates.
+- No "temporary" contract fields merged without doc updates.
 - No hardcoding of role catalogs, protected functions, or review state transitions outside their documented sources of truth.
