@@ -69,20 +69,8 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
 
       // Handle draft prepared
       if (result.status === 'draftPrepared') {
-        // Normalize x-actor-id header to always be a string
-        const rawActorId = request.headers['x-actor-id'];
-        let actorId: string;
-
-        if (Array.isArray(rawActorId)) {
-          // Take the first value if it's an array
-          actorId = rawActorId[0] || 'unknown';
-        } else if (typeof rawActorId === 'string') {
-          // Use the string value
-          actorId = rawActorId;
-        } else {
-          // Default to 'unknown' for undefined/null cases
-          actorId = 'unknown';
-        }
+        // Get actorId from trusted actor context
+        const actorId = request.actorContext?.userId || 'unknown';
 
         // Emit provisional audit event with typed interface
         const auditEvent: MemberOrgCreateAuditEvent = {

@@ -57,15 +57,8 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       }
     },
     async (request, reply) => {
-      // Extract and validate x-actor-id header
-      const rawActorId = request.headers['x-actor-id'];
-      let actorId: string;
-
-      if (typeof rawActorId === 'string') {
-        actorId = rawActorId.trim();
-      } else {
-        actorId = ''; // Will be caught by the check below
-      }
+      // Extract and validate actorId from trusted actor context
+      const actorId = request.actorContext?.userId;
 
       if (!actorId) {
         return reply.code(400).send({

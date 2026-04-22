@@ -94,9 +94,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     '/roles',
     {
       preHandler: async (request, reply) => {
-        // Check if the actor is an admin
-        const actorRole = request.headers['x-actor-role'];
-        if (actorRole !== 'admin') {
+        // Check if the actor is an admin using actorContext
+        const actorRoles = request.actorContext?.authorizationContext.roles;
+        if (!actorRoles || !actorRoles.includes('admin')) {
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
@@ -128,20 +128,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       // Call the application service directly with the request body
       const result = await createRole(request.body, repository);
 
-      // Normalize x-actor-id header to always be a string
-      const rawActorId = request.headers['x-actor-id'];
-      let actorId: string;
-
-      if (Array.isArray(rawActorId)) {
-        // Take the first value if it's an array
-        actorId = rawActorId[0] || 'unknown';
-      } else if (typeof rawActorId === 'string') {
-        // Use the string value
-        actorId = rawActorId;
-      } else {
-        // Default to 'unknown' for undefined/null cases
-        actorId = 'unknown';
-      }
+      // Get actorId from trusted actor context
+      const actorId = request.actorContext?.userId || 'unknown';
 
       // Map result to HTTP responses
       if (result.status === 'created') {
@@ -190,9 +178,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     '/roles/:roleId',
     {
       preHandler: async (request, reply) => {
-        // Check if the actor is an admin
-        const actorRole = request.headers['x-actor-role'];
-        if (actorRole !== 'admin') {
+        // Check if the actor is an admin using actorContext
+        const actorRoles = request.actorContext?.authorizationContext.roles;
+        if (!actorRoles || !actorRoles.includes('admin')) {
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
@@ -245,20 +233,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       // Call the application service directly with the request params and body
       const result = await updateRole(request.params.roleId, request.body, repository);
 
-      // Normalize x-actor-id header to always be a string
-      const rawActorId = request.headers['x-actor-id'];
-      let actorId: string;
-
-      if (Array.isArray(rawActorId)) {
-        // Take the first value if it's an array
-        actorId = rawActorId[0] || 'unknown';
-      } else if (typeof rawActorId === 'string') {
-        // Use the string value
-        actorId = rawActorId;
-      } else {
-        // Default to 'unknown' for undefined/null cases
-        actorId = 'unknown';
-      }
+      // Get actorId from trusted actor context
+      const actorId = request.actorContext?.userId || 'unknown';
 
       // Map result to HTTP responses
       if (result.status === 'updated') {
@@ -318,9 +294,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     '/role-assignments',
     {
       preHandler: async (request, reply) => {
-        // Check if the actor is an admin
-        const actorRole = request.headers['x-actor-role'];
-        if (actorRole !== 'admin') {
+        // Check if the actor is an admin using actorContext
+        const actorRoles = request.actorContext?.authorizationContext.roles;
+        if (!actorRoles || !actorRoles.includes('admin')) {
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
@@ -359,20 +335,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       // Call the application service
       const result = await createRoleAssignment(assignment, assignmentRepository, repository, memberOrganizationRepository, lookups);
 
-      // Normalize x-actor-id header to always be a string
-      const rawActorId = request.headers['x-actor-id'];
-      let actorId: string;
-
-      if (Array.isArray(rawActorId)) {
-        // Take the first value if it's an array
-        actorId = rawActorId[0] || 'unknown';
-      } else if (typeof rawActorId === 'string') {
-        // Use the string value
-        actorId = rawActorId;
-      } else {
-        // Default to 'unknown' for undefined/null cases
-        actorId = 'unknown';
-      }
+      // Get actorId from trusted actor context
+      const actorId = request.actorContext?.userId || 'unknown';
 
       // Map result to HTTP responses
       if (result.status === 'created') {
@@ -499,9 +463,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     '/role-assignments',
     {
       preHandler: async (request, reply) => {
-        // Check if the actor is an admin
-        const actorRole = request.headers['x-actor-role'];
-        if (actorRole !== 'admin') {
+        // Check if the actor is an admin using actorContext
+        const actorRoles = request.actorContext?.authorizationContext.roles;
+        if (!actorRoles || !actorRoles.includes('admin')) {
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
@@ -532,20 +496,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       // Call the remove role assignment service
       const result = await removeRoleAssignment(userId, organizationId, roleId, assignmentRepository);
 
-      // Normalize x-actor-id header to always be a string
-      const rawActorId = request.headers['x-actor-id'];
-      let actorId: string;
-
-      if (Array.isArray(rawActorId)) {
-        // Take the first value if it's an array
-        actorId = rawActorId[0] || 'unknown';
-      } else if (typeof rawActorId === 'string') {
-        // Use the string value
-        actorId = rawActorId;
-      } else {
-        // Default to 'unknown' for undefined/null cases
-        actorId = 'unknown';
-      }
+      // Get actorId from trusted actor context
+      const actorId = request.actorContext?.userId || 'unknown';
 
       // Map result to HTTP responses
       if (result.status === 'removed' || result.status === 'alreadyRevoked') {
@@ -581,9 +533,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     '/role-assignments/change',
     {
       preHandler: async (request, reply) => {
-        // Check if the actor is an admin
-        const actorRole = request.headers['x-actor-role'];
-        if (actorRole !== 'admin') {
+        // Check if the actor is an admin using actorContext
+        const actorRoles = request.actorContext?.authorizationContext.roles;
+        if (!actorRoles || !actorRoles.includes('admin')) {
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
@@ -618,20 +570,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         repository
       );
 
-      // Normalize x-actor-id header to always be a string
-      const rawActorId = request.headers['x-actor-id'];
-      let actorId: string;
-
-      if (Array.isArray(rawActorId)) {
-        // Take the first value if it's an array
-        actorId = rawActorId[0] || 'unknown';
-      } else if (typeof rawActorId === 'string') {
-        // Use the string value
-        actorId = rawActorId;
-      } else {
-        // Default to 'unknown' for undefined/null cases
-        actorId = 'unknown';
-      }
+      // Get actorId from trusted actor context
+      const actorId = request.actorContext?.userId || 'unknown';
 
       // Map result to HTTP responses
       if (result.status === 'changed') {
