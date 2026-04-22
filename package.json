@@ -12,7 +12,8 @@
     "test": "node scripts/run-tests.mjs"
   },
   "dependencies": {
-    "fastify": "^4.26.0"
+    "fastify": "^4.26.0",
+    "fastify-plugin": "^5.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

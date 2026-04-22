@@ -16,6 +16,7 @@ import type { ShariahReviewRepository } from '../modules/shariah-review/applicat
 import type { ShariahReviewSubmitAuditEvent } from '../modules/shariah-review/api/routes.js';
 import type { UserExistenceLookup } from '../modules/shared/application/user-existence-lookup.js';
 import type { OrganizationMembershipLookup } from '../modules/shared/application/organization-membership-lookup.js';
+import actorContextPlugin from './plugins/actor-context-plugin.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -30,6 +31,9 @@ export function createTestableServer(options?: {
   organizationMembershipLookup?: OrganizationMembershipLookup;
 }) {
   const server = fastify();
+
+  // Register the actor context plugin
+  server.register(actorContextPlugin);
 
   // Use provided dependencies or defaults
   const memberOrganizationRepository = options?.memberRepository ?? new InMemoryMemberOrganizationRepository();
