@@ -3,3 +3,13 @@ deferred
 node_modules
 dist
 ~$backlog.xlsx
+temp
+backlog
+docs/adrs
+docs/drafts
+docs/baseline_architecture.md
+.nvmrc
+deep-research-report.md
+evidence-ledger.md
+memo.md
+memo_scrum.md

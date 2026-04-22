@@ -2,7 +2,7 @@
 
 Status: Draft for Sprint 1 baseline  
 Owner: Backend + Frontend + QA  
-Last updated: YYYY-MM-DD
+Last updated: 2026-04-22
 
 ## 1. Purpose
 
@@ -23,9 +23,13 @@ This file is allowed to carry Sprint 1 provisional assumptions, but those assump
 ### authentication
 - Protected endpoints expect `Authorization: Bearer <token>`
 - Protected endpoints assume a stable authenticated user context exists at runtime
+- Protected write actions and sensitive reads must derive actor identity from authenticated server-side request context
 
 [FLAG-USER-IDENTITY]
 The identity provider and user provisioning model are not frozen. This contract only assumes a stable opaque `userId` is available to protected flows.
+
+[FLAG-ACTOR-SOURCE]
+The trusted actor source for protected actions is authenticated server-side request context. Temporary scaffolding such as client-supplied actor headers may exist in local or transitional implementations, but they are not authoritative public-contract inputs and must not be treated as the source of truth for authorization or audit attribution.
 
 ### naming
 - JSON field names use `camelCase`
@@ -92,6 +96,9 @@ Minimum error codes:
 - `RATE_LIMITED`
 - `EXTERNAL_SERVICE_ERROR`
 - `INTERNAL_ERROR`
+
+[FLAG-ERROR-ENVELOPE]
+Schema-validation failures and application-level validation failures must converge on this standard error-envelope family. Routes must not invent route-specific error shapes while this flag remains open.
 
 ## 5. Membership contracts
 
@@ -544,6 +551,7 @@ Provisional Sprint 1 rules:
 - attachment handling in Sprint 1 guarantees reference metadata only; storage backend details are not part of this public contract
 - submitting actor is derived from authenticated server-side context
 - `submittedByUserId` is a server-derived field and must not be accepted from the request body
+- if a client sends `submittedByUserId` in the request body, the request should be rejected with `VALIDATION_ERROR`
 - submitting actor must have permission to submit a review for the organization
 
 [FLAG-SHARIAH-SUBMISSION-METADATA]
@@ -684,170 +692,3 @@ Rules:
 
 [FLAG-READ-AUDIT]
 History-read logging requirements are not yet finalized, but sensitive history access is expected to be auditable in Sprint 1.
-
-`submittedByUserId.md`
-
-
-````md
-# submittedByUserId Contract Fix
-
-Status: Patch note for Sprint 1 baseline  
-Owner: Backend / Architecture  
-Last updated: YYYY-MM-DD
-
-## 1. Problem
-
-The Shariah review submission contract currently allows the client to send:
-
-- `submittedByUserId`
-
-inside the request body for a protected endpoint.
-
-That is a contract flaw because actor identity for protected write actions must come from authenticated server-side context, not untrusted client input.
-
-## 2. Decision
-
-For Sprint 1:
-
-- remove `submittedByUserId` from the request body of `POST /api/v1/shariah-reviews`
-- derive the submitting actor from authenticated request context
-- allow the server to expose `submittedByUserId` in responses or history only as a server-derived field
-
-## 3. Assumptions
-
-This patch assumes:
-
-1. protected endpoints already require `Authorization: Bearer <token>`
-2. authenticated runtime context can provide a stable opaque `userId`
-3. Sprint 1 does not support delegated "submit on behalf of another user" behavior as part of the public API contract
-4. if delegated submission is needed later, it will be modeled explicitly with separate actor/subject semantics
-
-## 4. Granular flaws being patched
-
-- client can spoof submitter identity
-- token actor and body actor can disagree
-- audit logs can become unreliable
-- authorization semantics become ambiguous
-- backend must invent a precedence rule that should not exist
-- public contract leaks identity-model detail that should stay server-owned
-- future delegated submission becomes harder to model cleanly
-
-## 5. Exact contract patch target
-
-Patch target in `API_CONTRACTS.md`:
-
-- Section `9.1 Submit review request`
-
-## 6. Replacement contract
-
-### Request
-
-```json
-{
-  "organizationId": "org_123",
-  "submissionReference": "string",
-  "title": "string",
-  "summary": "string",
-  "productType": "string",
-  "contractType": "string",
-  "effectiveDate": "2026-03-15",
-  "references": [
-    {
-      "type": "attachment",
-      "name": "document.pdf",
-      "uri": "string",
-      "description": "string",
-      "mediaType": "application/pdf"
-    }
-  ]
-}
-```
-
-### Response
-
-```json
-{
-  "data": {
-    "id": "review_123",
-    "organizationId": "org_123",
-    "submissionReference": "string",
-    "status": "submitted",
-    "submittedByUserId": "user_123",
-    "createdAt": "2026-03-15T00:00:00Z"
-  }
-}
-```
-
-## 7. Replacement rules
-
-Use these rules in place of the old request-body actor rule:
-
-- required request fields: `organizationId`, `submissionReference`, `title`, `summary`
-- initial workflow state is `submitted`
-- `submissionReference` should be unique within an organization
-- `references` are optional in the transport contract
-- attachment handling in Sprint 1 guarantees reference metadata only; storage backend details are out of scope for the public contract
-- submitting actor is derived from authenticated server-side context
-- `submittedByUserId` is a server-derived field and must not be accepted from the request body
-- the submitting actor must have permission to submit a review for the target organization
-
-## 8. Validation and error handling
-
-Recommended server behavior during transition:
-
-- if client sends `submittedByUserId`, reject the request with `VALIDATION_ERROR`
-- do not silently trust or persist the client value
-- if a short compatibility window is needed, the server may temporarily ignore the client field, but the public docs should still mark it unsupported
-
-Preferred long-term behavior:
-- reject the field explicitly
-
-## 9. Audit impact
-
-For review submission audit events:
-
-- `actorId` comes from authenticated context
-- `targetType` = `shariahReview`
-- `targetId` = created review ID
-- `action` = `reviewSubmitted`
-- `outcome` = `success` or failure outcome
-- `requestId` should be captured where available
-
-## 10. Forward-compatible placeholder
-
-If delegated submission is needed later, do not restore client-authored `submittedByUserId`.
-
-Instead, introduce an explicit delegated-action design such as:
-
-- authenticated actor from token
-- separate subject or beneficiary field only where business-approved
-- explicit authorization rule for acting on behalf
-- dual audit capture of actor and subject
-
-That future change is out of Sprint 1 scope.
-
-## 11. Implementation impact
-
-Backend patch:
-- remove `submittedByUserId` from request schema
-- derive submitter from auth context
-- persist submitter as server-derived metadata if required
-- update tests for spoofed-body rejection
-
-Frontend patch:
-- stop sending `submittedByUserId`
-- rely on authenticated session instead
-
-QA patch:
-- add negative test where body includes `submittedByUserId`
-- expected result: validation failure or explicit unsupported-field rejection
-
-## 12. Acceptance condition for this patch
-
-This patch is complete when:
-
-- `API_CONTRACTS.md` no longer accepts `submittedByUserId` in request body
-- submission response/history may expose submitter only as server-derived data
-- request validation rejects or ignores client-authored submitter during the transition strategy selected by the team
-- audit uses authenticated actor identity, not payload identity
-````

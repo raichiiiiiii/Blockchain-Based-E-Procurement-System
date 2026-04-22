@@ -2,7 +2,7 @@
 
 Status: Draft for Sprint 1 baseline  
 Owner: Engineering Lead  
-Last updated: YYYY-MM-DD
+Last updated: 2026-04-22
 
 ## 1. Purpose
 
@@ -27,6 +27,7 @@ These rules constrain how code is written so Sprint 1 implementation remains con
 6. Keep each module independently understandable.
 7. Encode provisional business assumptions in named constants, policies, or documented schema types, not in magic strings.
 8. Do not let generated code silently invent new states, role codes, or error shapes.
+9. Do not treat client-supplied actor identity fields or headers as the trusted source for authorization or audit on protected actions.
 
 ## 4. Folder usage
 
@@ -94,6 +95,7 @@ If external integration later requires snake_case, add explicit mapping at the t
 - Do not return ad hoc error JSON from feature handlers.
 - Map known business failures to stable error codes.
 - Include request correlation data where the platform already supports it.
+- Schema-validation failures and application-level validation failures must converge on the standard error-envelope family documented in `API_CONTRACTS.md`.
 
 Expected categories (aligned with API_CONTRACTS.md):
 - validation
@@ -133,6 +135,11 @@ These fields are present in current implementations (e.g., `ShariahReviewSubmitA
 [FLAG-AUDIT-POLICY]
 Do not finalize audit implementation details until the audit research outcome is approved. The specific events logged and their structure remain provisional.
 
+Interim Sprint 2 rule before final audit-policy approval:
+- keep audit on governance-sensitive write success paths
+- keep audit on denied protected actions
+- do not multiply route-specific no-audit or special-audit exceptions without a durable doc update
+
 ## 9. HTTP/API rules
 
 - Use REST JSON for Sprint 1.
@@ -141,6 +148,11 @@ Do not finalize audit implementation details until the audit research outcome is
 - Do not mix multiple response shapes for the same endpoint.
 - Prefer opaque public identifiers over exposing DB internals.
 - Treat authenticated `userId` as opaque contract data, not as a database assumption.
+- Protected routes must derive actor identity from authenticated server-side request context.
+- Client-supplied actor identity fields or headers are not authoritative API inputs for protected actions.
+
+[FLAG-ACTOR-SOURCE]
+Trusted actor context is required for authorization and audit on protected actions. Transitional scaffolding must be removed deliberately rather than normalized into the public contract.
 
 [FLAG-ID-STRATEGY]
 Public ID format is not yet frozen.

@@ -2,7 +2,7 @@
 
 Status: Draft execution sheet  
 Owner: Scrum Master / Tech Lead  
-Last updated: 2026-03-25
+Last updated: 2026-04-22
 
 ## 1. Sprint objective
 
@@ -82,6 +82,8 @@ Current working baselines:
 
 These baselines are usable for Sprint 2 planning, but they remain revisable where flagged.
 
+Before Wave 4 starts, run a narrow durable-doc sync under `PBI-094` to canonicalize actor-source, review-submission actor handling, interim audit baseline, and any temporary authorization semantics that would otherwise slow protected-route hardening.
+
 ## 7. Wave plan
 
 ### Wave 0 — backlog integrity and quality gate
@@ -157,6 +159,31 @@ Dependencies:
 Exit condition:
 - backend role-assignment service satisfies its remaining AC
 - story can progress without dependence on blocked UI work
+
+
+### Wave 3.5 — narrow durable-doc hardening before Wave 4
+
+Goal:
+- remove actor, audit, and protected-action contract drift before trusted-actor and audit-foundation work begins
+
+Tasks:
+- PBI-094 focused durable-doc sync for Wave 4 readiness
+
+Scope focus:
+- make actor-source truth explicit across architecture, coding, and API docs
+- keep review submission actor server-derived in the canonical API contract
+- record the interim pre-Wave 4 audit baseline for denied protected actions
+- document any temporary protected-action authorization semantics that are still intentionally provisional
+
+Dependencies:
+- Wave 3 current backend slice is stable enough to document honestly
+- no broad documentation rewrite is attempted
+- unresolved flags remain explicit rather than silently closed
+
+Exit condition:
+- Wave 4 starts from one canonical actor-source statement
+- protected-route hardening no longer depends on sidecar patch notes or chat memory
+- durable docs are precise enough to reduce implementation churn
 
 ### Wave 4 — trusted actor and audit foundations
 
@@ -393,26 +420,28 @@ Touches:
 11. PBI-104
 12. PBI-050
 13. PBI-052
-14. PBI-105
-15. PBI-106
-16. PBI-110
-17. PBI-111
-18. PBI-107
-19. PBI-108
-20. PBI-109
-21. PBI-088
-22. PBI-096
-23. PBI-064
-24. PBI-065
-25. PBI-067
-26. PBI-069
-27. PBI-070
-28. PBI-072
-29. PBI-074
-30. PBI-075
-31. PBI-117
-32. PBI-118
-33. PBI-054
+14. PBI-053
+15. PBI-094
+16. PBI-105
+17. PBI-106
+18. PBI-110
+19. PBI-111
+20. PBI-107
+21. PBI-108
+22. PBI-109
+23. PBI-088
+24. PBI-096
+25. PBI-064
+26. PBI-065
+27. PBI-067
+28. PBI-069
+29. PBI-070
+30. PBI-072
+31. PBI-074
+32. PBI-075
+33. PBI-117
+34. PBI-118
+35. PBI-054
 
 Rationale:
 - clean the planning surface first

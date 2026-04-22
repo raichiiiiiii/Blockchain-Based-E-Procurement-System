@@ -2,7 +2,7 @@
 
 Status: Draft for Sprint 1 baseline  
 Owner: Platform / Architecture  
-Last updated: YYYY-MM-DD
+Last updated: 2026-04-22
 
 ## 1. Purpose
 
@@ -139,6 +139,13 @@ Current working assumption:
 ### 9.1 Authentication
 
 Authentication is middleware/plugin based and populates request user context.
+Trusted actor identity for protected actions must come from that server-side request context, not from client-authored body fields or request headers.
+
+[FLAG-ACTOR-SOURCE]
+Still unresolved:
+- the exact trusted request-context shape consumed by protected routes and audit emitters
+- whether any temporary client-supplied actor scaffolding remains in implementation and how it will be removed
+- the migration boundary from transitional actor handling to fully trusted actor-context consumption
 
 ### 9.2 User identity assumption
 
@@ -191,6 +198,12 @@ Still unresolved:
 - retention/storage policy
 - field masking policy
 - exact read-audit coverage
+
+Interim Sprint 2 pre-Wave 4 baseline:
+- successful governance-sensitive writes must remain auditable
+- denied protected actions must remain auditable
+- sensitive history reads are expected to be auditable, but exact coverage remains provisional
+- schema-only validation failures must not accumulate route-specific audit behavior without a durable doc update or an approved audit-policy decision
 
 ## 10. Primary business flows in Sprint 1
 
@@ -284,3 +297,6 @@ Conditional approval is supported, but expiry, closure, and follow-up ownership 
 
 [FLAG-AUDIT-POLICY]
 Minimum audit scaffolding is set, but final audit policy is not yet fully approved.
+
+[FLAG-ACTOR-SOURCE]
+Current working assumption: trusted actor identity for protected actions is server-derived from authenticated request context.
