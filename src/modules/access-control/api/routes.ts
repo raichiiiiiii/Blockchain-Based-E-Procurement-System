@@ -34,8 +34,46 @@ export interface RoleUpdateAuditEvent {
   actorId: string;
 }
 
+// Define the audit event interface for role assignment creation
+export interface RoleAssignmentCreateAuditEvent {
+  action: 'createRoleAssignment';
+  targetType: 'roleAssignment';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success' | 'conflict' | 'validationError';
+  actorId: string;
+}
+
+// Define the audit event interface for role assignment removal
+export interface RoleAssignmentRemoveAuditEvent {
+  action: 'removeRoleAssignment';
+  targetType: 'roleAssignment';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success';
+  actorId: string;
+}
+
+// Define the audit event interface for role assignment change
+export interface RoleAssignmentChangeAuditEvent {
+  action: 'changeRoleAssignment';
+  targetType: 'roleAssignment';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success';
+  actorId: string;
+}
+
 // Union type for all role audit events
-export type RoleAuditEvent = RoleCreateAuditEvent | RoleUpdateAuditEvent;
+export type RoleAuditEvent =
+  | RoleCreateAuditEvent
+  | RoleUpdateAuditEvent
+  | RoleAssignmentCreateAuditEvent
+  | RoleAssignmentRemoveAuditEvent
+  | RoleAssignmentChangeAuditEvent;
 
 // Define plugin options interface
 interface AccessControlRoutesOptions {
@@ -75,8 +113,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
             roleCode: { type: 'string' },
             displayName: { type: 'string' },
             scope: { type: 'string', enum: ['organization'] },
-            permissions: { 
-              type: 'array', 
+            permissions: {
+              type: 'array',
               items: { type: 'string' }
             },
             status: { type: 'string', enum: ['active', 'inactive'] },
@@ -89,11 +127,11 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     async (request, reply) => {
       // Call the application service directly with the request body
       const result = await createRole(request.body, repository);
-      
+
       // Normalize x-actor-id header to always be a string
       const rawActorId = request.headers['x-actor-id'];
       let actorId: string;
-      
+
       if (Array.isArray(rawActorId)) {
         // Take the first value if it's an array
         actorId = rawActorId[0] || 'unknown';
@@ -104,7 +142,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Default to 'unknown' for undefined/null cases
         actorId = 'unknown';
       }
-      
+
       // Map result to HTTP responses
       if (result.status === 'created') {
         // Emit audit event for successful creation
@@ -117,9 +155,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           outcome: 'success',
           actorId: actorId
         };
-        
+
         audit(auditEvent);
-        
+
         return reply.code(201).send({
           data: result.role
         });
@@ -134,9 +172,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           outcome: 'conflict',
           actorId: actorId
         };
-        
+
         audit(auditEvent);
-        
+
         return reply.code(409).send({
           error: {
             code: 'CONFLICT',
@@ -167,7 +205,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Check for immutable fields in the request body before schema validation
         const immutableFields = ['roleCode', 'scope', 'isSystemReserved'];
         const requestBody = request.body as Record<string, unknown>;
-        
+
         for (const field of immutableFields) {
           if (field in requestBody) {
             return reply.code(400).send({
@@ -194,8 +232,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           properties: {
             displayName: { type: 'string' },
             description: { type: 'string' },
-            permissions: { 
-              type: 'array', 
+            permissions: {
+              type: 'array',
               items: { type: 'string' }
             },
             status: { type: 'string', enum: ['active', 'inactive'] }
@@ -206,11 +244,11 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     async (request, reply) => {
       // Call the application service directly with the request params and body
       const result = await updateRole(request.params.roleId, request.body, repository);
-      
+
       // Normalize x-actor-id header to always be a string
       const rawActorId = request.headers['x-actor-id'];
       let actorId: string;
-      
+
       if (Array.isArray(rawActorId)) {
         // Take the first value if it's an array
         actorId = rawActorId[0] || 'unknown';
@@ -221,7 +259,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Default to 'unknown' for undefined/null cases
         actorId = 'unknown';
       }
-      
+
       // Map result to HTTP responses
       if (result.status === 'updated') {
         // Emit audit event for successful update
@@ -234,9 +272,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           outcome: 'success',
           actorId: actorId
         };
-        
+
         audit(auditEvent);
-        
+
         return reply.code(200).send({
           data: result.role
         });
@@ -251,9 +289,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           outcome: 'notFound',
           actorId: actorId
         };
-        
+
         audit(auditEvent);
-        
+
         return reply.code(404).send({
           error: {
             code: 'NOT_FOUND',
@@ -279,6 +317,18 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
   fastify.post<{ Body: { userId: string; organizationId: string; roleId: string } }>(
     '/role-assignments',
     {
+      preHandler: async (request, reply) => {
+        // Check if the actor is an admin
+        const actorRole = request.headers['x-actor-role'];
+        if (actorRole !== 'admin') {
+          return reply.code(403).send({
+            error: {
+              code: 'FORBIDDEN',
+              message: 'Admin access required'
+            }
+          });
+        }
+      },
       schema: {
         body: {
           type: 'object',
@@ -309,12 +359,53 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       // Call the application service
       const result = await createRoleAssignment(assignment, assignmentRepository, repository, memberOrganizationRepository, lookups);
 
+      // Normalize x-actor-id header to always be a string
+      const rawActorId = request.headers['x-actor-id'];
+      let actorId: string;
+
+      if (Array.isArray(rawActorId)) {
+        // Take the first value if it's an array
+        actorId = rawActorId[0] || 'unknown';
+      } else if (typeof rawActorId === 'string') {
+        // Use the string value
+        actorId = rawActorId;
+      } else {
+        // Default to 'unknown' for undefined/null cases
+        actorId = 'unknown';
+      }
+
       // Map result to HTTP responses
       if (result.status === 'created') {
+        // Emit audit event for successful creation
+        const auditEvent: RoleAssignmentCreateAuditEvent = {
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'success',
+          actorId: actorId
+        };
+
+        audit(auditEvent);
+
         return reply.code(201).send({
           data: result.assignment
         });
       } else if (result.status === 'duplicate') {
+        // Emit audit event for conflict
+        const auditEvent: RoleAssignmentCreateAuditEvent = {
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'conflict',
+          actorId: actorId
+        };
+
+        audit(auditEvent);
+
         return reply.code(409).send({
           error: {
             code: 'CONFLICT',
@@ -322,6 +413,19 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           }
         });
       } else if (result.status === 'roleNotFound') {
+        // Emit audit event for validation error
+        const auditEvent: RoleAssignmentCreateAuditEvent = {
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'validationError',
+          actorId: actorId
+        };
+
+        audit(auditEvent);
+
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
@@ -329,6 +433,19 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           }
         });
       } else if (result.status === 'organizationNotFound') {
+        // Emit audit event for validation error
+        const auditEvent: RoleAssignmentCreateAuditEvent = {
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'validationError',
+          actorId: actorId
+        };
+
+        audit(auditEvent);
+
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
@@ -336,6 +453,18 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           }
         });
       } else if (result.status === 'userNotFound') {
+        const auditEvent: RoleAssignmentCreateAuditEvent = {
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'validationError',
+          actorId: actorId
+        };
+
+        audit(auditEvent);
+
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
@@ -343,6 +472,18 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           }
         });
       } else if (result.status === 'userNotMember') {
+        const auditEvent: RoleAssignmentCreateAuditEvent = {
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'validationError',
+          actorId: actorId
+        };
+
+        audit(auditEvent);
+
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
@@ -357,6 +498,18 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
   fastify.delete(
     '/role-assignments',
     {
+      preHandler: async (request, reply) => {
+        // Check if the actor is an admin
+        const actorRole = request.headers['x-actor-role'];
+        if (actorRole !== 'admin') {
+          return reply.code(403).send({
+            error: {
+              code: 'FORBIDDEN',
+              message: 'Admin access required'
+            }
+          });
+        }
+      },
       schema: {
         querystring: {
           type: 'object',
@@ -370,17 +523,45 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       }
     },
     async (request, reply) => {
-      const { userId, organizationId, roleId } = request.query as { 
-        userId: string; 
-        organizationId: string; 
-        roleId: string; 
+      const { userId, organizationId, roleId } = request.query as {
+        userId: string;
+        organizationId: string;
+        roleId: string;
       };
 
       // Call the remove role assignment service
       const result = await removeRoleAssignment(userId, organizationId, roleId, assignmentRepository);
 
+      // Normalize x-actor-id header to always be a string
+      const rawActorId = request.headers['x-actor-id'];
+      let actorId: string;
+
+      if (Array.isArray(rawActorId)) {
+        // Take the first value if it's an array
+        actorId = rawActorId[0] || 'unknown';
+      } else if (typeof rawActorId === 'string') {
+        // Use the string value
+        actorId = rawActorId;
+      } else {
+        // Default to 'unknown' for undefined/null cases
+        actorId = 'unknown';
+      }
+
       // Map result to HTTP responses
       if (result.status === 'removed' || result.status === 'alreadyRevoked') {
+        // Emit audit event for successful removal
+        const auditEvent: RoleAssignmentRemoveAuditEvent = {
+          action: 'removeRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${userId}:${organizationId}:${roleId}`,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'success',
+          actorId: actorId
+        };
+
+        audit(auditEvent);
+
         return reply.code(200).send({
           data: result.assignment
         });
@@ -399,6 +580,18 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
   fastify.patch<{ Body: { userId: string; organizationId: string; currentRoleId: string; newRoleId: string } }>(
     '/role-assignments/change',
     {
+      preHandler: async (request, reply) => {
+        // Check if the actor is an admin
+        const actorRole = request.headers['x-actor-role'];
+        if (actorRole !== 'admin') {
+          return reply.code(403).send({
+            error: {
+              code: 'FORBIDDEN',
+              message: 'Admin access required'
+            }
+          });
+        }
+      },
       schema: {
         body: {
           type: 'object',
@@ -425,8 +618,36 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         repository
       );
 
+      // Normalize x-actor-id header to always be a string
+      const rawActorId = request.headers['x-actor-id'];
+      let actorId: string;
+
+      if (Array.isArray(rawActorId)) {
+        // Take the first value if it's an array
+        actorId = rawActorId[0] || 'unknown';
+      } else if (typeof rawActorId === 'string') {
+        // Use the string value
+        actorId = rawActorId;
+      } else {
+        // Default to 'unknown' for undefined/null cases
+        actorId = 'unknown';
+      }
+
       // Map result to HTTP responses
       if (result.status === 'changed') {
+        // Emit audit event for successful change
+        const auditEvent: RoleAssignmentChangeAuditEvent = {
+          action: 'changeRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${userId}:${organizationId}:${newRoleId}`,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'success',
+          actorId: actorId
+        };
+
+        audit(auditEvent);
+
         return reply.code(200).send({
           data: {
             oldAssignment: result.oldAssignment,

@@ -1119,7 +1119,10 @@ describe('POST /api/v1/role-assignments', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: assignmentPayload
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 201);
@@ -1180,7 +1183,10 @@ describe('POST /api/v1/role-assignments', () => {
     const firstResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: assignmentPayload
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(firstResponse.statusCode, 201);
@@ -1189,7 +1195,10 @@ describe('POST /api/v1/role-assignments', () => {
     const secondResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: assignmentPayload
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(secondResponse.statusCode, 409);
@@ -1208,6 +1217,9 @@ describe('POST /api/v1/role-assignments', () => {
       payload: {
         organizationId: 'org_456',
         roleId: 'role_789'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -1220,6 +1232,9 @@ describe('POST /api/v1/role-assignments', () => {
       payload: {
         userId: 'user_123',
         roleId: 'role_789'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -1232,6 +1247,9 @@ describe('POST /api/v1/role-assignments', () => {
       payload: {
         userId: 'user_123',
         organizationId: 'org_456'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -1241,7 +1259,10 @@ describe('POST /api/v1/role-assignments', () => {
     const response4 = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: {}
+      payload: {},
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response4.statusCode, 400);
@@ -1301,6 +1322,9 @@ describe('POST /api/v1/role-assignments', () => {
         userId: 'user_123',
         organizationId: persistedOrganization.id,
         roleId
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -1323,6 +1347,9 @@ describe('POST /api/v1/role-assignments', () => {
         registrationNumber: 'REG123',
         legalName: 'Test Organization',
         organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -1338,7 +1365,10 @@ describe('POST /api/v1/role-assignments', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: assignmentPayload
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 400);
@@ -1379,7 +1409,10 @@ describe('POST /api/v1/role-assignments', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: assignmentPayload
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response.statusCode, 400);
@@ -1389,11 +1422,24 @@ describe('POST /api/v1/role-assignments', () => {
   });
 
   test('should return 400 for non-existent user in role assignment', async () => {
-    // Create lookup implementations
+    // Create an InMemoryMemberOrganizationRepository directly in the test
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    // Save a draft organization and capture its ID
+    const organization: MemberOrganization = {
+      registrationNumber: 'REG123',
+      legalName: 'Test Organization',
+      organizationType: 'Corporation',
+      status: 'pendingReview'
+    };
+
+    const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
+
+    // Create lookup implementations with no existing users
     const userExistenceLookup = new InMemoryUserExistenceLookup({
       existingUserIds: [] // No existing users
     });
-    
+
     const organizationMembershipLookup = new InMemoryOrganizationMembershipLookup({
       memberships: [] // No memberships
     });
@@ -1401,7 +1447,8 @@ describe('POST /api/v1/role-assignments', () => {
     // Create test server with injected lookups
     const server = createTestableServer({
       userExistenceLookup,
-      organizationMembershipLookup
+      organizationMembershipLookup,
+      memberRepository: memberOrganizationRepository
     });
 
     // First create a role
@@ -1424,31 +1471,20 @@ describe('POST /api/v1/role-assignments', () => {
     assert.strictEqual(roleResponse.statusCode, 201);
     const roleId = roleResponse.json().data.id;
 
-    // Create a member organization
-    const orgResponse = await server.inject({
-      method: 'POST',
-      url: '/api/v1/member-organizations',
-      payload: {
-        registrationNumber: 'REG123',
-        legalName: 'Test Organization',
-        organizationType: 'Corporation'
-      }
-    });
-
-    assert.strictEqual(orgResponse.statusCode, 201);
-    const orgId = orgResponse.json().data.id;
-
     // Try to create a role assignment with a non-existent user
     const assignmentPayload = {
       userId: 'non-existent-user',
-      organizationId: orgId,
+      organizationId: persistedOrganization.id,
       roleId: roleId
     };
 
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: assignmentPayload
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     // Assertions
@@ -1459,19 +1495,33 @@ describe('POST /api/v1/role-assignments', () => {
   });
 
   test('should return 400 for user not member of organization in role assignment', async () => {
-    // Create lookup implementations
+    // Create an InMemoryMemberOrganizationRepository directly in the test
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    // Save a draft organization and capture its ID
+    const organization: MemberOrganization = {
+      registrationNumber: 'REG123',
+      legalName: 'Test Organization',
+      organizationType: 'Corporation',
+      status: 'pendingReview'
+    };
+
+    const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
+
+    // Create lookup implementations with existing user but no membership
     const userExistenceLookup = new InMemoryUserExistenceLookup({
-      existingUserIds: ['user1'] // User exists
+      existingUserIds: ['existing-user']
     });
-    
+
     const organizationMembershipLookup = new InMemoryOrganizationMembershipLookup({
-      memberships: [] // No memberships, so user1 is not a member of any organization
+      memberships: [] // User is not a member of any organization
     });
 
     // Create test server with injected lookups
     const server = createTestableServer({
       userExistenceLookup,
-      organizationMembershipLookup
+      organizationMembershipLookup,
+      memberRepository: memberOrganizationRepository
     });
 
     // First create a role
@@ -1494,31 +1544,20 @@ describe('POST /api/v1/role-assignments', () => {
     assert.strictEqual(roleResponse.statusCode, 201);
     const roleId = roleResponse.json().data.id;
 
-    // Create a member organization
-    const orgResponse = await server.inject({
-      method: 'POST',
-      url: '/api/v1/member-organizations',
-      payload: {
-        registrationNumber: 'REG123',
-        legalName: 'Test Organization',
-        organizationType: 'Corporation'
-      }
-    });
-
-    assert.strictEqual(orgResponse.statusCode, 201);
-    const orgId = orgResponse.json().data.id;
-
-    // Try to create a role assignment with a user that is not a member of the organization
+    // Try to create a role assignment with a user that exists but is not a member of the organization
     const assignmentPayload = {
-      userId: 'user1',
-      organizationId: orgId,
+      userId: 'existing-user',
+      organizationId: persistedOrganization.id,
       roleId: roleId
     };
 
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: assignmentPayload
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     // Assertions
@@ -1531,7 +1570,7 @@ describe('POST /api/v1/role-assignments', () => {
   test('should create role assignment when user exists and is member of organization', async () => {
     // Create an InMemoryMemberOrganizationRepository directly in the test
     const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
-    
+
     // Save a draft organization and capture its ID
     const organization: MemberOrganization = {
       registrationNumber: 'REG123',
@@ -1539,14 +1578,14 @@ describe('POST /api/v1/role-assignments', () => {
       organizationType: 'Corporation',
       status: 'pendingReview'
     };
-    
+
     const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
-    
+
     // Create lookup implementations
     const userExistenceLookup = new InMemoryUserExistenceLookup({
       existingUserIds: ['user1'] // User exists
     });
-    
+
     const organizationMembershipLookup = new InMemoryOrganizationMembershipLookup({
       memberships: [{ userId: 'user1', organizationId: persistedOrganization.id }] // User is member of organization
     });
@@ -1588,7 +1627,10 @@ describe('POST /api/v1/role-assignments', () => {
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: assignmentPayload
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     // Assertions
@@ -1598,6 +1640,553 @@ describe('POST /api/v1/role-assignments', () => {
     assert.strictEqual(responseBody.data.organizationId, persistedOrganization.id);
     assert.strictEqual(responseBody.data.roleId, roleId);
     assert.strictEqual(responseBody.data.status, 'active');
+  });
+
+  // New test: non-admin create denied
+  test('should deny role assignment creation for non-admin users', async () => {
+    const server = createTestableServer();
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: roleId
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'user' // Non-admin role
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 403);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
+    assert.strictEqual(responseBody.error.message, 'Admin access required');
+  });
+
+  // New test: admin create still succeeds
+  test('should allow role assignment creation for admin users', async () => {
+    const server = createTestableServer();
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: roleId
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin' // Admin role
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 201);
+    const responseBody = response.json();
+    assert.ok(responseBody.data);
+    assert.strictEqual(responseBody.data.userId, assignmentPayload.userId);
+    assert.strictEqual(responseBody.data.organizationId, assignmentPayload.organizationId);
+    assert.strictEqual(responseBody.data.roleId, assignmentPayload.roleId);
+  });
+
+  // New audit test: successful role assignment creation emits audit event
+  test('should emit audit event on successful role assignment creation', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+
+    // Create an InMemoryMemberOrganizationRepository directly in the test
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    // Save a draft organization and capture its ID
+    const organization: MemberOrganization = {
+      registrationNumber: 'REG123',
+      legalName: 'Test Organization',
+      organizationType: 'Corporation',
+      status: 'pendingReview'
+    };
+
+    const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
+
+    // Create lookup implementations
+    const userExistenceLookup = new InMemoryUserExistenceLookup({
+      existingUserIds: ['user_123']
+    });
+
+    const organizationMembershipLookup = new InMemoryOrganizationMembershipLookup({
+      memberships: [{ userId: 'user_123', organizationId: persistedOrganization.id }]
+    });
+
+    const server = createTestableServer({
+      roleAudit: auditCallback,
+      userExistenceLookup,
+      organizationMembershipLookup,
+      memberRepository: memberOrganizationRepository
+    });
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: persistedOrganization.id,
+      roleId: roleId
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-actor-123'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 201);
+    
+    // Filter to just the createRoleAssignment audit events
+    const createAssignmentAudits = auditEvents.filter(e => e.action === 'createRoleAssignment');
+    assert.strictEqual(createAssignmentAudits.length, 1);
+
+    const auditEvent = createAssignmentAudits[0];
+    assert.strictEqual(auditEvent.action, 'createRoleAssignment');
+    assert.strictEqual(auditEvent.targetType, 'roleAssignment');
+    assert.strictEqual(auditEvent.outcome, 'success');
+    assert.strictEqual(auditEvent.actorId, 'test-actor-123');
+    assert.ok(typeof auditEvent.targetId === 'string');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+
+  // New audit test: duplicate role assignment attempt emits audit event
+  test('should emit audit event on duplicate role assignment attempt', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+
+    // Create an InMemoryMemberOrganizationRepository directly in the test
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    // Save a draft organization and capture its ID
+    const organization: MemberOrganization = {
+      registrationNumber: 'REG456',
+      legalName: 'Test Organization 2',
+      organizationType: 'Corporation',
+      status: 'pendingReview'
+    };
+
+    const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
+
+    // Create lookup implementations
+    const userExistenceLookup = new InMemoryUserExistenceLookup({
+      existingUserIds: ['user_123']
+    });
+
+    const organizationMembershipLookup = new InMemoryOrganizationMembershipLookup({
+      memberships: [{ userId: 'user_123', organizationId: persistedOrganization.id }]
+    });
+
+    const server = createTestableServer({
+      roleAudit: auditCallback,
+      userExistenceLookup,
+      organizationMembershipLookup,
+      memberRepository: memberOrganizationRepository
+    });
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: persistedOrganization.id,
+      roleId: roleId
+    };
+
+    // First request to create the assignment
+    const firstResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(firstResponse.statusCode, 201);
+
+    // Second request with the same assignment details
+    const secondResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'duplicate-test-actor'
+      }
+    });
+
+    assert.strictEqual(secondResponse.statusCode, 409);
+
+    // Filter to just the conflict audit events for role assignment creation
+    const conflictAudits = auditEvents.filter(
+      e => e.action === 'createRoleAssignment' && e.outcome === 'conflict'
+    );
+    assert.strictEqual(conflictAudits.length, 1);
+
+    const auditEvent = conflictAudits[0];
+    assert.strictEqual(auditEvent.action, 'createRoleAssignment');
+    assert.strictEqual(auditEvent.targetType, 'roleAssignment');
+    assert.strictEqual(auditEvent.outcome, 'conflict');
+    assert.strictEqual(auditEvent.actorId, 'duplicate-test-actor');
+    assert.ok(typeof auditEvent.targetId === 'string');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+  
+  // New audit test: invalid user role assignment attempt emits audit event
+  test('should emit audit event on invalid user role assignment attempt', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    const organization: MemberOrganization = {
+      registrationNumber: 'REG123',
+      legalName: 'Test Organization',
+      organizationType: 'Corporation',
+      status: 'pendingReview'
+    };
+    const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
+
+    const userExistenceLookup = new InMemoryUserExistenceLookup({
+      existingUserIds: []
+    });
+
+    const organizationMembershipLookup = new InMemoryOrganizationMembershipLookup({
+      memberships: []
+    });
+
+    const server = createTestableServer({
+      roleAudit: auditCallback,
+      userExistenceLookup,
+      organizationMembershipLookup,
+      memberRepository: memberOrganizationRepository
+    });
+
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    const assignmentPayload = {
+      userId: 'non-existent-user',
+      organizationId: persistedOrganization.id,
+      roleId: roleId
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-actor-456'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 400);
+
+    const validationErrorAudits = auditEvents.filter(
+      e => e.action === 'createRoleAssignment' && e.outcome === 'validationError'
+    );
+    assert.strictEqual(validationErrorAudits.length, 1);
+
+    const auditEvent = validationErrorAudits[0];
+    assert.strictEqual(auditEvent.action, 'createRoleAssignment');
+    assert.strictEqual(auditEvent.targetType, 'roleAssignment');
+    assert.strictEqual(auditEvent.outcome, 'validationError');
+    assert.strictEqual(auditEvent.actorId, 'test-actor-456');
+    assert.ok(typeof auditEvent.targetId === 'string');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+  
+  // New audit test: non-member role assignment attempt emits audit event
+  test('should emit audit event on non-member role assignment attempt', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    const organization: MemberOrganization = {
+      registrationNumber: 'REG123',
+      legalName: 'Test Organization',
+      organizationType: 'Corporation',
+      status: 'pendingReview'
+    };
+    const persistedOrganization = await memberOrganizationRepository.saveDraft(organization);
+
+    const userExistenceLookup = new InMemoryUserExistenceLookup({
+      existingUserIds: ['existing-user']
+    });
+
+    const organizationMembershipLookup = new InMemoryOrganizationMembershipLookup({
+      memberships: []
+    });
+
+    const server = createTestableServer({
+      roleAudit: auditCallback,
+      userExistenceLookup,
+      organizationMembershipLookup,
+      memberRepository: memberOrganizationRepository
+    });
+
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    const assignmentPayload = {
+      userId: 'existing-user',
+      organizationId: persistedOrganization.id,
+      roleId: roleId
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-actor-789'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 400);
+
+    const validationErrorAudits = auditEvents.filter(
+      e => e.action === 'createRoleAssignment' && e.outcome === 'validationError'
+    );
+    assert.strictEqual(validationErrorAudits.length, 1);
+
+    const auditEvent = validationErrorAudits[0];
+    assert.strictEqual(auditEvent.action, 'createRoleAssignment');
+    assert.strictEqual(auditEvent.targetType, 'roleAssignment');
+    assert.strictEqual(auditEvent.outcome, 'validationError');
+    assert.strictEqual(auditEvent.actorId, 'test-actor-789');
+    assert.ok(typeof auditEvent.targetId === 'string');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+  
+  // New audit test: invalid role role assignment attempt emits audit event
+  test('should emit audit event on invalid role role assignment attempt', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+
+    const server = createTestableServer({ roleAudit: auditCallback });
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Try to create a role assignment with a non-existent role
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: 'non-existent-role-id'
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-actor-invalid-role'
+      }
+    });
+
+    // Assertions
+    assert.strictEqual(response.statusCode, 400);
+
+    // Filter to just the validationError audit events for role assignment creation with invalid role
+    const validationErrorAudits = auditEvents.filter(
+      e => e.action === 'createRoleAssignment' && e.outcome === 'validationError'
+    );
+    assert.strictEqual(validationErrorAudits.length, 1);
+
+    const auditEvent = validationErrorAudits[0];
+    assert.strictEqual(auditEvent.action, 'createRoleAssignment');
+    assert.strictEqual(auditEvent.targetType, 'roleAssignment');
+    assert.strictEqual(auditEvent.outcome, 'validationError');
+    assert.strictEqual(auditEvent.actorId, 'test-actor-invalid-role');
+    assert.ok(typeof auditEvent.targetId === 'string');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
   });
 });
 
@@ -1641,6 +2230,9 @@ describe('DELETE /api/v1/role-assignments', () => {
         registrationNumber: 'REG123',
         legalName: 'Test Organization',
         organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -1657,7 +2249,10 @@ describe('DELETE /api/v1/role-assignments', () => {
     const createResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: assignmentPayload
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(createResponse.statusCode, 201);
@@ -1665,7 +2260,10 @@ describe('DELETE /api/v1/role-assignments', () => {
     // Remove the role assignment
     const removeResponse = await server.inject({
       method: 'DELETE',
-      url: `/api/v1/role-assignments?userId=user_123&organizationId=${orgId}&roleId=${roleId}`
+      url: `/api/v1/role-assignments?userId=user_123&organizationId=${orgId}&roleId=${roleId}`,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(removeResponse.statusCode, 200);
@@ -1682,7 +2280,10 @@ describe('DELETE /api/v1/role-assignments', () => {
 
     const removeResponse = await server.inject({
       method: 'DELETE',
-      url: '/api/v1/role-assignments?userId=user_123&organizationId=org_123&roleId=role_123'
+      url: '/api/v1/role-assignments?userId=user_123&organizationId=org_123&roleId=role_123',
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(removeResponse.statusCode, 404);
@@ -1730,6 +2331,9 @@ describe('DELETE /api/v1/role-assignments', () => {
         registrationNumber: 'REG123',
         legalName: 'Test Organization',
         organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -1747,7 +2351,10 @@ describe('DELETE /api/v1/role-assignments', () => {
     // Try to remove the already revoked assignment
     const removeResponse = await server.inject({
       method: 'DELETE',
-      url: `/api/v1/role-assignments?userId=user_123&organizationId=${orgId}&roleId=${roleId}`
+      url: `/api/v1/role-assignments?userId=user_123&organizationId=${orgId}&roleId=${roleId}`,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(removeResponse.statusCode, 200);
@@ -1765,7 +2372,10 @@ describe('DELETE /api/v1/role-assignments', () => {
     // Test with missing userId
     const response1 = await server.inject({
       method: 'DELETE',
-      url: '/api/v1/role-assignments?organizationId=org_123&roleId=role_123'
+      url: '/api/v1/role-assignments?organizationId=org_123&roleId=role_123',
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response1.statusCode, 400);
@@ -1773,7 +2383,10 @@ describe('DELETE /api/v1/role-assignments', () => {
     // Test with missing organizationId
     const response2 = await server.inject({
       method: 'DELETE',
-      url: '/api/v1/role-assignments?userId=user_123&roleId=role_123'
+      url: '/api/v1/role-assignments?userId=user_123&roleId=role_123',
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response2.statusCode, 400);
@@ -1781,7 +2394,10 @@ describe('DELETE /api/v1/role-assignments', () => {
     // Test with missing roleId
     const response3 = await server.inject({
       method: 'DELETE',
-      url: '/api/v1/role-assignments?userId=user_123&organizationId=org_123'
+      url: '/api/v1/role-assignments?userId=user_123&organizationId=org_123',
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response3.statusCode, 400);
@@ -1789,10 +2405,279 @@ describe('DELETE /api/v1/role-assignments', () => {
     // Test with completely empty query
     const response4 = await server.inject({
       method: 'DELETE',
-      url: '/api/v1/role-assignments'
+      url: '/api/v1/role-assignments',
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response4.statusCode, 400);
+  });
+
+  // New test: non-admin delete denied
+  test('should deny role assignment removal for non-admin users', async () => {
+    const assignmentRepository = new InMemoryRoleAssignmentRepository();
+    const roleRepository = new InMemoryRoleRepository();
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    const server = createTestableServer({
+      roleRepository,
+      roleAssignmentRepository: assignmentRepository,
+      memberRepository: memberOrganizationRepository
+    });
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Create a role assignment
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: roleId
+    };
+
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+
+    // Try to remove the role assignment as non-admin
+    const removeResponse = await server.inject({
+      method: 'DELETE',
+      url: `/api/v1/role-assignments?userId=user_123&organizationId=${orgId}&roleId=${roleId}`,
+      headers: {
+        'x-actor-role': 'user' // Non-admin role
+      }
+    });
+
+    assert.strictEqual(removeResponse.statusCode, 403);
+    const responseBody = removeResponse.json();
+    assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
+    assert.strictEqual(responseBody.error.message, 'Admin access required');
+  });
+
+  // New test: admin delete still succeeds
+  test('should allow role assignment removal for admin users', async () => {
+    const assignmentRepository = new InMemoryRoleAssignmentRepository();
+    const roleRepository = new InMemoryRoleRepository();
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    const server = createTestableServer({
+      roleRepository,
+      roleAssignmentRepository: assignmentRepository,
+      memberRepository: memberOrganizationRepository
+    });
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Create a role assignment
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: roleId
+    };
+
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+
+    // Remove the role assignment as admin
+    const removeResponse = await server.inject({
+      method: 'DELETE',
+      url: `/api/v1/role-assignments?userId=user_123&organizationId=${orgId}&roleId=${roleId}`,
+      headers: {
+        'x-actor-role': 'admin' // Admin role
+      }
+    });
+
+    assert.strictEqual(removeResponse.statusCode, 200);
+    const responseBody = removeResponse.json();
+    assert.ok(responseBody.data);
+    assert.strictEqual(responseBody.data.userId, 'user_123');
+    assert.strictEqual(responseBody.data.organizationId, orgId);
+    assert.strictEqual(responseBody.data.roleId, roleId);
+    assert.strictEqual(responseBody.data.status, 'revoked');
+  });
+
+  // New audit test: successful role assignment removal emits audit event
+  test('should emit audit event on successful role assignment removal', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+
+    const assignmentRepository = new InMemoryRoleAssignmentRepository();
+    const roleRepository = new InMemoryRoleRepository();
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    const server = createTestableServer({
+      roleRepository,
+      roleAssignmentRepository: assignmentRepository,
+      memberRepository: memberOrganizationRepository,
+      roleAudit: auditCallback
+    });
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Create a role assignment
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: roleId
+    };
+
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+
+    // Remove the role assignment
+    const removeResponse = await server.inject({
+      method: 'DELETE',
+      url: `/api/v1/role-assignments?userId=user_123&organizationId=${orgId}&roleId=${roleId}`,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-remover-456'
+      }
+    });
+
+    assert.strictEqual(removeResponse.statusCode, 200);
+
+    // Filter to just the removeRoleAssignment audit events
+    const removeAssignmentAudits = auditEvents.filter(e => e.action === 'removeRoleAssignment');
+    assert.strictEqual(removeAssignmentAudits.length, 1);
+
+    const auditEvent = removeAssignmentAudits[0];
+    assert.strictEqual(auditEvent.action, 'removeRoleAssignment');
+    assert.strictEqual(auditEvent.targetType, 'roleAssignment');
+    assert.strictEqual(auditEvent.outcome, 'success');
+    assert.strictEqual(auditEvent.actorId, 'test-remover-456');
+    assert.ok(typeof auditEvent.targetId === 'string');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
   });
 });
 
@@ -1847,6 +2732,9 @@ describe('PATCH /api/v1/role-assignments/change', () => {
         registrationNumber: 'REG123',
         legalName: 'Test Organization',
         organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -1863,7 +2751,10 @@ describe('PATCH /api/v1/role-assignments/change', () => {
     const createResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: assignmentPayload
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(createResponse.statusCode, 201);
@@ -1879,7 +2770,10 @@ describe('PATCH /api/v1/role-assignments/change', () => {
     const changeResponse = await server.inject({
       method: 'PATCH',
       url: '/api/v1/role-assignments/change',
-      payload: changePayload
+      payload: changePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(changeResponse.statusCode, 200);
@@ -1923,6 +2817,9 @@ describe('PATCH /api/v1/role-assignments/change', () => {
         registrationNumber: 'REG123',
         legalName: 'Test Organization',
         organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -1940,7 +2837,10 @@ describe('PATCH /api/v1/role-assignments/change', () => {
     const changeResponse = await server.inject({
       method: 'PATCH',
       url: '/api/v1/role-assignments/change',
-      payload: changePayload
+      payload: changePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(changeResponse.statusCode, 404);
@@ -1980,6 +2880,9 @@ describe('PATCH /api/v1/role-assignments/change', () => {
         registrationNumber: 'REG123',
         legalName: 'Test Organization',
         organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -1996,7 +2899,10 @@ describe('PATCH /api/v1/role-assignments/change', () => {
     const createResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: assignmentPayload
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(createResponse.statusCode, 201);
@@ -2012,7 +2918,10 @@ describe('PATCH /api/v1/role-assignments/change', () => {
     const changeResponse = await server.inject({
       method: 'PATCH',
       url: '/api/v1/role-assignments/change',
-      payload: changePayload
+      payload: changePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(changeResponse.statusCode, 400);
@@ -2071,6 +2980,9 @@ describe('PATCH /api/v1/role-assignments/change', () => {
         registrationNumber: 'REG123',
         legalName: 'Test Organization',
         organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -2087,7 +2999,10 @@ describe('PATCH /api/v1/role-assignments/change', () => {
     const currentAssignmentResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: currentAssignmentPayload
+      payload: currentAssignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(currentAssignmentResponse.statusCode, 201);
@@ -2102,7 +3017,10 @@ describe('PATCH /api/v1/role-assignments/change', () => {
     const newAssignmentResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/role-assignments',
-      payload: newAssignmentPayload
+      payload: newAssignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(newAssignmentResponse.statusCode, 201);
@@ -2118,7 +3036,10 @@ describe('PATCH /api/v1/role-assignments/change', () => {
     const changeResponse = await server.inject({
       method: 'PATCH',
       url: '/api/v1/role-assignments/change',
-      payload: changePayload
+      payload: changePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(changeResponse.statusCode, 409);
@@ -2141,7 +3062,10 @@ describe('PATCH /api/v1/role-assignments/change', () => {
     const changeResponse = await server.inject({
       method: 'PATCH',
       url: '/api/v1/role-assignments/change',
-      payload: changePayload
+      payload: changePayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(changeResponse.statusCode, 400);
@@ -2161,6 +3085,9 @@ describe('PATCH /api/v1/role-assignments/change', () => {
         organizationId: 'org_123',
         currentRoleId: 'current-role-id',
         newRoleId: 'new-role-id'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -2174,6 +3101,9 @@ describe('PATCH /api/v1/role-assignments/change', () => {
         userId: 'user_123',
         currentRoleId: 'current-role-id',
         newRoleId: 'new-role-id'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -2187,6 +3117,9 @@ describe('PATCH /api/v1/role-assignments/change', () => {
         userId: 'user_123',
         organizationId: 'org_123',
         newRoleId: 'new-role-id'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -2200,6 +3133,9 @@ describe('PATCH /api/v1/role-assignments/change', () => {
         userId: 'user_123',
         organizationId: 'org_123',
         currentRoleId: 'current-role-id'
+      },
+      headers: {
+        'x-actor-role': 'admin'
       }
     });
 
@@ -2209,9 +3145,335 @@ describe('PATCH /api/v1/role-assignments/change', () => {
     const response5 = await server.inject({
       method: 'PATCH',
       url: '/api/v1/role-assignments/change',
-      payload: {}
+      payload: {},
+      headers: {
+        'x-actor-role': 'admin'
+      }
     });
 
     assert.strictEqual(response5.statusCode, 400);
+  });
+
+  // New test: non-admin change denied
+  test('should deny role assignment change for non-admin users', async () => {
+    const server = createTestableServer();
+
+    // First create two roles
+    const currentRoleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'current-role',
+        displayName: 'Current Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(currentRoleResponse.statusCode, 201);
+    const currentRoleId = currentRoleResponse.json().data.id;
+
+    const newRoleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'new-role',
+        displayName: 'New Role',
+        scope: 'organization',
+        permissions: ['read', 'write'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(newRoleResponse.statusCode, 201);
+    const newRoleId = newRoleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Create a role assignment
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: currentRoleId
+    };
+
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+
+    // Try to change the role assignment as non-admin
+    const changePayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      currentRoleId: currentRoleId,
+      newRoleId: newRoleId
+    };
+
+    const changeResponse = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: changePayload,
+      headers: {
+        'x-actor-role': 'user' // Non-admin role
+      }
+    });
+
+    assert.strictEqual(changeResponse.statusCode, 403);
+    const responseBody = changeResponse.json();
+    assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
+    assert.strictEqual(responseBody.error.message, 'Admin access required');
+  });
+
+  // New test: admin change still succeeds
+  test('should allow role assignment change for admin users', async () => {
+    const server = createTestableServer();
+
+    // First create two roles
+    const currentRoleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'current-role',
+        displayName: 'Current Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(currentRoleResponse.statusCode, 201);
+    const currentRoleId = currentRoleResponse.json().data.id;
+
+    const newRoleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'new-role',
+        displayName: 'New Role',
+        scope: 'organization',
+        permissions: ['read', 'write'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(newRoleResponse.statusCode, 201);
+    const newRoleId = newRoleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Create a role assignment
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: currentRoleId
+    };
+
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+
+    // Change the role assignment as admin
+    const changePayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      currentRoleId: currentRoleId,
+      newRoleId: newRoleId
+    };
+
+    const changeResponse = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: changePayload,
+      headers: {
+        'x-actor-role': 'admin' // Admin role
+      }
+    });
+
+    assert.strictEqual(changeResponse.statusCode, 200);
+    const responseBody = changeResponse.json();
+    assert.ok(responseBody.data);
+    assert.ok(responseBody.data.oldAssignment);
+    assert.ok(responseBody.data.newAssignment);
+    assert.strictEqual(responseBody.data.oldAssignment.status, 'revoked');
+    assert.strictEqual(responseBody.data.newAssignment.status, 'active');
+    assert.strictEqual(responseBody.data.newAssignment.roleId, newRoleId);
+  });
+
+  // New audit test: successful role assignment change emits audit event
+  test('should emit audit event on successful role assignment change', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+
+    const server = createTestableServer({ roleAudit: auditCallback });
+
+    // First create two roles
+    const currentRoleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'current-role',
+        displayName: 'Current Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(currentRoleResponse.statusCode, 201);
+    const currentRoleId = currentRoleResponse.json().data.id;
+
+    const newRoleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'new-role',
+        displayName: 'New Role',
+        scope: 'organization',
+        permissions: ['read', 'write'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(newRoleResponse.statusCode, 201);
+    const newRoleId = newRoleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Create a role assignment
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: currentRoleId
+    };
+
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+
+    // Change the role assignment
+    const changePayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      currentRoleId: currentRoleId,
+      newRoleId: newRoleId
+    };
+
+    const changeResponse = await server.inject({
+      method: 'PATCH',
+      url: '/api/v1/role-assignments/change',
+      payload: changePayload,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-changer-789'
+      }
+    });
+
+    assert.strictEqual(changeResponse.statusCode, 200);
+
+    // Filter to just the changeRoleAssignment audit events
+    const changeAssignmentAudits = auditEvents.filter(e => e.action === 'changeRoleAssignment');
+    assert.strictEqual(changeAssignmentAudits.length, 1);
+
+    const auditEvent = changeAssignmentAudits[0];
+    assert.strictEqual(auditEvent.action, 'changeRoleAssignment');
+    assert.strictEqual(auditEvent.targetType, 'roleAssignment');
+    assert.strictEqual(auditEvent.outcome, 'success');
+    assert.strictEqual(auditEvent.actorId, 'test-changer-789');
+    assert.ok(typeof auditEvent.targetId === 'string');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
   });
 });
