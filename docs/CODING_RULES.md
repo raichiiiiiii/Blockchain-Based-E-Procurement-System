@@ -29,6 +29,7 @@ These rules constrain how code is written so Sprint 1 implementation remains con
 8. Do not let generated code silently invent new states, role codes, or error shapes.
 9. Protected route consumers must derive actor identity from authenticated server-side request context (`request.actorContext`) and must not directly trust client-supplied actor identity fields or headers as the trusted source for authorization or audit on protected actions.
 10. Protected actions such as Shariah review submission must enforce the documented business authorization rule, which for review submission is coordinator-only for the target organization.
+11. Role-assignment creation must enforce the documented admin-only authorization rule from trusted server-derived actor context.
 
 ## 4. Folder usage
 
@@ -175,6 +176,7 @@ Member organization deletion vs inactive/suspended semantics are still under cla
 - No final decision states outside `approved`, `rejected`, or `conditionalApproved` unless the docs are updated first.
 - Checklist completion must be derived from explicit completion rules, not inferred loosely in UI code.
 - Protected function enforcement must be implemented in backend code even if the UI also hides blocked actions.
+- 
 
 ## 12. Testing rules
 

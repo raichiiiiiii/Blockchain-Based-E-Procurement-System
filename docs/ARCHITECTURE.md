@@ -169,6 +169,7 @@ Authorization must be enforced in two places:
 - application/service policy checks for sensitive actions
 
 Shariah review submission requires the actor to hold the coordinator role for the target organization.
+Role-assignment creation is a protected admin-only action enforced from trusted server-derived actor context.
 
 ### 9.4 Validation
 

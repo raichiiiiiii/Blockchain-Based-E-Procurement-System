@@ -393,11 +393,13 @@ Request:
 {
   "userId": "user_123",
   "organizationId": "org_123",
-  "roleId": "role_123",
-  "effectiveFrom": "2026-03-15T00:00:00Z",
-  "effectiveTo": "2026-12-31T23:59:59Z"
+  "roleId": "role_123"
 }
 ```
+
+Authorization:
+- Requires admin privileges from trusted server-derived actor context
+- Non-admin requests receive `403 FORBIDDEN`
 
 Response:
 
