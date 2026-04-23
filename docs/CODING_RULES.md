@@ -27,7 +27,7 @@ These rules constrain how code is written so Sprint 1 implementation remains con
 6. Keep each module independently understandable.
 7. Encode provisional business assumptions in named constants, policies, or documented schema types, not in magic strings.
 8. Do not let generated code silently invent new states, role codes, or error shapes.
-9. Do not treat client-supplied actor identity fields or headers as the trusted source for authorization or audit on protected actions.
+9. Protected route consumers must derive actor identity from authenticated server-side request context (`request.actorContext`) and must not directly trust client-supplied actor identity fields or headers as the trusted source for authorization or audit on protected actions.
 
 ## 4. Folder usage
 
@@ -148,7 +148,7 @@ Interim Sprint 2 rule before final audit-policy approval:
 - Do not mix multiple response shapes for the same endpoint.
 - Prefer opaque public identifiers over exposing DB internals.
 - Treat authenticated `userId` as opaque contract data, not as a database assumption.
-- Protected routes must derive actor identity from authenticated server-side request context.
+- Protected routes must derive actor identity from authenticated server-side request context (`request.actorContext`).
 - Client-supplied actor identity fields or headers are not authoritative API inputs for protected actions.
 
 [FLAG-ACTOR-SOURCE]
@@ -204,3 +204,5 @@ For every story completion:
 - No silent fallback behavior for authorization failures.
 - No "temporary" contract fields merged without doc updates.
 - No hardcoding of role catalogs, protected functions, or review state transitions outside their documented sources of truth.
+- Protected route consumers must not directly read `x-actor-id` or `x-actor-role` headers; they must use the trusted `request.actorContext` instead.
+- Temporary actor seeding via `x-actor-*` headers is only allowed in the shared actor-context plugin/middleware seam.

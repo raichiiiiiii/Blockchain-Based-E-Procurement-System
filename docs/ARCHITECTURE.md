@@ -141,6 +141,8 @@ Current working assumption:
 Authentication is middleware/plugin based and populates request user context.
 Trusted actor identity for protected actions must come from that server-side request context, not from client-authored body fields or request headers.
 
+Protected route consumers now read trusted actor data from `request.actorContext` rather than directly reading raw `x-actor-id` or `x-actor-role` headers. The actor-context plugin provides this trusted context by seeding from transitional `x-actor-*` headers.
+
 [FLAG-ACTOR-SOURCE]
 Still unresolved:
 - the exact trusted request-context shape consumed by protected routes and audit emitters
