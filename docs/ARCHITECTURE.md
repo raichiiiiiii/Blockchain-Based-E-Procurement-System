@@ -168,6 +168,8 @@ Authorization must be enforced in two places:
 - route/endpoint entry
 - application/service policy checks for sensitive actions
 
+Shariah review submission requires the actor to hold the coordinator role for the target organization.
+
 ### 9.4 Validation
 
 External input is validated at the API boundary.

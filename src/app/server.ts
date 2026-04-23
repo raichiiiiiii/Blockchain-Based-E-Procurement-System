@@ -75,6 +75,7 @@ export function createTestableServer(options?: {
     prefix: '/api/v1',
     repository: shariahReviewRepository,
     roleAssignmentRepository: roleAssignmentRepository,
+    roleRepository: roleRepository,
     audit: shariahReviewAuditCallback
   });
 

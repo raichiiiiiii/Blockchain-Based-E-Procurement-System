@@ -28,6 +28,7 @@ These rules constrain how code is written so Sprint 1 implementation remains con
 7. Encode provisional business assumptions in named constants, policies, or documented schema types, not in magic strings.
 8. Do not let generated code silently invent new states, role codes, or error shapes.
 9. Protected route consumers must derive actor identity from authenticated server-side request context (`request.actorContext`) and must not directly trust client-supplied actor identity fields or headers as the trusted source for authorization or audit on protected actions.
+10. Protected actions such as Shariah review submission must enforce the documented business authorization rule, which for review submission is coordinator-only for the target organization.
 
 ## 4. Folder usage
 

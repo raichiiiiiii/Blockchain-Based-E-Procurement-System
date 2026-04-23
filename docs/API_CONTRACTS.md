@@ -552,7 +552,7 @@ Provisional Sprint 1 rules:
 - submitting actor is derived from authenticated server-side context
 - `submittedByUserId` is a server-derived field and must not be accepted from the request body
 - if a client sends `submittedByUserId` in the request body, the request should be rejected with `VALIDATION_ERROR`
-- submitting actor must have permission to submit a review for the organization
+- the submitting actor must hold the coordinator role for the target organization
 
 [FLAG-SHARIAH-SUBMISSION-METADATA]
 Mandatory metadata is not yet fully approved. The current shape represents a minimal baseline with richer metadata remaining provisional.

@@ -3,6 +3,7 @@ import type { ShariahReviewRepository } from '../application/shariah-review-repo
 import { submitShariahReview, type SubmitShariahReviewInput } from '../application/submit-shariah-review.js';
 import type { ShariahReview } from '../domain/shariah-review.js';
 import type { RoleAssignmentRepository } from '../../access-control/application/role-assignment-repository.js';
+import type { RoleRepository } from '../../access-control/application/role-repository.js';
 
 // Define the audit event interface for shariah review submission
 export interface ShariahReviewSubmitAuditEvent {
@@ -20,12 +21,16 @@ export interface ShariahReviewSubmitAuditEvent {
 interface ShariahReviewRoutesOptions {
   repository: ShariahReviewRepository;
   roleAssignmentRepository: RoleAssignmentRepository;
+  roleRepository: RoleRepository;
   audit: (event: ShariahReviewSubmitAuditEvent) => void;
 }
 
+// Coordinator role code constant
+const COORDINATOR_ROLE_CODE = 'coordinator';
+
 // Create the Fastify plugin for shariah-review routes
 const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions> = async (fastify, options) => {
-  const { repository, roleAssignmentRepository, audit } = options;
+  const { repository, roleAssignmentRepository, roleRepository, audit } = options;
 
   // POST /api/v1/shariah-reviews - Submit a new Shariah review
   fastify.post<{ Body: Omit<SubmitShariahReviewInput, 'submittedByUserId'> }>(
@@ -70,13 +75,40 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         });
       }
 
-      // Check if user has active role assignment in the target organization
-      const hasActiveAssignment = await roleAssignmentRepository.existsActiveAssignmentByUserAndOrganization(
+      // Find the coordinator role
+      const coordinatorRole = await roleRepository.findByRoleCode(COORDINATOR_ROLE_CODE, 'organization');
+
+      if (!coordinatorRole) {
+        // If coordinator role doesn't exist, deny access
+        const auditEvent: ShariahReviewSubmitAuditEvent = {
+          action: 'submitShariahReview',
+          targetType: 'shariahReview',
+          targetId: 'unknown',
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'forbidden',
+          actorId: actorId,
+          reason: 'coordinator_role_not_found'
+        };
+        
+        audit(auditEvent);
+        
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Coordinator role not configured'
+          }
+        });
+      }
+
+      // Check if user has active coordinator role assignment in the target organization
+      const coordinatorAssignment = await roleAssignmentRepository.findActiveByUserOrganizationRole(
         actorId,
-        request.body.organizationId
+        request.body.organizationId,
+        coordinatorRole.id
       );
 
-      if (!hasActiveAssignment) {
+      if (!coordinatorAssignment) {
         // Emit audit event for forbidden submission
         const auditEvent: ShariahReviewSubmitAuditEvent = {
           action: 'submitShariahReview',
@@ -86,7 +118,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           requestId: request.id,
           outcome: 'forbidden',
           actorId: actorId,
-          reason: 'membership_required'
+          reason: 'coordinator_required'
         };
         
         audit(auditEvent);
@@ -94,7 +126,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         return reply.code(403).send({
           error: {
             code: 'FORBIDDEN',
-            message: 'User does not have required permissions for this organization'
+            message: 'User must have coordinator role to submit reviews'
           }
         });
       }
