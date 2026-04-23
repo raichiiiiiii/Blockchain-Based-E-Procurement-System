@@ -159,13 +159,17 @@ Checklist items are provisionally assumed to be seeded reference data in Sprint 
 
 ### completion rule
 A review is `checklistComplete` only when:
-- all mandatory checklist items exist
-- all mandatory outcomes are recorded
-- required comments are present for failed items
-- required evidence references are present where policy or seed data requires them
+- all mandatory checklist items have been evaluated
+- required comments are provided for all `fail` outcomes
+- required evidence references are provided for items that mandate them
 
 ### incomplete rule
 If the above is not satisfied, the review remains `checklistInProgress`.
+
+Additional rules:
+- mandatory checklist items are defined in the seeded reference data
+- mandatory items may use any outcome value including "notApplicable"
+- duplicate itemCode entries are not allowed in one checklist submission
 
 [FLAG-CHECKLIST-SOURCE]
 Checklist source and longer-term configurability are not yet fully approved.

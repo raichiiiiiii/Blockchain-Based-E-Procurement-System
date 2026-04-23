@@ -589,6 +589,22 @@ Allowed `outcome` values for Sprint 1 baseline:
 - `fail`
 - `notApplicable`
 
+Each checklist entry consists of:
+- `itemCode`: A unique identifier for the checklist item (required)
+- `outcome`: The result for this checklist item (required)
+- `comment`: Additional notes about the outcome (optional, but required when outcome is `fail`)
+- `evidenceRefs`: References to supporting evidence (optional, but may be required based on item configuration)
+
+Completion criteria:
+- A review is considered `checklistComplete` when:
+  - All mandatory checklist items have been evaluated
+  - Required comments are provided for all `fail` outcomes
+  - Required evidence references are provided for items that mandate them
+- A review remains in `checklistInProgress` when:
+  - Not all mandatory checklist items have been evaluated
+  - Required comments are missing for any `fail` outcomes
+  - Required evidence references are missing for items that mandate them
+
 Response:
 
 ```json
@@ -606,6 +622,9 @@ Rules:
 - failed items must carry a comment
 - evidence may be required for selected seeded items later
 - the resulting status may be `checklistInProgress` or `checklistComplete` depending on completion rules
+- mandatory checklist items are defined in the seeded reference data
+- mandatory items may use any outcome value including "notApplicable"
+- duplicate itemCode entries are not allowed in one checklist submission
 
 [FLAG-CHECKLIST-SOURCE]
 Sprint 1 working assumption is seeded reference data, but fixed-vs-configurable policy is not yet fully final.
