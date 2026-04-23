@@ -279,6 +279,9 @@ Minimum rule:
 - checklist and decisioning are separate phases
 - final outcomes are `approved`, `rejected`, and `conditionalApproved`
 - history read model must support incomplete progression without error
+- mandatory checklist items are defined by seeded reference data
+- mandatory items may use any allowed outcome including `notApplicable`
+- duplicate `itemCode` entries are not allowed in one checklist submission
 
 ## 14. Open flags
 
