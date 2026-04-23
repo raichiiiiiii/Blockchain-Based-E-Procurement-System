@@ -9,7 +9,7 @@ describe('POST /api/v1/shariah-reviews', () => {
   test('should submit a review successfully with valid body and x-actor-id', async () => {
     const repository = new InMemoryShariahReviewRepository();
     const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
-    
+
     // Create an active assignment for the user
     await roleAssignmentRepository.save({
       userId: 'user456',
@@ -17,8 +17,8 @@ describe('POST /api/v1/shariah-reviews', () => {
       roleId: 'role123',
       status: 'active'
     });
-    
-    const server = createTestableServer({ 
+
+    const server = createTestableServer({
       shariahReviewRepository: repository,
       roleAssignmentRepository: roleAssignmentRepository
     });
@@ -101,7 +101,7 @@ describe('POST /api/v1/shariah-reviews', () => {
   test('should return 400 when required body fields are missing', async () => {
     const repository = new InMemoryShariahReviewRepository();
     const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
-    
+
     // Create an active assignment for the user
     await roleAssignmentRepository.save({
       userId: 'user456',
@@ -109,8 +109,8 @@ describe('POST /api/v1/shariah-reviews', () => {
       roleId: 'role123',
       status: 'active'
     });
-    
-    const server = createTestableServer({ 
+
+    const server = createTestableServer({
       shariahReviewRepository: repository,
       roleAssignmentRepository: roleAssignmentRepository
     });
@@ -134,7 +134,7 @@ describe('POST /api/v1/shariah-reviews', () => {
   test('should return 400 when title is whitespace-only (service invalidInput)', async () => {
     const repository = new InMemoryShariahReviewRepository();
     const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
-    
+
     // Create an active assignment for the user
     await roleAssignmentRepository.save({
       userId: 'user456',
@@ -142,8 +142,8 @@ describe('POST /api/v1/shariah-reviews', () => {
       roleId: 'role123',
       status: 'active'
     });
-    
-    const server = createTestableServer({ 
+
+    const server = createTestableServer({
       shariahReviewRepository: repository,
       roleAssignmentRepository: roleAssignmentRepository
     });
@@ -172,7 +172,7 @@ describe('POST /api/v1/shariah-reviews', () => {
   test('submittedByUserId in the success response should match x-actor-id', async () => {
     const repository = new InMemoryShariahReviewRepository();
     const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
-    
+
     // Create an active assignment for the user
     await roleAssignmentRepository.save({
       userId: 'specific-user-id',
@@ -180,8 +180,8 @@ describe('POST /api/v1/shariah-reviews', () => {
       roleId: 'role123',
       status: 'active'
     });
-    
-    const server = createTestableServer({ 
+
+    const server = createTestableServer({
       shariahReviewRepository: repository,
       roleAssignmentRepository: roleAssignmentRepository
     });
@@ -209,9 +209,17 @@ describe('POST /api/v1/shariah-reviews', () => {
   test('should return 403 when user has no assignments in the target organization', async () => {
     const repository = new InMemoryShariahReviewRepository();
     const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
-    const server = createTestableServer({ 
+
+    // Capture audit events
+    const auditEvents: ShariahReviewSubmitAuditEvent[] = [];
+    const auditCallback = (event: ShariahReviewSubmitAuditEvent) => {
+      auditEvents.push(event);
+    };
+
+    const server = createTestableServer({
       shariahReviewRepository: repository,
-      roleAssignmentRepository: roleAssignmentRepository
+      roleAssignmentRepository: roleAssignmentRepository,
+      shariahReviewAudit: auditCallback
     });
 
     const payload = {
@@ -233,12 +241,19 @@ describe('POST /api/v1/shariah-reviews', () => {
     const responseBody = response.json();
     assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
     assert.strictEqual(responseBody.error.message, 'User does not have required permissions for this organization');
+
+    // Verify audit event was emitted
+    assert.strictEqual(auditEvents.length, 1);
+    const auditEvent = auditEvents[0];
+    assert.strictEqual(auditEvent.action, 'submitShariahReview');
+    assert.strictEqual(auditEvent.outcome, 'forbidden');
+    assert.strictEqual(auditEvent.reason, 'membership_required');
   });
 
   test('should return 403 when user only has revoked assignments in the target organization', async () => {
     const repository = new InMemoryShariahReviewRepository();
     const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
-    
+
     // Create a revoked assignment for the user
     await roleAssignmentRepository.save({
       userId: 'user456',
@@ -246,8 +261,8 @@ describe('POST /api/v1/shariah-reviews', () => {
       roleId: 'role123',
       status: 'revoked'
     });
-    
-    const server = createTestableServer({ 
+
+    const server = createTestableServer({
       shariahReviewRepository: repository,
       roleAssignmentRepository: roleAssignmentRepository
     });
@@ -276,7 +291,7 @@ describe('POST /api/v1/shariah-reviews', () => {
   test('should emit audit event for successful submission', async () => {
     const repository = new InMemoryShariahReviewRepository();
     const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
-    
+
     // Create an active assignment for the user
     await roleAssignmentRepository.save({
       userId: 'user456',
@@ -284,14 +299,14 @@ describe('POST /api/v1/shariah-reviews', () => {
       roleId: 'role123',
       status: 'active'
     });
-    
+
     // Capture audit events
     const auditEvents: ShariahReviewSubmitAuditEvent[] = [];
     const auditCallback = (event: ShariahReviewSubmitAuditEvent) => {
       auditEvents.push(event);
     };
-    
-    const server = createTestableServer({ 
+
+    const server = createTestableServer({
       shariahReviewRepository: repository,
       roleAssignmentRepository: roleAssignmentRepository,
       shariahReviewAudit: auditCallback
@@ -314,7 +329,7 @@ describe('POST /api/v1/shariah-reviews', () => {
 
     // Verify successful response
     assert.strictEqual(response.statusCode, 201);
-    
+
     // Verify audit event was emitted
     assert.strictEqual(auditEvents.length, 1);
     const auditEvent = auditEvents[0];
@@ -327,48 +342,54 @@ describe('POST /api/v1/shariah-reviews', () => {
     assert.ok(auditEvent.targetId);
   });
 
-  test('should not emit audit event for forbidden submission', async () => {
-    const repository = new InMemoryShariahReviewRepository();
-    const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
-    
-    // Capture audit events
-    const auditEvents: ShariahReviewSubmitAuditEvent[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent) => {
+  test('should emit audit event for forbidden submission', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
       auditEvents.push(event);
     };
-    
-    const server = createTestableServer({ 
+
+    const repository = new InMemoryShariahReviewRepository();
+    const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
+
+    const server = createTestableServer({
       shariahReviewRepository: repository,
-      roleAssignmentRepository: roleAssignmentRepository,
+      roleAssignmentRepository,
       shariahReviewAudit: auditCallback
     });
-
-    const payload = {
-      organizationId: 'org123',
-      title: 'Test Review',
-      summary: 'This is a test summary.'
-    };
 
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/shariah-reviews',
-      payload: payload,
+      payload: {
+        organizationId: 'org_123',
+        submissionReference: 'SUB-001',
+        title: 'Test Review',
+        summary: 'Test summary'
+      },
       headers: {
         'x-actor-id': 'user456'
       }
     });
 
-    // Verify forbidden response
     assert.strictEqual(response.statusCode, 403);
-    
-    // Verify no audit event was emitted
-    assert.strictEqual(auditEvents.length, 0);
+
+    const forbiddenAudits = auditEvents.filter(
+      (e) => e.action === 'submitShariahReview' && e.outcome === 'forbidden'
+    );
+
+    assert.strictEqual(forbiddenAudits.length, 1);
+
+    const auditEvent = forbiddenAudits[0];
+    assert.strictEqual(auditEvent.action, 'submitShariahReview');
+    assert.strictEqual(auditEvent.outcome, 'forbidden');
+    assert.strictEqual(auditEvent.reason, 'membership_required');
+    assert.ok(typeof auditEvent.requestId === 'string');
   });
 
   test('should not emit audit event for invalid submission', async () => {
     const repository = new InMemoryShariahReviewRepository();
     const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
-    
+
     // Create an active assignment for the user
     await roleAssignmentRepository.save({
       userId: 'user456',
@@ -376,14 +397,14 @@ describe('POST /api/v1/shariah-reviews', () => {
       roleId: 'role123',
       status: 'active'
     });
-    
+
     // Capture audit events
     const auditEvents: ShariahReviewSubmitAuditEvent[] = [];
     const auditCallback = (event: ShariahReviewSubmitAuditEvent) => {
       auditEvents.push(event);
     };
-    
-    const server = createTestableServer({ 
+
+    const server = createTestableServer({
       shariahReviewRepository: repository,
       roleAssignmentRepository: roleAssignmentRepository,
       shariahReviewAudit: auditCallback
@@ -401,7 +422,7 @@ describe('POST /api/v1/shariah-reviews', () => {
 
     // Verify bad request response
     assert.strictEqual(response.statusCode, 400);
-    
+
     // Verify no audit event was emitted
     assert.strictEqual(auditEvents.length, 0);
   });
@@ -409,7 +430,7 @@ describe('POST /api/v1/shariah-reviews', () => {
   test('should accept and return references when provided', async () => {
     const repository = new InMemoryShariahReviewRepository();
     const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
-    
+
     // Create an active assignment for the user
     await roleAssignmentRepository.save({
       userId: 'user456',
@@ -417,8 +438,8 @@ describe('POST /api/v1/shariah-reviews', () => {
       roleId: 'role123',
       status: 'active'
     });
-    
-    const server = createTestableServer({ 
+
+    const server = createTestableServer({
       shariahReviewRepository: repository,
       roleAssignmentRepository: roleAssignmentRepository
     });
@@ -456,7 +477,7 @@ describe('POST /api/v1/shariah-reviews', () => {
   test('should preserve existing behavior when references are omitted', async () => {
     const repository = new InMemoryShariahReviewRepository();
     const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
-    
+
     // Create an active assignment for the user
     await roleAssignmentRepository.save({
       userId: 'user456',
@@ -464,8 +485,8 @@ describe('POST /api/v1/shariah-reviews', () => {
       roleId: 'role123',
       status: 'active'
     });
-    
-    const server = createTestableServer({ 
+
+    const server = createTestableServer({
       shariahReviewRepository: repository,
       roleAssignmentRepository: roleAssignmentRepository
     });

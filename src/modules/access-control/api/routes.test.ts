@@ -333,8 +333,8 @@ describe('POST /api/v1/roles', () => {
     assert.ok(typeof auditEvent.timestamp === 'string');
   });
 
-  // New audit test: forbidden create does not emit audit
-  test('should not emit audit event on forbidden role creation', async () => {
+  // Updated test: forbidden create now emits audit
+  test('should emit audit event on forbidden role creation', async () => {
     let auditEvents: any[] = [];
     const auditCallback = (event: any) => {
       auditEvents.push(event);
@@ -356,12 +356,21 @@ describe('POST /api/v1/roles', () => {
       url: '/api/v1/roles',
       payload: rolePayload,
       headers: {
-        'x-actor-role': 'user' // Non-admin role
+        'x-actor-role': 'user', // Non-admin role
+        'x-actor-id': 'test-user-forbidden'
       }
     });
 
     assert.strictEqual(response.statusCode, 403);
-    assert.strictEqual(auditEvents.length, 0);
+    assert.strictEqual(auditEvents.length, 1);
+
+    const auditEvent = auditEvents[0];
+    assert.strictEqual(auditEvent.action, 'createRole');
+    assert.strictEqual(auditEvent.targetType, 'role');
+    assert.strictEqual(auditEvent.outcome, 'forbidden');
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.strictEqual(auditEvent.actorId, 'test-user-forbidden');
+    assert.strictEqual(auditEvent.reason, 'admin_required');
   });
 
   // New test: invalid POST status does not emit audit
@@ -821,8 +830,8 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
     assert.ok(typeof auditEvent.timestamp === 'string');
   });
 
-  // New audit test: forbidden update does not emit audit
-  test('should not emit audit event on forbidden role update', async () => {
+  // Updated audit test: forbidden update now emits audit
+  test('should emit audit event on forbidden role update', async () => {
     let auditEvents: any[] = [];
     const auditCallback = (event: any) => {
       auditEvents.push(event);
@@ -859,15 +868,26 @@ describe('PATCH /api/v1/roles/{roleId}', () => {
         displayName: 'Updated by non-admin'
       },
       headers: {
-        'x-actor-role': 'user' // Non-admin role
+        'x-actor-role': 'user', // Non-admin role
+        'x-actor-id': 'test-user-forbidden-update'
       }
     });
 
     assert.strictEqual(updateResponse.statusCode, 403);
 
-    // Filter to just the update audit events
-    const updateAudits = auditEvents.filter(e => e.action === 'updateRole');
-    assert.strictEqual(updateAudits.length, 0);
+    // Filter to just the update audit events with forbidden outcome
+    const forbiddenAudits = auditEvents.filter(e => e.action === 'updateRole' && e.outcome === 'forbidden');
+    assert.strictEqual(forbiddenAudits.length, 1);
+
+    const auditEvent = forbiddenAudits[0];
+    assert.strictEqual(auditEvent.action, 'updateRole');
+    assert.strictEqual(auditEvent.targetType, 'role');
+    assert.strictEqual(auditEvent.outcome, 'forbidden');
+    assert.strictEqual(auditEvent.actorId, 'test-user-forbidden-update');
+    assert.strictEqual(auditEvent.targetId, roleId);
+    assert.ok(typeof auditEvent.requestId === 'string');
+    assert.ok(typeof auditEvent.timestamp === 'string');
+    assert.strictEqual(auditEvent.reason, 'admin_required');
   });
 
   // New audit test: invalid PATCH status does not emit update audit
@@ -1644,7 +1664,12 @@ describe('POST /api/v1/role-assignments', () => {
 
   // New test: non-admin create denied
   test('should deny role assignment creation for non-admin users', async () => {
-    const server = createTestableServer();
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+
+    const server = createTestableServer({ roleAudit: auditCallback });
 
     // First create a role
     const roleResponse = await server.inject({
@@ -1702,6 +1727,18 @@ describe('POST /api/v1/role-assignments', () => {
     const responseBody = response.json();
     assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
     assert.strictEqual(responseBody.error.message, 'Admin access required');
+
+    const forbiddenAudits = auditEvents.filter(
+      (e) => e.action === 'createRoleAssignment' && e.outcome === 'forbidden'
+    );
+
+    assert.strictEqual(forbiddenAudits.length, 1);
+
+    const auditEvent = forbiddenAudits[0];
+    assert.strictEqual(auditEvent.action, 'createRoleAssignment');
+    assert.strictEqual(auditEvent.outcome, 'forbidden');
+    assert.strictEqual(auditEvent.reason, 'admin_required');
+    assert.ok(typeof auditEvent.requestId === 'string');
   });
 
   // New test: admin create still succeeds
@@ -1721,7 +1758,7 @@ describe('POST /api/v1/role-assignments', () => {
         isSystemReserved: false
       },
       headers: {
-        'x-actor-role': 'admin'
+        'x-actor-role': 'admin' // Admin role
       }
     });
 
@@ -1841,7 +1878,7 @@ describe('POST /api/v1/role-assignments', () => {
     });
 
     assert.strictEqual(response.statusCode, 201);
-    
+
     // Filter to just the createRoleAssignment audit events
     const createAssignmentAudits = auditEvents.filter(e => e.action === 'createRoleAssignment');
     assert.strictEqual(createAssignmentAudits.length, 1);
@@ -1958,7 +1995,7 @@ describe('POST /api/v1/role-assignments', () => {
     assert.ok(typeof auditEvent.requestId === 'string');
     assert.ok(typeof auditEvent.timestamp === 'string');
   });
-  
+
   // New audit test: invalid user role assignment attempt emits audit event
   test('should emit audit event on invalid user role assignment attempt', async () => {
     let auditEvents: any[] = [];
@@ -2042,7 +2079,7 @@ describe('POST /api/v1/role-assignments', () => {
     assert.ok(typeof auditEvent.requestId === 'string');
     assert.ok(typeof auditEvent.timestamp === 'string');
   });
-  
+
   // New audit test: non-member role assignment attempt emits audit event
   test('should emit audit event on non-member role assignment attempt', async () => {
     let auditEvents: any[] = [];
@@ -2126,7 +2163,7 @@ describe('POST /api/v1/role-assignments', () => {
     assert.ok(typeof auditEvent.requestId === 'string');
     assert.ok(typeof auditEvent.timestamp === 'string');
   });
-  
+
   // New audit test: invalid role role assignment attempt emits audit event
   test('should emit audit event on invalid role role assignment attempt', async () => {
     let auditEvents: any[] = [];
@@ -2416,6 +2453,11 @@ describe('DELETE /api/v1/role-assignments', () => {
 
   // New test: non-admin delete denied
   test('should deny role assignment removal for non-admin users', async () => {
+    let auditEvents: any[] = [];
+    const auditCallback = (event: any) => {
+      auditEvents.push(event);
+    };
+
     const assignmentRepository = new InMemoryRoleAssignmentRepository();
     const roleRepository = new InMemoryRoleRepository();
     const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
@@ -2423,7 +2465,8 @@ describe('DELETE /api/v1/role-assignments', () => {
     const server = createTestableServer({
       roleRepository,
       roleAssignmentRepository: assignmentRepository,
-      memberRepository: memberOrganizationRepository
+      memberRepository: memberOrganizationRepository,
+      roleAudit: auditCallback
     });
 
     // First create a role
@@ -2494,6 +2537,18 @@ describe('DELETE /api/v1/role-assignments', () => {
     const responseBody = removeResponse.json();
     assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
     assert.strictEqual(responseBody.error.message, 'Admin access required');
+
+    const forbiddenAudits = auditEvents.filter(
+      (e) => e.action === 'removeRoleAssignment' && e.outcome === 'forbidden'
+    );
+
+    assert.strictEqual(forbiddenAudits.length, 1);
+
+    const auditEvent = forbiddenAudits[0];
+    assert.strictEqual(auditEvent.action, 'removeRoleAssignment');
+    assert.strictEqual(auditEvent.outcome, 'forbidden');
+    assert.strictEqual(auditEvent.reason, 'admin_required');
+    assert.ok(typeof auditEvent.requestId === 'string');
   });
 
   // New test: admin delete still succeeds

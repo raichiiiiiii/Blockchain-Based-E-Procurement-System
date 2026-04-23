@@ -11,8 +11,9 @@ export interface ShariahReviewSubmitAuditEvent {
   targetId: string;
   timestamp: string;
   requestId: string;
-  outcome: 'success';
+  outcome: 'success' | 'forbidden';
   actorId: string;
+  reason?: string;
 }
 
 // Define plugin options interface
@@ -76,6 +77,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       );
 
       if (!hasActiveAssignment) {
+        // Emit audit event for forbidden submission
+        const auditEvent: ShariahReviewSubmitAuditEvent = {
+          action: 'submitShariahReview',
+          targetType: 'shariahReview',
+          targetId: 'unknown',
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'forbidden',
+          actorId: actorId,
+          reason: 'membership_required'
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(403).send({
           error: {
             code: 'FORBIDDEN',

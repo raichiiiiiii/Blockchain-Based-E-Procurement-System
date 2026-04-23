@@ -19,8 +19,9 @@ export interface RoleCreateAuditEvent {
   targetId: string;
   timestamp: string;
   requestId: string;
-  outcome: 'success' | 'conflict';
+  outcome: 'success' | 'conflict' | 'forbidden';
   actorId: string;
+  reason?: string;
 }
 
 // Define the audit event interface for role updates
@@ -30,8 +31,9 @@ export interface RoleUpdateAuditEvent {
   targetId: string;
   timestamp: string;
   requestId: string;
-  outcome: 'success' | 'notFound';
+  outcome: 'success' | 'notFound' | 'forbidden';
   actorId: string;
+  reason?: string;
 }
 
 // Define the audit event interface for role assignment creation
@@ -41,8 +43,9 @@ export interface RoleAssignmentCreateAuditEvent {
   targetId: string;
   timestamp: string;
   requestId: string;
-  outcome: 'success' | 'conflict' | 'validationError';
+  outcome: 'success' | 'conflict' | 'validationError' | 'forbidden';
   actorId: string;
+  reason?: string;
 }
 
 // Define the audit event interface for role assignment removal
@@ -52,8 +55,9 @@ export interface RoleAssignmentRemoveAuditEvent {
   targetId: string;
   timestamp: string;
   requestId: string;
-  outcome: 'success';
+  outcome: 'success' | 'forbidden';
   actorId: string;
+  reason?: string;
 }
 
 // Define the audit event interface for role assignment change
@@ -63,8 +67,9 @@ export interface RoleAssignmentChangeAuditEvent {
   targetId: string;
   timestamp: string;
   requestId: string;
-  outcome: 'success';
+  outcome: 'success' | 'forbidden';
   actorId: string;
+  reason?: string;
 }
 
 // Union type for all role audit events
@@ -97,6 +102,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Check if the actor is an admin using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!actorRoles || !actorRoles.includes('admin')) {
+          // Emit audit event for forbidden access
+          const actorId = request.actorContext?.userId || 'unknown';
+          const auditEvent: RoleCreateAuditEvent = {
+            action: 'createRole',
+            targetType: 'role',
+            targetId: 'unknown',
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'forbidden',
+            actorId,
+            reason: 'admin_required'
+          };
+          audit(auditEvent);
+
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
@@ -181,6 +200,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Check if the actor is an admin using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!actorRoles || !actorRoles.includes('admin')) {
+          // Emit audit event for forbidden access
+          const actorId = request.actorContext?.userId || 'unknown';
+          const auditEvent: RoleUpdateAuditEvent = {
+            action: 'updateRole',
+            targetType: 'role',
+            targetId: request.params.roleId,
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'forbidden',
+            actorId,
+            reason: 'admin_required'
+          };
+          audit(auditEvent);
+
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
@@ -297,6 +330,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Check if the actor is an admin using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!actorRoles || !actorRoles.includes('admin')) {
+          // Emit audit event for forbidden access
+          const actorId = request.actorContext?.userId || 'unknown';
+          const auditEvent: RoleAssignmentCreateAuditEvent = {
+            action: 'createRoleAssignment',
+            targetType: 'roleAssignment',
+            targetId: 'unknown',
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'forbidden',
+            actorId,
+            reason: 'admin_required'
+          };
+          audit(auditEvent);
+
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
@@ -466,6 +513,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Check if the actor is an admin using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!actorRoles || !actorRoles.includes('admin')) {
+          // Emit audit event for forbidden access
+          const actorId = request.actorContext?.userId || 'unknown';
+          const auditEvent: RoleAssignmentRemoveAuditEvent = {
+            action: 'removeRoleAssignment',
+            targetType: 'roleAssignment',
+            targetId: 'unknown',
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'forbidden',
+            actorId,
+            reason: 'admin_required'
+          };
+          audit(auditEvent);
+
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
@@ -536,6 +597,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Check if the actor is an admin using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!actorRoles || !actorRoles.includes('admin')) {
+          // Emit audit event for forbidden access
+          const actorId = request.actorContext?.userId || 'unknown';
+          const auditEvent: RoleAssignmentChangeAuditEvent = {
+            action: 'changeRoleAssignment',
+            targetType: 'roleAssignment',
+            targetId: 'unknown',
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'forbidden',
+            actorId,
+            reason: 'admin_required'
+          };
+          audit(auditEvent);
+
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
