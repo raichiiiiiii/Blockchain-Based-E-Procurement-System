@@ -178,29 +178,28 @@ Checklist source and longer-term configurability are not yet fully approved.
 
 ## 9. Decision rules
 
-### approved
-Requires:
-- completed checklist
-- rationale optional but recommended
+### Valid final decision states
+- `approved`
+- `rejected`
+- `conditionalApproved`
 
-### rejected
-Requires:
-- completed checklist
-- rationale mandatory
+### Valid transitions
+- `checklistComplete` -> `approved`
+- `checklistComplete` -> `rejected`
+- `checklistComplete` -> `conditionalApproved`
 
-### conditionalApproved
-Requires:
-- completed checklist
-- rationale mandatory
-- at least one condition recorded
-- each condition must include a description and due date in the provisional Sprint 1 model
+### Invalid transitions
+- `submitted` cannot transition directly to any final decision state
+- `checklistInProgress` cannot transition directly to any final decision state
+- Final decision states are terminal for decision recording unless a later task explicitly documents reopen/reversal behavior
+
+### Mandatory field rules
+- All final decisions require a rationale
+- `conditionalApproved` requires one or more explicit conditions
+- `approved` and `rejected` must not carry conditional-approval conditions
 
 [FLAG-CONDITIONAL-APPROVAL]
-Still unresolved:
-- condition expiry semantics
-- follow-up ownership
-- whether unmet conditions revert access or state later
-- whether condition closure is in Sprint 1 scope
+Condition structure requirements (rationale and due date) are defined, but condition expiry, ownership, and closure enforcement are not yet fully approved.
 
 ## 10. History/read model state rules
 

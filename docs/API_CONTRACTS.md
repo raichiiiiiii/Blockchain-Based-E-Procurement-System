@@ -652,7 +652,6 @@ Request:
   "rationale": "string",
   "conditions": [
     {
-      "code": "string",
       "description": "string",
       "dueDate": "2026-04-01"
     }
@@ -678,10 +677,14 @@ Response:
 ```
 
 Rules:
-- decision requires checklist to be complete
-- `rejected` requires `rationale`
-- `conditionalApproved` requires `rationale`
-- `conditionalApproved` requires at least one condition
+- Decision recording is valid only when review status is `checklistComplete`
+- `submitted` and `checklistInProgress` cannot be decision-recorded directly
+- `rationale` is required for all final decisions
+- `conditions` are required for `conditionalApproved`
+- `conditions` must not be present for `approved` or `rejected`
+- Minimum conditional-approval condition structure requires:
+  - `description` (required)
+  - `dueDate` (required)
 - Sprint 1 baseline assumes final decisions are not revised without a future reopen policy
 
 [FLAG-CONDITIONAL-APPROVAL]
