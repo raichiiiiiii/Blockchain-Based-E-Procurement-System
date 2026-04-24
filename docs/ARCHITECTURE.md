@@ -170,6 +170,7 @@ Authorization must be enforced in two places:
 
 Shariah review submission requires the actor to hold the coordinator role for the target organization.
 Role-assignment creation is a protected admin-only action enforced from trusted server-derived actor context.
+Decision recording is a protected transition requiring authorized coordinator access for the target organization.
 
 ### 9.4 Validation
 

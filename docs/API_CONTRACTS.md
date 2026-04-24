@@ -676,6 +676,18 @@ Response:
 }
 ```
 
+Authorization:
+- Decision recording is a protected action
+- Actor identity comes from trusted server-derived request context
+- Only an authorized coordinator for the target organization may record a decision
+- Unauthorized attempts return `403 FORBIDDEN`
+
+Audit behavior:
+- Successful decision recording emits a decision audit event
+- Forbidden decision attempts emit a decision audit event
+- Invalid-state decision attempts emit a decision audit event
+- Not-found decision attempts emit a decision audit event if the backend records it
+
 Rules:
 - Decision recording is valid only when review status is `checklistComplete`
 - `submitted` and `checklistInProgress` cannot be decision-recorded directly

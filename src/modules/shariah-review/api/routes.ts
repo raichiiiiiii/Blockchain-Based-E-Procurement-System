@@ -38,7 +38,7 @@ export interface ShariahReviewDecisionAuditEvent {
   targetId: string;
   timestamp: string;
   requestId: string;
-  outcome: 'success' | 'forbidden' | 'validationError' | 'notFound';
+  outcome: 'success' | 'forbidden' | 'validationError' | 'notFound' | 'invalidState';
   actorId: string;
   reason?: string;
 }
@@ -667,6 +667,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       const actorId = request.actorContext?.userId;
 
       if (!actorId) {
+        // Emit audit event for forbidden decision attempt due to missing actor
+        const auditEvent: ShariahReviewDecisionAuditEvent = {
+          action: 'recordShariahReviewDecision',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'forbidden',
+          actorId: 'unknown',
+          reason: 'missing_actor_id'
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
@@ -679,6 +693,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       const review = await repository.findById(request.params.reviewId);
       
       if (!review) {
+        // Emit audit event for not found decision attempt
+        const auditEvent: ShariahReviewDecisionAuditEvent = {
+          action: 'recordShariahReviewDecision',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'notFound',
+          actorId: actorId,
+          reason: 'review_not_found'
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(404).send({
           error: {
             code: 'NOT_FOUND',
@@ -691,6 +719,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       const coordinatorRole = await roleRepository.findByRoleCode(COORDINATOR_ROLE_CODE, 'organization');
 
       if (!coordinatorRole) {
+        // Emit audit event for forbidden decision attempt due to missing coordinator role
+        const auditEvent: ShariahReviewDecisionAuditEvent = {
+          action: 'recordShariahReviewDecision',
+          targetType: 'shariahReview',
+          targetId: review.id,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'forbidden',
+          actorId: actorId,
+          reason: 'coordinator_role_not_found'
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(403).send({
           error: {
             code: 'FORBIDDEN',
@@ -707,6 +749,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       );
 
       if (!coordinatorAssignment) {
+        // Emit audit event for forbidden decision attempt
+        const auditEvent: ShariahReviewDecisionAuditEvent = {
+          action: 'recordShariahReviewDecision',
+          targetType: 'shariahReview',
+          targetId: review.id,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'forbidden',
+          actorId: actorId,
+          reason: 'coordinator_required'
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(403).send({
           error: {
             code: 'FORBIDDEN',
@@ -726,9 +782,22 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       // Call the decision service
       const result: DecisionResult = await recordShariahReviewDecision(decisionInput, repository);
 
-      // Map result to HTTP responses
+      // Map result to HTTP responses and emit audit events
       switch (result.status) {
         case 'success':
+          // Emit audit event for successful decision recording
+          const successAuditEvent: ShariahReviewDecisionAuditEvent = {
+            action: 'recordShariahReviewDecision',
+            targetType: 'shariahReview',
+            targetId: result.review.id,
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'success',
+            actorId: actorId
+          };
+          
+          audit(successAuditEvent);
+          
           return reply.code(200).send({
             data: {
               reviewId: result.review.id,
@@ -738,6 +807,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           });
           
         case 'notFound':
+          // Emit audit event for not found decision attempt
+          const notFoundAuditEvent: ShariahReviewDecisionAuditEvent = {
+            action: 'recordShariahReviewDecision',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'notFound',
+            actorId: actorId,
+            reason: 'review_not_found_after_validation'
+          };
+          
+          audit(notFoundAuditEvent);
+          
           return reply.code(404).send({
             error: {
               code: 'NOT_FOUND',
@@ -746,6 +829,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           });
           
         case 'invalidState':
+          // Emit audit event for invalid state decision attempt
+          const invalidStateAuditEvent: ShariahReviewDecisionAuditEvent = {
+            action: 'recordShariahReviewDecision',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'invalidState',
+            actorId: actorId,
+            reason: `invalid_review_status_${result.currentStatus}`
+          };
+          
+          audit(invalidStateAuditEvent);
+          
           return reply.code(400).send({
             error: {
               code: 'VALIDATION_ERROR',
@@ -754,6 +851,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           });
           
         case 'validationError':
+          // Emit audit event for validation error decision attempt
+          const validationErrorAuditEvent: ShariahReviewDecisionAuditEvent = {
+            action: 'recordShariahReviewDecision',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'validationError',
+            actorId: actorId,
+            reason: 'decision_validation_failed'
+          };
+          
+          audit(validationErrorAuditEvent);
+          
           return reply.code(400).send({
             error: {
               code: 'VALIDATION_ERROR',
