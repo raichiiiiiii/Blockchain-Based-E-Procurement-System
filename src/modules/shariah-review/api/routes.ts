@@ -6,6 +6,7 @@ import type { RoleAssignmentRepository } from '../../access-control/application/
 import type { RoleRepository } from '../../access-control/application/role-repository.js';
 import type { Checklist } from '../domain/shariah-review.js';
 import { recordShariahReviewDecision, type DecisionInput, type DecisionResult } from '../application/record-shariah-review-decision.js';
+import { getShariahReviewHistory, type GetShariahReviewHistoryResult } from '../application/get-shariah-review-history.js';
 
 // Define the audit event interface for shariah review submission
 export interface ShariahReviewSubmitAuditEvent {
@@ -68,6 +69,55 @@ const VALID_STATES_FOR_CHECKLIST_SAVE: ShariahReview['status'][] = ['submitted',
 // Create the Fastify plugin for shariah-review routes
 const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions> = async (fastify, options) => {
   const { repository, roleAssignmentRepository, roleRepository, audit } = options;
+
+  // GET /api/v1/shariah-reviews/:reviewId/history - Get review history
+  fastify.get<{ Params: { reviewId: string } }>(
+    '/shariah-reviews/:reviewId/history',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['reviewId'],
+          properties: {
+            reviewId: { type: 'string' }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      // Extract and validate actorId from trusted actor context
+      const actorId = request.actorContext?.userId;
+
+      if (!actorId) {
+        return reply.code(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Missing or invalid x-actor-id header'
+          }
+        });
+      }
+
+      // Call the history service
+      const result: GetShariahReviewHistoryResult = await getShariahReviewHistory(
+        request.params.reviewId,
+        repository
+      );
+
+      // Map result to HTTP responses
+      if (result.status === 'found') {
+        return reply.code(200).send({
+          data: result.history
+        });
+      } else {
+        return reply.code(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Review not found'
+          }
+        });
+      }
+    }
+  );
 
   // POST /api/v1/shariah-reviews - Submit a new Shariah review
   fastify.post<{ Body: Omit<SubmitShariahReviewInput, 'submittedByUserId'> }>(
