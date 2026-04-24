@@ -4,7 +4,7 @@ import { createTestableServer } from '../../../app/server.js';
 import { InMemoryShariahReviewRepository } from '../infrastructure/in-memory-shariah-review-repository.js';
 import { InMemoryRoleAssignmentRepository } from '../../access-control/infrastructure/in-memory-role-assignment-repository.js';
 import { InMemoryRoleRepository } from '../../access-control/infrastructure/in-memory-role-repository.js';
-import type { ShariahReviewSubmitAuditEvent } from './routes.js';
+import type { ShariahReviewSubmitAuditEvent, ShariahReviewChecklistAuditEvent } from './routes.js';
 
 describe('POST /api/v1/shariah-reviews', () => {
   test('should submit a review successfully with coordinator role assignment', async () => {
@@ -97,8 +97,8 @@ describe('POST /api/v1/shariah-reviews', () => {
     });
 
     // Capture audit events
-    const auditEvents: ShariahReviewSubmitAuditEvent[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent) => {
+    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent)[] = [];
+    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => {
       auditEvents.push(event);
     };
 
@@ -131,7 +131,7 @@ describe('POST /api/v1/shariah-reviews', () => {
 
     // Verify audit event was emitted
     assert.strictEqual(auditEvents.length, 1);
-    const auditEvent = auditEvents[0];
+    const auditEvent = auditEvents[0] as ShariahReviewSubmitAuditEvent;
     assert.strictEqual(auditEvent.action, 'submitShariahReview');
     assert.strictEqual(auditEvent.outcome, 'forbidden');
     assert.strictEqual(auditEvent.reason, 'coordinator_required');
@@ -359,8 +359,8 @@ describe('POST /api/v1/shariah-reviews', () => {
     });
 
     // Capture audit events
-    const auditEvents: ShariahReviewSubmitAuditEvent[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent) => {
+    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent)[] = [];
+    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => {
       auditEvents.push(event);
     };
 
@@ -393,7 +393,7 @@ describe('POST /api/v1/shariah-reviews', () => {
 
     // Verify audit event was emitted
     assert.strictEqual(auditEvents.length, 1);
-    const auditEvent = auditEvents[0];
+    const auditEvent = auditEvents[0] as ShariahReviewSubmitAuditEvent;
     assert.strictEqual(auditEvent.action, 'submitShariahReview');
     assert.strictEqual(auditEvent.outcome, 'forbidden');
     assert.strictEqual(auditEvent.reason, 'coordinator_required');
@@ -473,8 +473,8 @@ describe('POST /api/v1/shariah-reviews', () => {
     });
 
     // Capture audit events
-    const auditEvents: ShariahReviewSubmitAuditEvent[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent) => {
+    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent)[] = [];
+    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => {
       auditEvents.push(event);
     };
 
@@ -505,7 +505,7 @@ describe('POST /api/v1/shariah-reviews', () => {
 
     // Verify audit event was emitted
     assert.strictEqual(auditEvents.length, 1);
-    const auditEvent = auditEvents[0];
+    const auditEvent = auditEvents[0] as ShariahReviewSubmitAuditEvent;
     assert.strictEqual(auditEvent.action, 'submitShariahReview');
     assert.strictEqual(auditEvent.targetType, 'shariahReview');
     assert.strictEqual(auditEvent.outcome, 'success');
@@ -516,8 +516,8 @@ describe('POST /api/v1/shariah-reviews', () => {
   });
 
   test('should emit audit event for forbidden submission', async () => {
-    let auditEvents: any[] = [];
-    const auditCallback = (event: any) => {
+    let auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent)[] = [];
+    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => {
       auditEvents.push(event);
     };
 
@@ -560,7 +560,7 @@ describe('POST /api/v1/shariah-reviews', () => {
 
     const forbiddenAudits = auditEvents.filter(
       (e) => e.action === 'submitShariahReview' && e.outcome === 'forbidden'
-    );
+    ) as ShariahReviewSubmitAuditEvent[];
 
     assert.strictEqual(forbiddenAudits.length, 1);
 
@@ -595,8 +595,8 @@ describe('POST /api/v1/shariah-reviews', () => {
     });
 
     // Capture audit events
-    const auditEvents: ShariahReviewSubmitAuditEvent[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent) => {
+    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent)[] = [];
+    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => {
       auditEvents.push(event);
     };
 

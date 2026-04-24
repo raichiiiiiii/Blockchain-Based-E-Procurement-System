@@ -1,4 +1,4 @@
-export type ShariahReviewStatus = 'submitted' | 'checklistInProgress' | 'checklistComplete';
+export type ShariahReviewStatus = 'submitted' | 'checklistInProgress' | 'checklistComplete' | 'approved' | 'rejected' | 'conditionalApproved';
 
 export interface ShariahReviewReference {
   type: string;

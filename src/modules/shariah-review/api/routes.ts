@@ -18,12 +18,24 @@ export interface ShariahReviewSubmitAuditEvent {
   reason?: string;
 }
 
+// Define the audit event interface for checklist operations
+export interface ShariahReviewChecklistAuditEvent {
+  action: 'saveShariahReviewChecklist';
+  targetType: 'shariahReview';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success' | 'forbidden' | 'validationError';
+  actorId: string;
+  reason?: string;
+}
+
 // Define plugin options interface
 interface ShariahReviewRoutesOptions {
   repository: ShariahReviewRepository;
   roleAssignmentRepository: RoleAssignmentRepository;
   roleRepository: RoleRepository;
-  audit: (event: ShariahReviewSubmitAuditEvent) => void;
+  audit: (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => void;
 }
 
 // Seeded checklist item definitions
@@ -36,6 +48,9 @@ const SEDED_CHECKLIST_ITEMS: ChecklistItemDefinition[] = [
 
 // Coordinator role code constant
 const COORDINATOR_ROLE_CODE = 'coordinator';
+
+// Valid states for saving checklist
+const VALID_STATES_FOR_CHECKLIST_SAVE: ShariahReview['status'][] = ['submitted', 'checklistInProgress'];
 
 // Create the Fastify plugin for shariah-review routes
 const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions> = async (fastify, options) => {
@@ -227,6 +242,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       const actorId = request.actorContext?.userId;
 
       if (!actorId) {
+        // Emit audit event for forbidden checklist save attempt due to missing actor
+        const auditEvent: ShariahReviewChecklistAuditEvent = {
+          action: 'saveShariahReviewChecklist',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'forbidden',
+          actorId: 'unknown',
+          reason: 'missing_actor_id'
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
@@ -239,10 +268,104 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       const review = await repository.findById(request.params.reviewId);
       
       if (!review) {
+        // Emit audit event for forbidden checklist save attempt due to missing review
+        const auditEvent: ShariahReviewChecklistAuditEvent = {
+          action: 'saveShariahReviewChecklist',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'validationError',
+          actorId: actorId,
+          reason: 'review_not_found'
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(404).send({
           error: {
             code: 'NOT_FOUND',
             message: 'Review not found'
+          }
+        });
+      }
+
+      // Check if review is in a valid state for checklist operations
+      if (!VALID_STATES_FOR_CHECKLIST_SAVE.includes(review.status)) {
+        // Emit audit event for blocked checklist save attempt due to wrong state
+        const auditEvent: ShariahReviewChecklistAuditEvent = {
+          action: 'saveShariahReviewChecklist',
+          targetType: 'shariahReview',
+          targetId: review.id,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'validationError',
+          actorId: actorId,
+          reason: `invalid_review_status_${review.status}`
+        };
+        
+        audit(auditEvent);
+        
+        return reply.code(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: `Cannot save checklist for review in status: ${review.status}`
+          }
+        });
+      }
+
+      // Find the coordinator role
+      const coordinatorRole = await roleRepository.findByRoleCode(COORDINATOR_ROLE_CODE, 'organization');
+
+      if (!coordinatorRole) {
+        // Emit audit event for forbidden checklist save attempt due to missing coordinator role
+        const auditEvent: ShariahReviewChecklistAuditEvent = {
+          action: 'saveShariahReviewChecklist',
+          targetType: 'shariahReview',
+          targetId: review.id,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'forbidden',
+          actorId: actorId,
+          reason: 'coordinator_role_not_found'
+        };
+        
+        audit(auditEvent);
+        
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Coordinator role not configured'
+          }
+        });
+      }
+
+      // Check if user has active coordinator role assignment in the target organization
+      const coordinatorAssignment = await roleAssignmentRepository.findActiveByUserOrganizationRole(
+        actorId,
+        review.organizationId,
+        coordinatorRole.id
+      );
+
+      if (!coordinatorAssignment) {
+        // Emit audit event for forbidden checklist save attempt
+        const auditEvent: ShariahReviewChecklistAuditEvent = {
+          action: 'saveShariahReviewChecklist',
+          targetType: 'shariahReview',
+          targetId: review.id,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'forbidden',
+          actorId: actorId,
+          reason: 'coordinator_required'
+        };
+        
+        audit(auditEvent);
+        
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'User must have coordinator role to save checklists'
           }
         });
       }
@@ -254,6 +377,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       const itemCodes = entries.map(entry => entry.itemCode);
       const uniqueItemCodes = new Set(itemCodes);
       if (itemCodes.length !== uniqueItemCodes.size) {
+        // Emit audit event for failed checklist save due to validation error
+        const auditEvent: ShariahReviewChecklistAuditEvent = {
+          action: 'saveShariahReviewChecklist',
+          targetType: 'shariahReview',
+          targetId: review.id,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'validationError',
+          actorId: actorId,
+          reason: 'duplicate_item_codes'
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
@@ -267,6 +404,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         // Check if itemCode exists in seeded items
         const seededItem = SEDED_CHECKLIST_ITEMS.find(item => item.itemCode === entry.itemCode);
         if (!seededItem) {
+          // Emit audit event for failed checklist save due to validation error
+          const auditEvent: ShariahReviewChecklistAuditEvent = {
+            action: 'saveShariahReviewChecklist',
+            targetType: 'shariahReview',
+            targetId: review.id,
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'validationError',
+            actorId: actorId,
+            reason: `unknown_checklist_item_${entry.itemCode}`
+          };
+          
+          audit(auditEvent);
+          
           return reply.code(400).send({
             error: {
               code: 'VALIDATION_ERROR',
@@ -277,6 +428,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
 
         // Check if fail outcome has comment
         if (entry.outcome === 'fail' && (!entry.comment || entry.comment.trim() === '')) {
+          // Emit audit event for failed checklist save due to validation error
+          const auditEvent: ShariahReviewChecklistAuditEvent = {
+            action: 'saveShariahReviewChecklist',
+            targetType: 'shariahReview',
+            targetId: review.id,
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'validationError',
+            actorId: actorId,
+            reason: `missing_comment_for_failed_item_${entry.itemCode}`
+          };
+          
+          audit(auditEvent);
+          
           return reply.code(400).send({
             error: {
               code: 'VALIDATION_ERROR',
@@ -287,6 +452,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
 
         // Check if evidence is required but missing
         if (seededItem.requiresEvidence && (!entry.evidenceRefs || entry.evidenceRefs.length === 0)) {
+          // Emit audit event for failed checklist save due to validation error
+          const auditEvent: ShariahReviewChecklistAuditEvent = {
+            action: 'saveShariahReviewChecklist',
+            targetType: 'shariahReview',
+            targetId: review.id,
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'validationError',
+            actorId: actorId,
+            reason: `missing_evidence_for_item_${entry.itemCode}`
+          };
+          
+          audit(auditEvent);
+          
           return reply.code(400).send({
             error: {
               code: 'VALIDATION_ERROR',
@@ -307,6 +486,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       if (isCompletionIntent) {
         // If completion intent is requested, validate all completion rules
         if (!allMandatoryItemsPresent) {
+          // Emit audit event for failed checklist save due to validation error
+          const auditEvent: ShariahReviewChecklistAuditEvent = {
+            action: 'saveShariahReviewChecklist',
+            targetType: 'shariahReview',
+            targetId: review.id,
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'validationError',
+            actorId: actorId,
+            reason: 'missing_mandatory_items_for_completion'
+          };
+          
+          audit(auditEvent);
+          
           return reply.code(400).send({
             error: {
               code: 'VALIDATION_ERROR',
@@ -318,6 +511,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         // Check if all failed items have comments
         for (const entry of entries) {
           if (entry.outcome === 'fail' && (!entry.comment || entry.comment.trim() === '')) {
+            // Emit audit event for failed checklist save due to validation error
+            const auditEvent: ShariahReviewChecklistAuditEvent = {
+              action: 'saveShariahReviewChecklist',
+              targetType: 'shariahReview',
+              targetId: review.id,
+              timestamp: new Date().toISOString(),
+              requestId: request.id,
+              outcome: 'validationError',
+              actorId: actorId,
+              reason: `missing_comment_for_failed_item_${entry.itemCode}_on_completion`
+            };
+            
+            audit(auditEvent);
+            
             return reply.code(400).send({
               error: {
                 code: 'VALIDATION_ERROR',
@@ -331,6 +538,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         for (const entry of entries) {
           const seededItem = SEDED_CHECKLIST_ITEMS.find(item => item.itemCode === entry.itemCode);
           if (seededItem && seededItem.requiresEvidence && (!entry.evidenceRefs || entry.evidenceRefs.length === 0)) {
+            // Emit audit event for failed checklist save due to validation error
+            const auditEvent: ShariahReviewChecklistAuditEvent = {
+              action: 'saveShariahReviewChecklist',
+              targetType: 'shariahReview',
+              targetId: review.id,
+              timestamp: new Date().toISOString(),
+              requestId: request.id,
+              outcome: 'validationError',
+              actorId: actorId,
+              reason: `missing_evidence_for_item_${entry.itemCode}_on_completion`
+            };
+            
+            audit(auditEvent);
+            
             return reply.code(400).send({
               error: {
                 code: 'VALIDATION_ERROR',
@@ -365,6 +586,19 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
 
       // Save updated review
       await repository.save(updatedReview);
+
+      // Emit audit event for successful checklist save
+      const auditEvent: ShariahReviewChecklistAuditEvent = {
+        action: 'saveShariahReviewChecklist',
+        targetType: 'shariahReview',
+        targetId: updatedReview.id,
+        timestamp: new Date().toISOString(),
+        requestId: request.id,
+        outcome: 'success',
+        actorId: actorId
+      };
+      
+      audit(auditEvent);
 
       // Return success response
       return reply.code(200).send({
