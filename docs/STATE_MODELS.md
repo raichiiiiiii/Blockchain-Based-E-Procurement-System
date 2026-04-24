@@ -166,6 +166,8 @@ A review is `checklistComplete` only when:
 ### incomplete rule
 If the above is not satisfied, the review remains `checklistInProgress`.
 
+Partial checklist saves may remain `checklistInProgress`. Completion intent is explicit through the `completeChecklist` flag in the request. When completion is attempted, missing mandatory items or other unsatisfied completion rules must block `checklistComplete` state transition and be rejected with `VALIDATION_ERROR`.
+
 Additional rules:
 - mandatory checklist items are defined in the seeded reference data
 - mandatory items may use any outcome value including "notApplicable"

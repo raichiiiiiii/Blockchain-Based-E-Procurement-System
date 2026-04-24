@@ -580,7 +580,8 @@ Request:
       "evidenceRefs": ["string"]
     }
   ],
-  "reviewerComment": "string"
+  "reviewerComment": "string",
+  "completeChecklist": true
 }
 ```
 
@@ -594,6 +595,12 @@ Each checklist entry consists of:
 - `outcome`: The result for this checklist item (required)
 - `comment`: Additional notes about the outcome (optional, but required when outcome is `fail`)
 - `evidenceRefs`: References to supporting evidence (optional, but may be required based on item configuration)
+
+Save semantics:
+- Partial checklist saves are allowed
+- When `completeChecklist` is omitted or false, the checklist may be saved in an incomplete state
+- When `completeChecklist` is true, all completion rules must be satisfied or the request will be rejected with `VALIDATION_ERROR`
+- The resulting status will be either `checklistInProgress` or `checklistComplete` depending on completion rules and the `completeChecklist` flag
 
 Completion criteria:
 - A review is considered `checklistComplete` when:
@@ -621,10 +628,12 @@ Rules:
 - `itemCode` must map to a valid checklist item
 - failed items must carry a comment
 - evidence may be required for selected seeded items later
-- the resulting status may be `checklistInProgress` or `checklistComplete` depending on completion rules
+- the resulting status may be `checklistInProgress` or `checklistComplete` depending on completion rules and the `completeChecklist` flag
 - mandatory checklist items are defined in the seeded reference data
 - mandatory items may use any outcome value including "notApplicable"
 - duplicate itemCode entries are not allowed in one checklist submission
+- when `completeChecklist` is true, all mandatory checklist items must be provided
+- when `completeChecklist` is true, all other completion rules must be satisfied
 
 [FLAG-CHECKLIST-SOURCE]
 Sprint 1 working assumption is seeded reference data, but fixed-vs-configurable policy is not yet fully final.

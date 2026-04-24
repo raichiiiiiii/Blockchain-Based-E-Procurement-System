@@ -11,6 +11,10 @@ class TestShariahReviewRepository implements ShariahReviewRepository {
     this.savedReviews.push(review);
     return review;
   }
+
+  async findById(id: string): Promise<ShariahReview | null> {
+    return this.savedReviews.find(review => review.id === id) || null;
+  }
 }
 
 describe('submitShariahReview', () => {
