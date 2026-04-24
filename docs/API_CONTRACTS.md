@@ -721,7 +721,8 @@ Response:
 {
   "data": {
     "reviewId": "review_123",
-    "currentStatus": "submitted",
+    "organizationId": "org_123",
+    "currentStatus": "conditionalApproved",
     "history": [
       {
         "action": "reviewSubmitted",
@@ -729,18 +730,77 @@ Response:
         "toStatus": "submitted",
         "performedAt": "2026-03-15T00:00:00Z",
         "performedByUserId": "user_123",
-        "notes": "string"
+        "notes": "Initial submission for review"
+      },
+      {
+        "action": "checklistSaved",
+        "fromStatus": "submitted",
+        "toStatus": "checklistInProgress",
+        "performedAt": "2026-03-16T10:30:00Z",
+        "performedByUserId": "user_456"
+      },
+      {
+        "action": "checklistCompleted",
+        "fromStatus": "checklistInProgress",
+        "toStatus": "checklistComplete",
+        "performedAt": "2026-03-17T14:45:00Z",
+        "performedByUserId": "user_456",
+        "notes": "All mandatory items evaluated"
+      },
+      {
+        "action": "decisionRecorded",
+        "fromStatus": "checklistComplete",
+        "toStatus": "conditionalApproved",
+        "performedAt": "2026-03-18T09:15:00Z",
+        "performedByUserId": "user_789",
+        "rationale": "Approved with conditions due to minor compliance issues",
+        "conditions": [
+          {
+            "description": "Update disclosure documentation",
+            "dueDate": "2026-04-30"
+          }
+        ]
       }
     ]
   }
 }
 ```
 
+Allowed history action names:
+- `reviewSubmitted`
+- `checklistSaved`
+- `checklistCompleted`
+- `decisionRecorded`
+
+Action-to-status mapping rules:
+- `reviewSubmitted` => `toStatus: submitted`, `fromStatus: null`
+- `checklistSaved` => `toStatus: checklistInProgress`
+- `checklistCompleted` => `toStatus: checklistComplete`
+- `decisionRecorded` => `toStatus: approved`, `rejected`, or `conditionalApproved`
+
+History entry fields:
+- `action`: The event name that triggered the state change (required)
+- `fromStatus`: The previous status before the change (nullable, null for initial state)
+- `toStatus`: The resulting status after the change (required)
+- `performedAt`: ISO 8601 UTC timestamp of when the action occurred (required)
+- `performedByUserId`: Opaque user identifier of the actor who performed the action (required when available)
+- `notes`: Optional textual notes about the action or state change
+- `rationale`: Required for decision actions, contains the decision justification
+- `conditions`: Required for conditionalApproved decisions, contains the list of conditions with descriptions and due dates
+
+Response behavior for different workflow states:
+- For submitted reviews with no checklist yet: Returns a single history entry with action "reviewSubmitted" and currentStatus "submitted"
+- For reviews with checklistInProgress: Returns history entries up to the current "checklistInProgress" state
+- For reviews with checklistComplete but no final decision: Returns history entries up to the "checklistComplete" state
+- For reviews with final decisions: Returns the complete history including the decision entry
+
 Rules:
-- intermediate histories must still return successfully
-- absence of final decision is not an error
-- `currentStatus` is derived from the latest accepted workflow transition
-- history order should be stable and auditable
+- The `currentStatus` field is derived from the latest valid recorded state in the progression model
+- History entries are ordered chronologically from earliest to latest
+- Intermediate histories (submitted only, checklistInProgress, checklistComplete with no decision) must return successfully without error
+- Absence of a final decision is not an error condition
+- History entries include all state transitions and significant actions in the review lifecycle
+- Sensitive history access may be subject to audit logging requirements
 
 [FLAG-READ-AUDIT]
 History-read logging requirements are not yet finalized, but sensitive history access is expected to be auditable in Sprint 1.

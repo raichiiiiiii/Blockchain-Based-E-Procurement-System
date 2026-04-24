@@ -206,23 +206,80 @@ Condition structure requirements (rationale and due date) are defined, but condi
 
 ## 10. History/read model state rules
 
-History API must support:
-- submitted-only records
-- in-progress checklist states
-- final decision states
-- incomplete histories without crashing or hiding available progress data
+### Current status derivation
+The `currentStatus` field is derived from the latest valid recorded workflow state in the progression model. This represents the most recent actionable state of the review.
 
-### current-status rule
-`currentStatus` is derived from the latest accepted state transition in the workflow history.
+### Progression mapping rules
+The history model maps workflow states to progression entries as follows:
 
-### history rule
-Every history item should be able to preserve:
-- action
-- fromStatus
-- toStatus
-- performedAt
-- performedByUserId
-- optional notes
+1. **Submitted with no checklist yet**
+   - Workflow state: `submitted`
+   - Progression entry:
+     - Action: `reviewSubmitted`
+     - From status: null (no prior state)
+     - To status: `submitted`
+     - Timestamp: submission time
+     - Actor: submitting user
+
+2. **Checklist in progress**
+   - Workflow state: `checklistInProgress`
+   - Progression entry:
+     - Action: `checklistSaved`
+     - From status: `submitted` or `checklistInProgress`
+     - To status: `checklistInProgress`
+     - Timestamp: checklist save time
+     - Actor: checklist author
+
+3. **Checklist complete with no final decision**
+   - Workflow state: `checklistComplete`
+   - Progression entry:
+     - Action: `checklistCompleted`
+     - From status: `checklistInProgress`
+     - To status: `checklistComplete`
+     - Timestamp: completion time
+     - Actor: checklist author
+
+4. **Approved decision**
+   - Workflow state: `approved`
+   - Progression entry:
+     - Action: `decisionRecorded`
+     - From status: `checklistComplete`
+     - To status: `approved`
+     - Timestamp: decision time
+     - Actor: decision maker
+     - Rationale: required
+
+5. **Rejected decision**
+   - Workflow state: `rejected`
+   - Progression entry:
+     - Action: `decisionRecorded`
+     - From status: `checklistComplete`
+     - To status: `rejected`
+     - Timestamp: decision time
+     - Actor: decision maker
+     - Rationale: required
+
+6. **Conditionally approved decision**
+   - Workflow state: `conditionalApproved`
+   - Progression entry:
+     - Action: `decisionRecorded`
+     - From status: `checklistComplete`
+     - To status: `conditionalApproved`
+     - Timestamp: decision time
+     - Actor: decision maker
+     - Rationale: required
+     - Conditions: required list with descriptions and due dates
+
+### Initial history behavior
+- The first progression entry corresponds to the review submission
+- This initial entry has a null `fromStatus` since there is no prior workflow state
+- The initial entry's `toStatus` is `submitted`
+
+### Ordering and completeness rules
+- History entries are ordered chronologically from oldest to newest
+- Intermediate/incomplete histories (submitted only, checklistInProgress, checklistComplete with no decision) are valid and must return successfully
+- Absence of a final decision is not an error condition and must be handled gracefully
+- All state transitions that have occurred must be represented in the history
 
 ## 11. Provisional protected functions list
 
