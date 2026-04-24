@@ -5,6 +5,7 @@ import type { ShariahReview, ChecklistItemDefinition } from '../domain/shariah-r
 import type { RoleAssignmentRepository } from '../../access-control/application/role-assignment-repository.js';
 import type { RoleRepository } from '../../access-control/application/role-repository.js';
 import type { Checklist } from '../domain/shariah-review.js';
+import { recordShariahReviewDecision, type DecisionInput, type DecisionResult } from '../application/record-shariah-review-decision.js';
 
 // Define the audit event interface for shariah review submission
 export interface ShariahReviewSubmitAuditEvent {
@@ -30,12 +31,24 @@ export interface ShariahReviewChecklistAuditEvent {
   reason?: string;
 }
 
+// Define the audit event interface for decision operations
+export interface ShariahReviewDecisionAuditEvent {
+  action: 'recordShariahReviewDecision';
+  targetType: 'shariahReview';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success' | 'forbidden' | 'validationError' | 'notFound';
+  actorId: string;
+  reason?: string;
+}
+
 // Define plugin options interface
 interface ShariahReviewRoutesOptions {
   repository: ShariahReviewRepository;
   roleAssignmentRepository: RoleAssignmentRepository;
   roleRepository: RoleRepository;
-  audit: (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => void;
+  audit: (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => void;
 }
 
 // Seeded checklist item definitions
@@ -607,6 +620,150 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           status: updatedReview.status
         }
       });
+    }
+  );
+
+  // POST /api/v1/shariah-reviews/:reviewId/decision - Record a decision for a review
+  fastify.post<{ 
+    Params: { reviewId: string }, 
+    Body: Omit<DecisionInput, 'reviewId'> 
+  }>(
+    '/shariah-reviews/:reviewId/decision',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['reviewId'],
+          properties: {
+            reviewId: { type: 'string' }
+          }
+        },
+        body: {
+          type: 'object',
+          required: ['outcome', 'rationale'],
+          properties: {
+            outcome: { 
+              type: 'string', 
+              enum: ['approved', 'rejected', 'conditionalApproved'] 
+            },
+            rationale: { type: 'string' },
+            conditions: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['description', 'dueDate'],
+                properties: {
+                  description: { type: 'string' },
+                  dueDate: { type: 'string' }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      // Extract and validate actorId from trusted actor context
+      const actorId = request.actorContext?.userId;
+
+      if (!actorId) {
+        return reply.code(400).send({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Missing or invalid x-actor-id header'
+          }
+        });
+      }
+
+      // Find the review
+      const review = await repository.findById(request.params.reviewId);
+      
+      if (!review) {
+        return reply.code(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Review not found'
+          }
+        });
+      }
+
+      // Find the coordinator role
+      const coordinatorRole = await roleRepository.findByRoleCode(COORDINATOR_ROLE_CODE, 'organization');
+
+      if (!coordinatorRole) {
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Coordinator role not configured'
+          }
+        });
+      }
+
+      // Check if user has active coordinator role assignment in the target organization
+      const coordinatorAssignment = await roleAssignmentRepository.findActiveByUserOrganizationRole(
+        actorId,
+        review.organizationId,
+        coordinatorRole.id
+      );
+
+      if (!coordinatorAssignment) {
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'User must have coordinator role to record decisions'
+          }
+        });
+      }
+
+      // Prepare decision input
+      const decisionInput: DecisionInput = {
+        reviewId: request.params.reviewId,
+        outcome: request.body.outcome,
+        rationale: request.body.rationale,
+        ...(request.body.conditions && { conditions: request.body.conditions })
+      };
+
+      // Call the decision service
+      const result: DecisionResult = await recordShariahReviewDecision(decisionInput, repository);
+
+      // Map result to HTTP responses
+      switch (result.status) {
+        case 'success':
+          return reply.code(200).send({
+            data: {
+              reviewId: result.review.id,
+              status: result.review.status,
+              decidedAt: result.review.decidedAt
+            }
+          });
+          
+        case 'notFound':
+          return reply.code(404).send({
+            error: {
+              code: 'NOT_FOUND',
+              message: 'Review not found'
+            }
+          });
+          
+        case 'invalidState':
+          return reply.code(400).send({
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: `Cannot record decision for review in status: ${result.currentStatus}`
+            }
+          });
+          
+        case 'validationError':
+          return reply.code(400).send({
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'Decision validation failed',
+              details: {
+                issues: result.issues
+              }
+            }
+          });
+      }
     }
   );
 };

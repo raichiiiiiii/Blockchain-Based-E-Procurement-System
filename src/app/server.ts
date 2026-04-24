@@ -13,7 +13,7 @@ import type { RoleAssignmentRepository } from '../modules/access-control/applica
 import { registerShariahReviewRoutes } from '../modules/shariah-review/api/routes.js';
 import { InMemoryShariahReviewRepository } from '../modules/shariah-review/infrastructure/in-memory-shariah-review-repository.js';
 import type { ShariahReviewRepository } from '../modules/shariah-review/application/shariah-review-repository.js';
-import type { ShariahReviewSubmitAuditEvent, ShariahReviewChecklistAuditEvent } from '../modules/shariah-review/api/routes.js';
+import type { ShariahReviewSubmitAuditEvent, ShariahReviewChecklistAuditEvent, ShariahReviewDecisionAuditEvent } from '../modules/shariah-review/api/routes.js';
 import type { UserExistenceLookup } from '../modules/shared/application/user-existence-lookup.js';
 import type { OrganizationMembershipLookup } from '../modules/shared/application/organization-membership-lookup.js';
 import actorContextPlugin from './plugins/actor-context-plugin.js';
@@ -26,7 +26,7 @@ export function createTestableServer(options?: {
   roleAudit?: (event: RoleAuditEvent) => void;
   roleAssignmentRepository?: RoleAssignmentRepository;
   shariahReviewRepository?: ShariahReviewRepository;
-  shariahReviewAudit?: (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => void;
+  shariahReviewAudit?: (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => void;
   userExistenceLookup?: UserExistenceLookup;
   organizationMembershipLookup?: OrganizationMembershipLookup;
 }) {
@@ -46,7 +46,7 @@ export function createTestableServer(options?: {
   const roleAuditCallback = options?.roleAudit ?? ((event: RoleAuditEvent) => {
     console.info('ROLE AUDIT EVENT:', JSON.stringify(event));
   });
-  const shariahReviewAuditCallback = options?.shariahReviewAudit ?? ((event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => {
+  const shariahReviewAuditCallback = options?.shariahReviewAudit ?? ((event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => {
     console.info('SHARIAH REVIEW AUDIT EVENT:', JSON.stringify(event));
   });
   const userExistenceLookup = options?.userExistenceLookup;

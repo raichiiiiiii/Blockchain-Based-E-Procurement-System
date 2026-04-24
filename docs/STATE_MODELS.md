@@ -196,7 +196,10 @@ Checklist source and longer-term configurability are not yet fully approved.
 ### Mandatory field rules
 - All final decisions require a rationale
 - `conditionalApproved` requires one or more explicit conditions
-- `approved` and `rejected` must not carry conditional-approval conditions
+- Each condition requires:
+  - `description` (required)
+  - `dueDate` (required)
+- `approved` and `rejected` must not carry conditions
 
 [FLAG-CONDITIONAL-APPROVAL]
 Condition structure requirements (rationale and due date) are defined, but condition expiry, ownership, and closure enforcement are not yet fully approved.

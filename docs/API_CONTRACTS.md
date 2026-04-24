@@ -682,10 +682,17 @@ Rules:
 - `rationale` is required for all final decisions
 - `conditions` are required for `conditionalApproved`
 - `conditions` must not be present for `approved` or `rejected`
-- Minimum conditional-approval condition structure requires:
+- Each condition requires:
   - `description` (required)
   - `dueDate` (required)
-- Sprint 1 baseline assumes final decisions are not revised without a future reopen policy
+
+Error responses:
+- If the review is not found, the endpoint returns `404 NOT_FOUND`
+- If the review is not in `checklistComplete` status, the endpoint returns `400 VALIDATION_ERROR`
+- If `rationale` is missing or empty, the endpoint returns `400 VALIDATION_ERROR`
+- If `outcome` is `conditionalApproved` but no conditions are provided, the endpoint returns `400 VALIDATION_ERROR`
+- If `outcome` is `approved` or `rejected` but conditions are provided, the endpoint returns `400 VALIDATION_ERROR`
+- If any condition is missing `description` or `dueDate`, the endpoint returns `400 VALIDATION_ERROR`
 
 [FLAG-CONDITIONAL-APPROVAL]
 Condition structure is partly stabilized, but expiry, ownership, and closure enforcement are not yet fully approved.

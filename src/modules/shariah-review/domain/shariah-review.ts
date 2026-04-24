@@ -29,6 +29,11 @@ export interface ChecklistItemDefinition {
   requiresEvidence: boolean;
 }
 
+export interface Condition {
+  description: string;
+  dueDate: string; // ISO date string
+}
+
 export interface ShariahReview {
   id: string;
   organizationId: string;
@@ -39,4 +44,7 @@ export interface ShariahReview {
   createdAt: string;
   references?: ShariahReviewReference[];
   checklist?: Checklist;
+  rationale?: string;
+  conditions?: Condition[];
+  decidedAt?: string;
 }

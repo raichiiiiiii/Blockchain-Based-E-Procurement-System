@@ -4,7 +4,7 @@ import { createTestableServer } from '../../../app/server.js';
 import { InMemoryShariahReviewRepository } from '../infrastructure/in-memory-shariah-review-repository.js';
 import { InMemoryRoleAssignmentRepository } from '../../access-control/infrastructure/in-memory-role-assignment-repository.js';
 import { InMemoryRoleRepository } from '../../access-control/infrastructure/in-memory-role-repository.js';
-import type { ShariahReviewSubmitAuditEvent, ShariahReviewChecklistAuditEvent } from './routes.js';
+import type { ShariahReviewSubmitAuditEvent, ShariahReviewChecklistAuditEvent, ShariahReviewDecisionAuditEvent } from './routes.js';
 
 describe('POST /api/v1/shariah-reviews', () => {
   test('should submit a review successfully with coordinator role assignment', async () => {
@@ -97,8 +97,8 @@ describe('POST /api/v1/shariah-reviews', () => {
     });
 
     // Capture audit events
-    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent)[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => {
+    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent)[] = [];
+    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => {
       auditEvents.push(event);
     };
 
@@ -359,8 +359,8 @@ describe('POST /api/v1/shariah-reviews', () => {
     });
 
     // Capture audit events
-    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent)[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => {
+    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent)[] = [];
+    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => {
       auditEvents.push(event);
     };
 
@@ -473,8 +473,8 @@ describe('POST /api/v1/shariah-reviews', () => {
     });
 
     // Capture audit events
-    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent)[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => {
+    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent)[] = [];
+    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => {
       auditEvents.push(event);
     };
 
@@ -516,8 +516,8 @@ describe('POST /api/v1/shariah-reviews', () => {
   });
 
   test('should emit audit event for forbidden submission', async () => {
-    let auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent)[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => {
+    let auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent)[] = [];
+    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => {
       auditEvents.push(event);
     };
 
@@ -595,8 +595,8 @@ describe('POST /api/v1/shariah-reviews', () => {
     });
 
     // Capture audit events
-    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent)[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent) => {
+    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent)[] = [];
+    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => {
       auditEvents.push(event);
     };
 
