@@ -172,6 +172,8 @@ Shariah review submission requires the actor to hold the coordinator role for th
 Role-assignment creation is a protected admin-only action enforced from trusted server-derived actor context.
 Decision recording is a protected transition requiring authorized coordinator access for the target organization.
 
+Protected-function behavior is governed by PROTECTED_FUNCTION_INVENTORY.md.
+
 ### 9.4 Validation
 
 External input is validated at the API boundary.
@@ -268,6 +270,11 @@ Minimum rule:
 - provisional state set includes `pendingReview`, `active`, `inactive`, `suspended`, `deleted`
 - inactive records remain viewable
 - deactivation is soft-disable, not destructive deletion
+
+### user baseline
+- users have `active` and `inactive` states
+- `inactive` users are considered deactivated and are blocked from protected write operations
+- deactivation policy is defined in STATE_MODELS.md
 
 ### role and assignment baseline
 - RBAC structure is fixed

@@ -514,7 +514,48 @@ When a deactivated organization or user attempts a protected action:
 }
 ```
 
-### 9.2 Provisional protected functions list
+### 9.2 Deactivation behavior definitions
+
+#### Active vs Inactive User Behavior
+
+An active user is one whose account status permits access to the system. An inactive user is one whose account has been deactivated and no longer has access privileges.
+
+When a user is deactivated:
+- All protected write operations initiated by that user are denied with the standard protected action failure response
+- Access to sensitive read operations may be restricted depending on implementation
+- General read operations remain accessible unless specifically restricted by sensitive read policies
+
+#### Active vs Inactive Organization Behavior
+
+An active organization is one whose status permits full functionality within the system. An inactive organization is one whose status has been deactivated, restricting certain operations.
+
+When an organization is deactivated:
+- New role assignments targeting the organization are denied with the standard protected action failure response
+- Modifications to existing role assignments for the organization are denied with the standard protected action failure response
+- New Shariah review submissions targeting the organization are denied with the standard protected action failure response
+- Checklist operations on existing reviews for the organization are denied with the standard protected action failure response
+- Decision recording for reviews associated with the organization are denied with the standard protected action failure response
+- General read operations remain accessible unless specifically restricted by sensitive read policies
+
+### 9.3 Protected function enforcement rules
+
+Protected function enforcement follows the approved matrix in PROTECTED_FUNCTION_INVENTORY.md. The key principles are:
+
+1. **Deactivated Actor Protection**: All protected write operations initiated by a deactivated actor are denied with the standard protected action failure response (FORBIDDEN).
+
+2. **Organization-Scoped Protection**: Organization-scoped protected write operations targeting a deactivated organization are denied with the standard protected action failure response (FORBIDDEN).
+
+3. **Sensitive Read Access**: Access to sensitive read operations for deactivated actors or organizations may be conditionally restricted based on implementation policies.
+
+4. **General Read Access**: General read operations remain accessible unless specifically restricted by sensitive read policies.
+
+Standard denial behavior:
+- Protected actions blocked by deactivation return the documented FORBIDDEN response with appropriate details
+- Error responses follow the existing error envelope format and do not introduce new error families
+
+Protected functions are defined in detail in PROTECTED_FUNCTION_INVENTORY.md, which serves as the source of truth for all protected function behaviors and deactivation effects.
+
+### 9.4 Provisional protected functions list
 
 Protected functions draft:
 - create member organization

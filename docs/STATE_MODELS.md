@@ -72,7 +72,34 @@ Earlier task phrasing referenced a simpler lifecycle; Sprint 1 now uses the rich
 [FLAG-PROTECTED-FUNCTIONS]
 Protected function inventory is still provisional, but deactivation-aware blocking is mandatory.
 
-## 5. Role state model
+## 5. User state model
+
+### states
+- `active`
+- `inactive`
+
+### rules
+- `active` users may participate normally in allowed flows
+- `inactive` users are considered deactivated and are blocked from protected write operations
+- `inactive` users remain historically visible where appropriate
+- changing a user to `inactive` does not silently erase historical records or assignments
+
+## 6. Deactivation policy
+
+### active vs inactive semantics
+- `active` state permits normal participation in allowed flows
+- `inactive`/deactivated state blocks protected writes according to the approved protected-function matrix
+
+### protected function behavior
+When an actor (user) or target entity (organization) is deactivated:
+- deactivated actors are denied for protected writes
+- organization-scoped protected writes are denied when the target organization is deactivated
+- sensitive reads remain conditional/provisional
+- general reads remain allowed unless separately restricted
+
+Protected-function behavior is governed by PROTECTED_FUNCTION_INVENTORY.md.
+
+## 7. Role state model
 
 ### states
 - `active`
@@ -87,7 +114,7 @@ Protected function inventory is still provisional, but deactivation-aware blocki
 [FLAG-ROLE-CATALOG]
 Whether there are system-reserved roles and the exact role inventory are not yet frozen.
 
-## 6. Role assignment state model
+## 8. Role assignment state model
 
 ### concept
 A role assignment links:
@@ -112,7 +139,7 @@ User identity semantics are not yet fully frozen. Assignment implementation must
 [FLAG-ASSIGNMENT-MULTIPLICITY]
 Assignment multiplicity policy is not yet fully frozen. Assignment implementation must not assume a final multiplicity policy until this flag is resolved.
 
-## 7. Review request workflow state model
+## 9. Review request workflow state model
 
 ### states
 - `submitted`
@@ -147,7 +174,7 @@ All newly accepted review requests begin in `submitted` state.
 [FLAG-SHARIAH-SUBMISSION-METADATA]
 While richer submission metadata requirements remain provisional, the initial state rule for review requests is stable and independent of metadata completeness.
 
-## 8. Checklist completion state rules
+## 10. Checklist completion state rules
 
 ### provisional source assumption
 Checklist items are provisionally assumed to be seeded reference data in Sprint 1.
@@ -176,7 +203,7 @@ Additional rules:
 [FLAG-CHECKLIST-SOURCE]
 Checklist source and longer-term configurability are not yet fully approved.
 
-## 9. Decision rules
+## 11. Decision rules
 
 ### Valid final decision states
 - `approved`
@@ -204,7 +231,7 @@ Checklist source and longer-term configurability are not yet fully approved.
 [FLAG-CONDITIONAL-APPROVAL]
 Condition structure requirements (rationale and due date) are defined, but condition expiry, ownership, and closure enforcement are not yet fully approved.
 
-## 10. History/read model state rules
+## 12. History/read model state rules
 
 ### Current status derivation
 The `currentStatus` field is derived from the latest valid recorded workflow state in the progression model. This represents the most recent actionable state of the review.
@@ -281,7 +308,7 @@ The history model maps workflow states to progression entries as follows:
 - Absence of a final decision is not an error condition and must be handled gracefully
 - All state transitions that have occurred must be represented in the history
 
-## 11. Provisional protected functions list
+## 13. Provisional protected functions list
 
 Protected functions draft:
 - create member organization
@@ -296,7 +323,7 @@ Protected functions draft:
 [FLAG-PROTECTED-FUNCTIONS]
 This list must be formally approved before deactivation enforcement is treated as fully final.
 
-## 12. Open state-model decisions
+## 14. Open state-model decisions
 
 [FLAG-MEMBERSHIP-INITIAL-STATE]
 Current working assumption: `pendingReview`
