@@ -35,6 +35,30 @@ export function createTestableServer(options?: {
   // Register the actor context plugin
   server.register(actorContextPlugin);
 
+  // Add server-level validation error handler
+  server.setErrorHandler((error, request, reply) => {
+    // Handle Fastify validation errors
+    if (error.validation) {
+      return reply.status(400).send({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Request validation failed',
+          details: {
+            issues: error.validation
+          }
+        }
+      });
+    }
+    
+    // For all other errors, send a generic 500 response
+    return reply.status(500).send({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'An internal server error occurred'
+      }
+    });
+  });
+
   // Use provided dependencies or defaults
   const memberOrganizationRepository = options?.memberRepository ?? new InMemoryMemberOrganizationRepository();
   const roleRepository = options?.roleRepository ?? new InMemoryRoleRepository();

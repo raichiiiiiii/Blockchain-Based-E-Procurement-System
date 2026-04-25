@@ -97,12 +97,36 @@ Minimum error codes:
 - `EXTERNAL_SERVICE_ERROR`
 - `INTERNAL_ERROR`
 
+## 5. Validation error response standard
+
+All validation failures use a common error envelope:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "string",
+    "details": {
+      "issues": []
+    }
+  }
+}
+```
+
+Rules:
+- Both schema-validation failures and application-validation failures use this envelope
+- The `details.issues` array is optional and may be omitted when no specific issues are available
+- Raw framework validation payloads (e.g., Fastify validation errors) must not be exposed directly
+- Schema validation and application validation share route-independent semantics
+- The `message` field provides a human-readable summary of the validation failure
+- The `issues` array, when present, contains specific validation issue descriptions
+
 [FLAG-ERROR-ENVELOPE]
 Schema-validation failures and application-level validation failures must converge on this standard error-envelope family. Routes must not invent route-specific error shapes while this flag remains open.
 
-## 5. Membership contracts
+## 6. Membership contracts
 
-### 5.1 Create member organization
+### 6.1 Create member organization
 
 `POST /api/v1/member-organizations`
 
@@ -164,7 +188,7 @@ The initial status is provisionally drafted as `pendingReview`, but backlog acce
 [FLAG-MEMBERSHIP-UNIQUENESS]
 The canonical MVP uniqueness key is drafted as `registrationNumber`; confirm later whether additional jurisdiction-specific identifiers are required.
 
-### 5.2 Update member organization status
+### 6.2 Update member organization status
 
 `PATCH /api/v1/member-organizations/{organizationId}/status`
 
@@ -216,12 +240,12 @@ Rules:
 [FLAG-MEMBERSHIP-STATE-SET]
 The organization lifecycle used by this endpoint follows the current provisional five-state Sprint 1 baseline defined in `STATE_MODELS.md`.
 
-## 6. Role catalog contracts
+## 7. Role catalog contracts
 
 [FLAG-ROLE-CATALOG]
 Role catalog policy including reserved-role rules and exact permission vocabulary are not yet frozen.
 
-### 6.1 Create role
+### 7.1 Create role
 
 `POST /api/v1/roles`
 
@@ -288,7 +312,7 @@ Audit behavior:
 - Forbidden attempts (non-admin) do not emit audit events
 - Invalid requests (validation failures) do not emit audit events
 
-### 6.2 Update role
+### 7.2 Update role
 
 `PATCH /api/v1/roles/{roleId}`
 
@@ -352,7 +376,7 @@ Audit behavior:
 - Forbidden attempts (non-admin) do not emit audit events
 - Invalid requests (validation failures) do not emit audit events
 
-### 6.3 List roles
+### 7.3 List roles
 
 `GET /api/v1/roles`
 
@@ -381,9 +405,9 @@ Behavior:
 - No filtering or sorting is supported
 - No admin authorization is currently enforced for this endpoint
 
-## 7. Role assignment contracts
+## 8. Role assignment contracts
 
-### 7.1 Assign role to user
+### 8.1 Assign role to user
 
 `POST /api/v1/role-assignments`
 
@@ -424,7 +448,7 @@ Provisional Sprint 1 rules:
 - one user may hold roles across multiple organizations
 - assignment requires that the user exists and is a member of the specified organization, otherwise returns `400 VALIDATION_ERROR`
 
-### 7.2 Remove role assignment
+### 8.2 Remove role assignment
 
 `DELETE /api/v1/role-assignments/{assignmentId}`
 
@@ -449,7 +473,7 @@ The source of truth for `userId` is not confirmed.
 [FLAG-ASSIGNMENT-MULTIPLICITY]
 General many-to-many assignment is the current working assumption, but internal-vs-member dual-role constraints are not yet frozen.
 
-### 7.3 Assignment contract baseline
+### 8.3 Assignment contract baseline
 
 This section documents the minimal assignment contract baseline needed to support safe implementation of role assignment features. It serves as a prerequisite for PBI-050 and subsequent assignment work.
 
@@ -470,9 +494,9 @@ A role assignment depends on:
 
 This baseline exists to support safe future assignment implementation, not to finalize the full assignment feature contract yet.
 
-## 8. Deactivation and protected-access contracts
+## 9. Deactivation and protected-access contracts
 
-### 8.1 Protected action failure
+### 9.1 Protected action failure
 
 When a deactivated organization or user attempts a protected action:
 
@@ -490,7 +514,7 @@ When a deactivated organization or user attempts a protected action:
 }
 ```
 
-### 8.2 Provisional protected functions list
+### 9.2 Provisional protected functions list
 
 Protected functions draft:
 - create member organization
@@ -505,9 +529,9 @@ Protected functions draft:
 [FLAG-PROTECTED-FUNCTIONS]
 The exact protected function list is still provisional, but the categories above are the current Sprint 1 baseline.
 
-## 9. Shariah review submission contracts
+## 10. Shariah review submission contracts
 
-### 9.1 Submit review request
+### 10.1 Submit review request
 
 `POST /api/v1/shariah-reviews`
 
@@ -562,9 +586,9 @@ Mandatory metadata is not yet fully approved. The current shape represents a min
 [FLAG-REFERENCE-HANDLING]
 Reference vs attachment storage policy is not yet finalized beyond metadata-level support.
 
-## 10. Checklist contracts
+## 11. Checklist contracts
 
-### 10.1 Save checklist outcome
+### 11.1 Save checklist outcome
 
 `PUT /api/v1/shariah-reviews/{reviewId}/checklist`
 
@@ -638,9 +662,9 @@ Rules:
 [FLAG-CHECKLIST-SOURCE]
 Sprint 1 working assumption is seeded reference data, but fixed-vs-configurable policy is not yet fully final.
 
-## 11. Decision contracts
+## 12. Decision contracts
 
-### 11.1 Record decision
+### 12.1 Record decision
 
 `POST /api/v1/shariah-reviews/{reviewId}/decision`
 
@@ -709,9 +733,9 @@ Error responses:
 [FLAG-CONDITIONAL-APPROVAL]
 Condition structure is partly stabilized, but expiry, ownership, and closure enforcement are not yet fully approved.
 
-## 12. Status-history contracts
+## 13. Status-history contracts
 
-### 12.1 Get current status and history
+### 13.1 Get current status and history
 
 `GET /api/v1/shariah-reviews/{reviewId}/history`
 

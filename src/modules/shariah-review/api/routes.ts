@@ -66,6 +66,15 @@ const COORDINATOR_ROLE_CODE = 'coordinator';
 // Valid states for saving checklist
 const VALID_STATES_FOR_CHECKLIST_SAVE: ShariahReview['status'][] = ['submitted', 'checklistInProgress'];
 
+// Shared validation error response format
+const createValidationError = (message: string, issues?: string[]) => ({
+  error: {
+    code: 'VALIDATION_ERROR',
+    message,
+    ...(issues && { details: { issues } })
+  }
+});
+
 // Create the Fastify plugin for shariah-review routes
 const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions> = async (fastify, options) => {
   const { repository, roleAssignmentRepository, roleRepository, audit } = options;
@@ -89,12 +98,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       const actorId = request.actorContext?.userId;
 
       if (!actorId) {
-        return reply.code(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Missing or invalid x-actor-id header'
-          }
-        });
+        return reply.code(400).send(createValidationError('Missing or invalid x-actor-id header'));
       }
 
       // Call the history service
@@ -154,12 +158,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       const actorId = request.actorContext?.userId;
 
       if (!actorId) {
-        return reply.code(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Missing or invalid x-actor-id header'
-          }
-        });
+        return reply.code(400).send(createValidationError('Missing or invalid x-actor-id header'));
       }
 
       // Find the coordinator role
@@ -249,12 +248,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           data: result.review
         });
       } else if (result.status === 'invalidInput') {
-        return reply.code(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid review submission input'
-          }
-        });
+        return reply.code(400).send(createValidationError('Invalid review submission input'));
       }
     }
   );
@@ -319,12 +313,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         
         audit(auditEvent);
         
-        return reply.code(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Missing or invalid x-actor-id header'
-          }
-        });
+        return reply.code(400).send(createValidationError('Missing or invalid x-actor-id header'));
       }
 
       // Find the review
@@ -369,12 +358,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         
         audit(auditEvent);
         
-        return reply.code(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: `Cannot save checklist for review in status: ${review.status}`
-          }
-        });
+        return reply.code(400).send(createValidationError(`Cannot save checklist for review in status: ${review.status}`));
       }
 
       // Find the coordinator role
@@ -454,12 +438,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         
         audit(auditEvent);
         
-        return reply.code(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Duplicate itemCode entries are not allowed'
-          }
-        });
+        return reply.code(400).send(createValidationError('Duplicate itemCode entries are not allowed'));
       }
 
       // Validate each entry against seeded checklist items
@@ -481,12 +460,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           
           audit(auditEvent);
           
-          return reply.code(400).send({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: `Unknown checklist item code: ${entry.itemCode}`
-            }
-          });
+          return reply.code(400).send(createValidationError(`Unknown checklist item code: ${entry.itemCode}`));
         }
 
         // Check if fail outcome has comment
@@ -505,12 +479,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           
           audit(auditEvent);
           
-          return reply.code(400).send({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: `Failed checklist item '${entry.itemCode}' must have a comment`
-            }
-          });
+          return reply.code(400).send(createValidationError(`Failed checklist item '${entry.itemCode}' must have a comment`));
         }
 
         // Check if evidence is required but missing
@@ -529,12 +498,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           
           audit(auditEvent);
           
-          return reply.code(400).send({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: `Checklist item '${entry.itemCode}' requires evidence`
-            }
-          });
+          return reply.code(400).send(createValidationError(`Checklist item '${entry.itemCode}' requires evidence`));
         }
       }
 
@@ -563,12 +527,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           
           audit(auditEvent);
           
-          return reply.code(400).send({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: 'All mandatory checklist items must be provided for completion'
-            }
-          });
+          return reply.code(400).send(createValidationError('All mandatory checklist items must be provided for completion'));
         }
 
         // Check if all failed items have comments
@@ -588,12 +547,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
             
             audit(auditEvent);
             
-            return reply.code(400).send({
-              error: {
-                code: 'VALIDATION_ERROR',
-                message: `Failed checklist item '${entry.itemCode}' must have a comment for completion`
-              }
-            });
+            return reply.code(400).send(createValidationError(`Failed checklist item '${entry.itemCode}' must have a comment for completion`));
           }
         }
 
@@ -615,12 +569,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
             
             audit(auditEvent);
             
-            return reply.code(400).send({
-              error: {
-                code: 'VALIDATION_ERROR',
-                message: `Checklist item '${entry.itemCode}' requires evidence for completion`
-              }
-            });
+            return reply.code(400).send(createValidationError(`Checklist item '${entry.itemCode}' requires evidence for completion`));
           }
         }
       }
@@ -731,12 +680,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         
         audit(auditEvent);
         
-        return reply.code(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Missing or invalid x-actor-id header'
-          }
-        });
+        return reply.code(400).send(createValidationError('Missing or invalid x-actor-id header'));
       }
 
       // Find the review
@@ -893,12 +837,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           
           audit(invalidStateAuditEvent);
           
-          return reply.code(400).send({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: `Cannot record decision for review in status: ${result.currentStatus}`
-            }
-          });
+          return reply.code(400).send(createValidationError(`Cannot record decision for review in status: ${result.currentStatus}`));
           
         case 'validationError':
           // Emit audit event for validation error decision attempt
@@ -915,15 +854,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           
           audit(validationErrorAuditEvent);
           
-          return reply.code(400).send({
-            error: {
-              code: 'VALIDATION_ERROR',
-              message: 'Decision validation failed',
-              details: {
-                issues: result.issues
-              }
-            }
-          });
+          return reply.code(400).send(createValidationError('Decision validation failed', result.issues));
       }
     }
   );

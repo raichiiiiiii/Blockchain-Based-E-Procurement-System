@@ -232,7 +232,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
             return reply.code(400).send({
               error: {
                 code: 'VALIDATION_ERROR',
-                message: `Cannot update immutable field: ${field}`
+                message: `Cannot update immutable field: ${field}`,
+                details: {}
               }
             });
           }
@@ -440,7 +441,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Invalid roleId: Role does not exist'
+            message: 'Invalid roleId: Role does not exist',
+            details: {}
           }
         });
       } else if (result.status === 'organizationNotFound') {
@@ -460,7 +462,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Invalid organizationId: Member organization does not exist'
+            message: 'Invalid organizationId: Member organization does not exist',
+            details: {}
           }
         });
       } else if (result.status === 'userNotFound') {
@@ -479,7 +482,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Invalid userId: User does not exist'
+            message: 'Invalid userId: User does not exist',
+            details: {}
           }
         });
       } else if (result.status === 'userNotMember') {
@@ -498,7 +502,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Invalid userId: User is not a member of the specified organization'
+            message: 'Invalid userId: User is not a member of the specified organization',
+            details: {}
           }
         });
       }
@@ -680,7 +685,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Invalid newRoleId: Role does not exist'
+            message: 'Invalid newRoleId: Role does not exist',
+            details: {}
           }
         });
       } else if (result.status === 'duplicate') {
@@ -694,7 +700,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         return reply.code(400).send({
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Current and new role IDs must be different'
+            message: 'Current and new role IDs must be different',
+            details: {}
           }
         });
       }
