@@ -316,3 +316,39 @@ Minimum audit scaffolding is set, but final audit policy is not yet fully approv
 
 [FLAG-ACTOR-SOURCE]
 Current working assumption: trusted actor identity for protected actions is server-derived from authenticated request context.
+
+## 15. Deactivation-Aware Protected Access Evaluation
+
+Protected role-assignment actions are deactivation-aware. The service-layer hook uses `evaluateProtectedAccess(...)` to check both actor user status and target member organization status before allowing protected operations.
+
+Actor user status is checked through `UserStatusLookup`, which provides the current activation state of users. Target member organization status is checked through `MemberStatusLookup`, which provides the current state of member organizations.
+
+Only active actor users and active target organizations permit protected role-assignment actions. Inactive actor users are denied access to all protected role-assignment operations. Inactive, suspended, deleted, or pending-review organizations are denied for organization-scoped operations.
+
+The implementation applies to:
+- `POST /api/v1/role-assignments` (Create role assignment)
+- `PATCH /api/v1/role-assignments/change` (Change role assignment)
+- `DELETE /api/v1/role-assignments` (Remove role assignment)
+
+Service-level `accessDenied` results are mapped by routes to `403 FORBIDDEN` responses, and denied route outcomes emit forbidden audit events as required by the denied action audit policy.
+
+### Deactivation Denial Audit Evidence
+
+Denied deactivation-aware protected actions emit forbidden audit events with the following fields:
+- `action`: The attempted action name (e.g., "createRoleAssignment", "changeRoleAssignment", "removeRoleAssignment")
+- `targetType`: The type of resource being acted upon ("roleAssignment")
+- `targetId`: The identifier of the resource being accessed
+- `timestamp`: The time of the attempt (ISO 8601 UTC)
+- `requestId`: The request correlation identifier
+- `outcome`: The outcome category ("forbidden")
+- `actorId`: The authenticated user who attempted the action
+- `reason`: A stable code describing the reason for the denial (e.g., "userInactive", "organizationInactive", "organizationSuspended", "organizationDeleted", "organizationNotActive")
+
+Route-level deny evidence is covered for:
+- `POST /api/v1/role-assignments`
+- `PATCH /api/v1/role-assignments/change`
+- `DELETE /api/v1/role-assignments`
+
+Active-member regression tests prove active actor + active organization flows still pass for all three operations.
+
+No feature toggle is introduced. Deactivation enforcement is always-on backend security behavior.
