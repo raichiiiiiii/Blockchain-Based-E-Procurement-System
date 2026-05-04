@@ -1,5 +1,5 @@
 import { test, before } from 'node:test';
-import { strict as assert } from 'node:assert/strict';
+import assert from 'node:assert/strict';
 import { createTestableServer } from '../../../app/server.js';
 
 // Mock audit callback to capture audit events
@@ -30,11 +30,12 @@ test('should return 400 for missing required fields', async () => {
   // Parse response body to check structure
   const responseBody = response.json();
 
-  // Assert basic structure of Fastify validation error
-  assert(typeof responseBody.message === 'string', 'Response should have a message string');
-
-  // Assert this is NOT using the custom application format
-  assert.strictEqual(responseBody.issues, undefined, 'Should not have issues array in Fastify validation error');
+  // Assert standardized validation error envelope
+  assert.ok(responseBody.error, 'Response should have an error object');
+  assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR', 'Error code should be VALIDATION_ERROR');
+  assert.strictEqual(typeof responseBody.error.message, 'string', 'Error message should be a string');
+  assert.ok(Array.isArray(responseBody.error.details.issues), 'Error details should have issues array');
+  assert.ok(responseBody.error.details.issues.length > 0, 'Error details should have at least one issue');
 
   // No audit events should be emitted for invalid input
   assert.strictEqual(capturedAuditEvents.length, 0, 'No audit events should be emitted for invalid input');
@@ -57,9 +58,11 @@ test('should return 400 for whitespace-only required fields', async () => {
   assert.strictEqual(response.statusCode, 400);
 
   const responseBody = response.json();
-  assert.strictEqual(responseBody.message, 'Invalid input');
-  assert(Array.isArray(responseBody.issues));
-  assert(responseBody.issues.length > 0);
+  assert.ok(responseBody.error, 'Response should have an error object');
+  assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
+  assert.strictEqual(typeof responseBody.error.message, 'string');
+  assert.ok(Array.isArray(responseBody.error.details.issues));
+  assert.ok(responseBody.error.details.issues.length > 0);
 
   // No audit events should be emitted for invalid input
   assert.strictEqual(capturedAuditEvents.length, 0, 'No audit events should be emitted for invalid input');

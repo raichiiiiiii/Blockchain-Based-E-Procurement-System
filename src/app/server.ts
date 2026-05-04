@@ -17,6 +17,7 @@ import type { ShariahReviewSubmitAuditEvent, ShariahReviewChecklistAuditEvent, S
 import type { UserExistenceLookup } from '../modules/shared/application/user-existence-lookup.js';
 import type { OrganizationMembershipLookup } from '../modules/shared/application/organization-membership-lookup.js';
 import actorContextPlugin from './plugins/actor-context-plugin.js';
+import { mapFastifyValidationError } from '../modules/shared/api/validation-error-helper.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -39,15 +40,8 @@ export function createTestableServer(options?: {
   server.setErrorHandler((error, request, reply) => {
     // Handle Fastify validation errors
     if (error.validation) {
-      return reply.status(400).send({
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Request validation failed',
-          details: {
-            issues: error.validation
-          }
-        }
-      });
+      const validationError = mapFastifyValidationError(error);
+      return reply.status(400).send(validationError);
     }
     
     // For all other errors, send a generic 500 response

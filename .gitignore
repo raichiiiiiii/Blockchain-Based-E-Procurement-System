@@ -4,7 +4,7 @@ node_modules
 dist
 ~$backlog.xlsx
 temp
-backlog
+backlog/plan.mermaid
 docs/adrs
 docs/drafts
 docs/baseline_architecture.md

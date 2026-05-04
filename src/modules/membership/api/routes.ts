@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { CreateMemberOrgInput } from '../application/create-member-organization.js';
 import { createMemberOrganization } from '../application/create-member-organization.js';
 import type { MemberOrganizationRepository } from '../application/member-organization-repository.js';
+import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
 
 // Define the audit event interface for member organization creation
 export interface MemberOrgCreateAuditEvent {
@@ -51,10 +52,8 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
 
       // Handle invalid input
       if (result.status === 'invalidInput') {
-        return reply.code(400).send({
-          message: 'Invalid input',
-          issues: result.issues
-        });
+        const errorResponse = createApplicationValidationError('Invalid input', result.issues);
+        return reply.code(400).send(errorResponse);
       }
 
       // Handle duplicate registration number
