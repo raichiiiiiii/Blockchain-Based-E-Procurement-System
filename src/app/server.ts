@@ -18,6 +18,8 @@ import type { UserExistenceLookup } from '../modules/shared/application/user-exi
 import type { OrganizationMembershipLookup } from '../modules/shared/application/organization-membership-lookup.js';
 import actorContextPlugin from './plugins/actor-context-plugin.js';
 import { mapFastifyValidationError } from '../modules/shared/api/validation-error-helper.js';
+import type { UserStatusLookup } from '../modules/shared/application/user-status-lookup.js';
+import type { MemberStatusLookup } from '../modules/shared/application/member-status-lookup.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -30,6 +32,8 @@ export function createTestableServer(options?: {
   shariahReviewAudit?: (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => void;
   userExistenceLookup?: UserExistenceLookup;
   organizationMembershipLookup?: OrganizationMembershipLookup;
+  userStatusLookup?: UserStatusLookup;
+  memberStatusLookup?: MemberStatusLookup;
 }) {
   const server = fastify();
 
@@ -69,6 +73,8 @@ export function createTestableServer(options?: {
   });
   const userExistenceLookup = options?.userExistenceLookup;
   const organizationMembershipLookup = options?.organizationMembershipLookup;
+  const userStatusLookup = options?.userStatusLookup;
+  const memberStatusLookup = options?.memberStatusLookup;
 
   // Register membership routes
   server.register(registerMembershipRoutes, {
@@ -85,7 +91,9 @@ export function createTestableServer(options?: {
     memberOrganizationRepository: memberOrganizationRepository,
     audit: roleAuditCallback,
     userExistenceLookup,
-    organizationMembershipLookup
+    organizationMembershipLookup,
+    userStatusLookup,
+    memberStatusLookup
   });
 
   // Register shariah-review routes

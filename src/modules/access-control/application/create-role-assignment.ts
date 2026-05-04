@@ -4,11 +4,21 @@ import type { RoleRepository } from './role-repository.js';
 import type { MemberOrganizationRepository } from '../../membership/application/member-organization-repository.js';
 import type { UserExistenceLookup } from '../../shared/application/user-existence-lookup.js';
 import type { OrganizationMembershipLookup } from '../../shared/application/organization-membership-lookup.js';
+import { evaluateProtectedAccess } from './evaluate-protected-access.js';
+import type { UserStatusLookup } from '../../shared/application/user-status-lookup.js';
+import type { MemberStatusLookup } from '../../shared/application/member-status-lookup.js';
 
 // Define a type for the lookup dependencies to create a typed seam
 export type AssignmentValidationLookups = {
   userExistence: UserExistenceLookup;
   organizationMembership: OrganizationMembershipLookup;
+};
+
+// Define a type for the protected access dependencies
+export type ProtectedAccessDependencies = {
+  actorUserId: string;
+  userStatusLookup: UserStatusLookup;
+  memberStatusLookup: MemberStatusLookup;
 };
 
 export type CreateRoleAssignmentResult = 
@@ -17,14 +27,16 @@ export type CreateRoleAssignmentResult =
   | { status: 'roleNotFound' }
   | { status: 'organizationNotFound' }
   | { status: 'userNotFound' }
-  | { status: 'userNotMember' };
+  | { status: 'userNotMember' }
+  | { status: 'accessDenied', reason: string, message: string };
 
 export async function createRoleAssignment(
   assignment: RoleAssignment,
   assignmentRepository: RoleAssignmentRepository,
   roleRepository: RoleRepository,
   memberOrganizationRepository: MemberOrganizationRepository,
-  lookups?: AssignmentValidationLookups
+  lookups?: AssignmentValidationLookups,
+  protectedAccess?: ProtectedAccessDependencies
 ): Promise<CreateRoleAssignmentResult> {
   // First check if the role exists
   const role = await roleRepository.findById(assignment.roleId);
@@ -52,6 +64,24 @@ export async function createRoleAssignment(
     );
     if (!isMember) {
       return { status: 'userNotMember' };
+    }
+  }
+
+  // Run protected access/deactivation check if protectedAccess is provided
+  if (protectedAccess) {
+    const accessDecision = await evaluateProtectedAccess({
+      userId: protectedAccess.actorUserId,
+      organizationId: assignment.organizationId,
+      userStatusLookup: protectedAccess.userStatusLookup,
+      memberStatusLookup: protectedAccess.memberStatusLookup
+    });
+
+    if (accessDecision.status === 'denied') {
+      return {
+        status: 'accessDenied',
+        reason: accessDecision.reason,
+        message: accessDecision.message
+      };
     }
   }
 

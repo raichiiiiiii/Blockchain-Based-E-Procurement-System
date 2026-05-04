@@ -11,6 +11,9 @@ import type { RoleAssignment } from '../domain/role-assignment.js';
 import type { MemberOrganizationRepository } from '../../membership/application/member-organization-repository.js';
 import type { UserExistenceLookup } from '../../shared/application/user-existence-lookup.js';
 import type { OrganizationMembershipLookup } from '../../shared/application/organization-membership-lookup.js';
+import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
+import type { UserStatusLookup } from '../../shared/application/user-status-lookup.js';
+import type { MemberStatusLookup } from '../../shared/application/member-status-lookup.js';
 
 // Define the audit event interface for role creation
 export interface RoleCreateAuditEvent {
@@ -88,11 +91,22 @@ interface AccessControlRoutesOptions {
   audit: (event: RoleAuditEvent) => void;
   userExistenceLookup?: UserExistenceLookup;
   organizationMembershipLookup?: OrganizationMembershipLookup;
+  userStatusLookup?: UserStatusLookup;
+  memberStatusLookup?: MemberStatusLookup;
 }
 
 // Create the Fastify plugin for access-control routes
 const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions> = async (fastify, options) => {
-  const { repository, assignmentRepository, memberOrganizationRepository, audit, userExistenceLookup, organizationMembershipLookup } = options;
+  const { 
+    repository, 
+    assignmentRepository, 
+    memberOrganizationRepository, 
+    audit, 
+    userExistenceLookup, 
+    organizationMembershipLookup,
+    userStatusLookup,
+    memberStatusLookup
+  } = options;
 
   // POST /api/v1/roles - Create a new role
   fastify.post<{ Body: Role }>(
@@ -229,13 +243,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
 
         for (const field of immutableFields) {
           if (field in requestBody) {
-            return reply.code(400).send({
-              error: {
-                code: 'VALIDATION_ERROR',
-                message: `Cannot update immutable field: ${field}`,
-                details: {}
-              }
-            });
+            return reply.code(400).send(
+              createApplicationValidationError(`Cannot update immutable field: ${field}`)
+            );
           }
         }
       },
@@ -380,8 +390,22 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         organizationMembership: organizationMembershipLookup
       } : undefined;
 
+      // Prepare protected access dependencies if both are provided
+      const protectedAccess = userStatusLookup && memberStatusLookup && request.actorContext?.userId ? {
+        actorUserId: request.actorContext.userId,
+        userStatusLookup,
+        memberStatusLookup
+      } : undefined;
+
       // Call the application service
-      const result = await createRoleAssignment(assignment, assignmentRepository, repository, memberOrganizationRepository, lookups);
+      const result = await createRoleAssignment(
+        assignment, 
+        assignmentRepository, 
+        repository, 
+        memberOrganizationRepository, 
+        lookups,
+        protectedAccess
+      );
 
       // Get actorId from trusted actor context
       const actorId = request.actorContext?.userId || 'unknown';
@@ -438,13 +462,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
 
         audit(auditEvent);
 
-        return reply.code(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid roleId: Role does not exist',
-            details: {}
-          }
-        });
+        return reply.code(400).send(
+          createApplicationValidationError('Invalid roleId: Role does not exist')
+        );
       } else if (result.status === 'organizationNotFound') {
         // Emit audit event for validation error
         const auditEvent: RoleAssignmentCreateAuditEvent = {
@@ -459,13 +479,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
 
         audit(auditEvent);
 
-        return reply.code(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid organizationId: Member organization does not exist',
-            details: {}
-          }
-        });
+        return reply.code(400).send(
+          createApplicationValidationError('Invalid organizationId: Member organization does not exist')
+        );
       } else if (result.status === 'userNotFound') {
         const auditEvent: RoleAssignmentCreateAuditEvent = {
           action: 'createRoleAssignment',
@@ -479,13 +495,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
 
         audit(auditEvent);
 
-        return reply.code(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid userId: User does not exist',
-            details: {}
-          }
-        });
+        return reply.code(400).send(
+          createApplicationValidationError('Invalid userId: User does not exist')
+        );
       } else if (result.status === 'userNotMember') {
         const auditEvent: RoleAssignmentCreateAuditEvent = {
           action: 'createRoleAssignment',
@@ -499,11 +511,28 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
 
         audit(auditEvent);
 
-        return reply.code(400).send({
+        return reply.code(400).send(
+          createApplicationValidationError('Invalid userId: User is not a member of the specified organization')
+        );
+      } else if (result.status === 'accessDenied') {
+        // Emit audit event for forbidden access due to deactivation
+        const auditEvent: RoleAssignmentCreateAuditEvent = {
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'forbidden',
+          actorId: actorId,
+          reason: result.reason
+        };
+
+        audit(auditEvent);
+
+        return reply.code(403).send({
           error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid userId: User is not a member of the specified organization',
-            details: {}
+            code: 'FORBIDDEN',
+            message: result.message
           }
         });
       }
@@ -559,8 +588,15 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         roleId: string;
       };
 
+      // Prepare protected access dependencies if both are provided
+      const protectedAccess = userStatusLookup && memberStatusLookup && request.actorContext?.userId ? {
+        actorUserId: request.actorContext.userId,
+        userStatusLookup,
+        memberStatusLookup
+      } : undefined;
+
       // Call the remove role assignment service
-      const result = await removeRoleAssignment(userId, organizationId, roleId, assignmentRepository);
+      const result = await removeRoleAssignment(userId, organizationId, roleId, assignmentRepository, protectedAccess);
 
       // Get actorId from trusted actor context
       const actorId = request.actorContext?.userId || 'unknown';
@@ -588,6 +624,27 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           error: {
             code: 'NOT_FOUND',
             message: 'Role assignment not found'
+          }
+        });
+      } else if (result.status === 'accessDenied') {
+        // Emit audit event for forbidden access due to deactivation
+        const auditEvent: RoleAssignmentRemoveAuditEvent = {
+          action: 'removeRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${userId}:${organizationId}:${roleId}`,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'forbidden',
+          actorId: actorId,
+          reason: result.reason
+        };
+
+        audit(auditEvent);
+
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: result.message
           }
         });
       }
@@ -640,6 +697,13 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     async (request, reply) => {
       const { userId, organizationId, currentRoleId, newRoleId } = request.body;
 
+      // Prepare protected access dependencies if both are provided
+      const protectedAccess = userStatusLookup && memberStatusLookup && request.actorContext?.userId ? {
+        actorUserId: request.actorContext.userId,
+        userStatusLookup,
+        memberStatusLookup
+      } : undefined;
+
       // Call the change role assignment service
       const result = await changeRoleAssignment(
         userId,
@@ -647,7 +711,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         currentRoleId,
         newRoleId,
         assignmentRepository,
-        repository
+        repository,
+        protectedAccess
       );
 
       // Get actorId from trusted actor context
@@ -682,13 +747,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           }
         });
       } else if (result.status === 'roleNotFound') {
-        return reply.code(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid newRoleId: Role does not exist',
-            details: {}
-          }
-        });
+        return reply.code(400).send(
+          createApplicationValidationError('Invalid newRoleId: Role does not exist')
+        );
       } else if (result.status === 'duplicate') {
         return reply.code(409).send({
           error: {
@@ -697,11 +758,28 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           }
         });
       } else if (result.status === 'sameRole') {
-        return reply.code(400).send({
+        return reply.code(400).send(
+          createApplicationValidationError('Current and new role IDs must be different')
+        );
+      } else if (result.status === 'accessDenied') {
+        // Emit audit event for forbidden access due to deactivation
+        const auditEvent: RoleAssignmentChangeAuditEvent = {
+          action: 'changeRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${userId}:${organizationId}:${newRoleId}`,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'forbidden',
+          actorId: actorId,
+          reason: result.reason
+        };
+
+        audit(auditEvent);
+
+        return reply.code(403).send({
           error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Current and new role IDs must be different',
-            details: {}
+            code: 'FORBIDDEN',
+            message: result.message
           }
         });
       }
