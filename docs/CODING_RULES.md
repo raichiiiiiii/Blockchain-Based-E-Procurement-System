@@ -209,3 +209,54 @@ For every story completion:
 - No hardcoding of role catalogs, protected functions, or review state transitions outside their documented sources of truth.
 - Protected route consumers must not directly read `x-actor-id` or `x-actor-role` headers; they must use the trusted `request.actorContext` instead.
 - Temporary actor seeding via `x-actor-*` headers is only allowed in the shared actor-context plugin/middleware seam.
+
+## 15. Frontend Coding Rules
+
+### 15.1 Contract-first frontend development
+
+Every UI PBI must start by identifying the backend endpoint and contract section.
+
+### 15.2 Typed API consumption
+
+When frontend code is added in PBI-080/PBI-081 and later:
+
+- API request/response types should be defined from backend contracts
+- shared API client should be used instead of route-local fetch logic
+- backend `data` success envelope and `error` failure envelope must be handled consistently
+
+### 15.3 Error handling
+
+Frontend must use one shared error-normalization/display pattern for:
+
+- `VALIDATION_ERROR`
+- `FORBIDDEN`
+- `NOT_FOUND`
+- `CONFLICT`
+- unknown/server errors
+
+### 15.4 Forms and validation
+
+- client-side validation may improve UX
+- backend validation remains authoritative
+- UI must show backend validation feedback without changing its meaning
+
+### 15.5 Actor/auth handling
+
+- frontend must not hardcode privileged actor identities
+- frontend must not client-author protected actor identity as business authority
+- protected actions must be written assuming backend authorization may deny them
+
+### 15.6 State handling
+
+- UI state labels must follow documented backend states
+- checklist, decision, and history UI must not invent alternate timeline/status semantics
+
+### 15.7 Testing expectation
+
+For future frontend PBIs, tests should cover:
+
+- success path
+- validation error path
+- forbidden path where applicable
+- empty/intermediate state path where applicable
+- contract-consumer behavior

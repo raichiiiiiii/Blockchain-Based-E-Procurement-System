@@ -352,3 +352,56 @@ Route-level deny evidence is covered for:
 Active-member regression tests prove active actor + active organization flows still pass for all three operations.
 
 No feature toggle is introduced. Deactivation enforcement is always-on backend security behavior.
+
+## 16. Governed Frontend Boundary
+
+Sprint 3 frontend work will use a governed frontend boundary following the investigation in PBI-079.
+
+### 16.1 Frontend boundary
+
+- Sprint 3 frontend work will use a governed frontend boundary.
+- Recommended boundary location from PBI-079: `src/frontend/`.
+- PBI-080 will create the actual frontend boundary.
+- PBI-082 only documents architecture rules.
+
+### 16.2 Contract authority
+
+Frontend must consume backend contracts from:
+
+- `docs/API_CONTRACTS.md`
+- `docs/STATE_MODELS.md`
+- protected-function/deactivation policy docs where relevant
+
+Frontend must not:
+
+- redefine backend API request/response shapes
+- invent alternate workflow states
+- invent protected-action rules
+- bypass backend authorization/deactivation checks
+
+### 16.3 Actor identity boundary
+
+- Protected backend writes/read operations rely on trusted actor context
+- Frontend must not treat client-authored actor IDs as authority
+- UI may pass/session-display actor state only according to the backend actor-context policy
+- Backend remains source of truth for authorization decisions
+
+### 16.4 Error envelope consumption
+
+- UI must consume standardized backend error envelopes
+- `VALIDATION_ERROR` drives form-level and field-level feedback
+- `FORBIDDEN`, `NOT_FOUND`, and `CONFLICT` must be handled according to backend semantics
+- Frontend must not invent route-specific error formats
+
+### 16.5 Protected/deactivation behavior
+
+- UI guards are advisory/UX-level only
+- Backend remains final enforcement layer
+- UI must reflect deactivation/protected-function rules without treating them as client-only enforcement
+
+### 16.6 UI feature sequencing
+
+Feature UI work must start only after:
+
+- PBI-080 establishes frontend boundary/build surface
+- PBI-081 establishes contract-consumer pattern and first page shell
