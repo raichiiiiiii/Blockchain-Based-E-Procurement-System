@@ -606,7 +606,16 @@ Response:
     "summary": "string",
     "status": "submitted",
     "submittedByUserId": "user_123",
-    "createdAt": "2026-03-15T00:00:00Z"
+    "createdAt": "2026-03-15T00:00:00Z",
+    "references": [
+      {
+        "type": "attachment",
+        "name": "document.pdf",
+        "uri": "string",
+        "description": "string",
+        "mediaType": "application/pdf"
+      }
+    ]
   }
 }
 ```
@@ -620,6 +629,34 @@ Provisional Sprint 1 rules:
 - `submittedByUserId` is a server-derived field and must not be accepted from the request body
 - if a client sends `submittedByUserId` in the request body, the request should be rejected with `VALIDATION_ERROR`
 - the submitting actor must hold the coordinator role for the target organization
+
+Access control:
+- `POST /api/v1/shariah-reviews` requires a trusted actor context
+- The actor must have an active coordinator role assignment for the target organization
+- Unauthorized submissions return `403 FORBIDDEN`
+
+Audit fields:
+- `action`: "submitShariahReview"
+- `targetType`: "shariahReview"
+- `targetId`: The ID of the created review
+- `timestamp`: ISO 8601 UTC timestamp
+- `requestId`: Request correlation ID
+- `actorId`: ID of the submitting user
+- `outcome`: "success" for successful submissions, "forbidden" for denied submissions
+- `reason`: Present for denied submissions (e.g., "coordinator_required")
+
+Reference / attachment metadata handling:
+- `references` is optional
+- References are metadata only; no external binary storage optimization is introduced in this PBI
+- Supported metadata fields:
+  - `type`: Type of reference (e.g., "document", "uri", "attachment")
+  - `name`: Display name of the reference
+  - `uri`: URI to the reference
+  - `description`: Description of the reference
+  - `mediaType`: MIME type of the reference
+- Reference metadata is persisted with the Shariah review entity
+- Reference metadata is returned in successful submission responses
+- Attachment handling is metadata-only at this stage; uploaded binary/object storage remains out of scope
 
 [FLAG-SHARIAH-SUBMISSION-METADATA]
 Mandatory metadata is not yet fully approved. The current shape represents a minimal baseline with richer metadata remaining provisional.
@@ -866,6 +903,29 @@ Rules:
 - Absence of a final decision is not an error condition
 - History entries include all state transitions and significant actions in the review lifecycle
 - Sensitive history access may be subject to audit logging requirements
+
+History-view access rules:
+- `GET /api/v1/shariah-reviews/{reviewId}/history` requires trusted actor context
+- Actor must hold an allowed active role assignment for the review organization
+- Current backend allow-list: `coordinator`
+- Unauthorized history reads return `403 FORBIDDEN`
+
+Read audit fields:
+- `action`: `viewShariahReviewHistory`
+- `targetType`: `shariahReview`
+- `targetId`: review id
+- `timestamp`: ISO 8601 UTC timestamp
+- `requestId`: Request correlation ID
+- `actorId`: ID of the requesting user
+- `outcome`: `success` or `forbidden`
+- `reason`: Present for denied reads
+- `historyEntryCount`: Number of history entries returned (for successful reads)
+
+Safe response behavior:
+- Empty history returns `history: []`
+- Incomplete/intermediate history returns available entries only
+- Response must not expose internal audit implementation details
+- PBI-075 response shape remains stable
 
 [FLAG-READ-AUDIT]
 History-read logging requirements are not yet finalized, but sensitive history access is expected to be auditable in Sprint 1.

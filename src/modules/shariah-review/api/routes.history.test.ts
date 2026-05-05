@@ -5,6 +5,7 @@ import type { ShariahReview } from '../domain/shariah-review.js';
 import { InMemoryShariahReviewRepository } from '../infrastructure/in-memory-shariah-review-repository.js';
 import { InMemoryRoleAssignmentRepository } from '../../access-control/infrastructure/in-memory-role-assignment-repository.js';
 import { InMemoryRoleRepository } from '../../access-control/infrastructure/in-memory-role-repository.js';
+import type { RoleAssignment } from '../../access-control/domain/role-assignment.js';
 
 test('Shariah review history endpoint', async (t) => {
   await t.test('returns 404 for non-existent review', async () => {
@@ -41,6 +42,26 @@ test('Shariah review history endpoint', async (t) => {
     };
     
     await reviewRepo.save(submittedReview);
+    
+    // Create coordinator role
+    const coordinatorRole = await roleRepo.save({
+      roleCode: 'coordinator',
+      displayName: 'Coordinator',
+      scope: 'organization',
+      permissions: ['view-review-history'],
+      status: 'active',
+      isSystemReserved: false
+    });
+    
+    // Create role assignment for the user
+    const assignment: RoleAssignment = {
+      userId: 'user123',
+      organizationId: 'org1',
+      roleId: coordinatorRole.id,
+      status: 'active'
+    };
+    
+    await roleAssignmentRepo.save(assignment);
     
     const server = await createTestableServer({
       shariahReviewRepository: reviewRepo,
@@ -94,6 +115,26 @@ test('Shariah review history endpoint', async (t) => {
     
     await reviewRepo.save(inProgressReview);
     
+    // Create coordinator role
+    const coordinatorRole = await roleRepo.save({
+      roleCode: 'coordinator',
+      displayName: 'Coordinator',
+      scope: 'organization',
+      permissions: ['view-review-history'],
+      status: 'active',
+      isSystemReserved: false
+    });
+    
+    // Create role assignment for the user
+    const assignment: RoleAssignment = {
+      userId: 'user123',
+      organizationId: 'org1',
+      roleId: coordinatorRole.id,
+      status: 'active'
+    };
+    
+    await roleAssignmentRepo.save(assignment);
+    
     const server = await createTestableServer({
       shariahReviewRepository: reviewRepo,
       roleAssignmentRepository: roleAssignmentRepo,
@@ -146,6 +187,26 @@ test('Shariah review history endpoint', async (t) => {
     };
     
     await reviewRepo.save(completeReview);
+    
+    // Create coordinator role
+    const coordinatorRole = await roleRepo.save({
+      roleCode: 'coordinator',
+      displayName: 'Coordinator',
+      scope: 'organization',
+      permissions: ['view-review-history'],
+      status: 'active',
+      isSystemReserved: false
+    });
+    
+    // Create role assignment for the user
+    const assignment: RoleAssignment = {
+      userId: 'user123',
+      organizationId: 'org1',
+      roleId: coordinatorRole.id,
+      status: 'active'
+    };
+    
+    await roleAssignmentRepo.save(assignment);
     
     const server = await createTestableServer({
       shariahReviewRepository: reviewRepo,
@@ -208,6 +269,26 @@ test('Shariah review history endpoint', async (t) => {
     };
     
     await reviewRepo.save(approvedReview);
+    
+    // Create coordinator role
+    const coordinatorRole = await roleRepo.save({
+      roleCode: 'coordinator',
+      displayName: 'Coordinator',
+      scope: 'organization',
+      permissions: ['view-review-history'],
+      status: 'active',
+      isSystemReserved: false
+    });
+    
+    // Create role assignment for the user
+    const assignment: RoleAssignment = {
+      userId: 'user123',
+      organizationId: 'org1',
+      roleId: coordinatorRole.id,
+      status: 'active'
+    };
+    
+    await roleAssignmentRepo.save(assignment);
     
     const server = await createTestableServer({
       shariahReviewRepository: reviewRepo,

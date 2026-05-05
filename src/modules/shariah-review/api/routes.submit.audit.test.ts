@@ -4,7 +4,18 @@ import { createTestableServer } from '../../../app/server.js';
 import { InMemoryShariahReviewRepository } from '../infrastructure/in-memory-shariah-review-repository.js';
 import { InMemoryRoleAssignmentRepository } from '../../access-control/infrastructure/in-memory-role-assignment-repository.js';
 import { InMemoryRoleRepository } from '../../access-control/infrastructure/in-memory-role-repository.js';
-import type { ShariahReviewSubmitAuditEvent, ShariahReviewChecklistAuditEvent, ShariahReviewDecisionAuditEvent } from './routes.js';
+import type {
+  ShariahReviewSubmitAuditEvent,
+  ShariahReviewChecklistAuditEvent,
+  ShariahReviewDecisionAuditEvent,
+  ShariahReviewHistoryAuditEvent
+} from './routes.js';
+
+type ShariahReviewAuditEvent =
+  | ShariahReviewSubmitAuditEvent
+  | ShariahReviewChecklistAuditEvent
+  | ShariahReviewDecisionAuditEvent
+  | ShariahReviewHistoryAuditEvent;
 
 describe('POST /api/v1/shariah-reviews', () => {
   test('should emit audit event for successful submission', async () => {
@@ -31,9 +42,11 @@ describe('POST /api/v1/shariah-reviews', () => {
     });
 
     // Capture audit events
-    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent)[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => {
-      auditEvents.push(event);
+    const auditEvents: ShariahReviewAuditEvent[] = [];
+    const auditCallback = (event: ShariahReviewAuditEvent) => {
+      if (event.action === 'submitShariahReview') {
+        auditEvents.push(event);
+      }
     };
 
     const server = createTestableServer({
@@ -74,9 +87,11 @@ describe('POST /api/v1/shariah-reviews', () => {
   });
 
   test('should emit audit event for forbidden submission', async () => {
-    let auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent)[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => {
-      auditEvents.push(event);
+    let auditEvents: ShariahReviewAuditEvent[] = [];
+    const auditCallback = (event: ShariahReviewAuditEvent) => {
+      if (event.action === 'submitShariahReview') {
+        auditEvents.push(event);
+      }
     };
 
     const repository = new InMemoryShariahReviewRepository();
@@ -153,9 +168,11 @@ describe('POST /api/v1/shariah-reviews', () => {
     });
 
     // Capture audit events
-    const auditEvents: (ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent)[] = [];
-    const auditCallback = (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => {
-      auditEvents.push(event);
+    const auditEvents: ShariahReviewAuditEvent[] = [];
+    const auditCallback = (event: ShariahReviewAuditEvent) => {
+      if (event.action === 'submitShariahReview') {
+        auditEvents.push(event);
+      }
     };
 
     const server = createTestableServer({

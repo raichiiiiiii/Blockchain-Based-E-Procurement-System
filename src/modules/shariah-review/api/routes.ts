@@ -45,12 +45,25 @@ export interface ShariahReviewDecisionAuditEvent {
   reason?: string;
 }
 
+// Define the audit event interface for history read operations
+export interface ShariahReviewHistoryAuditEvent {
+  action: 'viewShariahReviewHistory';
+  targetType: 'shariahReview';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success' | 'forbidden';
+  actorId: string;
+  reason?: string;
+  historyEntryCount?: number;
+}
+
 // Define plugin options interface
 interface ShariahReviewRoutesOptions {
   repository: ShariahReviewRepository;
   roleAssignmentRepository: RoleAssignmentRepository;
   roleRepository: RoleRepository;
-  audit: (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent) => void;
+  audit: (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent | ShariahReviewHistoryAuditEvent) => void;
 }
 
 // Seeded checklist item definitions
@@ -63,6 +76,9 @@ const SEDED_CHECKLIST_ITEMS: ChecklistItemDefinition[] = [
 
 // Coordinator role code constant
 const COORDINATOR_ROLE_CODE = 'coordinator';
+
+// Allowed role codes for history view
+const HISTORY_VIEW_ALLOWED_ROLE_CODES = ['coordinator'];
 
 // Valid states for saving checklist
 const VALID_STATES_FOR_CHECKLIST_SAVE: ShariahReview['status'][] = ['submitted', 'checklistInProgress'];
@@ -93,6 +109,61 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         return reply.code(400).send(createApplicationValidationError('Missing or invalid x-actor-id header'));
       }
 
+      // Find the review
+      const review = await repository.findById(request.params.reviewId);
+      
+      if (!review) {
+        return reply.code(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Review not found'
+          }
+        });
+      }
+
+      // Check if user has allowed role assignment for the review organization
+      const allowedRoles = await roleRepository.findAll();
+      const allowedRoleIds = allowedRoles
+        .filter(role => HISTORY_VIEW_ALLOWED_ROLE_CODES.includes(role.roleCode) && role.status === 'active')
+        .map(role => role.id);
+
+      let hasAllowedRole = false;
+      for (const roleId of allowedRoleIds) {
+        const assignment = await roleAssignmentRepository.findActiveByUserOrganizationRole(
+          actorId,
+          review.organizationId,
+          roleId
+        );
+        
+        if (assignment) {
+          hasAllowedRole = true;
+          break;
+        }
+      }
+
+      if (!hasAllowedRole) {
+        // Emit audit event for forbidden history read attempt
+        const auditEvent: ShariahReviewHistoryAuditEvent = {
+          action: 'viewShariahReviewHistory',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'forbidden',
+          actorId: actorId,
+          reason: 'insufficient_permissions'
+        };
+        
+        audit(auditEvent);
+        
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Not authorized to view Shariah review history'
+          }
+        });
+      }
+
       // Call the history service
       const result: GetShariahReviewHistoryResult = await getShariahReviewHistory(
         request.params.reviewId,
@@ -101,6 +172,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
 
       // Map result to HTTP responses
       if (result.status === 'found') {
+        // Emit audit event for successful history read
+        const auditEvent: ShariahReviewHistoryAuditEvent = {
+          action: 'viewShariahReviewHistory',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          timestamp: new Date().toISOString(),
+          requestId: request.id,
+          outcome: 'success',
+          actorId: actorId,
+          historyEntryCount: result.history.history.length
+        };
+        
+        audit(auditEvent);
+        
         return reply.code(200).send({
           data: result.history
         });
@@ -236,8 +321,24 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         
         audit(auditEvent);
         
+        // Prepare response data including references if they exist
+        const responseData: any = {
+          id: result.review.id,
+          organizationId: result.review.organizationId,
+          title: result.review.title,
+          summary: result.review.summary,
+          status: result.review.status,
+          submittedByUserId: result.review.submittedByUserId,
+          createdAt: result.review.createdAt
+        };
+        
+        // Include references in response if they exist
+        if (result.review.references && result.review.references.length > 0) {
+          responseData.references = result.review.references;
+        }
+        
         return reply.code(201).send({
-          data: result.review
+          data: responseData
         });
       } else if (result.status === 'invalidInput') {
         return reply.code(400).send(createApplicationValidationError('Invalid review submission input'));
