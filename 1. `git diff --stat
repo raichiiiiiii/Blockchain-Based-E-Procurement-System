@@ -1,0 +1,4 @@
+ src/frontend/api/roles.ts         |  9 +++++++++
+ src/frontend/pages/RoleManagementPage.tsx | 189 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------------------------
+ src/frontend/types/role.ts        |  6 ++++++
+ 3 files changed, 149 insertions(+), 55 deletions(-)

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import RunwayPage from './pages/RunwayPage';
 import MemberOnboardingPage from './pages/MemberOnboardingPage';
+import RoleManagementPage from './pages/RoleManagementPage';
 
-type PageKey = 'runway' | 'member-onboarding';
+type PageKey = 'runway' | 'member-onboarding' | 'role-management';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<PageKey>('runway');
@@ -31,6 +32,7 @@ function App() {
         <button 
           onClick={() => setCurrentPage('member-onboarding')}
           style={{
+            marginRight: '1rem',
             padding: '0.5rem 1rem',
             backgroundColor: currentPage === 'member-onboarding' ? '#007bff' : '#fff',
             color: currentPage === 'member-onboarding' ? '#fff' : '#000',
@@ -41,11 +43,25 @@ function App() {
         >
           Member Onboarding
         </button>
+        <button 
+          onClick={() => setCurrentPage('role-management')}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: currentPage === 'role-management' ? '#007bff' : '#fff',
+            color: currentPage === 'role-management' ? '#fff' : '#000',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Role Management
+        </button>
       </nav>
       
       <div>
         {currentPage === 'runway' && <RunwayPage />}
         {currentPage === 'member-onboarding' && <MemberOnboardingPage />}
+        {currentPage === 'role-management' && <RoleManagementPage />}
       </div>
     </div>
   );
