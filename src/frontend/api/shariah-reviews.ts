@@ -1,6 +1,10 @@
 import { requestJson } from './http-client';
 import type { SubmitShariahReviewRequest, ShariahReviewResponse } from '../types/shariah-review';
 import type { UpdateChecklistRequest, ChecklistResponse } from '../types/shariah-review';
+import type {
+  RecordShariahDecisionRequest,
+  ShariahDecisionResponse
+} from '../types/shariah-review';
 
 export async function submitShariahReview(payload: SubmitShariahReviewRequest): Promise<ShariahReviewResponse> {
   return requestJson<ShariahReviewResponse>('/api/v1/shariah-reviews', {
@@ -23,4 +27,20 @@ export async function updateShariahReviewChecklist(
     },
     body: JSON.stringify(payload)
   });
+}
+
+export async function recordShariahReviewDecision(
+  reviewId: string,
+  payload: RecordShariahDecisionRequest
+): Promise<ShariahDecisionResponse> {
+  return requestJson<ShariahDecisionResponse>(
+    `/api/v1/shariah-reviews/${reviewId}/decision`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    }
+  );
 }

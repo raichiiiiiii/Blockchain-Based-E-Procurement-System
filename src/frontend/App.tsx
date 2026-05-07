@@ -5,8 +5,9 @@ import RoleManagementPage from './pages/RoleManagementPage';
 import RoleAssignmentPage from './pages/RoleAssignmentPage';
 import ShariahReviewSubmissionPage from './pages/ShariahReviewSubmissionPage';
 import ShariahReviewChecklistPage from './pages/ShariahReviewChecklistPage';
+import ShariahReviewDecisionPage from './pages/ShariahReviewDecisionPage';
 
-type PageKey = 'runway' | 'member-onboarding' | 'role-management' | 'role-assignment' | 'shariah-review-submission' | 'shariah-review-checklist';
+type PageKey = 'runway' | 'member-onboarding' | 'role-management' | 'role-assignment' | 'shariah-review-submission' | 'shariah-review-checklist' | 'shariah-review-decision';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<PageKey>('runway');
@@ -91,6 +92,7 @@ function App() {
         <button 
           onClick={() => setCurrentPage('shariah-review-checklist')}
           style={{
+            marginRight: '1rem',
             padding: '0.5rem 1rem',
             backgroundColor: currentPage === 'shariah-review-checklist' ? '#007bff' : '#fff',
             color: currentPage === 'shariah-review-checklist' ? '#fff' : '#000',
@@ -101,6 +103,19 @@ function App() {
         >
           Shariah Checklist
         </button>
+        <button 
+          onClick={() => setCurrentPage('shariah-review-decision')}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: currentPage === 'shariah-review-decision' ? '#007bff' : '#fff',
+            color: currentPage === 'shariah-review-decision' ? '#fff' : '#000',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Shariah Decision
+        </button>
       </nav>
       
       <div>
@@ -110,6 +125,7 @@ function App() {
         {currentPage === 'role-assignment' && <RoleAssignmentPage />}
         {currentPage === 'shariah-review-submission' && <ShariahReviewSubmissionPage />}
         {currentPage === 'shariah-review-checklist' && <ShariahReviewChecklistPage />}
+        {currentPage === 'shariah-review-decision' && <ShariahReviewDecisionPage />}
       </div>
     </div>
   );

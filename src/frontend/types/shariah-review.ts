@@ -48,3 +48,26 @@ export type ChecklistResponse = {
   reviewId: string;
   status: ChecklistWorkflowStatus;
 };
+
+// Decision types
+export type ShariahDecisionOutcome =
+  | 'approved'
+  | 'rejected'
+  | 'conditionalApproved';
+
+export type ShariahDecisionCondition = {
+  description: string;
+  dueDate: string;
+};
+
+export type RecordShariahDecisionRequest = {
+  outcome: ShariahDecisionOutcome;
+  rationale: string;
+  conditions?: ShariahDecisionCondition[];
+};
+
+export type ShariahDecisionResponse = {
+  reviewId: string;
+  status: ShariahDecisionOutcome;
+  decidedAt: string;
+};
