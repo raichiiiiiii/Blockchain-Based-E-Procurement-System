@@ -5,6 +5,7 @@ import type {
   RecordShariahDecisionRequest,
   ShariahDecisionResponse
 } from '../types/shariah-review';
+import type { ShariahReviewHistoryResponse } from '../types/shariah-review';
 
 export async function submitShariahReview(payload: SubmitShariahReviewRequest): Promise<ShariahReviewResponse> {
   return requestJson<ShariahReviewResponse>('/api/v1/shariah-reviews', {
@@ -42,5 +43,13 @@ export async function recordShariahReviewDecision(
       },
       body: JSON.stringify(payload)
     }
+  );
+}
+
+export async function getShariahReviewHistory(
+  reviewId: string
+): Promise<ShariahReviewHistoryResponse> {
+  return requestJson<ShariahReviewHistoryResponse>(
+    `/api/v1/shariah-reviews/${reviewId}/history`
   );
 }

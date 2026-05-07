@@ -71,3 +71,28 @@ export type ShariahDecisionResponse = {
   status: ShariahDecisionOutcome;
   decidedAt: string;
 };
+
+// History types
+export type ShariahReviewHistoryAction =
+  | 'reviewSubmitted'
+  | 'checklistSaved'
+  | 'checklistCompleted'
+  | 'decisionRecorded';
+
+export type ShariahReviewStatusHistoryEntry = {
+  action: ShariahReviewHistoryAction;
+  fromStatus: ShariahReviewStatus | null;
+  toStatus: ShariahReviewStatus;
+  performedAt: string;
+  performedByUserId: string;
+  notes?: string;
+  rationale?: string;
+  conditions?: ShariahDecisionCondition[];
+};
+
+export type ShariahReviewHistoryResponse = {
+  reviewId: string;
+  organizationId: string;
+  currentStatus: ShariahReviewStatus;
+  history: ShariahReviewStatusHistoryEntry[];
+};
