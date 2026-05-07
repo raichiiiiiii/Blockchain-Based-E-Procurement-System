@@ -3,8 +3,9 @@ import RunwayPage from './pages/RunwayPage';
 import MemberOnboardingPage from './pages/MemberOnboardingPage';
 import RoleManagementPage from './pages/RoleManagementPage';
 import RoleAssignmentPage from './pages/RoleAssignmentPage';
+import ShariahReviewSubmissionPage from './pages/ShariahReviewSubmissionPage';
 
-type PageKey = 'runway' | 'member-onboarding' | 'role-management' | 'role-assignment';
+type PageKey = 'runway' | 'member-onboarding' | 'role-management' | 'role-assignment' | 'shariah-review-submission';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<PageKey>('runway');
@@ -61,6 +62,7 @@ function App() {
         <button 
           onClick={() => setCurrentPage('role-assignment')}
           style={{
+            marginRight: '1rem',
             padding: '0.5rem 1rem',
             backgroundColor: currentPage === 'role-assignment' ? '#007bff' : '#fff',
             color: currentPage === 'role-assignment' ? '#fff' : '#000',
@@ -71,6 +73,19 @@ function App() {
         >
           Role Assignment
         </button>
+        <button 
+          onClick={() => setCurrentPage('shariah-review-submission')}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: currentPage === 'shariah-review-submission' ? '#007bff' : '#fff',
+            color: currentPage === 'shariah-review-submission' ? '#fff' : '#000',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Shariah Review Submission
+        </button>
       </nav>
       
       <div>
@@ -78,6 +93,7 @@ function App() {
         {currentPage === 'member-onboarding' && <MemberOnboardingPage />}
         {currentPage === 'role-management' && <RoleManagementPage />}
         {currentPage === 'role-assignment' && <RoleAssignmentPage />}
+        {currentPage === 'shariah-review-submission' && <ShariahReviewSubmissionPage />}
       </div>
     </div>
   );

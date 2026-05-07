@@ -224,6 +224,21 @@ function RoleAssignmentPage() {
   return (
     <div style={{ padding: '1rem' }}>
       <h1>Role Assignment</h1>
+      
+      {/* Advisory notice for protected operations */}
+      <div style={{
+        border: '1px solid #f0ad4e',
+        backgroundColor: '#fff8e5',
+        padding: '1rem',
+        margin: '1rem 0',
+        borderRadius: '4px'
+      }}>
+        <p>
+          <strong>Protected operation notice:</strong> role assignment actions are checked by the backend. 
+          Authorization and deactivation rules may deny create, change, or remove requests. 
+          Backend responses are shown below when an action is rejected.
+        </p>
+      </div>
 
       {/* Role loading state */}
       {rolesLoading && <p>Loading roles...</p>}

@@ -176,6 +176,21 @@ function RoleManagementPage() {
     <div style={{ padding: '1rem' }}>
       <h1>Role Management</h1>
       
+      {/* Advisory notice for protected operations */}
+      <div style={{
+        border: '1px solid #f0ad4e',
+        backgroundColor: '#fff8e5',
+        padding: '1rem',
+        margin: '1rem 0',
+        borderRadius: '4px'
+      }}>
+        <p>
+          <strong>Protected operation notice:</strong> role management actions are checked by the backend. 
+          Authorization and deactivation rules may deny create or update requests. 
+          Backend responses are shown below when an action is rejected.
+        </p>
+      </div>
+      
       {/* Role List Section */}
       <section style={{ marginBottom: '2rem' }}>
         <h2>Roles</h2>
