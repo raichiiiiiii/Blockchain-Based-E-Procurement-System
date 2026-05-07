@@ -4,8 +4,9 @@ import MemberOnboardingPage from './pages/MemberOnboardingPage';
 import RoleManagementPage from './pages/RoleManagementPage';
 import RoleAssignmentPage from './pages/RoleAssignmentPage';
 import ShariahReviewSubmissionPage from './pages/ShariahReviewSubmissionPage';
+import ShariahReviewChecklistPage from './pages/ShariahReviewChecklistPage';
 
-type PageKey = 'runway' | 'member-onboarding' | 'role-management' | 'role-assignment' | 'shariah-review-submission';
+type PageKey = 'runway' | 'member-onboarding' | 'role-management' | 'role-assignment' | 'shariah-review-submission' | 'shariah-review-checklist';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<PageKey>('runway');
@@ -76,6 +77,7 @@ function App() {
         <button 
           onClick={() => setCurrentPage('shariah-review-submission')}
           style={{
+            marginRight: '1rem',
             padding: '0.5rem 1rem',
             backgroundColor: currentPage === 'shariah-review-submission' ? '#007bff' : '#fff',
             color: currentPage === 'shariah-review-submission' ? '#fff' : '#000',
@@ -86,6 +88,19 @@ function App() {
         >
           Shariah Review Submission
         </button>
+        <button 
+          onClick={() => setCurrentPage('shariah-review-checklist')}
+          style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: currentPage === 'shariah-review-checklist' ? '#007bff' : '#fff',
+            color: currentPage === 'shariah-review-checklist' ? '#fff' : '#000',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          Shariah Checklist
+        </button>
       </nav>
       
       <div>
@@ -94,6 +109,7 @@ function App() {
         {currentPage === 'role-management' && <RoleManagementPage />}
         {currentPage === 'role-assignment' && <RoleAssignmentPage />}
         {currentPage === 'shariah-review-submission' && <ShariahReviewSubmissionPage />}
+        {currentPage === 'shariah-review-checklist' && <ShariahReviewChecklistPage />}
       </div>
     </div>
   );

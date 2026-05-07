@@ -25,3 +25,26 @@ export type ShariahReviewResponse = {
   createdAt: string;
   references?: ShariahReviewReference[];
 };
+
+// Checklist types
+export type ChecklistItemOutcome = 'pass' | 'fail' | 'notApplicable';
+
+export type ChecklistWorkflowStatus = 'checklistInProgress' | 'checklistComplete';
+
+export type ChecklistEntry = {
+  itemCode: string;
+  outcome: ChecklistItemOutcome;
+  comment?: string;
+  evidenceRefs?: string[];
+};
+
+export type UpdateChecklistRequest = {
+  entries: ChecklistEntry[];
+  reviewerComment?: string;
+  completeChecklist?: boolean;
+};
+
+export type ChecklistResponse = {
+  reviewId: string;
+  status: ChecklistWorkflowStatus;
+};
