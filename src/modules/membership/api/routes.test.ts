@@ -1,6 +1,7 @@
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { createTestableServer } from '../../../app/server.js';
+import { InMemoryAccessAuditEventRepository } from '../../shared/infrastructure/in-memory-access-audit-event-repository.js';
 
 // Mock audit callback to capture audit events
 let capturedAuditEvents: any[] = [];
@@ -257,4 +258,178 @@ test('should return 201 for unique registrationNumber after duplicate attempt', 
   assert.strictEqual(auditEvent.targetType, 'memberOrganization');
   assert.strictEqual(typeof auditEvent.targetId, 'string');
   assert.strictEqual(auditEvent.outcome, 'success');
+});
+
+// New tests for shared access audit events
+test('should persist shared access audit event for successful registration', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+  
+  const server = createTestableServer({ 
+    audit: mockAuditCallback,
+    accessAuditEventRepository: auditEventRepository 
+  });
+  
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'POST',
+    url: '/api/v1/member-organizations',
+    headers: {
+      'x-actor-id': 'test-user-123'
+    },
+    payload: {
+      registrationNumber: 'SHARED-AUDIT-001',
+      legalName: 'Shared Audit Test Organization',
+      organizationType: 'Corporation'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 201);
+  
+  const events = await auditEventRepository.list();
+  assert.strictEqual(events.length, 1);
+  
+  const event = events[0];
+  assert.strictEqual(event.schemaVersion, 'access-audit-event.v1');
+  assert.strictEqual(event.module, 'membership');
+  assert.strictEqual(event.action, 'createMemberOrganization');
+  assert.strictEqual(event.targetType, 'memberOrganization');
+  assert.strictEqual(event.outcome, 'success');
+  assert.strictEqual(event.actorUserId, 'test-user-123');
+  assert.ok(event.requestId);
+  assert.ok(event.occurredAt);
+  assert.ok(event.evidence.payloadHash);
+  assert.strictEqual(event.evidence.canonicalization, 'json-stable-v1');
+  assert.strictEqual(event.route, '/api/v1/member-organizations');
+  assert.strictEqual(event.method, 'POST');
+  
+  // Target ID should match the created organization ID
+  const responseBody = response.json();
+  assert.strictEqual(event.targetId, responseBody.data.id);
+});
+
+test('should persist shared access audit event for duplicate registration', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+  
+  const server = createTestableServer({ 
+    audit: mockAuditCallback,
+    accessAuditEventRepository: auditEventRepository 
+  });
+  
+  await server.ready();
+
+  // First, create an organization
+  await server.inject({
+    method: 'POST',
+    url: '/api/v1/member-organizations',
+    payload: {
+      registrationNumber: 'SHARED-AUDIT-002',
+      legalName: 'Shared Audit Test Organization',
+      organizationType: 'Corporation'
+    }
+  });
+
+  // Try to create another organization with the same registrationNumber
+  const response = await server.inject({
+    method: 'POST',
+    url: '/api/v1/member-organizations',
+    headers: {
+      'x-actor-id': 'test-user-456'
+    },
+    payload: {
+      registrationNumber: 'SHARED-AUDIT-002',
+      legalName: 'Shared Audit Test Organization Duplicate',
+      organizationType: 'LLC'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 409);
+  
+  const events = await auditEventRepository.list();
+  // Should have 2 events: first success, then conflict
+  assert.strictEqual(events.length, 2);
+  
+  // Check the last event which should be the conflict event
+  const event = events[1];
+  assert.strictEqual(event.schemaVersion, 'access-audit-event.v1');
+  assert.strictEqual(event.module, 'membership');
+  assert.strictEqual(event.action, 'createMemberOrganization');
+  assert.strictEqual(event.targetType, 'memberOrganization');
+  assert.strictEqual(event.outcome, 'conflict');
+  assert.strictEqual(event.reason, 'duplicate_registration');
+  assert.strictEqual(event.actorUserId, 'test-user-456');
+  assert.ok(event.requestId);
+  assert.ok(event.occurredAt);
+  assert.ok(event.evidence.payloadHash);
+  assert.strictEqual(event.evidence.canonicalization, 'json-stable-v1');
+  assert.strictEqual(event.route, '/api/v1/member-organizations');
+  assert.strictEqual(event.method, 'POST');
+  assert.strictEqual(event.targetId, 'unknown');
+});
+
+test('should persist shared access audit event for validation error', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+  
+  const server = createTestableServer({ 
+    audit: mockAuditCallback,
+    accessAuditEventRepository: auditEventRepository 
+  });
+  
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'POST',
+    url: '/api/v1/member-organizations',
+    headers: {
+      'x-actor-id': 'test-user-789'
+    },
+    payload: {
+      registrationNumber: '   ',
+      legalName: '   ',
+      organizationType: '   '
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 400);
+  
+  const events = await auditEventRepository.list();
+  assert.strictEqual(events.length, 1);
+  
+  const event = events[0];
+  assert.strictEqual(event.schemaVersion, 'access-audit-event.v1');
+  assert.strictEqual(event.module, 'membership');
+  assert.strictEqual(event.action, 'createMemberOrganization');
+  assert.strictEqual(event.targetType, 'memberOrganization');
+  assert.strictEqual(event.outcome, 'validationError');
+  assert.strictEqual(event.reason, 'invalid_input');
+  assert.strictEqual(event.actorUserId, 'test-user-789');
+  assert.ok(event.requestId);
+  assert.ok(event.occurredAt);
+  assert.ok(event.evidence.payloadHash);
+  assert.strictEqual(event.evidence.canonicalization, 'json-stable-v1');
+  assert.strictEqual(event.route, '/api/v1/member-organizations');
+  assert.strictEqual(event.method, 'POST');
+  assert.strictEqual(event.targetId, 'unknown');
+});
+
+test('should work without accessAuditEventRepository for backward compatibility', async () => {
+  // Create server without accessAuditEventRepository
+  const server = createTestableServer({ audit: mockAuditCallback });
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'POST',
+    url: '/api/v1/member-organizations',
+    payload: {
+      registrationNumber: 'BACKWARD-COMPAT-001',
+      legalName: 'Backward Compatibility Test Organization',
+      organizationType: 'Corporation'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 201);
+  
+  const responseBody = response.json();
+  assert.strictEqual(responseBody.data.registrationNumber, 'BACKWARD-COMPAT-001');
+  assert.strictEqual(responseBody.data.legalName, 'Backward Compatibility Test Organization');
 });

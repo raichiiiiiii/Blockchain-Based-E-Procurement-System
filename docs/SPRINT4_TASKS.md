@@ -1,4 +1,4 @@
-# Sprint 4 Tasks
+ï»¿# Sprint 4 Tasks
 
 Status: Draft execution sheet  
 Owner: Scrum Master / Tech Lead  
@@ -8,11 +8,11 @@ Last updated: YYYY-MM-DD
 
 Build the minimum implementable and reviewable slice for:
 
-- **PBI-022 ¿ Access logging and cryptographic non-repudiation**
+- **PBI-022 - Access logging and cryptographic non-repudiation**
 - complete the feature through:
-  - **PBI-120 ¿ protected access event recording**
-  - **PBI-121 ¿ auditor search over access history**
-  - **PBI-122 ¿ event-level evidence and chronological sequence inspection**
+  - **PBI-120 - protected access event recording**
+  - **PBI-121 - auditor search over access history**
+  - **PBI-122 - event-level evidence and chronological sequence inspection**
 
 This sprint is focused on turning the already-refined `R22` feature into a usable backend audit capability, not just enabling groundwork. The current refinement says the split is approved, `PBI-120` is the correct first story, and `PBI-022` should remain in progress until all three stories are completed and validated. :contentReference[oaicite:0]{index=0}
 
@@ -45,7 +45,7 @@ These repairs should be applied before Wave 0 execution is treated as clean:
   - `PBI-121` and `PBI-122` now have their child-task decomposition
 - verify durable docs are ready to carry:
   - minimum audit payload
-  - MVP interpretation of ¿cryptographic or equivalent non-repudiation evidence¿
+  - MVP interpretation of Â¿cryptographic or equivalent non-repudiation evidenceÂ¿
   - search/query contract behavior
   - event-detail and sequence inspection behavior
 - ensure no open task still assumes a blank policy space for audit payload or event evidence
@@ -90,13 +90,13 @@ The refinement memo also recommends that `PBI-123` explicitly define the MVP min
 
 ## 7. Wave plan
 
-### Wave 0 ¿ audit feature contract freeze
+### Wave 0 - audit feature contract freeze
 
 Goal:
 - freeze the minimum event payload, capture scope, and MVP non-repudiation interpretation needed for implementation
 
 Tasks:
-- `PBI-123` ¿ capture matrix and minimum event payload contract
+- `PBI-123` - capture matrix and minimum event payload contract
 
 Dependencies:
 - `PBI-022` remains active
@@ -108,16 +108,16 @@ Exit condition:
 - minimum event payload is explicit
 - MVP non-repudiation interpretation is explicit
 
-### Wave 1 ¿ recording baseline
+### Wave 1 - recording baseline
 
 Goal:
 - implement the stable event-capture path and complete the recording story
 
 Tasks:
-- `PBI-124` ¿ shared audit event capture and persistence seam
-- `PBI-125` ¿ governed writes and denied protected actions
-- `PBI-126` ¿ selected sensitive-read audit capture
-- `PBI-127` ¿ validation, regression, docs, and evidence closure for `PBI-120`
+- `PBI-124` - shared audit event capture and persistence seam
+- `PBI-125` - governed writes and denied protected actions
+- `PBI-126` - selected sensitive-read audit capture
+- `PBI-127` - validation, regression, docs, and evidence closure for `PBI-120`
 
 Dependencies:
 - Wave 0 complete
@@ -129,17 +129,17 @@ Exit condition:
 - governed writes, denied protected actions, and selected sensitive reads are recorded with approved evidence fields
 - story-level evidence and docs are complete
 
-### Wave 2 ¿ auditor search/query
+### Wave 2 - auditor search/query
 
 Goal:
 - make recorded audit events retrievable in a stable, usable query model
 
 Tasks:
-- `PBI-128` ¿ define access-history query contract and supported filters
-- `PBI-129` ¿ implement access-history query repository/read model
-- `PBI-130` ¿ expose auditor access-history query API
-- `PBI-131` ¿ validate query filters, ordering, empty results, and authorization
-- `PBI-132` ¿ document access-history query behavior and evidence
+- `PBI-128` - define access-history query contract and supported filters
+- `PBI-129` - implement access-history query repository/read model
+- `PBI-130` - expose auditor access-history query API
+- `PBI-131` - validate query filters, ordering, empty results, and authorization
+- `PBI-132` - document access-history query behavior and evidence
 
 Dependencies:
 - `PBI-120` complete enough that query consumes a stable event model
@@ -151,17 +151,17 @@ Exit condition:
 - auditors can search by actor, target, action, outcome, and time range
 - empty results and authorization behavior are stable and documented
 
-### Wave 3 ¿ event detail and sequence inspection
+### Wave 3 - event detail and sequence inspection
 
 Goal:
 - make event-level evidence and chronological sequence inspection usable for investigation
 
 Tasks:
-- `PBI-133` ¿ define event-detail and sequence inspection contract
-- `PBI-134` ¿ implement event-detail retrieval by event ID
-- `PBI-135` ¿ implement chronological sequence retrieval by actor or target
-- `PBI-136` ¿ harden incomplete-sequence and missing-event handling
-- `PBI-137` ¿ validate non-repudiation evidence inspection and document evidence
+- `PBI-133` - define event-detail and sequence inspection contract
+- `PBI-134` - implement event-detail retrieval by event ID
+- `PBI-135` - implement chronological sequence retrieval by actor or target
+- `PBI-136` - harden incomplete-sequence and missing-event handling
+- `PBI-137` - validate non-repudiation evidence inspection and document evidence
 
 Dependencies:
 - `PBI-121` complete enough that inspection builds on a stable retrieval model
@@ -173,7 +173,7 @@ Exit condition:
 - auditors can inspect event evidence and reconstruct chronological sequence safely
 - incomplete or missing chains do not crash or mislead
 
-### Wave 4 ¿ feature closure and reconciliation
+### Wave 4 - feature closure and reconciliation
 
 Goal:
 - close `PBI-022` cleanly once all three stories are complete
@@ -316,3 +316,4 @@ Rationale:
 - complete recording before retrieval
 - complete retrieval before deeper sequence/evidence inspection
 - keep the feature vertically governed until closure
+

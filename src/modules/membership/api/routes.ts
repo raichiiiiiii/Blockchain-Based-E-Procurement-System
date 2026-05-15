@@ -3,6 +3,8 @@ import type { CreateMemberOrgInput } from '../application/create-member-organiza
 import { createMemberOrganization } from '../application/create-member-organization.js';
 import type { MemberOrganizationRepository } from '../application/member-organization-repository.js';
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
+import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
+import { recordAccessAuditEvent } from '../../shared/application/record-access-audit-event.js';
 
 // Define the audit event interface for member organization creation
 export interface MemberOrgCreateAuditEvent {
@@ -19,6 +21,7 @@ export interface MemberOrgCreateAuditEvent {
 interface MembershipRoutesOptions {
   repository: MemberOrganizationRepository;
   audit: (event: MemberOrgCreateAuditEvent) => void;
+  accessAuditEventRepository?: AccessAuditEventRepository;
 }
 
 // Update the route plugin type/signature so it accepts the typed options
@@ -53,11 +56,40 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
       // Handle invalid input
       if (result.status === 'invalidInput') {
         const errorResponse = createApplicationValidationError('Invalid input', result.issues);
+        
+        // Record validation error audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'createMemberOrganization',
+          targetType: 'memberOrganization',
+          targetId: 'unknown',
+          outcome: 'validationError',
+          reason: 'invalid_input',
+          module: 'membership',
+          route: '/api/v1/member-organizations',
+          method: 'POST'
+        });
+        
         return reply.code(400).send(errorResponse);
       }
 
       // Handle duplicate registration number
       if (result.status === 'duplicate') {
+        // Record conflict audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'createMemberOrganization',
+          targetType: 'memberOrganization',
+          targetId: 'unknown',
+          outcome: 'conflict',
+          reason: 'duplicate_registration',
+          module: 'membership',
+          route: '/api/v1/member-organizations',
+          method: 'POST'
+        });
+        
         return reply.code(409).send({
           error: {
             code: 'CONFLICT',
@@ -84,6 +116,19 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
 
         // Call the audit callback
         options.audit(auditEvent);
+        
+        // Record success audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'createMemberOrganization',
+          targetType: 'memberOrganization',
+          targetId: result.organization.id,
+          outcome: 'success',
+          module: 'membership',
+          route: '/api/v1/member-organizations',
+          method: 'POST'
+        });
 
         // Return the created organization with proper API contract format
         return reply.code(201).send({

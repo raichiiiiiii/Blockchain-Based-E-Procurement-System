@@ -20,6 +20,7 @@ import actorContextPlugin from './plugins/actor-context-plugin.js';
 import { mapFastifyValidationError } from '../modules/shared/api/validation-error-helper.js';
 import type { UserStatusLookup } from '../modules/shared/application/user-status-lookup.js';
 import type { MemberStatusLookup } from '../modules/shared/application/member-status-lookup.js';
+import type { AccessAuditEventRepository } from '../modules/shared/application/access-audit-event-repository.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -34,6 +35,7 @@ export function createTestableServer(options?: {
   organizationMembershipLookup?: OrganizationMembershipLookup;
   userStatusLookup?: UserStatusLookup;
   memberStatusLookup?: MemberStatusLookup;
+  accessAuditEventRepository?: AccessAuditEventRepository;
 }) {
   const server = fastify();
 
@@ -75,12 +77,14 @@ export function createTestableServer(options?: {
   const organizationMembershipLookup = options?.organizationMembershipLookup;
   const userStatusLookup = options?.userStatusLookup;
   const memberStatusLookup = options?.memberStatusLookup;
+  const accessAuditEventRepository = options?.accessAuditEventRepository;
 
   // Register membership routes
   server.register(registerMembershipRoutes, {
     prefix: '/api/v1',
     repository: memberOrganizationRepository,
-    audit: auditCallback
+    audit: auditCallback,
+    accessAuditEventRepository
   });
 
   // Register access-control routes
@@ -93,7 +97,8 @@ export function createTestableServer(options?: {
     userExistenceLookup,
     organizationMembershipLookup,
     userStatusLookup,
-    memberStatusLookup
+    memberStatusLookup,
+    accessAuditEventRepository
   });
 
   // Register shariah-review routes
@@ -102,7 +107,8 @@ export function createTestableServer(options?: {
     repository: shariahReviewRepository,
     roleAssignmentRepository: roleAssignmentRepository,
     roleRepository: roleRepository,
-    audit: shariahReviewAuditCallback
+    audit: shariahReviewAuditCallback,
+    accessAuditEventRepository
   });
 
   return server;

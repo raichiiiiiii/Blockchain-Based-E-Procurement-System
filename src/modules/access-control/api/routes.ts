@@ -14,6 +14,8 @@ import type { OrganizationMembershipLookup } from '../../shared/application/orga
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
 import type { UserStatusLookup } from '../../shared/application/user-status-lookup.js';
 import type { MemberStatusLookup } from '../../shared/application/member-status-lookup.js';
+import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
+import { recordAccessAuditEvent } from '../../shared/application/record-access-audit-event.js';
 
 // Define the audit event interface for role creation
 export interface RoleCreateAuditEvent {
@@ -93,6 +95,7 @@ interface AccessControlRoutesOptions {
   organizationMembershipLookup?: OrganizationMembershipLookup;
   userStatusLookup?: UserStatusLookup;
   memberStatusLookup?: MemberStatusLookup;
+  accessAuditEventRepository?: AccessAuditEventRepository;
 }
 
 // Create the Fastify plugin for access-control routes
@@ -129,6 +132,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
             reason: 'admin_required'
           };
           audit(auditEvent);
+
+          // Record shared access audit event
+          await recordAccessAuditEvent(options.accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'createRole',
+            targetType: 'role',
+            targetId: 'unknown',
+            outcome: 'forbidden',
+            reason: 'admin_required',
+            module: 'access-control',
+            route: '/api/v1/roles',
+            method: 'POST'
+          });
 
           return reply.code(403).send({
             error: {
@@ -179,6 +196,19 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
 
         audit(auditEvent);
 
+        // Record shared access audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'createRole',
+          targetType: 'role',
+          targetId: result.role.id,
+          outcome: 'success',
+          module: 'access-control',
+          route: '/api/v1/roles',
+          method: 'POST'
+        });
+
         return reply.code(201).send({
           data: result.role
         });
@@ -195,6 +225,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         };
 
         audit(auditEvent);
+
+        // Record shared access audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'createRole',
+          targetType: 'role',
+          targetId: 'unknown',
+          outcome: 'conflict',
+          reason: 'duplicate_role',
+          module: 'access-control',
+          route: '/api/v1/roles',
+          method: 'POST'
+        });
 
         return reply.code(409).send({
           error: {
@@ -227,6 +271,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
             reason: 'admin_required'
           };
           audit(auditEvent);
+
+          // Record shared access audit event
+          await recordAccessAuditEvent(options.accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'updateRole',
+            targetType: 'role',
+            targetId: request.params.roleId,
+            outcome: 'forbidden',
+            reason: 'admin_required',
+            module: 'access-control',
+            route: '/api/v1/roles/:id',
+            method: 'PATCH'
+          });
 
           return reply.code(403).send({
             error: {
@@ -295,6 +353,19 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
 
         audit(auditEvent);
 
+        // Record shared access audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'updateRole',
+          targetType: 'role',
+          targetId: result.role.id,
+          outcome: 'success',
+          module: 'access-control',
+          route: '/api/v1/roles/:id',
+          method: 'PATCH'
+        });
+
         return reply.code(200).send({
           data: result.role
         });
@@ -311,6 +382,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         };
 
         audit(auditEvent);
+
+        // Record shared access audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'updateRole',
+          targetType: 'role',
+          targetId: request.params.roleId,
+          outcome: 'notFound',
+          reason: 'role_not_found',
+          module: 'access-control',
+          route: '/api/v1/roles/:id',
+          method: 'PATCH'
+        });
 
         return reply.code(404).send({
           error: {
@@ -355,6 +440,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           };
           audit(auditEvent);
 
+          // Record shared access audit event
+          await recordAccessAuditEvent(options.accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'createRoleAssignment',
+            targetType: 'roleAssignment',
+            targetId: 'unknown',
+            outcome: 'forbidden',
+            reason: 'admin_required',
+            module: 'access-control',
+            route: '/api/v1/role-assignments',
+            method: 'POST'
+          });
+
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
@@ -383,6 +482,8 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         roleId: request.body.roleId,
         status: 'active'
       };
+
+      const targetId = `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`;
 
       // Prepare lookup dependencies if both are provided
       const lookups = userExistenceLookup && organizationMembershipLookup ? {
@@ -416,7 +517,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         const auditEvent: RoleAssignmentCreateAuditEvent = {
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
-          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          targetId,
           timestamp: new Date().toISOString(),
           requestId: request.id,
           outcome: 'success',
@@ -424,6 +525,19 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         };
 
         audit(auditEvent);
+
+        // Record shared access audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId,
+          outcome: 'success',
+          module: 'access-control',
+          route: '/api/v1/role-assignments',
+          method: 'POST'
+        });
 
         return reply.code(201).send({
           data: result.assignment
@@ -433,7 +547,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         const auditEvent: RoleAssignmentCreateAuditEvent = {
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
-          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          targetId,
           timestamp: new Date().toISOString(),
           requestId: request.id,
           outcome: 'conflict',
@@ -441,6 +555,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         };
 
         audit(auditEvent);
+
+        // Record shared access audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId,
+          outcome: 'conflict',
+          reason: 'duplicate_assignment',
+          module: 'access-control',
+          route: '/api/v1/role-assignments',
+          method: 'POST'
+        });
 
         return reply.code(409).send({
           error: {
@@ -453,7 +581,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         const auditEvent: RoleAssignmentCreateAuditEvent = {
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
-          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          targetId,
           timestamp: new Date().toISOString(),
           requestId: request.id,
           outcome: 'validationError',
@@ -461,6 +589,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         };
 
         audit(auditEvent);
+
+        // Record shared access audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId,
+          outcome: 'validationError',
+          reason: 'role_not_found',
+          module: 'access-control',
+          route: '/api/v1/role-assignments',
+          method: 'POST'
+        });
 
         return reply.code(400).send(
           createApplicationValidationError('Invalid roleId: Role does not exist')
@@ -470,7 +612,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         const auditEvent: RoleAssignmentCreateAuditEvent = {
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
-          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          targetId,
           timestamp: new Date().toISOString(),
           requestId: request.id,
           outcome: 'validationError',
@@ -478,6 +620,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         };
 
         audit(auditEvent);
+
+        // Record shared access audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId,
+          outcome: 'validationError',
+          reason: 'organization_not_found',
+          module: 'access-control',
+          route: '/api/v1/role-assignments',
+          method: 'POST'
+        });
 
         return reply.code(400).send(
           createApplicationValidationError('Invalid organizationId: Member organization does not exist')
@@ -486,7 +642,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         const auditEvent: RoleAssignmentCreateAuditEvent = {
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
-          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          targetId,
           timestamp: new Date().toISOString(),
           requestId: request.id,
           outcome: 'validationError',
@@ -494,6 +650,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         };
 
         audit(auditEvent);
+
+        // Record shared access audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId,
+          outcome: 'validationError',
+          reason: 'user_not_found',
+          module: 'access-control',
+          route: '/api/v1/role-assignments',
+          method: 'POST'
+        });
 
         return reply.code(400).send(
           createApplicationValidationError('Invalid userId: User does not exist')
@@ -502,7 +672,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         const auditEvent: RoleAssignmentCreateAuditEvent = {
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
-          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          targetId,
           timestamp: new Date().toISOString(),
           requestId: request.id,
           outcome: 'validationError',
@@ -510,6 +680,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         };
 
         audit(auditEvent);
+
+        // Record shared access audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId,
+          outcome: 'validationError',
+          reason: 'user_not_member',
+          module: 'access-control',
+          route: '/api/v1/role-assignments',
+          method: 'POST'
+        });
 
         return reply.code(400).send(
           createApplicationValidationError('Invalid userId: User is not a member of the specified organization')
@@ -519,7 +703,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         const auditEvent: RoleAssignmentCreateAuditEvent = {
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
-          targetId: `${assignment.userId}:${assignment.organizationId}:${assignment.roleId}`,
+          targetId,
           timestamp: new Date().toISOString(),
           requestId: request.id,
           outcome: 'forbidden',
@@ -528,6 +712,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         };
 
         audit(auditEvent);
+
+        // Record shared access audit event
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'createRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId,
+          outcome: 'forbidden',
+          reason: result.reason,
+          module: 'access-control',
+          route: '/api/v1/role-assignments',
+          method: 'POST'
+        });
 
         return reply.code(403).send({
           error: {

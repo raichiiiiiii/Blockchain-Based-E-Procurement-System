@@ -7,6 +7,7 @@ import { InMemoryMemberOrganizationRepository } from '../../membership/infrastru
 import type { MemberOrganization } from '../../membership/domain/member-organization.js';
 import { InMemoryUserExistenceLookup } from '../../membership/infrastructure/in-memory-user-existence-lookup.js';
 import { InMemoryOrganizationMembershipLookup } from '../../membership/infrastructure/in-memory-organization-membership-lookup.js';
+import { InMemoryAccessAuditEventRepository } from '../../shared/infrastructure/in-memory-access-audit-event-repository.js';
 
 describe('Access Control Forbidden Audit Tests', () => {
   // Updated test: forbidden create now emits audit
@@ -387,5 +388,126 @@ describe('Access Control Forbidden Audit Tests', () => {
     const responseBody = changeResponse.json();
     assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
     assert.strictEqual(responseBody.error.message, 'Admin access required');
+  });
+
+  // New tests for shared access audit events
+  test('should persist shared access audit event for forbidden role creation', async () => {
+    const auditEventRepository = new InMemoryAccessAuditEventRepository();
+    
+    const server = createTestableServer({ 
+      roleRepository: new InMemoryRoleRepository(),
+      roleAssignmentRepository: new InMemoryRoleAssignmentRepository(),
+      memberRepository: new InMemoryMemberOrganizationRepository(),
+      accessAuditEventRepository: auditEventRepository
+    });
+
+    const rolePayload = {
+      roleCode: 'shared-audit-forbidden-test',
+      displayName: 'Shared Audit Forbidden Test Role',
+      scope: 'organization',
+      permissions: ['read'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'user', // Non-admin role
+        'x-actor-id': 'test-user-shared-audit'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 403);
+    
+    const events = await auditEventRepository.list();
+    assert.strictEqual(events.length, 1);
+
+    const event = events[0];
+    assert.strictEqual(event.schemaVersion, 'access-audit-event.v1');
+    assert.strictEqual(event.module, 'access-control');
+    assert.strictEqual(event.action, 'createRole');
+    assert.strictEqual(event.targetType, 'role');
+    assert.strictEqual(event.outcome, 'forbidden');
+    assert.strictEqual(event.reason, 'admin_required');
+    assert.strictEqual(event.actorUserId, 'test-user-shared-audit');
+    assert.ok(event.requestId);
+    assert.ok(event.occurredAt);
+    assert.ok(event.evidence.payloadHash);
+    assert.strictEqual(event.evidence.canonicalization, 'json-stable-v1');
+    assert.strictEqual(event.route, '/api/v1/roles');
+    assert.strictEqual(event.method, 'POST');
+    assert.strictEqual(event.targetId, 'unknown');
+  });
+
+  test('should persist shared access audit event for forbidden role update', async () => {
+    const roleRepository = new InMemoryRoleRepository();
+    const auditEventRepository = new InMemoryAccessAuditEventRepository();
+    
+    const server = createTestableServer({ 
+      roleRepository,
+      roleAssignmentRepository: new InMemoryRoleAssignmentRepository(),
+      memberRepository: new InMemoryMemberOrganizationRepository(),
+      accessAuditEventRepository: auditEventRepository
+    });
+
+    // First create a role as admin
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'shared-audit-update-test',
+        displayName: 'Shared Audit Update Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdRole = createResponse.json().data;
+    const roleId = createdRole.id;
+
+    // Try to update the role as non-admin
+    const updateResponse = await server.inject({
+      method: 'PATCH',
+      url: `/api/v1/roles/${roleId}`,
+      payload: {
+        displayName: 'Updated by non-admin'
+      },
+      headers: {
+        'x-actor-role': 'user', // Non-admin role
+        'x-actor-id': 'test-user-shared-audit-update'
+      }
+    });
+
+    assert.strictEqual(updateResponse.statusCode, 403);
+    
+    const events = await auditEventRepository.list();
+    // Should have 2 events: create success, then update forbidden
+    assert.strictEqual(events.length, 2);
+
+    // Check the last event which should be the update forbidden event
+    const event = events[1];
+    assert.strictEqual(event.schemaVersion, 'access-audit-event.v1');
+    assert.strictEqual(event.module, 'access-control');
+    assert.strictEqual(event.action, 'updateRole');
+    assert.strictEqual(event.targetType, 'role');
+    assert.strictEqual(event.outcome, 'forbidden');
+    assert.strictEqual(event.reason, 'admin_required');
+    assert.strictEqual(event.actorUserId, 'test-user-shared-audit-update');
+    assert.ok(event.requestId);
+    assert.ok(event.occurredAt);
+    assert.ok(event.evidence.payloadHash);
+    assert.strictEqual(event.evidence.canonicalization, 'json-stable-v1');
+    assert.strictEqual(event.route, '/api/v1/roles/:id');
+    assert.strictEqual(event.method, 'PATCH');
+    assert.strictEqual(event.targetId, roleId);
   });
 });

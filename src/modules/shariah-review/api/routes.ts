@@ -8,6 +8,7 @@ import type { Checklist } from '../domain/shariah-review.js';
 import { recordShariahReviewDecision, type DecisionInput, type DecisionResult } from '../application/record-shariah-review-decision.js';
 import { getShariahReviewHistory, type GetShariahReviewHistoryResult } from '../application/get-shariah-review-history.js';
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
+import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
 
 // Define the audit event interface for shariah review submission
 export interface ShariahReviewSubmitAuditEvent {
@@ -64,6 +65,7 @@ interface ShariahReviewRoutesOptions {
   roleAssignmentRepository: RoleAssignmentRepository;
   roleRepository: RoleRepository;
   audit: (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent | ShariahReviewHistoryAuditEvent) => void;
+  accessAuditEventRepository?: AccessAuditEventRepository;
 }
 
 // Seeded checklist item definitions
