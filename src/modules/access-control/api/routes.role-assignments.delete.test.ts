@@ -4,6 +4,7 @@ import { createTestableServer } from '../../../app/server.js';
 import { InMemoryRoleAssignmentRepository } from '../infrastructure/in-memory-role-assignment-repository.js';
 import { InMemoryRoleRepository } from '../infrastructure/in-memory-role-repository.js';
 import { InMemoryMemberOrganizationRepository } from '../../membership/infrastructure/in-memory-member-organization-repository.js';
+import { InMemoryAccessAuditEventRepository } from '../../shared/infrastructure/in-memory-access-audit-event-repository.js';
 
 describe('DELETE /api/v1/role-assignments', () => {
   test('should remove (revoke) an active role assignment successfully', async () => {
@@ -511,5 +512,145 @@ describe('DELETE /api/v1/role-assignments', () => {
     assert.ok(typeof auditEvent.targetId === 'string');
     assert.ok(typeof auditEvent.requestId === 'string');
     assert.ok(typeof auditEvent.timestamp === 'string');
+  });
+
+  // New test: admin-denied shared audit
+  test('should persist shared access audit event for forbidden role assignment removal', async () => {
+    const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+    const server = createTestableServer({
+      accessAuditEventRepository: auditEventRepository
+    });
+
+    // Try to remove a role assignment as non-admin
+    const removeResponse = await server.inject({
+      method: 'DELETE',
+      url: '/api/v1/role-assignments?userId=user_123&organizationId=org_123&roleId=role_123',
+      headers: {
+        'x-actor-role': 'user', // Non-admin role
+        'x-actor-id': 'test-user-456'
+      }
+    });
+
+    assert.strictEqual(removeResponse.statusCode, 403);
+
+    const events = await auditEventRepository.list();
+    const event = events.at(-1); // Get the last event
+    assert.ok(event);
+
+    assert.strictEqual(event.schemaVersion, 'access-audit-event.v1');
+    assert.strictEqual(event.module, 'access-control');
+    assert.strictEqual(event.action, 'removeRoleAssignment');
+    assert.strictEqual(event.targetType, 'roleAssignment');
+    assert.strictEqual(event.outcome, 'forbidden');
+    assert.strictEqual(event.reason, 'admin_required');
+    assert.strictEqual(event.actorUserId, 'test-user-456');
+    assert.ok(event.requestId);
+    assert.ok(event.occurredAt);
+    assert.ok(event.evidence.payloadHash);
+    assert.strictEqual(event.evidence.canonicalization, 'json-stable-v1');
+    assert.strictEqual(event.route, '/api/v1/role-assignments');
+    assert.strictEqual(event.method, 'DELETE');
+    assert.strictEqual(event.targetId, 'user_123:org_123:role_123');
+  });
+
+  // New test: success shared audit
+  test('should persist shared access audit event for successful role assignment removal', async () => {
+    const auditEventRepository = new InMemoryAccessAuditEventRepository();
+    const assignmentRepository = new InMemoryRoleAssignmentRepository();
+    const roleRepository = new InMemoryRoleRepository();
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+
+    const server = createTestableServer({
+      roleRepository,
+      roleAssignmentRepository: assignmentRepository,
+      memberRepository: memberOrganizationRepository,
+      accessAuditEventRepository: auditEventRepository
+    });
+
+    // First create a role
+    const roleResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: {
+        roleCode: 'test-role',
+        displayName: 'Test Role',
+        scope: 'organization',
+        permissions: ['read'],
+        status: 'active',
+        isSystemReserved: false
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(roleResponse.statusCode, 201);
+    const roleId = roleResponse.json().data.id;
+
+    // Create a member organization
+    const orgResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/member-organizations',
+      payload: {
+        registrationNumber: 'REG123',
+        legalName: 'Test Organization',
+        organizationType: 'Corporation'
+      },
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(orgResponse.statusCode, 201);
+    const orgId = orgResponse.json().data.id;
+
+    // Create a role assignment
+    const assignmentPayload = {
+      userId: 'user_123',
+      organizationId: orgId,
+      roleId: roleId
+    };
+
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/role-assignments',
+      payload: assignmentPayload,
+      headers: {
+        'x-actor-role': 'admin'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+
+    // Remove the role assignment
+    const removeResponse = await server.inject({
+      method: 'DELETE',
+      url: `/api/v1/role-assignments?userId=user_123&organizationId=${orgId}&roleId=${roleId}`,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-admin-123'
+      }
+    });
+
+    assert.strictEqual(removeResponse.statusCode, 200);
+
+    const events = await auditEventRepository.list();
+    const event = events.at(-1); // Get the last event
+    assert.ok(event);
+
+    assert.strictEqual(event.schemaVersion, 'access-audit-event.v1');
+    assert.strictEqual(event.module, 'access-control');
+    assert.strictEqual(event.action, 'removeRoleAssignment');
+    assert.strictEqual(event.targetType, 'roleAssignment');
+    assert.strictEqual(event.outcome, 'success');
+    assert.strictEqual(event.actorUserId, 'test-admin-123');
+    assert.ok(event.requestId);
+    assert.ok(event.occurredAt);
+    assert.ok(event.evidence.payloadHash);
+    assert.strictEqual(event.evidence.canonicalization, 'json-stable-v1');
+    assert.strictEqual(event.route, '/api/v1/role-assignments');
+    assert.strictEqual(event.method, 'DELETE');
+    assert.strictEqual(event.targetId, `user_123:${orgId}:${roleId}`);
   });
 });
