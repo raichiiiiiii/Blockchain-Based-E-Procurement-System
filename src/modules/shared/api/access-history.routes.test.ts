@@ -765,3 +765,480 @@ test('should still work with valid filter after validation added', async () => {
   assert.strictEqual(responseBody.data.items.length, 1, 'Items array should contain one event');
   assert.strictEqual(responseBody.data.items[0].actorUserId, 'user-test');
 });
+
+// New tests for Slice 1B - API-level stable ordering and payload preservation
+
+test('should return access history in stable occurredAt and eventId order', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with events deliberately out of order
+  const event1Input: CreateAccessAuditEventInput = {
+    eventId: 'zzz-late-event',
+    occurredAt: '2026-04-03T10:00:00Z',
+    requestId: 'req-1',
+    actorUserId: 'user-1',
+    action: 'createRole',
+    targetType: 'role',
+    targetId: 'role-1',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event2Input: CreateAccessAuditEventInput = {
+    eventId: 'aaa-early-event',
+    occurredAt: '2026-04-01T10:00:00Z',
+    requestId: 'req-2',
+    actorUserId: 'user-2',
+    action: 'updateRole',
+    targetType: 'role',
+    targetId: 'role-2',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event3Input: CreateAccessAuditEventInput = {
+    eventId: 'mid-event',
+    occurredAt: '2026-04-02T10:00:00Z',
+    requestId: 'req-3',
+    actorUserId: 'user-3',
+    action: 'deleteRole',
+    targetType: 'role',
+    targetId: 'role-3',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  // Two events with the same occurredAt but different eventIds
+  const event4Input: CreateAccessAuditEventInput = {
+    eventId: 'zzz-same-time-event',
+    occurredAt: '2026-04-01T10:00:00Z',
+    requestId: 'req-4',
+    actorUserId: 'user-4',
+    action: 'assignRole',
+    targetType: 'role',
+    targetId: 'role-4',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event5Input: CreateAccessAuditEventInput = {
+    eventId: 'aaa-same-time-event',
+    occurredAt: '2026-04-01T10:00:00Z',
+    requestId: 'req-5',
+    actorUserId: 'user-5',
+    action: 'revokeRole',
+    targetType: 'role',
+    targetId: 'role-5',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event1 = createAccessAuditEvent(event1Input);
+  const event2 = createAccessAuditEvent(event2Input);
+  const event3 = createAccessAuditEvent(event3Input);
+  const event4 = createAccessAuditEvent(event4Input);
+  const event5 = createAccessAuditEvent(event5Input);
+
+  // Save in random order
+  await auditEventRepository.save(event1);
+  await auditEventRepository.save(event3);
+  await auditEventRepository.save(event5);
+  await auditEventRepository.save(event2);
+  await auditEventRepository.save(event4);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.data, 'Response should have data object');
+  assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
+  assert.strictEqual(responseBody.data.items.length, 5, 'Items array should contain five events');
+
+  // Check ordering: occurredAt ascending, then eventId ascending
+  const items = responseBody.data.items;
+
+  // First three items have the same occurredAt and are ordered by eventId ascending
+  assert.strictEqual(items[0].eventId, 'aaa-early-event');
+  assert.strictEqual(items[0].occurredAt, '2026-04-01T10:00:00Z');
+  assert.strictEqual(items[1].eventId, 'aaa-same-time-event');
+  assert.strictEqual(items[1].occurredAt, '2026-04-01T10:00:00Z');
+  assert.strictEqual(items[2].eventId, 'zzz-same-time-event');
+  assert.strictEqual(items[2].occurredAt, '2026-04-01T10:00:00Z');
+
+  // Next items should be ordered by occurredAt
+  assert.strictEqual(items[3].eventId, 'mid-event');
+  assert.strictEqual(items[3].occurredAt, '2026-04-02T10:00:00Z');
+  assert.strictEqual(items[4].eventId, 'zzz-late-event');
+  assert.strictEqual(items[4].occurredAt, '2026-04-03T10:00:00Z');
+});
+
+test('should preserve approved AccessAuditEvent payload fields in API response', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with a comprehensive event
+  const eventInput: CreateAccessAuditEventInput = {
+    eventId: 'test-event-id',
+    occurredAt: '2026-04-15T10:30:00Z',
+    requestId: 'req-test-123',
+    actorUserId: 'test-user-456',
+    action: 'testAction',
+    targetType: 'testTargetType',
+    targetId: 'testTargetId',
+    outcome: 'success',
+    module: 'access-control',
+    reason: 'test reason',
+    route: '/api/v1/test-route',
+    method: 'POST'
+  };
+
+  const event = createAccessAuditEvent(eventInput);
+  await auditEventRepository.save(event);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history?action=testAction',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.data, 'Response should have data object');
+  assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
+  assert.strictEqual(responseBody.data.items.length, 1, 'Items array should contain one event');
+
+  const returnedEvent = responseBody.data.items[0];
+
+  // Verify all required AccessAuditEvent fields are preserved
+  assert.strictEqual(returnedEvent.eventId, event.eventId, 'eventId should be preserved');
+  assert.strictEqual(returnedEvent.schemaVersion, event.schemaVersion, 'schemaVersion should be preserved');
+  assert.strictEqual(returnedEvent.occurredAt, event.occurredAt, 'occurredAt should be preserved');
+  assert.strictEqual(returnedEvent.requestId, event.requestId, 'requestId should be preserved');
+  assert.strictEqual(returnedEvent.actorUserId, event.actorUserId, 'actorUserId should be preserved');
+  assert.strictEqual(returnedEvent.actorSource, event.actorSource, 'actorSource should be preserved');
+  assert.strictEqual(returnedEvent.action, event.action, 'action should be preserved');
+  assert.strictEqual(returnedEvent.targetType, event.targetType, 'targetType should be preserved');
+  assert.strictEqual(returnedEvent.targetId, event.targetId, 'targetId should be preserved');
+  assert.strictEqual(returnedEvent.outcome, event.outcome, 'outcome should be preserved');
+  assert.strictEqual(returnedEvent.module, event.module, 'module should be preserved');
+  assert.strictEqual(returnedEvent.reason, event.reason, 'reason should be preserved');
+  assert.strictEqual(returnedEvent.route, event.route, 'route should be preserved');
+  assert.strictEqual(returnedEvent.method, event.method, 'method should be preserved');
+  assert.strictEqual(returnedEvent.evidence.payloadHash, event.evidence.payloadHash, 'evidence.payloadHash should be preserved');
+  assert.strictEqual(returnedEvent.evidence.canonicalization, event.evidence.canonicalization, 'evidence.canonicalization should be preserved');
+
+  // Verify evidence object structure
+  assert.ok(returnedEvent.evidence, 'evidence should be present');
+  assert.ok(returnedEvent.evidence.payloadHash, 'evidence should have payloadHash');
+  assert.ok(returnedEvent.evidence.canonicalization, 'evidence should have canonicalization');
+});
+
+// New tests for Slice 1C - API-level representative protected-write, denied-action, and sensitive-read search tests
+
+test('should return representative protected write event through API search', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with a protected write event
+  const protectedWriteEventInput: CreateAccessAuditEventInput = {
+    requestId: 'req-1',
+    actorUserId: 'user-001',
+    action: 'createRoleAssignment',
+    targetType: 'roleAssignment',
+    targetId: 'user-001:org-001:role-reviewer',
+    outcome: 'success',
+    module: 'access-control',
+    route: '/api/v1/role-assignments',
+    method: 'POST'
+  };
+
+  const unrelatedEventInput: CreateAccessAuditEventInput = {
+    requestId: 'req-2',
+    actorUserId: 'user-002',
+    action: 'updateRole',
+    targetType: 'role',
+    targetId: 'role-123',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const protectedWriteEvent = createAccessAuditEvent(protectedWriteEventInput);
+  const unrelatedEvent = createAccessAuditEvent(unrelatedEventInput);
+
+  await auditEventRepository.save(protectedWriteEvent);
+  await auditEventRepository.save(unrelatedEvent);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history?action=createRoleAssignment&outcome=success',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.data, 'Response should have data object');
+  assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
+  assert.strictEqual(responseBody.data.items.length, 1, 'Items array should contain one event');
+
+  const returnedEvent = responseBody.data.items[0];
+  assert.strictEqual(returnedEvent.action, 'createRoleAssignment');
+  assert.strictEqual(returnedEvent.outcome, 'success');
+  assert.strictEqual(returnedEvent.targetType, 'roleAssignment');
+  assert.strictEqual(returnedEvent.module, 'access-control');
+  assert.strictEqual(returnedEvent.route, '/api/v1/role-assignments');
+  assert.strictEqual(returnedEvent.method, 'POST');
+  assert.ok(returnedEvent.evidence.payloadHash, 'Evidence should have payloadHash');
+  assert.strictEqual(returnedEvent.evidence.canonicalization, 'json-stable-v1');
+});
+
+test('should return representative denied protected action event through API search', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with a denied protected action event
+  const deniedEventInput: CreateAccessAuditEventInput = {
+    requestId: 'req-1',
+    actorUserId: 'user-001',
+    action: 'changeRoleAssignment',
+    targetType: 'roleAssignment',
+    targetId: 'user-001:org-001:role-coordinator',
+    outcome: 'forbidden',
+    reason: 'admin_required',
+    module: 'access-control',
+    route: '/api/v1/role-assignments/change',
+    method: 'PATCH'
+  };
+
+  const unrelatedEventInput: CreateAccessAuditEventInput = {
+    requestId: 'req-2',
+    actorUserId: 'user-002',
+    action: 'createRole',
+    targetType: 'role',
+    targetId: 'role-123',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const deniedEvent = createAccessAuditEvent(deniedEventInput);
+  const unrelatedEvent = createAccessAuditEvent(unrelatedEventInput);
+
+  await auditEventRepository.save(deniedEvent);
+  await auditEventRepository.save(unrelatedEvent);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history?action=changeRoleAssignment&outcome=forbidden',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.data, 'Response should have data object');
+  assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
+  assert.strictEqual(responseBody.data.items.length, 1, 'Items array should contain one event');
+
+  const returnedEvent = responseBody.data.items[0];
+  assert.strictEqual(returnedEvent.action, 'changeRoleAssignment');
+  assert.strictEqual(returnedEvent.outcome, 'forbidden');
+  assert.strictEqual(returnedEvent.reason, 'admin_required');
+  assert.strictEqual(returnedEvent.targetType, 'roleAssignment');
+  assert.strictEqual(returnedEvent.module, 'access-control');
+  assert.strictEqual(returnedEvent.route, '/api/v1/role-assignments/change');
+  assert.strictEqual(returnedEvent.method, 'PATCH');
+  assert.ok(returnedEvent.evidence.payloadHash, 'Evidence should have payloadHash');
+  assert.strictEqual(returnedEvent.evidence.canonicalization, 'json-stable-v1');
+});
+
+test('should return representative selected sensitive read event through API search', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with a sensitive read event
+  const sensitiveReadEventInput: CreateAccessAuditEventInput = {
+    requestId: 'req-1',
+    actorUserId: 'user-001',
+    action: 'viewShariahReviewHistory',
+    targetType: 'shariahReview',
+    targetId: 'review-001',
+    outcome: 'success',
+    module: 'shariah-review',
+    route: '/api/v1/shariah-reviews/:reviewId/history',
+    method: 'GET'
+  };
+
+  const unrelatedEventInput: CreateAccessAuditEventInput = {
+    requestId: 'req-2',
+    actorUserId: 'user-002',
+    action: 'createRole',
+    targetType: 'role',
+    targetId: 'role-123',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const sensitiveReadEvent = createAccessAuditEvent(sensitiveReadEventInput);
+  const unrelatedEvent = createAccessAuditEvent(unrelatedEventInput);
+
+  await auditEventRepository.save(sensitiveReadEvent);
+  await auditEventRepository.save(unrelatedEvent);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history?action=viewShariahReviewHistory&module=shariah-review&method=GET',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.data, 'Response should have data object');
+  assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
+  assert.strictEqual(responseBody.data.items.length, 1, 'Items array should contain one event');
+
+  const returnedEvent = responseBody.data.items[0];
+  assert.strictEqual(returnedEvent.action, 'viewShariahReviewHistory');
+  assert.strictEqual(returnedEvent.outcome, 'success');
+  assert.strictEqual(returnedEvent.targetType, 'shariahReview');
+  assert.strictEqual(returnedEvent.targetId, 'review-001');
+  assert.strictEqual(returnedEvent.module, 'shariah-review');
+  assert.strictEqual(returnedEvent.route, '/api/v1/shariah-reviews/:reviewId/history');
+  assert.strictEqual(returnedEvent.method, 'GET');
+  assert.ok(returnedEvent.evidence.payloadHash, 'Evidence should have payloadHash');
+  assert.strictEqual(returnedEvent.evidence.canonicalization, 'json-stable-v1');
+});
+
+test('should return mixed representative events in stable order', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with events having different occurredAt values
+  const protectedWriteEventInput: CreateAccessAuditEventInput = {
+    eventId: 'write-event',
+    occurredAt: '2026-04-03T10:00:00Z',
+    requestId: 'req-1',
+    actorUserId: 'user-001',
+    action: 'createRoleAssignment',
+    targetType: 'roleAssignment',
+    targetId: 'user-001:org-001:role-reviewer',
+    outcome: 'success',
+    module: 'access-control',
+    route: '/api/v1/role-assignments',
+    method: 'POST'
+  };
+
+  const deniedEventInput: CreateAccessAuditEventInput = {
+    eventId: 'denied-event',
+    occurredAt: '2026-04-01T10:00:00Z',
+    requestId: 'req-2',
+    actorUserId: 'user-001',
+    action: 'changeRoleAssignment',
+    targetType: 'roleAssignment',
+    targetId: 'user-001:org-001:role-coordinator',
+    outcome: 'forbidden',
+    reason: 'admin_required',
+    module: 'access-control',
+    route: '/api/v1/role-assignments/change',
+    method: 'PATCH'
+  };
+
+  const sensitiveReadEventInput: CreateAccessAuditEventInput = {
+    eventId: 'read-event',
+    occurredAt: '2026-04-02T10:00:00Z',
+    requestId: 'req-3',
+    actorUserId: 'user-001',
+    action: 'viewShariahReviewHistory',
+    targetType: 'shariahReview',
+    targetId: 'review-001',
+    outcome: 'success',
+    module: 'shariah-review',
+    route: '/api/v1/shariah-reviews/:reviewId/history',
+    method: 'GET'
+  };
+
+  const protectedWriteEvent = createAccessAuditEvent(protectedWriteEventInput);
+  const deniedEvent = createAccessAuditEvent(deniedEventInput);
+  const sensitiveReadEvent = createAccessAuditEvent(sensitiveReadEventInput);
+
+  await auditEventRepository.save(protectedWriteEvent);
+  await auditEventRepository.save(deniedEvent);
+  await auditEventRepository.save(sensitiveReadEvent);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.data, 'Response should have data object');
+  assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
+  assert.strictEqual(responseBody.data.items.length, 3, 'Items array should contain three events');
+
+  // Check ordering: occurredAt ascending
+  const items = responseBody.data.items;
+  assert.strictEqual(items[0].eventId, 'denied-event');
+  assert.strictEqual(items[0].occurredAt, '2026-04-01T10:00:00Z');
+  assert.strictEqual(items[1].eventId, 'read-event');
+  assert.strictEqual(items[1].occurredAt, '2026-04-02T10:00:00Z');
+  assert.strictEqual(items[2].eventId, 'write-event');
+  assert.strictEqual(items[2].occurredAt, '2026-04-03T10:00:00Z');
+});
