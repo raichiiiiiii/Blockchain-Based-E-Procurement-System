@@ -852,6 +852,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           data: result.assignment
         });
       } else if (result.status === 'notFound') {
+        // Record shared access audit event for not found
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'removeRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${userId}:${organizationId}:${roleId}`,
+          outcome: 'notFound',
+          reason: 'assignment_not_found',
+          module: 'access-control',
+          route: '/api/v1/role-assignments',
+          method: 'DELETE'
+        });
+
         return reply.code(404).send({
           error: {
             code: 'NOT_FOUND',
@@ -872,6 +886,20 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         };
 
         audit(auditEvent);
+
+        // Record shared access audit event for access denied
+        await recordAccessAuditEvent(options.accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'removeRoleAssignment',
+          targetType: 'roleAssignment',
+          targetId: `${userId}:${organizationId}:${roleId}`,
+          outcome: 'forbidden',
+          reason: result.reason,
+          module: 'access-control',
+          route: '/api/v1/role-assignments',
+          method: 'DELETE'
+        });
 
         return reply.code(403).send({
           error: {

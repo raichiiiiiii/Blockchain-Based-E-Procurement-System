@@ -5,6 +5,9 @@ import { InMemoryRoleAssignmentRepository } from '../infrastructure/in-memory-ro
 import { InMemoryRoleRepository } from '../infrastructure/in-memory-role-repository.js';
 import { InMemoryMemberOrganizationRepository } from '../../membership/infrastructure/in-memory-member-organization-repository.js';
 import { InMemoryAccessAuditEventRepository } from '../../shared/infrastructure/in-memory-access-audit-event-repository.js';
+import type { Role } from '../domain/role.js';
+import type { MemberOrganization } from '../../membership/domain/member-organization.js';
+import type { RoleAssignment } from '../domain/role-assignment.js';
 
 describe('DELETE /api/v1/role-assignments', () => {
   test('should remove (revoke) an active role assignment successfully', async () => {
@@ -652,5 +655,130 @@ describe('DELETE /api/v1/role-assignments', () => {
     assert.strictEqual(event.route, '/api/v1/role-assignments');
     assert.strictEqual(event.method, 'DELETE');
     assert.strictEqual(event.targetId, `user_123:${orgId}:${roleId}`);
+  });
+
+  // New test: notFound shared audit
+  test('should persist shared access audit event for not found role assignment removal', async () => {
+    const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+    const server = createTestableServer({
+      accessAuditEventRepository: auditEventRepository
+    });
+
+    // Try to remove a non-existent role assignment
+    const removeResponse = await server.inject({
+      method: 'DELETE',
+      url: '/api/v1/role-assignments?userId=nonexistent-user&organizationId=nonexistent-org&roleId=nonexistent-role',
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'test-admin-456'
+      }
+    });
+
+    assert.strictEqual(removeResponse.statusCode, 404);
+
+    const events = await auditEventRepository.list();
+    const event = events.at(-1); // Get the last event
+    assert.ok(event);
+
+    assert.strictEqual(event.schemaVersion, 'access-audit-event.v1');
+    assert.strictEqual(event.module, 'access-control');
+    assert.strictEqual(event.action, 'removeRoleAssignment');
+    assert.strictEqual(event.targetType, 'roleAssignment');
+    assert.strictEqual(event.outcome, 'notFound');
+    assert.strictEqual(event.reason, 'assignment_not_found');
+    assert.strictEqual(event.actorUserId, 'test-admin-456');
+    assert.ok(event.requestId);
+    assert.ok(event.occurredAt);
+    assert.ok(event.evidence.payloadHash);
+    assert.strictEqual(event.evidence.canonicalization, 'json-stable-v1');
+    assert.strictEqual(event.route, '/api/v1/role-assignments');
+    assert.strictEqual(event.method, 'DELETE');
+    assert.strictEqual(event.targetId, 'nonexistent-user:nonexistent-org:nonexistent-role');
+  });
+
+  // New test: accessDenied shared audit
+  test('should persist shared access audit event for access denied role assignment removal', async () => {
+    // Create repositories for this test
+    const roleRepository = new InMemoryRoleRepository();
+    const roleAssignmentRepository = new InMemoryRoleAssignmentRepository();
+    const memberOrganizationRepository = new InMemoryMemberOrganizationRepository();
+    const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+    // Create a role directly in the repository
+    const persistedRole: Role & { id: string } = await roleRepository.save({
+      roleCode: 'test-role-access-denied',
+      displayName: 'Test Role Access Denied',
+      scope: 'organization',
+      permissions: ['read'],
+      status: 'active',
+      isSystemReserved: false
+    }) as Role & { id: string };
+
+    // Create an organization directly in the repository
+    const persistedOrganization: MemberOrganization & { id: string } = await memberOrganizationRepository.saveDraft({
+      registrationNumber: 'REG-TEST-ACCESS-DENIED',
+      legalName: 'Test Organization Access Denied',
+      organizationType: 'Corporation',
+      status: 'pendingReview'
+    }) as MemberOrganization & { id: string };
+
+    // Create an existing role assignment
+    const assignment: RoleAssignment = {
+      userId: 'target-user',
+      organizationId: persistedOrganization.id,
+      roleId: persistedRole.id,
+      status: 'active'
+    };
+    await roleAssignmentRepository.save(assignment);
+
+    // Create test server with inactive actor user
+    const server = createTestableServer({
+      roleRepository,
+      roleAssignmentRepository,
+      memberRepository: memberOrganizationRepository,
+      accessAuditEventRepository: auditEventRepository,
+      userStatusLookup: {
+        async getUserStatus(_userId: string): Promise<'active' | 'inactive' | null> {
+          return 'inactive'; // Simulate inactive user
+        }
+      },
+      memberStatusLookup: {
+        async getMemberOrganizationStatus(_organizationId: string): Promise<'pendingReview' | 'active' | 'inactive' | 'suspended' | 'deleted' | null> {
+          return 'active';
+        }
+      }
+    });
+
+    // Try to remove the role assignment with an inactive actor
+    const removeResponse = await server.inject({
+      method: 'DELETE',
+      url: `/api/v1/role-assignments?userId=target-user&organizationId=${persistedOrganization.id}&roleId=${persistedRole.id}`,
+      headers: {
+        'x-actor-role': 'admin',
+        'x-actor-id': 'inactive-actor'
+      }
+    });
+
+    assert.strictEqual(removeResponse.statusCode, 403);
+
+    const events = await auditEventRepository.list();
+    const event = events.at(-1); // Get the last event
+    assert.ok(event);
+
+    assert.strictEqual(event.schemaVersion, 'access-audit-event.v1');
+    assert.strictEqual(event.module, 'access-control');
+    assert.strictEqual(event.action, 'removeRoleAssignment');
+    assert.strictEqual(event.targetType, 'roleAssignment');
+    assert.strictEqual(event.outcome, 'forbidden');
+    assert.strictEqual(event.reason, 'userInactive');
+    assert.strictEqual(event.actorUserId, 'inactive-actor');
+    assert.ok(event.requestId);
+    assert.ok(event.occurredAt);
+    assert.ok(event.evidence.payloadHash);
+    assert.strictEqual(event.evidence.canonicalization, 'json-stable-v1');
+    assert.strictEqual(event.route, '/api/v1/role-assignments');
+    assert.strictEqual(event.method, 'DELETE');
+    assert.strictEqual(event.targetId, `target-user:${persistedOrganization.id}:${persistedRole.id}`);
   });
 });

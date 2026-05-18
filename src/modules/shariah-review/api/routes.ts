@@ -9,6 +9,7 @@ import { recordShariahReviewDecision, type DecisionInput, type DecisionResult } 
 import { getShariahReviewHistory, type GetShariahReviewHistoryResult } from '../application/get-shariah-review-history.js';
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
+import { recordAccessAuditEvent } from '../../shared/application/record-access-audit-event.js';
 
 // Define the audit event interface for shariah review submission
 export interface ShariahReviewSubmitAuditEvent {
@@ -29,7 +30,7 @@ export interface ShariahReviewChecklistAuditEvent {
   targetId: string;
   timestamp: string;
   requestId: string;
-  outcome: 'success' | 'forbidden' | 'validationError';
+  outcome: 'success' | 'forbidden' | 'validationError' | 'notFound' | 'invalidState';
   actorId: string;
   reason?: string;
 }
@@ -87,7 +88,13 @@ const VALID_STATES_FOR_CHECKLIST_SAVE: ShariahReview['status'][] = ['submitted',
 
 // Create the Fastify plugin for shariah-review routes
 const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions> = async (fastify, options) => {
-  const { repository, roleAssignmentRepository, roleRepository, audit } = options;
+  const {
+    repository,
+    roleAssignmentRepository,
+    roleRepository,
+    audit,
+    accessAuditEventRepository
+  } = options;
 
   // GET /api/v1/shariah-reviews/:reviewId/history - Get review history
   fastify.get<{ Params: { reviewId: string } }>(
@@ -113,7 +120,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
 
       // Find the review
       const review = await repository.findById(request.params.reviewId);
-      
+
       if (!review) {
         return reply.code(404).send({
           error: {
@@ -136,7 +143,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           review.organizationId,
           roleId
         );
-        
+
         if (assignment) {
           hasAllowedRole = true;
           break;
@@ -155,9 +162,9 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: actorId,
           reason: 'insufficient_permissions'
         };
-        
+
         audit(auditEvent);
-        
+
         return reply.code(403).send({
           error: {
             code: 'FORBIDDEN',
@@ -185,9 +192,9 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: actorId,
           historyEntryCount: result.history.history.length
         };
-        
+
         audit(auditEvent);
-        
+
         return reply.code(200).send({
           data: result.history
         });
@@ -237,6 +244,20 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       const actorId = request.actorContext?.userId;
 
       if (!actorId) {
+        // Record shared access audit event for missing actor context
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: 'unknown',
+          action: 'submitShariahReview',
+          targetType: 'shariahReview',
+          targetId: 'unknown',
+          outcome: 'validationError',
+          reason: 'missing_actor_context',
+          module: 'shariah-review',
+          route: '/api/v1/shariah-reviews',
+          method: 'POST'
+        });
+
         return reply.code(400).send(createApplicationValidationError('Missing or invalid x-actor-id header'));
       }
 
@@ -255,9 +276,9 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: actorId,
           reason: 'coordinator_role_not_found'
         };
-        
+
         audit(auditEvent);
-        
+
         return reply.code(403).send({
           error: {
             code: 'FORBIDDEN',
@@ -285,9 +306,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: actorId,
           reason: 'coordinator_required'
         };
-        
+
         audit(auditEvent);
-        
+
+        // Record shared access audit event for coordinator denial
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'submitShariahReview',
+          targetType: 'shariahReview',
+          targetId: 'unknown',
+          outcome: 'forbidden',
+          reason: 'coordinator_required',
+          module: 'shariah-review',
+          route: '/api/v1/shariah-reviews',
+          method: 'POST'
+        });
+
         return reply.code(403).send({
           error: {
             code: 'FORBIDDEN',
@@ -320,9 +355,22 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           outcome: 'success',
           actorId: actorId
         };
-        
+
         audit(auditEvent);
-        
+
+        // Record shared access audit event for success
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'submitShariahReview',
+          targetType: 'shariahReview',
+          targetId: result.review.id,
+          outcome: 'success',
+          module: 'shariah-review',
+          route: '/api/v1/shariah-reviews',
+          method: 'POST'
+        });
+
         // Prepare response data including references if they exist
         const responseData: any = {
           id: result.review.id,
@@ -333,25 +381,39 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           submittedByUserId: result.review.submittedByUserId,
           createdAt: result.review.createdAt
         };
-        
+
         // Include references in response if they exist
         if (result.review.references && result.review.references.length > 0) {
           responseData.references = result.review.references;
         }
-        
+
         return reply.code(201).send({
           data: responseData
         });
       } else if (result.status === 'invalidInput') {
+        // Record shared access audit event for invalid input
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'submitShariahReview',
+          targetType: 'shariahReview',
+          targetId: 'unknown',
+          outcome: 'validationError',
+          reason: 'invalid_input',
+          module: 'shariah-review',
+          route: '/api/v1/shariah-reviews',
+          method: 'POST'
+        });
+
         return reply.code(400).send(createApplicationValidationError('Invalid review submission input'));
       }
     }
   );
 
   // PUT /api/v1/shariah-reviews/:reviewId/checklist - Save checklist for a review
-  fastify.put<{ 
-    Params: { reviewId: string }, 
-    Body: { entries: any[]; reviewerComment?: string; completeChecklist?: boolean } 
+  fastify.put<{
+    Params: { reviewId: string },
+    Body: { entries: any[]; reviewerComment?: string; completeChecklist?: boolean }
   }>(
     '/shariah-reviews/:reviewId/checklist',
     {
@@ -405,15 +467,15 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: 'unknown',
           reason: 'missing_actor_id'
         };
-        
+
         audit(auditEvent);
-        
+
         return reply.code(400).send(createApplicationValidationError('Missing or invalid x-actor-id header'));
       }
 
       // Find the review
       const review = await repository.findById(request.params.reviewId);
-      
+
       if (!review) {
         // Emit audit event for forbidden checklist save attempt due to missing review
         const auditEvent: ShariahReviewChecklistAuditEvent = {
@@ -426,9 +488,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: actorId,
           reason: 'review_not_found'
         };
-        
+
         audit(auditEvent);
-        
+
+        // Record shared access audit event for not found review
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'updateShariahChecklist',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          outcome: 'notFound',
+          reason: 'review_not_found',
+          module: 'shariah-review',
+          route: '/api/v1/shariah-reviews/:reviewId/checklist',
+          method: 'PUT'
+        });
+
         return reply.code(404).send({
           error: {
             code: 'NOT_FOUND',
@@ -450,9 +526,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: actorId,
           reason: `invalid_review_status_${review.status}`
         };
-        
+
         audit(auditEvent);
-        
+
+        // Record shared access audit event for invalid state
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'updateShariahChecklist',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          outcome: 'validationError',
+          reason: 'invalid_review_status',
+          module: 'shariah-review',
+          route: '/api/v1/shariah-reviews/:reviewId/checklist',
+          method: 'PUT'
+        });
+
         return reply.code(400).send(createApplicationValidationError(`Cannot save checklist for review in status: ${review.status}`));
       }
 
@@ -471,9 +561,9 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: actorId,
           reason: 'coordinator_role_not_found'
         };
-        
+
         audit(auditEvent);
-        
+
         return reply.code(403).send({
           error: {
             code: 'FORBIDDEN',
@@ -501,9 +591,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: actorId,
           reason: 'coordinator_required'
         };
-        
+
         audit(auditEvent);
-        
+
+        // Record shared access audit event for reviewer denial
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'updateShariahChecklist',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          outcome: 'forbidden',
+          reason: 'reviewer_required',
+          module: 'shariah-review',
+          route: '/api/v1/shariah-reviews/:reviewId/checklist',
+          method: 'PUT'
+        });
+
         return reply.code(403).send({
           error: {
             code: 'FORBIDDEN',
@@ -514,7 +618,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
 
       // Validate checklist entries
       const entries = request.body.entries;
-      
+
       // Check for duplicate itemCodes
       const itemCodes = entries.map(entry => entry.itemCode);
       const uniqueItemCodes = new Set(itemCodes);
@@ -530,9 +634,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: actorId,
           reason: 'duplicate_item_codes'
         };
-        
+
         audit(auditEvent);
-        
+
+        // Record shared access audit event for validation error
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'updateShariahChecklist',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          outcome: 'validationError',
+          reason: 'invalid_checklist_input',
+          module: 'shariah-review',
+          route: '/api/v1/shariah-reviews/:reviewId/checklist',
+          method: 'PUT'
+        });
+
         return reply.code(400).send(createApplicationValidationError('Duplicate itemCode entries are not allowed'));
       }
 
@@ -552,9 +670,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
             actorId: actorId,
             reason: `unknown_checklist_item_${entry.itemCode}`
           };
-          
+
           audit(auditEvent);
-          
+
+          // Record shared access audit event for validation error
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'updateShariahChecklist',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            outcome: 'validationError',
+            reason: 'invalid_checklist_input',
+            module: 'shariah-review',
+            route: '/api/v1/shariah-reviews/:reviewId/checklist',
+            method: 'PUT'
+          });
+
           return reply.code(400).send(createApplicationValidationError(`Unknown checklist item code: ${entry.itemCode}`));
         }
 
@@ -571,9 +703,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
             actorId: actorId,
             reason: `missing_comment_for_failed_item_${entry.itemCode}`
           };
-          
+
           audit(auditEvent);
-          
+
+          // Record shared access audit event for validation error
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'updateShariahChecklist',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            outcome: 'validationError',
+            reason: 'invalid_checklist_input',
+            module: 'shariah-review',
+            route: '/api/v1/shariah-reviews/:reviewId/checklist',
+            method: 'PUT'
+          });
+
           return reply.code(400).send(createApplicationValidationError(`Failed checklist item '${entry.itemCode}' must have a comment`));
         }
 
@@ -590,9 +736,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
             actorId: actorId,
             reason: `missing_evidence_for_item_${entry.itemCode}`
           };
-          
+
           audit(auditEvent);
-          
+
+          // Record shared access audit event for validation error
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'updateShariahChecklist',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            outcome: 'validationError',
+            reason: 'invalid_checklist_input',
+            module: 'shariah-review',
+            route: '/api/v1/shariah-reviews/:reviewId/checklist',
+            method: 'PUT'
+          });
+
           return reply.code(400).send(createApplicationValidationError(`Checklist item '${entry.itemCode}' requires evidence`));
         }
       }
@@ -604,7 +764,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
 
       // Handle completion intent
       const isCompletionIntent = request.body.completeChecklist === true;
-      
+
       if (isCompletionIntent) {
         // If completion intent is requested, validate all completion rules
         if (!allMandatoryItemsPresent) {
@@ -619,9 +779,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
             actorId: actorId,
             reason: 'missing_mandatory_items_for_completion'
           };
-          
+
           audit(auditEvent);
-          
+
+          // Record shared access audit event for validation error
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'updateShariahChecklist',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            outcome: 'validationError',
+            reason: 'invalid_checklist_input',
+            module: 'shariah-review',
+            route: '/api/v1/shariah-reviews/:reviewId/checklist',
+            method: 'PUT'
+          });
+
           return reply.code(400).send(createApplicationValidationError('All mandatory checklist items must be provided for completion'));
         }
 
@@ -639,9 +813,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
               actorId: actorId,
               reason: `missing_comment_for_failed_item_${entry.itemCode}_on_completion`
             };
-            
+
             audit(auditEvent);
-            
+
+            // Record shared access audit event for validation error
+            await recordAccessAuditEvent(accessAuditEventRepository, {
+              requestId: request.id,
+              actorUserId: request.actorContext?.userId ?? 'unknown',
+              action: 'updateShariahChecklist',
+              targetType: 'shariahReview',
+              targetId: request.params.reviewId,
+              outcome: 'validationError',
+              reason: 'invalid_checklist_input',
+              module: 'shariah-review',
+              route: '/api/v1/shariah-reviews/:reviewId/checklist',
+              method: 'PUT'
+            });
+
             return reply.code(400).send(createApplicationValidationError(`Failed checklist item '${entry.itemCode}' must have a comment for completion`));
           }
         }
@@ -661,9 +849,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
               actorId: actorId,
               reason: `missing_evidence_for_item_${entry.itemCode}_on_completion`
             };
-            
+
             audit(auditEvent);
-            
+
+            // Record shared access audit event for validation error
+            await recordAccessAuditEvent(accessAuditEventRepository, {
+              requestId: request.id,
+              actorUserId: request.actorContext?.userId ?? 'unknown',
+              action: 'updateShariahChecklist',
+              targetType: 'shariahReview',
+              targetId: request.params.reviewId,
+              outcome: 'validationError',
+              reason: 'invalid_checklist_input',
+              module: 'shariah-review',
+              route: '/api/v1/shariah-reviews/:reviewId/checklist',
+              method: 'PUT'
+            });
+
             return reply.code(400).send(createApplicationValidationError(`Checklist item '${entry.itemCode}' requires evidence for completion`));
           }
         }
@@ -704,8 +906,21 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
         outcome: 'success',
         actorId: actorId
       };
-      
+
       audit(auditEvent);
+
+      // Record shared access audit event for success
+      await recordAccessAuditEvent(accessAuditEventRepository, {
+        requestId: request.id,
+        actorUserId: request.actorContext?.userId ?? 'unknown',
+        action: 'updateShariahChecklist',
+        targetType: 'shariahReview',
+        targetId: request.params.reviewId,
+        outcome: 'success',
+        module: 'shariah-review',
+        route: '/api/v1/shariah-reviews/:reviewId/checklist',
+        method: 'PUT'
+      });
 
       // Return success response
       return reply.code(200).send({
@@ -718,9 +933,9 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
   );
 
   // POST /api/v1/shariah-reviews/:reviewId/decision - Record a decision for a review
-  fastify.post<{ 
-    Params: { reviewId: string }, 
-    Body: Omit<DecisionInput, 'reviewId'> 
+  fastify.post<{
+    Params: { reviewId: string },
+    Body: Omit<DecisionInput, 'reviewId'>
   }>(
     '/shariah-reviews/:reviewId/decision',
     {
@@ -736,9 +951,9 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           type: 'object',
           required: ['outcome', 'rationale'],
           properties: {
-            outcome: { 
-              type: 'string', 
-              enum: ['approved', 'rejected', 'conditionalApproved'] 
+            outcome: {
+              type: 'string',
+              enum: ['approved', 'rejected', 'conditionalApproved']
             },
             rationale: { type: 'string' },
             conditions: {
@@ -772,15 +987,29 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: 'unknown',
           reason: 'missing_actor_id'
         };
-        
+
         audit(auditEvent);
-        
+
+        // Record shared access audit event for missing actor context
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: 'unknown',
+          action: 'recordShariahDecision',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          outcome: 'validationError',
+          reason: 'missing_actor_context',
+          module: 'shariah-review',
+          route: '/api/v1/shariah-reviews/:reviewId/decision',
+          method: 'POST'
+        });
+
         return reply.code(400).send(createApplicationValidationError('Missing or invalid x-actor-id header'));
       }
 
       // Find the review
       const review = await repository.findById(request.params.reviewId);
-      
+
       if (!review) {
         // Emit audit event for not found decision attempt
         const auditEvent: ShariahReviewDecisionAuditEvent = {
@@ -793,9 +1022,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: actorId,
           reason: 'review_not_found'
         };
-        
+
         audit(auditEvent);
-        
+
+        // Record shared access audit event for not found decision attempt
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'recordShariahDecision',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          outcome: 'notFound',
+          reason: 'review_not_found',
+          module: 'shariah-review',
+          route: '/api/v1/shariah-reviews/:reviewId/decision',
+          method: 'POST'
+        });
+
         return reply.code(404).send({
           error: {
             code: 'NOT_FOUND',
@@ -819,9 +1062,9 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: actorId,
           reason: 'coordinator_role_not_found'
         };
-        
+
         audit(auditEvent);
-        
+
         return reply.code(403).send({
           error: {
             code: 'FORBIDDEN',
@@ -849,9 +1092,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
           actorId: actorId,
           reason: 'coordinator_required'
         };
-        
+
         audit(auditEvent);
-        
+
+        // Record shared access audit event for reviewer denial
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
+          action: 'recordShariahDecision',
+          targetType: 'shariahReview',
+          targetId: request.params.reviewId,
+          outcome: 'forbidden',
+          reason: 'reviewer_required',
+          module: 'shariah-review',
+          route: '/api/v1/shariah-reviews/:reviewId/decision',
+          method: 'POST'
+        });
+
         return reply.code(403).send({
           error: {
             code: 'FORBIDDEN',
@@ -884,9 +1141,22 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
             outcome: 'success',
             actorId: actorId
           };
-          
+
           audit(successAuditEvent);
-          
+
+          // Record shared access audit event for success
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'recordShariahDecision',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            outcome: 'success',
+            module: 'shariah-review',
+            route: '/api/v1/shariah-reviews/:reviewId/decision',
+            method: 'POST'
+          });
+
           return reply.code(200).send({
             data: {
               reviewId: result.review.id,
@@ -894,7 +1164,7 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
               decidedAt: result.review.decidedAt
             }
           });
-          
+
         case 'notFound':
           // Emit audit event for not found decision attempt
           const notFoundAuditEvent: ShariahReviewDecisionAuditEvent = {
@@ -907,16 +1177,30 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
             actorId: actorId,
             reason: 'review_not_found_after_validation'
           };
-          
+
           audit(notFoundAuditEvent);
-          
+
+          // Record shared access audit event for not found decision attempt
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'recordShariahDecision',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            outcome: 'notFound',
+            reason: 'review_not_found_after_validation',
+            module: 'shariah-review',
+            route: '/api/v1/shariah-reviews/:reviewId/decision',
+            method: 'POST'
+          });
+
           return reply.code(404).send({
             error: {
               code: 'NOT_FOUND',
               message: 'Review not found'
             }
           });
-          
+
         case 'invalidState':
           // Emit audit event for invalid state decision attempt
           const invalidStateAuditEvent: ShariahReviewDecisionAuditEvent = {
@@ -925,15 +1209,29 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
             targetId: request.params.reviewId,
             timestamp: new Date().toISOString(),
             requestId: request.id,
-            outcome: 'invalidState',
+            outcome: 'validationError',
             actorId: actorId,
             reason: `invalid_review_status_${result.currentStatus}`
           };
-          
+
           audit(invalidStateAuditEvent);
-          
+
+          // Record shared access audit event for invalid state
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'recordShariahDecision',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            outcome: 'validationError',
+            reason: 'invalid_review_status',
+            module: 'shariah-review',
+            route: '/api/v1/shariah-reviews/:reviewId/decision',
+            method: 'POST'
+          });
+
           return reply.code(400).send(createApplicationValidationError(`Cannot record decision for review in status: ${result.currentStatus}`));
-          
+
         case 'validationError':
           // Emit audit event for validation error decision attempt
           const validationErrorAuditEvent: ShariahReviewDecisionAuditEvent = {
@@ -946,9 +1244,23 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
             actorId: actorId,
             reason: 'decision_validation_failed'
           };
-          
+
           audit(validationErrorAuditEvent);
-          
+
+          // Record shared access audit event for validation error
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'recordShariahDecision',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            outcome: 'validationError',
+            reason: 'invalid_decision_input',
+            module: 'shariah-review',
+            route: '/api/v1/shariah-reviews/:reviewId/decision',
+            method: 'POST'
+          });
+
           return reply.code(400).send(createApplicationValidationError('Decision validation failed', result.issues));
       }
     }
