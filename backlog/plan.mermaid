@@ -1,0 +1,24 @@
+gantt
+    title MVP Feature Build Plan (dependency-driven)
+    dateFormat  YYYY-MM-DD
+    axisFormat  %d %b
+    excludes    weekends
+
+    section Foundations
+    PBI-003 Permissioned membership and role management :crit, pbi003, 2026-03-16, 5d
+    PBI-020 Shariah governance workflow for PLS approvals :pbi020, 2026-03-16, 5d
+    PBI-022 Access logging and cryptographic non-repudiation :crit, pbi022, after pbi003, 5d
+
+    section Core compliance and platform controls
+    PBI-002 KYC and AML onboarding workflow :crit, pbi002, after pbi022, 8d
+    PBI-005 Immutable audit trail for procure-to-pay events :crit, pbi005, after pbi022, 8d
+    PBI-017 Role-based UI and operational dashboards :pbi017, after pbi022, 5d
+    PBI-015 Regulator audit reporting and signed export bundle :pbi015, after pbi005, 5d
+
+    section Transaction and PLS workflows
+    PBI-006 Order acceptance and escrow contract workflow :crit, pbi006, after pbi005, 8d
+    PBI-007 PLS contract model and distribution workflow :crit, pbi007, after pbi006, 8d
+    MVP core ready :milestone, mvpready, after pbi007, 0d
+
+    section Deferred MVP scope
+    PBI-008 Tokenized receivables issuance and redemption :pbi008, after pbi007, 8d

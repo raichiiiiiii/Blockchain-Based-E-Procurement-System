@@ -4,7 +4,6 @@ node_modules
 dist
 ~$backlog.xlsx
 temp
-backlog/plan.mermaid
 docs/adrs
 docs/baseline_architecture.md
 deep-research-report.md
