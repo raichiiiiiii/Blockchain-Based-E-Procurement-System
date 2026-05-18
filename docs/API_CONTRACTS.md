@@ -745,6 +745,100 @@ Forbidden response:
 }
 ```
 
+### 10.2 Get access audit event detail
+
+`GET /api/v1/access-history/events/{eventId}`
+
+Request:
+
+Path parameters:
+- `eventId`: The unique identifier of the access audit event to retrieve
+
+Authorization:
+- Requires `auditor` role
+- Non-auditor requests receive `403 FORBIDDEN`
+
+Response (success):
+
+```json
+{
+  "data": {
+    "event": {
+      "eventId": "550e8400-e29b-41d4-a716-446655440000",
+      "schemaVersion": "access-audit-event.v1",
+      "occurredAt": "2026-04-01T10:30:00Z",
+      "requestId": "req-event-detail-sample",
+      "actorUserId": "admin-user",
+      "actorSource": "actorContext",
+      "action": "changeRoleAssignment",
+      "targetType": "roleAssignment",
+      "targetId": "user-001:org-001:role-reviewer",
+      "outcome": "forbidden",
+      "reason": "admin_required",
+      "module": "access-control",
+      "route": "/api/v1/role-assignments/change",
+      "method": "PATCH",
+      "evidence": {
+        "payloadHash": "sha256-placeholder",
+        "canonicalization": "json-stable-v1"
+      }
+    }
+  }
+}
+```
+
+Preserved event fields:
+- `eventId`
+- `schemaVersion`
+- `occurredAt`
+- `requestId`
+- `actorUserId`
+- `actorSource`
+- `action`
+- `targetType`
+- `targetId`
+- `outcome`
+- `reason` (where present)
+- `module`
+- `route` (where present)
+- `method` (where present)
+- `evidence.payloadHash`
+- `evidence.canonicalization`
+- `evidence.previousEventHash` (where present)
+
+Error responses:
+- `404 NOT_FOUND` when the event with the specified `eventId` does not exist
+- `403 FORBIDDEN` when actor does not have `auditor` role
+
+Examples:
+
+Get event detail:
+```
+GET /api/v1/access-history/events/550e8400-e29b-41d4-a716-446655440000
+```
+
+Missing event response:
+
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Access audit event not found"
+  }
+}
+```
+
+Forbidden response:
+
+```json
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "User must have auditor role to query access history"
+  }
+}
+```
+
 ## 11. Shariah review submission contracts
 
 ### 11.1 Submit review request

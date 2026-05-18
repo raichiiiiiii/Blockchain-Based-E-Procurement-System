@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { queryAccessHistory } from '../../shared/application/access-history-query.js';
+import { getAccessAuditEventDetail } from '../../shared/application/access-audit-event-detail.js';
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
 import type { AccessAuditEvent, AccessAuditOutcome, AccessAuditModule } from '../../shared/application/access-audit-event.js';
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
@@ -177,6 +178,60 @@ const registerAccessHistoryRoutes: FastifyPluginAsync<AccessHistoryRoutesOptions
       return reply.code(200).send({
         data: {
           items: events
+        }
+      });
+    }
+  );
+
+  // GET /api/v1/access-history/events/:eventId - Get access audit event detail by eventId
+  fastify.get<{
+    Params: {
+      eventId: string;
+    };
+  }>(
+    '/access-history/events/:eventId',
+    {
+      preHandler: async (request, reply) => {
+        // Check if the actor has auditor role using actorContext
+        const actorRoles = request.actorContext?.authorizationContext.roles;
+        if (!actorRoles || !actorRoles.includes('auditor')) {
+          return reply.code(403).send({
+            error: {
+              code: 'FORBIDDEN',
+              message: 'User must have auditor role to query access history'
+            }
+          });
+        }
+      }
+    },
+    async (request, reply) => {
+      // If no repository is provided, return not found
+      if (!accessAuditEventRepository) {
+        return reply.code(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Access audit event not found'
+          }
+        });
+      }
+
+      // Get the event by eventId using the application function
+      const event = await getAccessAuditEventDetail(accessAuditEventRepository, request.params.eventId);
+
+      // If event not found, return 404
+      if (!event) {
+        return reply.code(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Access audit event not found'
+          }
+        });
+      }
+
+      // Return the event in the approved response shape
+      return reply.code(200).send({
+        data: {
+          event
         }
       });
     }
