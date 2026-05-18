@@ -111,100 +111,173 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
       }
     },
     async (request, reply) => {
-      // Extract and validate actorId from trusted actor context
-      const actorId = request.actorContext?.userId;
+      try {
+        // Extract and validate actorId from trusted actor context
+        const actorId = request.actorContext?.userId;
 
-      if (!actorId) {
-        return reply.code(400).send(createApplicationValidationError('Missing or invalid x-actor-id header'));
-      }
+        if (!actorId) {
+          return reply.code(400).send(createApplicationValidationError('Missing or invalid x-actor-id header'));
+        }
 
-      // Find the review
-      const review = await repository.findById(request.params.reviewId);
+        // Find the review
+        const review = await repository.findById(request.params.reviewId);
 
-      if (!review) {
-        return reply.code(404).send({
-          error: {
-            code: 'NOT_FOUND',
-            message: 'Review not found'
+        if (!review) {
+          // Record shared access audit event for not found review
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'viewShariahReviewHistory',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            outcome: 'notFound',
+            reason: 'review_not_found',
+            module: 'shariah-review',
+            route: '/api/v1/shariah-reviews/:reviewId/history',
+            method: 'GET'
+          });
+
+          return reply.code(404).send({
+            error: {
+              code: 'NOT_FOUND',
+              message: 'Review not found'
+            }
+          });
+        }
+
+        // Check if user has allowed role assignment for the review organization
+        const allowedRoles = await roleRepository.findAll();
+        const allowedRoleIds = allowedRoles
+          .filter(role => HISTORY_VIEW_ALLOWED_ROLE_CODES.includes(role.roleCode) && role.status === 'active')
+          .map(role => role.id);
+
+        let hasAllowedRole = false;
+        for (const roleId of allowedRoleIds) {
+          const assignment = await roleAssignmentRepository.findActiveByUserOrganizationRole(
+            actorId,
+            review.organizationId,
+            roleId
+          );
+
+          if (assignment) {
+            hasAllowedRole = true;
+            break;
           }
-        });
-      }
+        }
 
-      // Check if user has allowed role assignment for the review organization
-      const allowedRoles = await roleRepository.findAll();
-      const allowedRoleIds = allowedRoles
-        .filter(role => HISTORY_VIEW_ALLOWED_ROLE_CODES.includes(role.roleCode) && role.status === 'active')
-        .map(role => role.id);
+        if (!hasAllowedRole) {
+          // Emit audit event for forbidden history read attempt
+          const auditEvent: ShariahReviewHistoryAuditEvent = {
+            action: 'viewShariahReviewHistory',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'forbidden',
+            actorId: actorId,
+            reason: 'insufficient_permissions'
+          };
 
-      let hasAllowedRole = false;
-      for (const roleId of allowedRoleIds) {
-        const assignment = await roleAssignmentRepository.findActiveByUserOrganizationRole(
-          actorId,
-          review.organizationId,
-          roleId
+          audit(auditEvent);
+
+          // Record shared access audit event for forbidden history read attempt
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'viewShariahReviewHistory',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            outcome: 'forbidden',
+            reason: 'insufficient_permissions',
+            module: 'shariah-review',
+            route: '/api/v1/shariah-reviews/:reviewId/history',
+            method: 'GET'
+          });
+
+          return reply.code(403).send({
+            error: {
+              code: 'FORBIDDEN',
+              message: 'Not authorized to view Shariah review history'
+            }
+          });
+        }
+
+        // Call the history service
+        const result: GetShariahReviewHistoryResult = await getShariahReviewHistory(
+          request.params.reviewId,
+          repository
         );
 
-        if (assignment) {
-          hasAllowedRole = true;
-          break;
+        // Map result to HTTP responses
+        if (result.status === 'found') {
+          // Emit audit event for successful history read
+          const auditEvent: ShariahReviewHistoryAuditEvent = {
+            action: 'viewShariahReviewHistory',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            timestamp: new Date().toISOString(),
+            requestId: request.id,
+            outcome: 'success',
+            actorId: actorId,
+            historyEntryCount: result.history.history.length
+          };
+
+          audit(auditEvent);
+
+          // Record shared access audit event for successful history read
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'viewShariahReviewHistory',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            outcome: 'success',
+            module: 'shariah-review',
+            route: '/api/v1/shariah-reviews/:reviewId/history',
+            method: 'GET'
+          });
+
+          return reply.code(200).send({
+            data: result.history
+          });
+        } else {
+          // Record shared access audit event for not found review in service
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: request.actorContext?.userId ?? 'unknown',
+            action: 'viewShariahReviewHistory',
+            targetType: 'shariahReview',
+            targetId: request.params.reviewId,
+            outcome: 'notFound',
+            reason: 'review_not_found',
+            module: 'shariah-review',
+            route: '/api/v1/shariah-reviews/:reviewId/history',
+            method: 'GET'
+          });
+
+          return reply.code(404).send({
+            error: {
+              code: 'NOT_FOUND',
+              message: 'Review not found'
+            }
+          });
         }
-      }
-
-      if (!hasAllowedRole) {
-        // Emit audit event for forbidden history read attempt
-        const auditEvent: ShariahReviewHistoryAuditEvent = {
+      } catch (error) {
+        // Record shared access audit event for unexpected error during history read
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: request.actorContext?.userId ?? 'unknown',
           action: 'viewShariahReviewHistory',
           targetType: 'shariahReview',
           targetId: request.params.reviewId,
-          timestamp: new Date().toISOString(),
-          requestId: request.id,
-          outcome: 'forbidden',
-          actorId: actorId,
-          reason: 'insufficient_permissions'
-        };
-
-        audit(auditEvent);
-
-        return reply.code(403).send({
-          error: {
-            code: 'FORBIDDEN',
-            message: 'Not authorized to view Shariah review history'
-          }
+          outcome: 'error',
+          reason: 'history_read_failed',
+          module: 'shariah-review',
+          route: '/api/v1/shariah-reviews/:reviewId/history',
+          method: 'GET'
         });
-      }
 
-      // Call the history service
-      const result: GetShariahReviewHistoryResult = await getShariahReviewHistory(
-        request.params.reviewId,
-        repository
-      );
-
-      // Map result to HTTP responses
-      if (result.status === 'found') {
-        // Emit audit event for successful history read
-        const auditEvent: ShariahReviewHistoryAuditEvent = {
-          action: 'viewShariahReviewHistory',
-          targetType: 'shariahReview',
-          targetId: request.params.reviewId,
-          timestamp: new Date().toISOString(),
-          requestId: request.id,
-          outcome: 'success',
-          actorId: actorId,
-          historyEntryCount: result.history.history.length
-        };
-
-        audit(auditEvent);
-
-        return reply.code(200).send({
-          data: result.history
-        });
-      } else {
-        return reply.code(404).send({
-          error: {
-            code: 'NOT_FOUND',
-            message: 'Review not found'
-          }
-        });
+        throw error;
       }
     }
   );
