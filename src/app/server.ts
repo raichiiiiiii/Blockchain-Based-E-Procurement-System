@@ -21,6 +21,7 @@ import { mapFastifyValidationError } from '../modules/shared/api/validation-erro
 import type { UserStatusLookup } from '../modules/shared/application/user-status-lookup.js';
 import type { MemberStatusLookup } from '../modules/shared/application/member-status-lookup.js';
 import type { AccessAuditEventRepository } from '../modules/shared/application/access-audit-event-repository.js';
+import { registerAccessHistoryRoutes } from '../modules/shared/api/access-history.routes.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -108,6 +109,12 @@ export function createTestableServer(options?: {
     roleAssignmentRepository: roleAssignmentRepository,
     roleRepository: roleRepository,
     audit: shariahReviewAuditCallback,
+    accessAuditEventRepository
+  });
+
+  // Register access-history routes
+  server.register(registerAccessHistoryRoutes, {
+    prefix: '/api/v1',
     accessAuditEventRepository
   });
 

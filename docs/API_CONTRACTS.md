@@ -570,9 +570,184 @@ Protected functions draft:
 [FLAG-PROTECTED-FUNCTIONS]
 The exact protected function list is still provisional, but the categories above are the current Sprint 1 baseline.
 
-## 10. Shariah review submission contracts
+## 10. Access history contracts
 
-### 10.1 Submit review request
+### 10.1 Query access history
+
+`GET /api/v1/access-history`
+
+Request:
+
+Query parameters:
+- `actorUserId`: Filter by actor user ID
+- `targetType`: Filter by target resource type
+- `targetId`: Filter by target resource ID
+- `action`: Filter by action name
+- `outcome`: Filter by outcome category
+- `occurredFrom`: Filter by earliest occurrence timestamp (inclusive)
+- `occurredTo`: Filter by latest occurrence timestamp (inclusive)
+- `module`: Filter by module
+- `route`: Filter by HTTP route pattern
+- `method`: Filter by HTTP method
+
+Authorization:
+- Requires `auditor` role
+- Non-auditor requests receive `403 FORBIDDEN`
+
+Response (success):
+
+```json
+{
+  "data": {
+    "items": []
+  }
+}
+```
+
+Allowed `outcome` values:
+- `success`
+- `forbidden`
+- `validationError`
+- `notFound`
+- `conflict`
+- `error`
+
+Allowed `module` values:
+- `membership`
+- `access-control`
+- `shariah-review`
+
+Allowed `method` values:
+- `GET`
+- `POST`
+- `PUT`
+- `PATCH`
+- `DELETE`
+
+Validation rules:
+- Timestamps (`occurredFrom`, `occurredTo`) must be ISO 8601 UTC-compatible strings
+- `occurredFrom` must be <= `occurredTo` when both are provided
+- `outcome` must be one of the allowed values
+- `module` must be one of the allowed values
+- `method` must be one of the allowed values
+- Unknown query parameters are rejected with `400 VALIDATION_ERROR`
+- Unsupported pagination parameters (`limit`, `cursor`) are rejected with `400 VALIDATION_ERROR`
+
+Ordering:
+- Results are ordered by `occurredAt` ascending, then `eventId` ascending
+
+Empty result behavior:
+- Returns `200 OK` with `data.items = []`
+
+Error responses:
+- `403 FORBIDDEN` when actor does not have `auditor` role
+- `400 VALIDATION_ERROR` for invalid query parameters
+
+Examples:
+
+Basic query:
+```
+GET /api/v1/access-history
+```
+
+Filter by actor:
+```
+GET /api/v1/access-history?actorUserId=user-1
+```
+
+Filter by target:
+```
+GET /api/v1/access-history?targetType=role&targetId=role-1
+```
+
+Filter by action and outcome:
+```
+GET /api/v1/access-history?action=changeRoleAssignment&outcome=forbidden
+```
+
+Filter by time range:
+```
+GET /api/v1/access-history?occurredFrom=2026-04-01T00:00:00Z&occurredTo=2026-04-30T23:59:59Z
+```
+
+Filter by module, route, and method:
+```
+GET /api/v1/access-history?module=shariah-review&route=/api/v1/shariah-reviews/:reviewId/history&method=GET
+```
+
+Successful response with events:
+
+```json
+{
+  "data": {
+    "items": [
+      {
+        "eventId": "550e8400-e29b-41d4-a716-446655440000",
+        "schemaVersion": "access-audit-event.v1",
+        "occurredAt": "2026-04-01T10:30:00Z",
+        "requestId": "req-123",
+        "actorUserId": "auditor-target-user",
+        "actorSource": "actorContext",
+        "action": "viewShariahReviewHistory",
+        "targetType": "shariahReview",
+        "targetId": "review-001",
+        "outcome": "success",
+        "module": "shariah-review",
+        "route": "/api/v1/shariah-reviews/:reviewId/history",
+        "method": "GET",
+        "evidence": {
+          "payloadHash": "sha256-placeholder",
+          "canonicalization": "json-stable-v1"
+        }
+      }
+    ]
+  }
+}
+```
+
+Empty response:
+
+```json
+{
+  "data": {
+    "items": []
+  }
+}
+```
+
+Validation error response:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid query parameters",
+    "details": {
+      "issues": [
+        {
+          "path": "outcome",
+          "message": "Invalid outcome value: invalidOutcome. Must be one of: success, forbidden, validationError, notFound, conflict, error"
+        }
+      ]
+    }
+  }
+}
+```
+
+Forbidden response:
+
+```json
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "User must have auditor role to query access history"
+  }
+}
+```
+
+## 11. Shariah review submission contracts
+
+### 11.1 Submit review request
 
 `POST /api/v1/shariah-reviews`
 
@@ -664,9 +839,9 @@ Mandatory metadata is not yet fully approved. The current shape represents a min
 [FLAG-REFERENCE-HANDLING]
 Reference vs attachment storage policy is not yet finalized beyond metadata-level support.
 
-## 11. Checklist contracts
+## 12. Checklist contracts
 
-### 11.1 Save checklist outcome
+### 12.1 Save checklist outcome
 
 `PUT /api/v1/shariah-reviews/{reviewId}/checklist`
 
@@ -740,9 +915,9 @@ Rules:
 [FLAG-CHECKLIST-SOURCE]
 Sprint 1 working assumption is seeded reference data, but fixed-vs-configurable policy is not yet fully final.
 
-## 12. Decision contracts
+## 13. Decision contracts
 
-### 12.1 Record decision
+### 13.1 Record decision
 
 `POST /api/v1/shariah-reviews/{reviewId}/decision`
 
@@ -811,9 +986,9 @@ Error responses:
 [FLAG-CONDITIONAL-APPROVAL]
 Condition structure is partly stabilized, but expiry, ownership, and closure enforcement are not yet fully approved.
 
-## 13. Status-history contracts
+## 14. Status-history contracts
 
-### 13.1 Get current status and history
+### 14.1 Get current status and history
 
 `GET /api/v1/shariah-reviews/{reviewId}/history`
 
