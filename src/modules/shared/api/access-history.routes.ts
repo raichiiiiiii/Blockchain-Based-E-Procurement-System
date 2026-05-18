@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { queryAccessHistory } from '../../shared/application/access-history-query.js';
 import { getAccessAuditEventDetail } from '../../shared/application/access-audit-event-detail.js';
+import { getAccessAuditEventSequence, type AccessAuditEventSequenceScope } from '../../shared/application/access-audit-event-sequence.js';
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
 import type { AccessAuditEvent, AccessAuditOutcome, AccessAuditModule } from '../../shared/application/access-audit-event.js';
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
@@ -20,6 +21,26 @@ type AccessHistoryQuerystring = {
   // Explicitly exclude unsupported parameters
   limit?: string;
   cursor?: string;
+  [key: string]: string | undefined; // Index signature for unknown parameters
+};
+
+// Define the querystring type for sequence filters
+type AccessHistorySequenceQuerystring = {
+  scope?: 'actor' | 'target';
+  actorUserId?: string;
+  targetType?: string;
+  targetId?: string;
+  occurredFrom?: string;
+  occurredTo?: string;
+  // Explicitly exclude unsupported parameters
+  limit?: string;
+  cursor?: string;
+  eventId?: string;
+  action?: string;
+  outcome?: string;
+  module?: string;
+  route?: string;
+  method?: string;
   [key: string]: string | undefined; // Index signature for unknown parameters
 };
 
@@ -79,6 +100,130 @@ function validateAccessHistoryQuery(query: AccessHistoryQuerystring): Validation
       path: 'method',
       message: `Invalid method value: ${query.method}. Must be one of: ${validMethods.join(', ')}`
     });
+  }
+
+  // Validate timestamp formats
+  if (query.occurredFrom) {
+    if (isNaN(Date.parse(query.occurredFrom))) {
+      issues.push({
+        path: 'occurredFrom',
+        message: 'Invalid date format. Must be ISO 8601 compatible.'
+      });
+    }
+  }
+
+  if (query.occurredTo) {
+    if (isNaN(Date.parse(query.occurredTo))) {
+      issues.push({
+        path: 'occurredTo',
+        message: 'Invalid date format. Must be ISO 8601 compatible.'
+      });
+    }
+  }
+
+  // Validate time range
+  if (query.occurredFrom && query.occurredTo) {
+    const fromDate = new Date(query.occurredFrom);
+    const toDate = new Date(query.occurredTo);
+
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      // Skip this validation if dates are invalid (already caught above)
+    } else if (fromDate > toDate) {
+      issues.push({
+        path: 'occurredFrom',
+        message: 'occurredFrom must be less than or equal to occurredTo'
+      });
+    }
+  }
+
+  return issues;
+}
+
+// Helper function to validate access history sequence query parameters
+function validateAccessHistorySequenceQuery(query: AccessHistorySequenceQuerystring): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+  const allowedParams = new Set([
+    'scope', 'actorUserId', 'targetType', 'targetId', 'occurredFrom', 'occurredTo'
+  ]);
+
+  // Check for unknown parameters
+  for (const param in query) {
+    if (!allowedParams.has(param)) {
+      issues.push({
+        path: param,
+        message: `Unsupported query parameter: ${param}`
+      });
+    }
+  }
+
+  // Validate scope is provided
+  if (!query.scope) {
+    issues.push({
+      path: 'scope',
+      message: 'Scope is required'
+    });
+    // If scope is missing, we can't validate further
+    return issues;
+  }
+
+  // Validate scope value
+  if (query.scope !== 'actor' && query.scope !== 'target') {
+    issues.push({
+      path: 'scope',
+      message: `Invalid scope value: ${query.scope}. Must be one of: actor, target`
+    });
+    // If scope is invalid, we can't validate further
+    return issues;
+  }
+
+  // Validate actor scope requirements
+  if (query.scope === 'actor') {
+    if (!query.actorUserId) {
+      issues.push({
+        path: 'actorUserId',
+        message: 'actorUserId is required for actor scope'
+      });
+    }
+
+    // Actor scope should not include target parameters
+    if (query.targetType) {
+      issues.push({
+        path: 'targetType',
+        message: 'targetType is not allowed for actor scope'
+      });
+    }
+
+    if (query.targetId) {
+      issues.push({
+        path: 'targetId',
+        message: 'targetId is not allowed for actor scope'
+      });
+    }
+  }
+
+  // Validate target scope requirements
+  if (query.scope === 'target') {
+    if (!query.targetType) {
+      issues.push({
+        path: 'targetType',
+        message: 'targetType is required for target scope'
+      });
+    }
+
+    if (!query.targetId) {
+      issues.push({
+        path: 'targetId',
+        message: 'targetId is required for target scope'
+      });
+    }
+
+    // Target scope should not include actor parameters
+    if (query.actorUserId) {
+      issues.push({
+        path: 'actorUserId',
+        message: 'actorUserId is not allowed for target scope'
+      });
+    }
   }
 
   // Validate timestamp formats
@@ -179,6 +324,84 @@ const registerAccessHistoryRoutes: FastifyPluginAsync<AccessHistoryRoutesOptions
         data: {
           items: events
         }
+      });
+    }
+  );
+
+  // GET /api/v1/access-history/sequences - Query access history sequences
+  fastify.get<{
+    Querystring: AccessHistorySequenceQuerystring;
+  }>(
+    '/access-history/sequences',
+    {
+      preHandler: async (request, reply) => {
+        // Check if the actor has auditor role using actorContext
+        const actorRoles = request.actorContext?.authorizationContext.roles;
+        if (!actorRoles || !actorRoles.includes('auditor')) {
+          return reply.code(403).send({
+            error: {
+              code: 'FORBIDDEN',
+              message: 'User must have auditor role to query access history'
+            }
+          });
+        }
+      }
+    },
+    async (request, reply) => {
+      // Validate query parameters
+      const validationIssues = validateAccessHistorySequenceQuery(request.query);
+      if (validationIssues.length > 0) {
+        return reply.code(400).send(createApplicationValidationError('Invalid sequence query parameters', validationIssues));
+      }
+
+      // If no repository is provided, return empty result
+      if (!accessAuditEventRepository) {
+        return reply.code(200).send({
+          data: {
+            scope: request.query.scope === 'actor'
+              ? { type: 'actor', actorUserId: request.query.actorUserId! }
+              : { type: 'target', targetType: request.query.targetType!, targetId: request.query.targetId! },
+            ordering: {
+              primary: 'occurredAt',
+              secondary: 'eventId',
+              direction: 'ascending'
+            },
+            completeness: {
+              status: 'unknown',
+              reason: 'completeness_not_proven',
+              message: 'Available events are returned, but the repository cannot prove the sequence is complete.'
+            },
+            items: []
+          }
+        });
+      }
+
+      // Build scope object based on the query parameters
+      let scope: AccessAuditEventSequenceScope;
+
+      if (request.query.scope === 'actor') {
+        scope = {
+          type: 'actor',
+          actorUserId: request.query.actorUserId!,
+          occurredFrom: request.query.occurredFrom,
+          occurredTo: request.query.occurredTo
+        };
+      } else {
+        scope = {
+          type: 'target',
+          targetType: request.query.targetType!,
+          targetId: request.query.targetId!,
+          occurredFrom: request.query.occurredFrom,
+          occurredTo: request.query.occurredTo
+        };
+      }
+
+      // Call the sequence service with the provided scope
+      const result = await getAccessAuditEventSequence(accessAuditEventRepository, scope);
+
+      // Return the result in the approved response shape
+      return reply.code(200).send({
+        data: result
       });
     }
   );

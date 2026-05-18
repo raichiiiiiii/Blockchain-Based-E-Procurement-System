@@ -1420,3 +1420,610 @@ test('should not break existing access-history list endpoint after adding event 
   assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
   assert.ok(responseBody.data.items.length >= 1, 'Items array should contain at least one event');
 });
+
+// New tests for Slice 1C - Sequence endpoint
+
+test('should return actor sequence for authorized auditor', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with events for two actors
+  const event1Input: CreateAccessAuditEventInput = {
+    requestId: 'req-1',
+    actorUserId: 'actor-1',
+    action: 'createRole',
+    targetType: 'role',
+    targetId: 'role-1',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event2Input: CreateAccessAuditEventInput = {
+    requestId: 'req-2',
+    actorUserId: 'actor-2',
+    action: 'updateRole',
+    targetType: 'role',
+    targetId: 'role-2',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event1 = createAccessAuditEvent(event1Input);
+  const event2 = createAccessAuditEvent(event2Input);
+
+  await auditEventRepository.save(event1);
+  await auditEventRepository.save(event2);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=actor&actorUserId=actor-1',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.data, 'Response should have data object');
+  assert.ok(responseBody.data.scope, 'Response should have scope object');
+  assert.ok(responseBody.data.ordering, 'Response should have ordering object');
+  assert.ok(responseBody.data.completeness, 'Response should have completeness object');
+  assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
+  assert.strictEqual(responseBody.data.scope.type, 'actor');
+  assert.strictEqual(responseBody.data.scope.actorUserId, 'actor-1');
+  assert.strictEqual(responseBody.data.items.length, 1, 'Items array should contain one event');
+  assert.strictEqual(responseBody.data.items[0].actorUserId, 'actor-1');
+  assert.strictEqual(responseBody.data.ordering.primary, 'occurredAt');
+  assert.strictEqual(responseBody.data.ordering.secondary, 'eventId');
+  assert.strictEqual(responseBody.data.ordering.direction, 'ascending');
+  assert.strictEqual(responseBody.data.completeness.status, 'unknown');
+});
+
+test('should return target sequence for authorized auditor', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with events for two targets
+  const event1Input: CreateAccessAuditEventInput = {
+    requestId: 'req-1',
+    actorUserId: 'user-1',
+    action: 'createRoleAssignment',
+    targetType: 'roleAssignment',
+    targetId: 'user-001:org-001:role-reviewer',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event2Input: CreateAccessAuditEventInput = {
+    requestId: 'req-2',
+    actorUserId: 'user-2',
+    action: 'createRoleAssignment',
+    targetType: 'roleAssignment',
+    targetId: 'user-002:org-002:role-coordinator',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event1 = createAccessAuditEvent(event1Input);
+  const event2 = createAccessAuditEvent(event2Input);
+
+  await auditEventRepository.save(event1);
+  await auditEventRepository.save(event2);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=target&targetType=roleAssignment&targetId=user-001:org-001:role-reviewer',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.data, 'Response should have data object');
+  assert.ok(responseBody.data.scope, 'Response should have scope object');
+  assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
+  assert.strictEqual(responseBody.data.scope.type, 'target');
+  assert.strictEqual(responseBody.data.scope.targetType, 'roleAssignment');
+  assert.strictEqual(responseBody.data.scope.targetId, 'user-001:org-001:role-reviewer');
+  assert.strictEqual(responseBody.data.items.length, 1, 'Items array should contain one event');
+  assert.strictEqual(responseBody.data.items[0].targetType, 'roleAssignment');
+  assert.strictEqual(responseBody.data.items[0].targetId, 'user-001:org-001:role-reviewer');
+});
+
+test('should filter sequence by time range', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with events before, inside, and after range
+  const eventBeforeInput: CreateAccessAuditEventInput = {
+    occurredAt: '2026-04-01T10:00:00Z',
+    requestId: 'req-before',
+    actorUserId: 'actor-1',
+    action: 'createRole',
+    targetType: 'role',
+    targetId: 'role-1',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const eventInsideInput: CreateAccessAuditEventInput = {
+    occurredAt: '2026-04-02T10:00:00Z',
+    requestId: 'req-inside',
+    actorUserId: 'actor-1',
+    action: 'updateRole',
+    targetType: 'role',
+    targetId: 'role-1',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const eventAfterInput: CreateAccessAuditEventInput = {
+    occurredAt: '2026-04-03T10:00:00Z',
+    requestId: 'req-after',
+    actorUserId: 'actor-1',
+    action: 'deleteRole',
+    targetType: 'role',
+    targetId: 'role-1',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const eventBefore = createAccessAuditEvent(eventBeforeInput);
+  const eventInside = createAccessAuditEvent(eventInsideInput);
+  const eventAfter = createAccessAuditEvent(eventAfterInput);
+
+  await auditEventRepository.save(eventBefore);
+  await auditEventRepository.save(eventInside);
+  await auditEventRepository.save(eventAfter);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=actor&actorUserId=actor-1&occurredFrom=2026-04-02T00:00:00Z&occurredTo=2026-04-02T23:59:59Z',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.data, 'Response should have data object');
+  assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
+  assert.strictEqual(responseBody.data.items.length, 1, 'Items array should contain one event');
+  assert.strictEqual(responseBody.data.items[0].eventId, eventInside.eventId);
+  assert.strictEqual(responseBody.data.items[0].occurredAt, '2026-04-02T10:00:00Z');
+});
+
+test('should return sequence in stable order', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with events out of order, including two with same occurredAt
+  const event1Input: CreateAccessAuditEventInput = {
+    eventId: 'zzz-early-event',
+    occurredAt: '2026-04-01T10:00:00Z',
+    requestId: 'req-1',
+    actorUserId: 'actor-1',
+    action: 'createRole',
+    targetType: 'role',
+    targetId: 'role-1',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event2Input: CreateAccessAuditEventInput = {
+    eventId: 'aaa-late-event',
+    occurredAt: '2026-04-03T10:00:00Z',
+    requestId: 'req-2',
+    actorUserId: 'actor-1',
+    action: 'updateRole',
+    targetType: 'role',
+    targetId: 'role-1',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event3Input: CreateAccessAuditEventInput = {
+    eventId: 'mid-event',
+    occurredAt: '2026-04-02T10:00:00Z',
+    requestId: 'req-3',
+    actorUserId: 'actor-1',
+    action: 'deleteRole',
+    targetType: 'role',
+    targetId: 'role-1',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  // Two events with same occurredAt but different eventIds
+  const event4Input: CreateAccessAuditEventInput = {
+    eventId: 'zzz-same-time-event',
+    occurredAt: '2026-04-01T10:00:00Z',
+    requestId: 'req-4',
+    actorUserId: 'actor-1',
+    action: 'assignRole',
+    targetType: 'role',
+    targetId: 'role-2',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event5Input: CreateAccessAuditEventInput = {
+    eventId: 'aaa-same-time-event',
+    occurredAt: '2026-04-01T10:00:00Z',
+    requestId: 'req-5',
+    actorUserId: 'actor-1',
+    action: 'revokeRole',
+    targetType: 'role',
+    targetId: 'role-3',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event1 = createAccessAuditEvent(event1Input);
+  const event2 = createAccessAuditEvent(event2Input);
+  const event3 = createAccessAuditEvent(event3Input);
+  const event4 = createAccessAuditEvent(event4Input);
+  const event5 = createAccessAuditEvent(event5Input);
+
+  // Save in random order
+  await auditEventRepository.save(event1);
+  await auditEventRepository.save(event3);
+  await auditEventRepository.save(event5);
+  await auditEventRepository.save(event2);
+  await auditEventRepository.save(event4);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=actor&actorUserId=actor-1',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.data, 'Response should have data object');
+  assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
+  assert.strictEqual(responseBody.data.items.length, 5, 'Items array should contain five events');
+
+  // Check ordering: occurredAt ascending, then eventId ascending
+  const items = responseBody.data.items;
+
+  // First three items have the same occurredAt and should be ordered by eventId
+  assert.strictEqual(items[0].eventId, 'aaa-same-time-event');
+  assert.strictEqual(items[0].occurredAt, '2026-04-01T10:00:00Z');
+  assert.strictEqual(items[1].eventId, 'zzz-early-event');
+  assert.strictEqual(items[1].occurredAt, '2026-04-01T10:00:00Z');
+  assert.strictEqual(items[2].eventId, 'zzz-same-time-event');
+  assert.strictEqual(items[2].occurredAt, '2026-04-01T10:00:00Z');
+
+  // Next items should be ordered by occurredAt
+  assert.strictEqual(items[3].eventId, 'mid-event');
+  assert.strictEqual(items[3].occurredAt, '2026-04-02T10:00:00Z');
+  assert.strictEqual(items[4].eventId, 'aaa-late-event');
+  assert.strictEqual(items[4].occurredAt, '2026-04-03T10:00:00Z');
+});
+
+test('should return empty sequence for authorized auditor with no matching events', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with one unrelated event
+  const eventInput: CreateAccessAuditEventInput = {
+    requestId: 'req-1',
+    actorUserId: 'actor-1',
+    action: 'createRole',
+    targetType: 'role',
+    targetId: 'role-1',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event = createAccessAuditEvent(eventInput);
+  await auditEventRepository.save(event);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=actor&actorUserId=non-existent-actor',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.data, 'Response should have data object');
+  assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
+  assert.strictEqual(responseBody.data.items.length, 0, 'Items array should be empty');
+  assert.strictEqual(responseBody.data.completeness.status, 'unknown');
+});
+
+test('should deny access for non-auditor user requesting sequence', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=actor&actorUserId=actor-1',
+    headers: {
+      'x-actor-id': 'normal-user',
+      'x-actor-role': 'coordinator'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 403);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.error, 'Response should have error object');
+  assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
+  assert.strictEqual(responseBody.error.message, 'User must have auditor role to query access history');
+});
+
+test('should reject invalid sequence requests with validation error', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  // Test missing scope
+  const response1 = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response1.statusCode, 400);
+  const responseBody1 = response1.json();
+  assert.ok(responseBody1.error, 'Response should have error object');
+  assert.strictEqual(responseBody1.error.code, 'VALIDATION_ERROR');
+  assert.ok(hasIssueContaining(responseBody1, 'scope', 'Scope is required'));
+
+  // Test invalid scope
+  const response2 = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=invalid',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response2.statusCode, 400);
+  const responseBody2 = response2.json();
+  assert.ok(responseBody2.error, 'Response should have error object');
+  assert.strictEqual(responseBody2.error.code, 'VALIDATION_ERROR');
+  assert.ok(hasIssueContaining(responseBody2, 'scope', 'Invalid scope value'));
+
+  // Test actor scope missing actorUserId
+  const response3 = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=actor',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response3.statusCode, 400);
+  const responseBody3 = response3.json();
+  assert.ok(responseBody3.error, 'Response should have error object');
+  assert.strictEqual(responseBody3.error.code, 'VALIDATION_ERROR');
+  assert.ok(hasIssueContaining(responseBody3, 'actorUserId', 'actorUserId is required for actor scope'));
+
+  // Test target scope missing targetType
+  const response4 = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=target&targetId=some-id',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response4.statusCode, 400);
+  const responseBody4 = response4.json();
+  assert.ok(responseBody4.error, 'Response should have error object');
+  assert.strictEqual(responseBody4.error.code, 'VALIDATION_ERROR');
+  assert.ok(hasIssueContaining(responseBody4, 'targetType', 'targetType is required for target scope'));
+
+  // Test target scope missing targetId
+  const response5 = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=target&targetType=some-type',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response5.statusCode, 400);
+  const responseBody5 = response5.json();
+  assert.ok(responseBody5.error, 'Response should have error object');
+  assert.strictEqual(responseBody5.error.code, 'VALIDATION_ERROR');
+  assert.ok(hasIssueContaining(responseBody5, 'targetId', 'targetId is required for target scope'));
+
+  // Test actor scope with target parameters
+  const response6 = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=actor&actorUserId=actor-1&targetType=some-type',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response6.statusCode, 400);
+  const responseBody6 = response6.json();
+  assert.ok(responseBody6.error, 'Response should have error object');
+  assert.strictEqual(responseBody6.error.code, 'VALIDATION_ERROR');
+  assert.ok(hasIssueContaining(responseBody6, 'targetType', 'targetType is not allowed for actor scope'));
+
+  // Test target scope with actor parameters
+  const response7 = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=target&targetType=some-type&targetId=some-id&actorUserId=actor-1',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response7.statusCode, 400);
+  const responseBody7 = response7.json();
+  assert.ok(responseBody7.error, 'Response should have error object');
+  assert.strictEqual(responseBody7.error.code, 'VALIDATION_ERROR');
+  assert.ok(hasIssueContaining(responseBody7, 'actorUserId', 'actorUserId is not allowed for target scope'));
+
+  // Test invalid timestamp
+  const response8 = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=actor&actorUserId=actor-1&occurredFrom=not-a-date',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response8.statusCode, 400);
+  const responseBody8 = response8.json();
+  assert.ok(responseBody8.error, 'Response should have error object');
+  assert.strictEqual(responseBody8.error.code, 'VALIDATION_ERROR');
+  assert.ok(hasIssueContaining(responseBody8, 'occurredFrom', 'Invalid date format'));
+
+  // Test invalid time range
+  const response9 = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=actor&actorUserId=actor-1&occurredFrom=2026-05-02T00:00:00Z&occurredTo=2026-05-01T00:00:00Z',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response9.statusCode, 400);
+  const responseBody9 = response9.json();
+  assert.ok(responseBody9.error, 'Response should have error object');
+  assert.strictEqual(responseBody9.error.code, 'VALIDATION_ERROR');
+  assert.ok(hasIssueContaining(responseBody9, 'occurredFrom', 'occurredFrom must be less than or equal to occurredTo'));
+
+  // Test unknown query parameter
+  const response10 = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=actor&actorUserId=actor-1&unknown=value',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response10.statusCode, 400);
+  const responseBody10 = response10.json();
+  assert.ok(responseBody10.error, 'Response should have error object');
+  assert.strictEqual(responseBody10.error.code, 'VALIDATION_ERROR');
+  assert.ok(hasIssueContaining(responseBody10, 'unknown', 'Unsupported query parameter'));
+});
+
+test('should not break existing access-history routes after adding sequence endpoint', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with an event
+  const eventInput: CreateAccessAuditEventInput = {
+    requestId: 'req-123',
+    actorUserId: 'user-456',
+    action: 'createRole',
+    targetType: 'role',
+    targetId: 'role-789',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event = createAccessAuditEvent(eventInput);
+  await auditEventRepository.save(event);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  // Test existing access-history endpoint
+  const response1 = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response1.statusCode, 200);
+
+  const responseBody1 = response1.json();
+  assert.ok(responseBody1.data, 'Response should have data object');
+  assert.ok(Array.isArray(responseBody1.data.items), 'Response should have items array');
+  assert.ok(responseBody1.data.items.length >= 1, 'Items array should contain at least one event');
+
+  // Test existing event detail endpoint
+  const response2 = await server.inject({
+    method: 'GET',
+    url: `/api/v1/access-history/events/${event.eventId}`,
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response2.statusCode, 200);
+
+  const responseBody2 = response2.json();
+  assert.ok(responseBody2.data, 'Response should have data object');
+  assert.ok(responseBody2.data.event, 'Response should have event object');
+  assert.strictEqual(responseBody2.data.event.eventId, event.eventId);
+});

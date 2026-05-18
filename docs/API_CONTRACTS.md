@@ -839,6 +839,207 @@ Forbidden response:
 }
 ```
 
+### 10.3 Get access audit event sequence
+
+`GET /api/v1/access-history/sequences`
+
+Request:
+
+Query parameters:
+- `scope`: Required. Defines the sequence scope. Must be either `actor` or `target`.
+- `actorUserId`: Required when `scope=actor`. The user ID to retrieve events for.
+- `targetType`: Required when `scope=target`. The target resource type to retrieve events for.
+- `targetId`: Required when `scope=target`. The target resource ID to retrieve events for.
+- `occurredFrom`: Optional. Filter by earliest occurrence timestamp (inclusive).
+- `occurredTo`: Optional. Filter by latest occurrence timestamp (inclusive).
+
+Authorization:
+- Requires `auditor` role
+- Non-auditor requests receive `403 FORBIDDEN`
+
+Response (success):
+
+```json
+{
+  "data": {
+    "scope": {
+      "type": "actor",
+      "actorUserId": "actor-1"
+    },
+    "ordering": {
+      "primary": "occurredAt",
+      "secondary": "eventId",
+      "direction": "ascending"
+    },
+    "completeness": {
+      "status": "unknown",
+      "reason": "completeness_not_proven",
+      "message": "Available events are returned, but the repository cannot prove the sequence is complete."
+    },
+    "items": []
+  }
+}
+```
+
+Scope types:
+- `actor`: Retrieve events related to a specific actor user ID
+- `target`: Retrieve events related to a specific target resource
+
+Validation rules:
+- `scope` is required and must be either `actor` or `target`
+- When `scope=actor`, `actorUserId` is required and `targetType`/`targetId` are not allowed
+- When `scope=target`, `targetType` and `targetId` are required and `actorUserId` is not allowed
+- Timestamps (`occurredFrom`, `occurredTo`) must be ISO 8601 UTC-compatible strings
+- `occurredFrom` must be <= `occurredTo` when both are provided
+- Unknown query parameters are rejected with `400 VALIDATION_ERROR`
+- Unsupported search parameters (`action`, `outcome`, `module`, `route`, `method`, `limit`, `cursor`) are rejected with `400 VALIDATION_ERROR`
+
+Ordering:
+- Results are ordered by `occurredAt` ascending, then `eventId` ascending
+
+Completeness:
+- Completeness status is always `unknown` with reason `completeness_not_proven`
+- The repository cannot prove the sequence is complete
+
+Empty result behavior:
+- Returns `200 OK` with `data.items = []`
+
+Error responses:
+- `403 FORBIDDEN` when actor does not have `auditor` role
+- `400 VALIDATION_ERROR` for invalid query parameters
+
+Examples:
+
+Actor sequence:
+```
+GET /api/v1/access-history/sequences?scope=actor&actorUserId=user-1
+```
+
+Target sequence:
+```
+GET /api/v1/access-history/sequences?scope=target&targetType=role&targetId=role-1
+```
+
+Actor sequence with time range:
+```
+GET /api/v1/access-history/sequences?scope=actor&actorUserId=user-1&occurredFrom=2026-04-01T00:00:00Z&occurredTo=2026-04-30T23:59:59Z
+```
+
+Successful actor sequence response:
+
+```json
+{
+  "data": {
+    "scope": {
+      "type": "actor",
+      "actorUserId": "actor-1"
+    },
+    "ordering": {
+      "primary": "occurredAt",
+      "secondary": "eventId",
+      "direction": "ascending"
+    },
+    "completeness": {
+      "status": "unknown",
+      "reason": "completeness_not_proven",
+      "message": "Available events are returned, but the repository cannot prove the sequence is complete."
+    },
+    "items": [
+      {
+        "eventId": "550e8400-e29b-41d4-a716-446655440000",
+        "schemaVersion": "access-audit-event.v1",
+        "occurredAt": "2026-04-01T10:30:00Z",
+        "requestId": "req-123",
+        "actorUserId": "actor-1",
+        "actorSource": "actorContext",
+        "action": "createRole",
+        "targetType": "role",
+        "targetId": "role-1",
+        "outcome": "success",
+        "module": "access-control",
+        "evidence": {
+          "payloadHash": "sha256-placeholder",
+          "canonicalization": "json-stable-v1"
+        }
+      }
+    ]
+  }
+}
+```
+
+Successful target sequence response:
+
+```json
+{
+  "data": {
+    "scope": {
+      "type": "target",
+      "targetType": "roleAssignment",
+      "targetId": "user-001:org-001:role-reviewer"
+    },
+    "ordering": {
+      "primary": "occurredAt",
+      "secondary": "eventId",
+      "direction": "ascending"
+    },
+    "completeness": {
+      "status": "unknown",
+      "reason": "completeness_not_proven",
+      "message": "Available events are returned, but the repository cannot prove the sequence is complete."
+    },
+    "items": [
+      {
+        "eventId": "550e8400-e29b-41d4-a716-446655440000",
+        "schemaVersion": "access-audit-event.v1",
+        "occurredAt": "2026-04-01T10:30:00Z",
+        "requestId": "req-123",
+        "actorUserId": "admin-user",
+        "actorSource": "actorContext",
+        "action": "createRoleAssignment",
+        "targetType": "roleAssignment",
+        "targetId": "user-001:org-001:role-reviewer",
+        "outcome": "success",
+        "module": "access-control",
+        "evidence": {
+          "payloadHash": "sha256-placeholder",
+          "canonicalization": "json-stable-v1"
+        }
+      }
+    ]
+  }
+}
+```
+
+Validation error response:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid sequence query parameters",
+    "details": {
+      "issues": [
+        {
+          "path": "scope",
+          "message": "Scope is required"
+        }
+      ]
+    }
+  }
+}
+```
+
+Forbidden response:
+
+```json
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "User must have auditor role to query access history"
+  }
+}
+```
+
 ## 11. Shariah review submission contracts
 
 ### 11.1 Submit review request
