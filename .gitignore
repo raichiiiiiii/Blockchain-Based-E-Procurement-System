@@ -6,7 +6,6 @@ dist
 temp
 backlog/plan.mermaid
 docs/adrs
-docs/drafts
 docs/baseline_architecture.md
 deep-research-report.md
 evidence-ledger.md

@@ -1,0 +1,317 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{fancyhdr}
+\usepackage{xcolor}
+
+\hypersetup{hidelinks}
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Ikrima Tech}
+\lhead{Digital Procurement + PLS Seedbed MVP}
+\cfoot{\thepage}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.2em}
+
+\begin{document}
+
+% Title Page
+\begin{titlepage}
+    \centering
+    \vspace*{2.0cm}
+    {\LARGE \textbf{De-risking Procurement and Shariah-Compliant SME Financing}}\\[0.4cm]
+    {\Large Business Proposal for a Digital Procurement and PLS Seedbed MVP}\\[1.2cm]
+
+    {\large Submitted by}\\[0.2cm]
+    {\Large \textbf{Ikrima Tech}}\\[0.3cm]
+    {\large Muhammad Harith Irfan bin Muhamad Suhaili}\\[1.0cm]
+
+    \begin{tabular}{>{\bfseries}p{4cm}p{9cm}}
+    Contact & asynashen@gmail.com \\
+            & 01123204810 (Whatsapp) \\
+            & 01125677115 (Phone) \\
+    Audience & Potential investors and sponsors; IIUM academic assessors \\
+    Submission Date & 9 March 2026 \\
+    \end{tabular}
+
+    \vfill
+
+    \begin{minipage}{0.9\textwidth}
+    \small
+    This proposal presents a value-first, non-binding commercial case for a minimum viable product (MVP) that combines digital procure-to-pay controls, tamper-evident auditability, and a Shariah-governed profit-and-loss sharing (PLS) seedbed. It is designed for sponsor evaluation and academic review.
+    \end{minipage}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Executive Summary}
+
+Public procurement and procure-to-pay operations sit at the centre of service delivery, trust, and financial control. Across the OECD, public procurement represented 12.7\% of GDP and 29.9\% of total government expenditure in 2023, which makes procurement performance and integrity strategically material rather than merely administrative.\footnote{OECD Publishing, \emph{Government at a Glance 2025}, 2025; OECD Publishing, \emph{Professionalising Public Procurement Through Certification}, 2025.}
+
+At the same time, recent OECD research shows that digital transformation in procurement now depends on end-to-end integration, user-centred service design, and data-informed oversight; persistent barriers include siloed systems, outdated infrastructure, and weak interoperability.\footnote{OECD Publishing, \emph{Digital Transformation of Public Procurement: Good Practice Report}, 2025.}
+
+This proposal recommends a focused 12-week MVP that addresses those operational and governance gaps through four linked capabilities already bounded by the current backlog: supplier onboarding with KYC evidence capture, role-based procure-to-pay workflows, immutable audit evidence, and a restricted mudarabah PLS seedbed tied to a single procurement reference. The solution does \textbf{not} promise full payment execution, escrow, fine-grained authorization, broad ERP integration, or full blockchain operations in the MVP.
+
+The commercial thesis is simple. The MVP converts a fragmented, high-friction process into an evidence-driven operating model that improves sponsor confidence, reduces audit and dispute costs, and creates a credible testbed for Shariah-compliant SME financing. The PLS seedbed is intentionally narrow: one capital provider, one venture operator, one procurement reference, pre-agreed profit-sharing ratios, and no guaranteed principal or profit. That design is consistent with Malaysian and international descriptions of mudarabah and reduces compliance ambiguity at MVP stage.\footnote{Securities Commission Malaysia, \emph{Guidelines on Islamic Capital Market Products and Services}, revised 2024; Bank Negara Malaysia, \emph{Shariah Standard on Mudarabah}, public mirror; IMF, \emph{An Overview of Islamic Finance}, 2015.}
+
+For auditability, the proposal adopts the repository's centralized-first evidence pipeline: deterministic event hashing, daily manifest generation, Merkle-root computation, RFC 3161 timestamping, and immutable or WORM retention. This provides practical tamper-evidence and proof-of-existence without the operational burden of a full consortium blockchain in the first release. RFC 3161 explicitly frames timestamping as proof that data existed before a given time, while Amazon S3 Object Lock documents a WORM retention model based on versioning, retention periods, and legal holds.\footnote{IETF, \emph{RFC 3161: Internet X.509 Public Key Infrastructure Time-Stamp Protocol}, 2001.} \footnote{Amazon Web Services, \emph{Locking Objects with Object Lock} and \emph{Configuring S3 Object Lock}, accessed 2026.}
+
+Ikrima Tech therefore proposes an MVP that is commercially persuasive, technically feasible, and academically defensible because it aligns product scope with real-world procurement problems, explicit Shariah controls, and evidence-based delivery governance.
+
+\section{Problem Statement}
+
+\subsection{Procurement remains economically significant and operationally fragile}
+
+Procurement is one of the highest-impact operating domains in both public and regulated environments. It affects service continuity, working-capital flows, supplier trust, and regulatory exposure. OECD analysis continues to frame procurement as a major share of public expenditure and a core lever for public value.\footnote{OECD Publishing, \emph{Government at a Glance 2025}, 2025.}
+
+Yet procurement systems often remain fragmented. OECD's recent work on digital transformation in procurement identifies a persistent pattern: disconnected lifecycle steps, siloed data, and insufficient digital integration reduce transparency, slow execution, and weaken decision quality.\footnote{OECD Publishing, \emph{Digital Transformation of Public Procurement: Good Practice Report}, 2025.}
+
+The project therefore responds to a genuine market problem: organizations need a controlled digital workflow that captures supplier onboarding, purchase order progression, delivery confirmation, invoice approval, and regulator-facing evidence in one governed operating chain.
+
+\subsection{Procurement is also an integrity problem}
+
+Integrity failures in procurement do not remain local process issues; they become financial, legal, and reputational liabilities. OECD has long described public procurement as one of the government activities most vulnerable to corruption and integrity failure, especially when transparency and accountability controls are weak across the full procurement cycle rather than only at tender stage.\footnote{OECD, \emph{Integrity in Public Procurement: Good Practice from A to Z}, 2007.}
+
+That matters for this project because conventional logs are often not enough. Auditors, regulators, sponsors, and academic reviewers increasingly expect evidence that is reproducible, tamper-evident, and independently verifiable. A system that records workflows but cannot convincingly prove record integrity still leaves a substantial assurance gap.
+
+\subsection{Islamic SME financing adds a second layer of governance complexity}
+
+The project is not only a procurement system. It is also a seedbed for Shariah-compliant profit-and-loss sharing. That raises a distinct governance problem. In mudarabah, profit-sharing ratios must be agreed in advance, financial loss sits with the capital provider unless negligence, misconduct, or breach is established against the manager, and the structure must not guarantee principal or profit.\footnote{Securities Commission Malaysia, \emph{Guidelines on Islamic Capital Market Products and Services}, revised 2024.} \footnote{Bank Negara Malaysia, \emph{Shariah Standard on Mudarabah}, public mirror.}
+
+In practice, that means banks and sponsors cannot rely on vague product narratives. They need rule clarity, traceable contract fields, review records, deductible-cost policies, and auditable distribution logic. The repository's Shariah spike correctly recognized that a broad multi-variant Islamic finance product would inflate compliance risk and delivery ambiguity. The accepted baseline therefore narrows the MVP to restricted single-venture mudarabah, which is a sound sequencing decision rather than a rejection of broader future models.\footnote{IMF, \emph{An Overview of Islamic Finance}, 2015.}
+
+\subsection{Why the problem matters to investors, sponsors, and academic assessors}
+
+For investors and sponsors, the problem is commercial: fragmented procurement creates avoidable cost, delayed execution, weak evidence, and reduced confidence in financing-linked workflows. For academic assessors, the problem is methodological: a proposal must show that architecture, governance, and business value are aligned instead of treating compliance and system design as separate exercises.
+
+This project is attractive precisely because it tackles both questions together. It converts a live operational problem into a disciplined MVP with clear boundaries, measurable governance artefacts, and a realistic path to validation.
+
+\section{Proposed Solution}
+
+\subsection{Solution overview}
+
+Ikrima Tech proposes a \textbf{Digital Procurement and PLS Seedbed MVP} built around four integrated value streams:
+
+\begin{itemize}
+    \item \textbf{Controlled onboarding and access}: supplier onboarding with KYC evidence capture, manual approval, and role-based access for SME, Buyer, and Bank users.
+    \item \textbf{Core procure-to-pay workflow}: purchase order creation, supplier acceptance, delivery confirmation, invoice submission, and buyer approval.
+    \item \textbf{Tamper-evident auditability}: deterministic event hashing, manifest generation, timestamping, evidence bundling, and regulator-facing export.
+    \item \textbf{Restricted mudarabah seedbed}: PLS contract capture, validation, manual settlement trigger, profit-share calculation, and audit recording under explicit Shariah controls.
+\end{itemize}
+
+This design responds directly to the repository scope. It keeps the MVP commercially credible by solving high-value workflow and governance problems first, while explicitly deferring features that would materially increase cost or delivery risk.
+
+\subsection{Scope boundary and MVP integrity}
+
+The proposal is intentionally constrained by the current backlog and architecture decisions. The following are \textbf{in scope} for the MVP:
+
+\begin{itemize}
+    \item supplier registration with KYC record creation and manual approval;
+    \item role-based access and role-specific dashboards;
+    \item PO creation, supplier acceptance, delivery marking, invoice submission, and invoice approval;
+    \item restricted mudarabah PLS contract persistence, validation, and calculation;
+    \item immutable audit trail for key events and export bundle generation;
+    \item manual Shariah governance workflow.
+\end{itemize}
+
+The following are \textbf{out of scope} for the MVP:
+
+\begin{itemize}
+    \item payment execution and settlement rail integration;
+    \item escrow handling;
+    \item fine-grained permissions beyond simple roles;
+    \item full consortium blockchain deployment;
+    \item broad ERP or accounting integration;
+    \item musharakah and other expanded PLS variants;
+    \item automated negligence attribution.
+\end{itemize}
+
+This scope discipline protects sponsor capital and improves delivery certainty.
+
+\subsection{Business value by stakeholder}
+
+\textbf{For SMEs}, the MVP reduces onboarding friction, improves visibility over open POs and invoices, and creates a transparent financing-linked workflow instead of a fragmented document trail.
+
+\textbf{For buyers}, the MVP creates a single operational chain for PO-to-invoice progression, improves role clarity, and reduces dispute overhead.
+
+\textbf{For banks}, the MVP provides a controlled environment to pilot procurement-linked restricted mudarabah without overstating automation or compliance readiness.
+
+\textbf{For regulators and auditors}, the MVP produces structured exports and tamper-evident evidence bundles rather than unverifiable logs.
+
+\textbf{For sponsors and investors}, the MVP de-risks future scale decisions by validating process demand, governance viability, and technical feasibility before major infrastructure commitments.
+
+\subsection{Delivery governance aligned to PMBOK-style value delivery}
+
+This proposal uses the sponsor-mandated governance lens of \textbf{Stakeholders, Team, Development Approach,} and \textbf{Uncertainty}, consistent with PMBOK's value-oriented performance-domain mindset.\footnote{Project Management Institute, \emph{PMBOK Guide} standards overview, accessed 2026.}
+
+\textbf{Stakeholders.} The primary delivery stakeholders are sponsors, SMEs, buyers, bank users, auditors, and the Shariah reviewer. Each has a distinct acceptance interest: commercial value, workflow usability, compliance assurance, or evidence integrity.
+
+\textbf{Team.} The project requires a cross-functional team rather than a pure software build team. Delivery depends on product ownership, backend and frontend development, architecture, QA, and Shariah governance input.
+
+\textbf{Development Approach.} The MVP will follow an incremental delivery model over 12 weeks. The logic is simple: validate workflow control first, then evidence integrity, then PLS orchestration. That sequence produces sponsor-visible value early while containing risk.
+
+\textbf{Uncertainty.} The main uncertainties are governance sign-off, TSA/WORM configuration choices, and estimate calibration. The proposal addresses them with explicit gates rather than optimistic assumptions.
+
+\subsection{Quality assurance aligned to ISO 9001 principles}
+
+ISO's quality management principles emphasise customer focus, leadership, process thinking, improvement, evidence-based decision-making, and relationship management.\footnote{International Organization for Standardization, \emph{Quality Management Principles}, accessed 2026.}
+
+This proposal applies those principles in practical terms:
+
+\begin{itemize}
+    \item \textbf{Customer focus}: the MVP is shaped around sponsor value, regulator readiness, and user workflow clarity rather than technical novelty.
+    \item \textbf{Leadership}: decision rights are explicit, especially for scope control, Shariah approval, and release acceptance.
+    \item \textbf{Process approach}: each state change in the procure-to-pay chain is treated as both a workflow event and a control event.
+    \item \textbf{Evidence-based decision-making}: release decisions depend on acceptance criteria, audit verification evidence, and governance approvals rather than subjective readiness claims.
+    \item \textbf{Improvement}: the MVP is a seedbed; lessons from its controlled release feed the post-MVP roadmap.
+\end{itemize}
+
+Maintenance in MVP terms therefore means disciplined evidence retention, defect triage, policy versioning, and controlled enhancement backlog management, not vague promises of indefinite support.
+
+\subsection{Organizational readiness using the 3P model}
+
+\textbf{People.} The MVP requires defined operating roles for Supplier, Buyer, Bank, Admin, Auditor, and Shariah Reviewer. Readiness includes role ownership, sign-off expectations, and user training focused on workflow actions and evidence responsibilities.
+
+\textbf{Process.} The operating process covers onboarding, procurement execution, invoice approval, settlement recording, PLS calculation, and audit export. The process design is intentionally simplified so that governance can be observed and validated within the MVP window.
+
+\textbf{Product.} The product is a centralized-first platform with a hybrid-style evidence capability. Core business data remains in conventional infrastructure, while evidence integrity uses cryptographic controls and immutable retention patterns. This preserves a path to stronger anchoring later without forcing blockchain operations into the first release.
+
+\subsection{Go-to-market logic using the 4Ps}
+
+\textbf{Product.} A compliance-first procurement and financing seedbed that combines operational workflow with audit evidence and Shariah-controlled PLS logic.
+
+\textbf{Price.} No fixed commercial price is proposed at this stage. Instead, the project uses backlog-derived story points and a calibration method to protect pricing integrity.
+
+\textbf{Place.} The MVP is suited to controlled pilot deployment in a sponsor-backed environment, bank innovation programme, institutional seedbed, or academic-industry demonstration setting.
+
+\textbf{Promotion.} The strongest market message is not ``blockchain''; it is \textbf{verifiable control}. The proposal should therefore be positioned around procurement integrity, regulator-ready evidence, and disciplined Shariah governance.
+
+\section{Qualifications}
+
+This project is unusually well prepared for an MVP-stage proposal because the repository already contains more than concept notes. It includes:
+
+\begin{itemize}
+    \item an accepted PLS architecture decision for restricted single-venture mudarabah;
+    \item a documented Shariah findings pack and governance closure note;
+    \item an accepted audit evidence architecture decision;
+    \item PlantUML diagrams describing evidence generation, bundle retention, and verification;
+    \item a proof-of-concept for deterministic hashing and manifest verification;
+    \item an implemented PLS persistence schema with SQL, Prisma, and validation artefacts.
+\end{itemize}
+
+That repository maturity matters commercially. It demonstrates that the project has already passed the idea-only stage. The architecture has been narrowed. Governance conditions have been documented. Feasibility has been partially proven. The remaining task is not to invent the project, but to package, implement, validate, and sponsor it responsibly.
+
+Ikrima Tech is therefore not proposing an abstract vision. It is proposing a structured MVP based on concrete backlog items, accepted architecture decisions, and visible implementation artefacts.
+
+\section{Timeline}
+
+The proposed timeline spans 12 weeks and follows a logic of progressive risk reduction.
+
+\begin{longtable}{p{3cm}p{11cm}}
+\toprule
+\textbf{Phase} & \textbf{Primary Outcome} \\
+\midrule
+Weeks 1--2 & Mobilization, scope lock, backlog calibration, environment setup, acceptance baseline, and governance kickoff. \\
+Weeks 3--4 & Supplier onboarding, role-based access, and dashboard foundations. \\
+Weeks 5--6 & Core procure-to-pay workflows: PO creation, supplier acceptance, delivery marking, and invoice approval. \\
+Weeks 7--8 & Canonical audit event model, hashing utility, and workflow integration for audit events. \\
+Weeks 9--10 & PLS contract persistence, validation, manual settlement trigger, and profit/loss calculation service. \\
+Weeks 11--12 & Evidence bundle export, verification tests, UAT, sponsor review, and release readiness. \\
+\bottomrule
+\end{longtable}
+
+A Mermaid Gantt snippet is included in the appendix text file so the timeline can be rendered in a format suitable for investor decks or academic appendices.
+
+\section{Costing Method and Investment Logic}
+
+This proposal intentionally excludes a fixed price because no sponsor-approved rate card has been provided. Instead, the project uses a disciplined costing method anchored to backlog complexity points.
+
+\subsection{Point baseline}
+
+Two transparent views are available from the backlog:
+
+\begin{itemize}
+    \item \textbf{High-level MVP view}: 63 story points across the MVP stories listed in the MVP requirement file.
+    \item \textbf{Decomposed delivery view}: approximately 90 points when using the lower-level delivery tasks for PLS and auditability, plus the two completed spikes, without double-counting their parent stories.
+\end{itemize}
+
+\subsection{Costing approach}
+
+The recommended commercial method is:
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item adopt the decomposed delivery view as the planning baseline;
+    \item run a short calibration phase to confirm realistic team velocity;
+    \item convert validated points into effort bands rather than false precision;
+    \item apply a defined governance and quality overhead for review, testing, and evidence packaging;
+    \item convert effort bands into pricing only after sponsor-approved rate assumptions are set.
+\end{enumerate}
+
+This approach protects investors and sponsors from premature pricing claims while still giving a rigorous basis for later commercial negotiation.
+
+\subsection{Investment rationale}
+
+The investment case does not depend on speculative scale. It depends on three near-term value drivers:
+
+\begin{itemize}
+    \item \textbf{risk reduction}: stronger control over onboarding, approvals, and evidence;
+    \item \textbf{process efficiency}: fewer manual handoffs and clearer operational visibility;
+    \item \textbf{option value}: a validated seedbed for future Islamic finance and advanced audit capabilities.
+\end{itemize}
+
+\section{Terms and Conditions}
+
+This section is proposal-style and non-binding.
+
+\begin{itemize}
+    \item This document is an invitation to sponsor discussion and not a final contract.
+    \item Final commercial terms, implementation rates, hosting responsibilities, and support scope will be agreed in a separate statement of work if the proposal is accepted in principle.
+    \item MVP scope is limited to the backlog-defined capabilities described in this proposal. Any additional features, integrations, or regulatory obligations not expressly stated here will require change control.
+    \item Sponsor-side participation is required for timely progress, especially for governance review, acceptance sign-off, and environment decisions.
+    \item Shariah compliance claims in the MVP are limited to the restricted mudarabah baseline and remain subject to the designated reviewer or board's approval conditions.
+    \item Auditability claims are limited to the implemented MVP evidence controls. They should not be interpreted as a guarantee of legal sufficiency for every jurisdiction until legal and regulatory review is completed.
+    \item Delivery timing assumes reasonably prompt feedback and decision-making from the sponsor and designated reviewers.
+\end{itemize}
+
+\section{Agreement}
+
+Ikrima Tech requests approval to proceed to the next commercial stage: sponsor review, delivery calibration, and statement-of-work preparation.
+
+\textbf{Requested decision:} Approve this proposal in principle as the basis for MVP sponsorship discussions.
+
+\vspace{1.2cm}
+\begin{tabularx}{\textwidth}{X X}
+\textbf{For Ikrima Tech} & \textbf{For Sponsor / Reviewer} \\
+\rule{6cm}{0.4pt} & \rule{6cm}{0.4pt} \\
+Muhammad Harith Irfan bin Muhamad Suhaili & Name / Role \\
+Date: \rule{3cm}{0.4pt} & Date: \rule{3cm}{0.4pt} \\
+\end{tabularx}
+
+\section*{Selected References}
+\addcontentsline{toc}{section}{Selected References}
+
+\begin{itemize}
+    \item Amazon Web Services. \emph{Locking Objects with Object Lock}; \emph{Configuring S3 Object Lock}. Accessed 2026.
+    \item Bank Negara Malaysia. \emph{Shariah Standard on Mudarabah}. Public mirror used for accessible review.
+    \item International Monetary Fund. \emph{An Overview of Islamic Finance}. 2015.
+    \item International Organization for Standardization. \emph{Quality Management Principles}. Accessed 2026.
+    \item IETF. \emph{RFC 3161: Internet X.509 Public Key Infrastructure Time-Stamp Protocol}. 2001.
+    \item OECD. \emph{Integrity in Public Procurement: Good Practice from A to Z}. 2007.
+    \item OECD Publishing. \emph{Digital Transformation of Public Procurement: Good Practice Report}. 2025.
+    \item OECD Publishing. \emph{Government at a Glance 2025}. 2025.
+    \item Project Management Institute. \emph{PMBOK Guide} standards overview. Accessed 2026.
+    \item Securities Commission Malaysia. \emph{Guidelines on Islamic Capital Market Products and Services}. Revised 2024.
+\end{itemize}
+
+\end{document}
