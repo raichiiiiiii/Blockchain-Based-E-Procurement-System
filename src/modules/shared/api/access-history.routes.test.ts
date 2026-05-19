@@ -2027,3 +2027,74 @@ test('should not break existing access-history routes after adding sequence endp
   assert.ok(responseBody2.data.event, 'Response should have event object');
   assert.strictEqual(responseBody2.data.event.eventId, event.eventId);
 });
+
+test('should return limited evidence chain without claiming sequence completeness', async () => {
+  const auditEventRepository = new InMemoryAccessAuditEventRepository();
+
+  // Seed repository with events that have limited evidence chain (no previousEventHash)
+  const event1Input: CreateAccessAuditEventInput = {
+    eventId: 'event-1',
+    occurredAt: '2026-04-01T10:00:00Z',
+    requestId: 'req-1',
+    actorUserId: 'limited-chain-actor',
+    action: 'createRole',
+    targetType: 'role',
+    targetId: 'role-1',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event2Input: CreateAccessAuditEventInput = {
+    eventId: 'event-2',
+    occurredAt: '2026-04-02T10:00:00Z',
+    requestId: 'req-2',
+    actorUserId: 'limited-chain-actor',
+    action: 'updateRole',
+    targetType: 'role',
+    targetId: 'role-1',
+    outcome: 'success',
+    module: 'access-control'
+  };
+
+  const event1 = createAccessAuditEvent(event1Input);
+  const event2 = createAccessAuditEvent(event2Input);
+
+  await auditEventRepository.save(event1);
+  await auditEventRepository.save(event2);
+
+  const server = createTestableServer({
+    accessAuditEventRepository: auditEventRepository
+  });
+
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/access-history/sequences?scope=actor&actorUserId=limited-chain-actor',
+    headers: {
+      'x-actor-id': 'auditor-user',
+      'x-actor-role': 'auditor'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+
+  const responseBody = response.json();
+  assert.ok(responseBody.data, 'Response should have data object');
+  assert.ok(Array.isArray(responseBody.data.items), 'Response should have items array');
+  assert.strictEqual(responseBody.data.items.length, 2, 'Items array should contain two events');
+
+  // Check that evidence fields are preserved
+  responseBody.data.items.forEach((item: any) => {
+    assert.ok(item.evidence.payloadHash, 'Evidence should have payloadHash');
+    assert.ok(item.evidence.canonicalization, 'Evidence should have canonicalization');
+    // previousEventHash should be absent/undefined when not present
+    assert.strictEqual(item.evidence.previousEventHash, undefined, 'previousEventHash should be undefined when not present');
+  });
+
+  // Check completeness metadata
+  assert.strictEqual(responseBody.data.completeness.status, 'unknown');
+  assert.strictEqual(responseBody.data.completeness.reason, 'completeness_not_proven');
+  // Response should not claim completeness
+  assert.notStrictEqual(responseBody.data.completeness.status, 'complete');
+});

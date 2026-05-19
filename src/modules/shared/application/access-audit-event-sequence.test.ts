@@ -414,4 +414,60 @@ describe('access-audit-event-sequence', () => {
     assert.strictEqual(queryResult.length, 1);
     assert.strictEqual(queryResult[0].actorUserId, 'actor-2');
   });
+
+  it('returns limited evidence chain without claiming completeness', async () => {
+    // Seed events with limited evidence chain (no previousEventHash)
+    const event1Input: CreateAccessAuditEventInput = {
+      eventId: 'event-1',
+      occurredAt: '2026-04-01T10:00:00Z',
+      requestId: 'req-1',
+      actorUserId: 'limited-chain-actor',
+      action: 'createRole',
+      targetType: 'role',
+      targetId: 'role-1',
+      outcome: 'success',
+      module: 'access-control'
+    };
+
+    const event2Input: CreateAccessAuditEventInput = {
+      eventId: 'event-2',
+      occurredAt: '2026-04-02T10:00:00Z',
+      requestId: 'req-2',
+      actorUserId: 'limited-chain-actor',
+      action: 'updateRole',
+      targetType: 'role',
+      targetId: 'role-1',
+      outcome: 'success',
+      module: 'access-control'
+    };
+
+    const event1 = createAccessAuditEvent(event1Input);
+    const event2 = createAccessAuditEvent(event2Input);
+
+    await repository.save(event1);
+    await repository.save(event2);
+
+    // Retrieve sequence
+    const result = await getAccessAuditEventSequence(repository, {
+      type: 'actor',
+      actorUserId: 'limited-chain-actor'
+    });
+
+    // Assertions
+    assert.strictEqual(result.items.length, 2);
+
+    // Check that evidence fields are preserved
+    result.items.forEach(item => {
+      assert.ok(item.evidence.payloadHash, 'Evidence should have payloadHash');
+      assert.ok(item.evidence.canonicalization, 'Evidence should have canonicalization');
+      // previousEventHash should be absent/undefined when not present
+      assert.strictEqual(item.evidence.previousEventHash, undefined, 'previousEventHash should be undefined when not present');
+    });
+
+    // Check completeness metadata
+    assert.strictEqual(result.completeness.status, 'unknown');
+    assert.strictEqual(result.completeness.reason, 'completeness_not_proven');
+    // Response should not claim completeness
+    assert.notStrictEqual(result.completeness.status, 'complete');
+  });
 });
