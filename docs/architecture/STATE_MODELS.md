@@ -308,7 +308,7 @@ The history model maps workflow states to progression entries as follows:
 - Absence of a final decision is not an error condition and must be handled gracefully
 - All state transitions that have occurred must be represented in the history
 
-## 13. Provisional protected functions list
+## 15. Provisional protected functions list
 
 Protected functions draft:
 - create member organization
