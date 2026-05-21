@@ -308,7 +308,26 @@ The history model maps workflow states to progression entries as follows:
 - Absence of a final decision is not an error condition and must be handled gracefully
 - All state transitions that have occurred must be represented in the history
 
-## 13. Provisional protected functions list
+## 13. KYC/AML onboarding intake state model
+
+### initial intake state
+- `submitted`
+
+### initial state meaning
+- `submitted`: the onboarding case was accepted into the compliance review workflow, but no KYC/AML review outcome has been recorded yet
+
+### initial state rule
+All newly accepted KYC/AML onboarding cases begin in `submitted` state.
+
+### deferred outcome model
+PBI-152 defines only the intake state needed for onboarding case creation. Review outcome states and transition rules are intentionally deferred to PBI-156.
+
+Do not treat `approved`, `rejected`, `flagged`, `blocked`, or any equivalent review outcome as approved by PBI-152.
+
+[FLAG-KYC-AML-OUTCOME-STATES]
+The KYC/AML review outcome vocabulary and transition model will be defined by PBI-156.
+
+## 14. Provisional protected functions list
 
 Protected functions draft:
 - create member organization
@@ -323,7 +342,7 @@ Protected functions draft:
 [FLAG-PROTECTED-FUNCTIONS]
 This list must be formally approved before deactivation enforcement is treated as fully final.
 
-## 14. Open state-model decisions
+## 15. Open state-model decisions
 
 [FLAG-MEMBERSHIP-INITIAL-STATE]
 Current working assumption: `pendingReview`
@@ -342,3 +361,6 @@ Current working assumption: seeded checklist items for Sprint 1
 
 [FLAG-CONDITIONAL-APPROVAL]
 Current working assumption: conditions require rationale and due date, but closure policy is still open
+
+[FLAG-KYC-AML-OUTCOME-STATES]
+Current working assumption: PBI-152 approves only `submitted` as the initial onboarding intake state. Review outcome states and transitions are deferred to PBI-156.

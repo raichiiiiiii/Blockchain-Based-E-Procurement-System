@@ -1399,3 +1399,160 @@ Safe response behavior:
 
 [FLAG-READ-AUDIT]
 History-read logging requirements are not yet finalized, but sensitive history access is expected to be auditable in Sprint 1.
+## 15. KYC/AML onboarding contracts
+
+### 15.1 Submit onboarding case
+
+`POST /api/v1/kyc-aml-onboarding-cases`
+
+Purpose:
+- Accept a regulated onboarding case into the KYC/AML compliance review workflow.
+- Capture required KYC fields, AML declarations, and evidence references.
+- Create a traceable onboarding case in the initial `submitted` state.
+- This endpoint does not record final review outcomes.
+
+Request:
+
+```json
+{
+  "memberOrganizationId": "org_123",
+  "kyc": {
+    "legalName": "string",
+    "registrationNumber": "string",
+    "countryCode": "MYS",
+    "businessType": "string"
+  },
+  "aml": {
+    "declaredBusinessActivity": "string",
+    "expectedMonthlyTransactionValue": "10000.00",
+    "declaredSanctionsExposure": false,
+    "declaredPepExposure": false,
+    "riskSummary": "string"
+  },
+  "evidenceReferences": [
+    {
+      "type": "companyRegistration",
+      "name": "ssm-registration.pdf",
+      "uri": "string",
+      "mediaType": "application/pdf",
+      "checksum": "sha256-placeholder"
+    }
+  ]
+}
+```
+
+Required top-level fields:
+- `memberOrganizationId`
+- `kyc`
+- `aml`
+- `evidenceReferences`
+
+Required KYC fields:
+- `legalName`
+- `registrationNumber`
+- `countryCode`
+- `businessType`
+
+Required AML fields:
+- `declaredBusinessActivity`
+- `expectedMonthlyTransactionValue`
+- `declaredSanctionsExposure`
+- `declaredPepExposure`
+
+Evidence reference rules:
+- `evidenceReferences` must be a non-empty array.
+- Each evidence reference requires:
+  - `type`
+  - `name`
+  - `uri`
+  - `mediaType`
+- `checksum` is optional for MVP but recommended.
+- JSON field names use `camelCase`.
+
+Allowed evidence `type` values:
+- `companyRegistration`
+- `authorizedRepresentativeIdentity`
+- `beneficialOwnership`
+- `amlDeclaration`
+- `supportingDocument`
+
+Required evidence types for accepted intake:
+- `companyRegistration`
+- `authorizedRepresentativeIdentity`
+- `amlDeclaration`
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "kyc_aml_case_123",
+    "memberOrganizationId": "org_123",
+    "status": "submitted",
+    "submittedByUserId": "user_123",
+    "createdAt": "2026-03-15T00:00:00Z",
+    "updatedAt": "2026-03-15T00:00:00Z",
+    "evidenceReferences": [
+      {
+        "type": "companyRegistration",
+        "name": "ssm-registration.pdf",
+        "uri": "string",
+        "mediaType": "application/pdf",
+        "checksum": "sha256-placeholder"
+      }
+    ]
+  }
+}
+```
+
+Response field rules:
+- `id` is an opaque onboarding case identifier.
+- `submittedByUserId` is derived from trusted server-side actor context, not from a client-authored request field.
+- `status` is always `submitted` for newly accepted onboarding intake cases.
+- `createdAt` and `updatedAt` use ISO 8601 UTC strings.
+
+Initial status:
+- `submitted`
+
+Initial status meaning:
+- The onboarding case has been accepted into the compliance review workflow.
+- No KYC/AML review outcome has been recorded yet.
+- Review outcome states and transitions are intentionally deferred to PBI-156.
+
+Validation rules:
+- Missing required top-level fields return `400 VALIDATION_ERROR`.
+- Missing required KYC fields return `400 VALIDATION_ERROR`.
+- Missing required AML fields return `400 VALIDATION_ERROR`.
+- Empty `evidenceReferences` returns `400 VALIDATION_ERROR`.
+- Missing required evidence metadata returns `400 VALIDATION_ERROR`.
+- Missing required evidence types returns `400 VALIDATION_ERROR`.
+- Validation responses use the standard validation error envelope from section 5.
+
+Validation error response:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": {
+      "issues": [
+        {
+          "path": "kyc.legalName",
+          "message": "Legal name is required"
+        }
+      ]
+    }
+  }
+}
+```
+
+Out of scope for this contract section:
+- Review decision outcomes.
+- Final approval, rejection, blocked, or flagged states.
+- Downstream onboarding eligibility checks.
+- Audit event schema changes.
+- Dashboard UI behavior.
+
+[FLAG-KYC-AML-OUTCOME-STATES]
+KYC/AML review outcome states and transition rules are intentionally deferred to PBI-156.
