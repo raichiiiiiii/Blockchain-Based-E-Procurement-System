@@ -18,17 +18,51 @@ export interface CreateOnboardingCaseError {
   issues: string[];
 }
 
-export type CreateOnboardingCaseResponse = CreateOnboardingCaseResult | CreateOnboardingCaseError;
+export interface CreateOnboardingCaseConflict {
+  status: 'conflict';
+  message: string;
+}
+
+export interface CreateOnboardingCaseForbidden {
+  status: 'forbidden';
+  message: string;
+}
+
+export type CreateOnboardingCaseResponse = 
+  | CreateOnboardingCaseResult 
+  | CreateOnboardingCaseError 
+  | CreateOnboardingCaseConflict
+  | CreateOnboardingCaseForbidden;
 
 export interface OnboardingCaseRepository {
   save(onboardingCase: OnboardingCase): Promise<void>;
   findById(id: string): Promise<OnboardingCase | null>;
+  findOpenCaseByOrganizationId(organizationId: string): Promise<OnboardingCase | null>;
 }
 
 export async function createOnboardingCase(
   input: CreateOnboardingCaseInput,
-  repository: OnboardingCaseRepository
+  repository: OnboardingCaseRepository,
+  isAuthorized: (actorId: string, organizationId: string) => Promise<boolean>
 ): Promise<CreateOnboardingCaseResponse> {
+  // Check if actor is authorized to submit onboarding case for this organization
+  const authorized = await isAuthorized(input.submittedByUserId, input.memberOrganizationId);
+  if (!authorized) {
+    return {
+      status: 'forbidden',
+      message: 'User is not authorized to submit onboarding case for this organization'
+    };
+  }
+
+  // Check for existing open case for the same organization
+  const existingOpenCase = await repository.findOpenCaseByOrganizationId(input.memberOrganizationId);
+  if (existingOpenCase) {
+    return {
+      status: 'conflict',
+      message: 'An open onboarding case already exists for this organization'
+    };
+  }
+
   // Validate required evidence types
   const evidenceTypes = input.evidenceReferences.map(ref => ref.type);
   const requiredEvidenceTypes: Array<'companyRegistration' | 'authorizedRepresentativeIdentity' | 'amlDeclaration'> = [

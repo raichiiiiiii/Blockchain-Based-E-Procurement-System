@@ -2,9 +2,37 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { OnboardingCaseRepository } from '../application/create-onboarding-case.js';
 import { createOnboardingCase, type CreateOnboardingCaseInput } from '../application/create-onboarding-case.js';
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
+import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
+import { recordAccessAuditEvent } from '../../shared/application/record-access-audit-event.js';
+
+// Define the audit event interface for kyc/aml onboarding case creation
+export interface KycAmlOnboardingCaseCreateAuditEvent {
+  action: 'createKycAmlOnboardingCase';
+  targetType: 'kycAmlOnboardingCase';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success' | 'forbidden' | 'conflict' | 'validationError';
+  actorId: string;
+  reason?: string;
+}
+
+// Authorization seam type definition
+export type OnboardingSubmissionAuthorization = (
+  actorId: string,
+  organizationId: string
+) => Promise<boolean>;
+
+// Default authorization function
+export const allowAuthenticatedSubmission: OnboardingSubmissionAuthorization = async (
+  actorId,
+  organizationId
+): Promise<boolean> => actorId.trim().length > 0 && organizationId.trim().length > 0;
 
 interface KYCAMLRoutesOptions {
   repository: OnboardingCaseRepository;
+  accessAuditEventRepository?: AccessAuditEventRepository;
+  authorizeSubmission?: OnboardingSubmissionAuthorization;
 }
 
 interface CreateOnboardingCaseRequest {
@@ -32,7 +60,11 @@ interface CreateOnboardingCaseRequest {
 }
 
 const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fastify, options) => {
-  const { repository } = options;
+  const {
+    repository,
+    accessAuditEventRepository,
+    authorizeSubmission = allowAuthenticatedSubmission
+  } = options;
 
   // POST /api/v1/kyc-aml-onboarding-cases - Submit a new KYC/AML onboarding case
   fastify.post<{ Body: CreateOnboardingCaseRequest }>(
@@ -91,17 +123,59 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
       const actorId = request.actorContext?.userId;
 
       if (!actorId) {
+        // Record audit event for missing actor context
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: 'unknown',
+          action: 'createKycAmlOnboardingCase',
+          targetType: 'kycAmlOnboardingCase',
+          targetId: 'unknown',
+          outcome: 'validationError',
+          reason: 'missing_actor_context',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding-cases',
+          method: 'POST'
+        });
+
         return reply.code(400).send(createApplicationValidationError('Missing or invalid x-actor-id header'));
       }
 
       // Validate evidenceReferences is not empty
       if (!request.body.evidenceReferences || request.body.evidenceReferences.length === 0) {
+        // Record audit event for empty evidence references
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: actorId,
+          action: 'createKycAmlOnboardingCase',
+          targetType: 'kycAmlOnboardingCase',
+          targetId: request.body.memberOrganizationId,
+          outcome: 'validationError',
+          reason: 'empty_evidence_references',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding-cases',
+          method: 'POST'
+        });
+
         return reply.code(400).send(createApplicationValidationError('Evidence references must not be empty'));
       }
 
       // Validate each evidence reference has required metadata
       for (const [index, ref] of request.body.evidenceReferences.entries()) {
         if (!ref.type || !ref.name || !ref.uri || !ref.mediaType) {
+          // Record audit event for invalid evidence reference
+          await recordAccessAuditEvent(accessAuditEventRepository, {
+            requestId: request.id,
+            actorUserId: actorId,
+            action: 'createKycAmlOnboardingCase',
+            targetType: 'kycAmlOnboardingCase',
+            targetId: request.body.memberOrganizationId,
+            outcome: 'validationError',
+            reason: `invalid_evidence_reference_${index}`,
+            module: 'kyc-aml-onboarding',
+            route: '/api/v1/kyc-aml-onboarding-cases',
+            method: 'POST'
+          });
+
           return reply.code(400).send(createApplicationValidationError(`Evidence reference at index ${index} missing required metadata`));
         }
       }
@@ -115,11 +189,24 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
         submittedByUserId: actorId
       };
 
-      // Call the application service
-      const result = await createOnboardingCase(input, repository);
+      // Call the application service with the injected authorization seam
+      const result = await createOnboardingCase(input, repository, authorizeSubmission);
 
       // Map result to HTTP responses
       if (result.status === 'created') {
+        // Record audit event for successful creation
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: actorId,
+          action: 'createKycAmlOnboardingCase',
+          targetType: 'kycAmlOnboardingCase',
+          targetId: result.onboardingCase.id,
+          outcome: 'success',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding-cases',
+          method: 'POST'
+        });
+
         return reply.code(201).send({
           data: {
             id: result.onboardingCase.id,
@@ -132,7 +219,63 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
           }
         });
       } else if (result.status === 'invalidInput') {
+        // Record audit event for invalid input
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: actorId,
+          action: 'createKycAmlOnboardingCase',
+          targetType: 'kycAmlOnboardingCase',
+          targetId: request.body.memberOrganizationId,
+          outcome: 'validationError',
+          reason: 'invalid_input',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding-cases',
+          method: 'POST'
+        });
+
         return reply.code(400).send(createApplicationValidationError('Invalid onboarding case input', result.issues));
+      } else if (result.status === 'forbidden') {
+        // Record audit event for forbidden access
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: actorId,
+          action: 'createKycAmlOnboardingCase',
+          targetType: 'kycAmlOnboardingCase',
+          targetId: request.body.memberOrganizationId,
+          outcome: 'forbidden',
+          reason: 'unauthorized_submission',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding-cases',
+          method: 'POST'
+        });
+
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: result.message
+          }
+        });
+      } else if (result.status === 'conflict') {
+        // Record audit event for conflict
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: actorId,
+          action: 'createKycAmlOnboardingCase',
+          targetType: 'kycAmlOnboardingCase',
+          targetId: request.body.memberOrganizationId,
+          outcome: 'conflict',
+          reason: 'duplicate_open_case',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding-cases',
+          method: 'POST'
+        });
+
+        return reply.code(409).send({
+          error: {
+            code: 'CONFLICT',
+            message: result.message
+          }
+        });
       }
       
       // This should never happen, but TypeScript requires handling all cases
