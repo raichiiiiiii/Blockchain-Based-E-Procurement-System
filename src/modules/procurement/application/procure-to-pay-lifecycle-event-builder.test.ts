@@ -5,6 +5,7 @@ import {
   ProcureToPayLifecycleValidationError 
 } from './procure-to-pay-lifecycle-event-builder.js';
 import type { ProcureToPayLifecycleEvent } from './procure-to-pay-lifecycle-event.js';
+import type { CreateProcureToPayLifecycleEventInput } from './procure-to-pay-lifecycle-event-builder.js';
 
 describe('createProcureToPayLifecycleEvent', () => {
   it('creates valid purchaseOrder event with approved fields', () => {
@@ -160,19 +161,22 @@ describe('createProcureToPayLifecycleEvent', () => {
   });
 
   it('rejects invalid lifecycleStage', () => {
+    const invalidLifecycleStageInput = {
+      requestId: 'req-123',
+      correlationId: 'corr-456',
+      caseId: 'ptp-case-789',
+      lifecycleStage: 'invalidStage',
+      eventType: 'purchaseOrderCreated',
+      actorUserId: 'user-abc',
+      targetType: 'purchaseOrder',
+      targetId: 'po-def',
+      outcome: 'success'
+    };
+
     assert.throws(() => {
-      createProcureToPayLifecycleEvent({
-        requestId: 'req-123',
-        correlationId: 'corr-456',
-        caseId: 'ptp-case-789',
-        // @ts-expect-error Testing invalid lifecycleStage
-        lifecycleStage: 'invalidStage',
-        eventType: 'purchaseOrderCreated',
-        actorUserId: 'user-abc',
-        targetType: 'purchaseOrder',
-        targetId: 'po-def',
-        outcome: 'success'
-      });
+      createProcureToPayLifecycleEvent(
+	invalidLifecycleStageInput as unknown as CreateProcureToPayLifecycleEventInput
+      );
     }, ProcureToPayLifecycleValidationError);
   });
 
@@ -268,5 +272,70 @@ describe('createProcureToPayLifecycleEvent', () => {
       amount: 1000,
       currency: 'USD'
       });
+  });
+
+  it('rejects blank requestId', () => {
+    assert.throws(() => {
+      createProcureToPayLifecycleEvent({
+        requestId: '', // Blank
+        correlationId: 'corr-456',
+        caseId: 'ptp-case-789',
+        lifecycleStage: 'purchaseOrder',
+        eventType: 'purchaseOrderCreated',
+        actorUserId: 'user-abc',
+        targetType: 'purchaseOrder',
+        targetId: 'po-def',
+        outcome: 'success'
+      });
+    }, ProcureToPayLifecycleValidationError);
+  });
+
+  it('rejects blank actorUserId', () => {
+    assert.throws(() => {
+      createProcureToPayLifecycleEvent({
+        requestId: 'req-123',
+        correlationId: 'corr-456',
+        caseId: 'ptp-case-789',
+        lifecycleStage: 'purchaseOrder',
+        eventType: 'purchaseOrderCreated',
+        actorUserId: '', // Blank
+        targetType: 'purchaseOrder',
+        targetId: 'po-def',
+        outcome: 'success'
+      });
+    }, ProcureToPayLifecycleValidationError);
+  });
+
+  it('rejects blank eventType', () => {
+    assert.throws(() => {
+      createProcureToPayLifecycleEvent({
+        requestId: 'req-123',
+        correlationId: 'corr-456',
+        caseId: 'ptp-case-789',
+        lifecycleStage: 'purchaseOrder',
+        eventType: '', // Blank
+        actorUserId: 'user-abc',
+        targetType: 'purchaseOrder',
+        targetId: 'po-def',
+        outcome: 'success'
+      });
+    }, ProcureToPayLifecycleValidationError);
+  });
+
+  it('rejects invalid outcome', () => {
+    assert.throws(() => {
+      createProcureToPayLifecycleEvent({
+        requestId: 'req-123',
+        correlationId: 'corr-456',
+        caseId: 'ptp-case-789',
+        lifecycleStage: 'purchaseOrder',
+        eventType: 'purchaseOrderCreated',
+        actorUserId: 'user-abc',
+        targetType: 'purchaseOrder',
+        targetId: 'po-def',
+        // Type cast to avoid TypeScript error while testing runtime validation
+        outcome: 'invalidOutcome' as unknown as 'success'
+      });
+    }, ProcureToPayLifecycleValidationError);
   });
 });
