@@ -1399,3 +1399,302 @@ Safe response behavior:
 
 [FLAG-READ-AUDIT]
 History-read logging requirements are not yet finalized, but sensitive history access is expected to be auditable in Sprint 1.
+
+## 15. Dashboard shell contracts
+
+### 15.1 Dashboard shell purpose and ownership
+
+The dashboard shell is the primary landing experience for authenticated users in the platform. It provides a role-tailored interface with navigation and widgets relevant to the user's responsibilities. This contract is owned by PBI-017 (Role-based UI and operational dashboards) and specifically supports PBI-146 (Role-tailored dashboard landing experience).
+
+### 15.2 Role-to-dashboard mapping contract
+
+The dashboard shell uses the user's assigned roles to determine which navigation items and widgets to display. Roles are identified by their `roleCode` values from the access control system.
+
+#### Canonical dashboard roleCode values
+
+Dashboard role profiles use these canonical `roleCode` values:
+
+| roleCode | Dashboard profile |
+|---|---|
+| `administrator` | Administrator |
+| `buyer` | Buyer |
+| `supplier` | Supplier |
+| `financier` | Financier |
+| `complianceReviewer` | Compliance Reviewer |
+| `shariahReviewer` | Shariah Reviewer |
+| `auditor` | Auditor |
+| `securityOperator` | Security Operator |
+
+These role codes are dashboard-contract inputs. They must not be treated as a full backend role-catalog freeze beyond PBI-017 unless the role catalog contract is explicitly updated.
+
+#### Dashboard role profiles
+
+The following role profiles are defined for the dashboard:
+
+##### Administrator (`administrator`)
+- **Purpose**: Membership and access-control operations
+- **Primary downstream story**: PBI-147
+- **Navigation/widgets**: Member onboarding, role management, role assignment, access-control status placeholders
+
+##### Buyer (`buyer`)
+- **Purpose**: Procurement buyer operational landing
+- **Primary downstream story**: PBI-146 base shell only for now
+- **Navigation/widgets**: Procurement workspace placeholder, orders/tenders placeholder, delivery/invoice status placeholder
+
+##### Supplier (`supplier`)
+- **Purpose**: Supplier operational landing
+- **Primary downstream story**: PBI-146 base shell only for now
+- **Navigation/widgets**: Supplier workspace placeholder, tender/order response placeholder, delivery evidence placeholder
+
+##### Financier (`financier`)
+- **Purpose**: Financing operational landing
+- **Primary downstream story**: PBI-146 base shell only for now
+- **Navigation/widgets**: Financing workspace placeholder, PLS/receivables placeholder, settlement status placeholder
+
+##### Compliance Reviewer (`complianceReviewer`)
+- **Purpose**: KYC/AML and compliance review landing
+- **Primary downstream story**: PBI-148
+- **Navigation/widgets**: KYC/AML queue placeholder, onboarding status/history placeholder, governed action placeholder
+
+##### Shariah Reviewer (`shariahReviewer`)
+- **Purpose**: Shariah governance workflow landing
+- **Primary downstream story**: PBI-148
+- **Navigation/widgets**: Shariah review submission/checklist/decision/history placeholders, governed action placeholder
+
+##### Auditor (`auditor`)
+- **Purpose**: Audit and access-history investigation landing
+- **Primary downstream story**: PBI-151
+- **Navigation/widgets**: Access-history search placeholder, event detail placeholder, investigation queue placeholder
+
+##### Security Operator (`securityOperator`)
+- **Purpose**: Security investigation and protected-action monitoring landing
+- **Primary downstream story**: PBI-151
+- **Navigation/widgets**: Access-history investigation placeholder, forbidden action monitoring placeholder, event evidence placeholder
+
+### 15.3 Navigation model
+
+Navigation items have the following properties:
+
+- `id`: Stable identifier for the navigation item
+- `label`: Display text for the navigation item
+- `target`: Route or page key the navigation item leads to
+- `allowedRoles`: Array of roleCodes that can access this item
+- `requiredPermissions`: Optional array of specific permissions required
+- `visibility`: Visibility rule (visible, hidden, conditional)
+- `blockedBehavior`: How to handle access when user doesn't have permission (hide, show blocked state)
+
+Navigation behavior:
+- Disallowed navigation items are hidden from normal menus by default
+- If a user directly reaches a known route outside their role, render a blocked state instead of silently exposing the page
+- Blocked states must not imply backend authorization was performed successfully
+- Backend remains final enforcement for protected actions
+- Frontend must consume standard backend error envelopes
+
+### 15.4 Widget-zone model
+
+The dashboard uses predefined zones to organize widgets consistently:
+
+#### Summary Zone
+- **Purpose**: High-level overview information
+- **Allowed content type**: Key metrics, status summaries
+- **Ordering rule**: Priority-based
+- **Empty/placeholder rule**: Show "No summary data available"
+- **Accessibility expectation**: Primary information area
+- **Downstream widget ownership**: Various role-specific widgets
+
+#### Primary Zone
+- **Purpose**: Main functional area for primary role activities
+- **Allowed content type**: Action panels, workflow tools
+- **Ordering rule**: Fixed workflow order
+- **Empty/placeholder rule**: Show "No primary widgets available"
+- **Accessibility expectation**: Main working area
+- **Downstream widget ownership**: Role-specific functional widgets
+
+#### Secondary Zone
+- **Purpose**: Supporting information and tools
+- **Allowed content type**: Reports, supplementary data
+- **Ordering rule**: Fixed category order
+- **Empty/placeholder rule**: Show "No secondary widgets available"
+- **Accessibility expectation**: Supplementary information area
+- **Downstream widget ownership**: Contextual information widgets
+
+#### Actions Zone
+- **Purpose**: Quick access to common actions
+- **Allowed content type**: Action buttons, shortcuts
+- **Ordering rule**: Fixed priority order
+- **Empty/placeholder rule**: Show "No quick actions available"
+- **Accessibility expectation**: Easy access to frequent actions
+- **Downstream widget ownership**: Role-specific action widgets
+
+#### Alerts Zone
+- **Purpose**: Notifications and warnings
+- **Allowed content type**: Alert messages, notifications
+- **Ordering rule**: Chronological (newest first)
+- **Empty/placeholder rule**: Show "No alerts"
+- **Accessibility expectation**: Prominent notification area
+- **Downstream widget ownership**: System and workflow alert widgets
+
+#### Investigation Zone
+- **Purpose**: Specialized area for investigative workflows
+- **Allowed content type**: Search tools, evidence viewers
+- **Ordering rule**: Workflow step order
+- **Empty/placeholder rule**: Show "No investigation tools available"
+- **Accessibility expectation**: Focused investigation environment
+- **Downstream widget ownership**: Auditor/security investigation widgets
+
+### 15.5 Widget placement rules
+
+Widget placement follows these rules:
+- PBI-173 may render placeholders using this mapping
+- PBI-176/PBI-179 add administrator widgets into the approved zones
+- PBI-180/PBI-183 add compliance/review widgets into the approved zones
+- PBI-188/PBI-191 add auditor/security investigation widgets into the approved zones
+- No downstream story may create a new top-level shell or alternate navigation model without updating this contract
+
+### 15.6 Shell states
+
+The dashboard shell can be in the following states:
+
+- `ready`: Dashboard is fully loaded and ready for use
+- `noRole`: Authenticated user has no assigned roles
+- `unsupportedRole`: User has roles that are not mapped to dashboard profiles
+- `forbidden`: User attempted to access restricted content
+- `loading`: Dashboard is initializing
+- `error`: An error occurred during dashboard initialization
+
+### 15.7 Fallback semantics
+
+- **No authenticated role**: Safe blocked/no-role state, no sensitive widgets
+- **Unsupported roleCode**: Safe unsupported-role state, no sensitive widgets
+- **Multiple roles**: If authenticated/session context supplies an explicit active dashboard role, use it only when it exists in the user's assigned `roleCode` list and is one of the supported dashboard role codes. Otherwise, choose the landing shell using this deterministic priority:
+  1. `administrator`
+  2. `auditor`
+  3. `securityOperator`
+  4. `complianceReviewer`
+  5. `shariahReviewer`
+  6. `financier`
+  7. `buyer`
+  8. `supplier`
+
+  This priority selects only the active landing shell. It must not merge privileged widgets across roles. Role switching is allowed only among assigned supported role codes.
+- **Empty widgets**: Render documented placeholder/empty state, not an error
+
+### 15.8 Contract data structures
+
+#### DashboardShell
+```typescript
+interface DashboardShell {
+  userContext: {
+    userId: string;
+    displayName?: string;
+  };
+  activeRoleCode?: string;
+  availableRoleCodes: string[];
+  navigationGroups: DashboardNavigationGroup[];
+  widgetZones: Record<string, DashboardWidgetZone>;
+  widgets: DashboardWidget[];
+  shellState: 'ready' | 'noRole' | 'unsupportedRole' | 'forbidden' | 'loading' | 'error';
+}
+```
+
+#### DashboardNavigationGroup
+```typescript
+interface DashboardNavigationGroup {
+  id: string;
+  label: string;
+  items: DashboardNavigationItem[];
+}
+```
+
+#### DashboardNavigationItem
+```typescript
+interface DashboardNavigationItem {
+  id: string;
+  label: string;
+  target: string; // route or page key
+  allowedRoles: string[]; // roleCodes
+  requiredPermissions?: string[]; // Optional specific permissions
+  visibility: 'visible' | 'hidden' | 'conditional';
+  blockedBehavior: 'hide' | 'showBlockedState';
+}
+```
+
+#### DashboardWidgetZone
+```typescript
+interface DashboardWidgetZone {
+  id: string;
+  label: string;
+  purpose: string;
+  ordering: 'priority' | 'workflow' | 'chronological' | 'fixed'
+  emptyState: {
+    message: string;
+    icon?: string;
+  };
+}
+```
+
+#### DashboardWidget
+```typescript
+interface DashboardWidget {
+  id: string;
+  title: string;
+  zoneId: string; // References a widget zone
+  allowedRoles: string[]; // roleCodes
+  requiredPermissions?: string[]; // Optional specific permissions
+  status: 'placeholder' | 'loading' | 'active' | 'unavailable' | 'error';
+  downstreamPbi: string; // Reference to the PBI that implements this widget
+  placeholder?: boolean; // Whether this is a placeholder widget
+}
+```
+
+### 15.9 Backend authorization and frontend guards
+
+- Backend authorization remains authoritative
+- Frontend guards are UX-only and must not be treated as security enforcement
+- All protected actions must be validated by backend services
+- Frontend must properly handle FORBIDDEN responses from backend
+- Error envelopes must be consumed as defined in section 4
+
+### 15.10 Dashboard response semantics
+
+Dashboard shell responses use the standard success envelope:
+
+```json
+{
+  "data": {
+    "shellState": "ready",
+    "activeRoleCode": "administrator",
+    "availableRoleCodes": ["administrator"],
+    "navigationGroups": [],
+    "widgetZones": {},
+    "widgets": []
+  }
+}
+'''
+
+No-role and unsupported-role states may still return a successful dashboard shell response when the user is authenticated but cannot be mapped to a supported dashboard profile:
+
+```
+{
+  "data": {
+    "shellState": "unsupportedRole",
+    "availableRoleCodes": ["legacyRole"],
+    "navigationGroups": [],
+    "widgetZones": {},
+    "widgets": []
+  }
+}
+```
+
+Direct access to a known dashboard route outside the active role renders the dashboard `forbidden` shell state. This frontend blocked state is a UX guard only and must not be treated as backend authorization success.
+
+Backend authorization failures continue to use the standard error envelope:
+
+```
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "User is not allowed to access this resource"
+  }
+}
+```

@@ -70,6 +70,96 @@ Recommended frontend boundary structure:
   - `src/frontend/types/` - TypeScript type definitions
   - `src/frontend/assets/` - Static assets (CSS, images, etc.)
 
+## Dashboard Shell Architecture
+
+The dashboard shell is the primary landing experience for authenticated users, providing a role-tailored interface with navigation and widgets relevant to the user's responsibilities.
+
+### Dashboard Shell Layout Regions
+
+The dashboard shell separates page layout regions from widget zones.
+
+Shell layout regions:
+
+1. **Header region**: Contains user context, active dashboard role, global controls, and shell-level status.
+2. **Navigation region**: Contains role-specific navigation groups and items.
+3. **Content region**: Contains the approved widget zones defined by the dashboard contract.
+4. **Footer region**: Contains system information and non-operational links.
+
+Widget zones are not shell regions. The approved widget zones are:
+
+- `summary`
+- `primary`
+- `secondary`
+- `actions`
+- `alerts`
+- `investigation`
+
+Downstream dashboard stories must place widgets into these approved widget zones and must not create alternate top-level widget-zone names.
+
+### Dashboard Component Structure
+
+The dashboard shell consists of the following core components:
+
+- **DashboardShell**: Root component managing overall layout and state
+- **DashboardHeader**: User context and global controls
+- **DashboardNavigation**: Role-specific navigation menu
+- **WidgetContainer**: Manages widget zones and placement
+- **Widget**: Individual widget components
+- **DashboardFooter**: System information and links
+
+### Role-Based Rendering
+
+The dashboard shell dynamically renders content based on the user's assigned roles:
+
+1. On authentication, the system retrieves the user's assigned roles
+2. Based on the role-to-dashboard mapping defined in API_CONTRACTS.md, the appropriate navigation and widgets are displayed
+3. Users with multiple roles can switch between role contexts
+4. Widgets and navigation items are filtered based on role permissions
+
+### Widget Management
+
+Widgets are organized into predefined zones as defined in the dashboard contract:
+
+- Widgets declare which zone they belong to
+- Widget visibility is controlled by role permissions
+- Widgets can be in placeholder, loading, active, unavailable, or error states according to the dashboard shell contract.
+- Placeholder widgets are displayed when no content is available
+
+## Downstream Widget Implementation
+
+### PBI-173 Dashboard Shell Implementation
+Implements the core dashboard shell and navigation resolution using the contract defined in API_CONTRACTS.md. This includes:
+- Role-based navigation rendering
+- Widget zone management
+- Shell state handling (loading, ready, error, etc.)
+
+### PBI-174 Access Hardening
+Adds dashboard access checks, blocked-route handling, and shared error-state behavior. This includes:
+- Permission-aware navigation
+- Blocked-route handling
+- Unauthorized-state rendering
+
+### PBI-147 Administrator Widgets
+Exposes membership and access-control widgets on the administrator dashboard. Must not redefine backend role or assignment rules.
+
+### PBI-148 Compliance/Review Widgets
+Surfaces governed workflow actions to compliance/review users. Must remain permission-aware and not expose disallowed actions.
+
+### PBI-151 Auditor/Security Investigation Widgets
+Consumes completed access-history APIs to provide investigation capabilities. Must preserve backend audit payload semantics and not redefine backend behavior.
+
+## Contract Consumption Guidelines
+
+PBI-173 must consume the approved shell regions and widget zones without inventing alternate navigation or layout contracts.
+
+All downstream widget implementations must follow these guidelines:
+
+1. **Consume Approved Contracts**: All components must use the dashboard shell contract defined in API_CONTRACTS.md
+2. **No Alternate Navigation Models**: Widget stories must not create new top-level shells or alternate navigation models
+3. **Respect Role Boundaries**: Widgets must only display content appropriate to the user's role
+4. **Handle States Properly**: Components must properly handle all dashboard shell states (loading, error, forbidden, etc.)
+5. **Use Standard Error Handling**: All error handling must follow the patterns defined in the contract
+
 ## Sprint 3 UI Execution Model
 
 Safe execution model for UI PBIs:
