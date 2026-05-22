@@ -63,3 +63,24 @@ Build passed:
 
 ```text
 npm run build
+```
+
+Targeted and full tests passed:
+
+```
+node --loader ts-node/esm --test src/modules/procurement/application/procure-to-pay-lifecycle-source-integration.test.ts
+
+npm test
+```
+
+## Notes
+
+This task integrates source mapping/wiring only.
+
+Out of scope and not implemented:
+
+- transaction-history retrieval API
+- dashboard/UI
+- regulator export packaging
+- full PO/delivery/invoice/settlement business workflows
+- PBI-143 story closure
