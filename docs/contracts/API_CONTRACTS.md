@@ -1555,4 +1555,120 @@ Out of scope for this contract section:
 - Dashboard UI behavior.
 
 [FLAG-KYC-AML-OUTCOME-STATES]
-KYC/AML review outcome states and transition rules are intentionally deferred to PBI-156.
+KYC/AML review outcome states and transition rules are defined in section 15.2 for MVP.
+
+### 15.2 Record KYC/AML review decision
+
+`POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision`
+
+Purpose:
+- Record a compliance reviewer's decision on a submitted KYC/AML onboarding case.
+- Transition the onboarding case to an outcome state based on review findings.
+- Capture required rationale and reason codes for auditability.
+- This endpoint does not implement downstream eligibility enforcement, which is handled by PBI-150/PBI-184 onward.
+
+Request:
+
+```json
+{
+  "outcome": "flag",
+  "rationale": "Beneficial ownership evidence requires manual compliance follow-up.",
+  "reasonCodes": [
+    "beneficial_ownership_unverified",
+    "manual_compliance_concern"
+  ]
+}
+```
+
+Required fields:
+- `outcome`
+- `rationale`
+
+Allowed outcome values:
+- `pass`
+- `fail`
+- `flag`
+- `block`
+
+Outcome-to-status mapping:
+- `pass` -> `approved`
+- `fail` -> `rejected`
+- `flag` -> `flagged`
+- `block` -> `blocked`
+
+Required reason fields:
+- `rationale` is required for every outcome
+- `fail`, `flag`, and `block` require at least one `reasonCode`
+- `pass` may include `reasonCodes`, but does not require them
+
+Allowed reason codes:
+- `identity_verification_failed`
+- `beneficial_ownership_unverified`
+- `sanctions_exposure`
+- `pep_exposure`
+- `inconsistent_business_activity`
+- `missing_or_invalid_evidence`
+- `high_risk_activity`
+- `manual_compliance_concern`
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "kyc_aml_case_123",
+    "memberOrganizationId": "org_123",
+    "status": "flagged",
+    "decision": {
+      "outcome": "flag",
+      "rationale": "Beneficial ownership evidence requires manual compliance follow-up.",
+      "reasonCodes": [
+        "beneficial_ownership_unverified",
+        "manual_compliance_concern"
+      ],
+      "decidedByUserId": "user_456",
+      "decidedAt": "2026-03-15T00:00:00Z"
+    },
+    "updatedAt": "2026-03-15T00:00:00Z"
+  }
+}
+```
+
+Validation rules:
+- Missing `outcome` returns `400 VALIDATION_ERROR`
+- Unknown `outcome` returns `400 VALIDATION_ERROR`
+- Missing or blank `rationale` returns `400 VALIDATION_ERROR`
+- `fail`, `flag`, and `block` with empty or missing `reasonCodes` return `400 VALIDATION_ERROR`
+- Unknown reason code returns `400 VALIDATION_ERROR`
+- Invalid state transition returns `400 VALIDATION_ERROR`
+- Missing case returns `404 NOT_FOUND`
+- Unauthorized reviewer behavior belongs to PBI-158 hardening, but reviewer identity is server-derived
+
+Transition rules:
+- `submitted` -> `approved` through outcome `pass`
+- `submitted` -> `rejected` through outcome `fail`
+- `submitted` -> `flagged` through outcome `flag`
+- `submitted` -> `blocked` through outcome `block`
+
+Invalid transitions:
+- No review decision may be recorded for a missing onboarding case
+- No review decision may be recorded when the current status is already `approved`, `rejected`, `flagged`, or `blocked`
+- No direct transition from `approved`, `rejected`, `flagged`, or `blocked` to another outcome state is allowed in this PBI.
+- Reopen, remediation, expiry, and appeal behavior are not defined by this contract.
+
+Finality assumption:
+- For the current MVP contract, `approved`, `rejected`, `flagged`, and `blocked` are treated as decision states with no further transition until a later PBI defines reopen or remediation behavior
+
+Actor/source rules:
+- Decision maker identity must come from trusted actor context in implementation
+- Do not document `reviewedByUserId` or `decisionByUserId` as a client-authored request field
+- Response examples may include reviewer identity as a server-derived field
+
+Out of scope for this contract section:
+- Downstream workflow enforcement (handled by PBI-150/PBI-184 onward)
+- Sanctions screening implementation
+- Eligibility API implementation
+- Dashboard UI implementation
+
+[FLAG-KYC-AML-OUTCOME-STATES]
+KYC/AML review outcome states and transition rules are now defined for MVP. Reopen, remediation, expiry, and appeal behavior remain deferred to future PBIs.

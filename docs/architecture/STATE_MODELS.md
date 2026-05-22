@@ -327,7 +327,47 @@ Do not treat `approved`, `rejected`, `flagged`, `blocked`, or any equivalent rev
 [FLAG-KYC-AML-OUTCOME-STATES]
 The KYC/AML review outcome vocabulary and transition model will be defined by PBI-156.
 
-## 14. Provisional protected functions list
+## 14. KYC/AML onboarding review state model
+
+### resulting decision statuses
+- `approved`
+- `rejected`
+- `flagged`
+- `blocked`
+
+### outcome meanings
+- `approved`: the onboarding case has passed compliance review and is eligible for platform participation
+- `rejected`: the onboarding case has failed compliance review and is not eligible for platform participation
+- `flagged`: the onboarding case requires additional manual compliance review or follow-up before eligibility can be determined
+- `blocked`: the onboarding case has been identified as high-risk and is blocked from platform participation pending remediation or exception approval
+
+### initial state
+- `submitted`: the onboarding case has been accepted into the compliance review workflow
+
+### transition rules
+- `submitted` -> `approved` through review outcome `pass`
+- `submitted` -> `rejected` through review outcome `fail`
+- `submitted` -> `flagged` through review outcome `flag`
+- `submitted` -> `blocked` through review outcome `block`
+
+### finality assumption
+For the current MVP state model, `approved`, `rejected`, `flagged`, and `blocked` are treated as final decision states with no further transition until a later PBI defines reopen, remediation, expiry, or appeal behavior.
+
+### invalid transitions
+- No review decision may be recorded for a missing onboarding case
+- No review decision may be recorded when the current status is already `approved`, `rejected`, `flagged`, or `blocked`
+- No direct transition from `approved`, `rejected`, `flagged`, or `blocked` to another outcome state is allowed in this PBI.
+- Reopen, remediation, expiry, and appeal behavior are not defined by this state model.
+
+### deferred behavior
+- Reopen, remediation, expiry, and appeal behavior are intentionally deferred to future PBIs
+- Downstream eligibility enforcement is handled by PBI-150/PBI-184 onward, not by this state model
+- Sanctions screening implementation is out of scope for this state model
+
+[FLAG-KYC-AML-OUTCOME-STATES]
+KYC/AML review outcome states and transition rules are now defined for MVP. Reopen, remediation, expiry, and appeal behavior remain deferred to future PBIs.
+
+## 15. Provisional protected functions list
 
 Protected functions draft:
 - create member organization
@@ -342,7 +382,7 @@ Protected functions draft:
 [FLAG-PROTECTED-FUNCTIONS]
 This list must be formally approved before deactivation enforcement is treated as fully final.
 
-## 15. Open state-model decisions
+## 16. Open state-model decisions
 
 [FLAG-MEMBERSHIP-INITIAL-STATE]
 Current working assumption: `pendingReview`
@@ -363,4 +403,4 @@ Current working assumption: seeded checklist items for Sprint 1
 Current working assumption: conditions require rationale and due date, but closure policy is still open
 
 [FLAG-KYC-AML-OUTCOME-STATES]
-Current working assumption: PBI-152 approves only `submitted` as the initial onboarding intake state. Review outcome states and transitions are deferred to PBI-156.
+Current working assumption: PBI-152 approves only `submitted` as the initial onboarding intake state. Review outcome states and transitions are now defined by PBI-156 for MVP, with reopen/remediation behavior deferred to future PBIs.
