@@ -1,4 +1,4 @@
-export type OnboardingCaseStatus = 'submitted';
+export type OnboardingCaseStatus = 'submitted' | 'approved' | 'rejected' | 'flagged' | 'blocked';
 
 export interface EvidenceReference {
   type: 'companyRegistration' | 'authorizedRepresentativeIdentity' | 'beneficialOwnership' | 'amlDeclaration' | 'supportingDocument';
@@ -23,6 +23,26 @@ export interface AMLData {
   riskSummary?: string;
 }
 
+export type DecisionOutcome = 'pass' | 'fail' | 'flag' | 'block';
+
+export type ReasonCode = 
+  | 'identity_verification_failed'
+  | 'beneficial_ownership_unverified'
+  | 'sanctions_exposure'
+  | 'pep_exposure'
+  | 'inconsistent_business_activity'
+  | 'missing_or_invalid_evidence'
+  | 'high_risk_activity'
+  | 'manual_compliance_concern';
+
+export interface DecisionMetadata {
+  outcome: DecisionOutcome;
+  rationale: string;
+  reasonCodes?: ReasonCode[];
+  decidedByUserId: string;
+  decidedAt: string;
+}
+
 export interface OnboardingCase {
   id: string;
   memberOrganizationId: string;
@@ -33,4 +53,5 @@ export interface OnboardingCase {
   submittedByUserId: string;
   createdAt: string;
   updatedAt: string;
+  decision?: DecisionMetadata;
 }

@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { OnboardingCaseRepository } from '../application/create-onboarding-case.js';
 import { createOnboardingCase, type CreateOnboardingCaseInput } from '../application/create-onboarding-case.js';
+import { recordOnboardingReviewDecision, type RecordOnboardingReviewDecisionInput } from '../application/record-onboarding-review-decision.js';
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
 import { recordAccessAuditEvent } from '../../shared/application/record-access-audit-event.js';
@@ -57,6 +58,12 @@ interface CreateOnboardingCaseRequest {
     mediaType: string;
     checksum?: string;
   }>;
+}
+
+interface RecordOnboardingReviewDecisionRequest {
+  outcome?: string;
+  rationale?: string;
+  reasonCodes?: string[];
 }
 
 const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fastify, options) => {
@@ -276,6 +283,89 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
             message: result.message
           }
         });
+      }
+      
+      // This should never happen, but TypeScript requires handling all cases
+      return reply.code(500).send({
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Unexpected error occurred'
+        }
+      });
+    }
+  );
+
+  // POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision - Record a KYC/AML review decision
+  fastify.post<{ 
+    Params: { caseId: string }, 
+    Body: RecordOnboardingReviewDecisionRequest 
+  }>(
+    '/kyc-aml-onboarding-cases/:caseId/decision',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['caseId'],
+          properties: {
+            caseId: { type: 'string' }
+          }
+        },
+        body: {
+          type: 'object',
+          properties: {
+            outcome: { type: 'string' },
+            rationale: { type: 'string' },
+            reasonCodes: {
+              type: 'array',
+              items: { type: 'string' }
+            }
+          },
+          additionalProperties: true
+        }
+      }
+    },
+    async (request, reply) => {
+      // Extract and validate actorId from trusted actor context
+      const actorId = request.actorContext?.userId;
+
+      if (!actorId) {
+        return reply.code(400).send(createApplicationValidationError('Missing or invalid actor context'));
+      }
+
+      // Construct the input for the application service
+      const input: RecordOnboardingReviewDecisionInput = {
+        caseId: request.params.caseId,
+        outcome: request.body.outcome,
+        rationale: request.body.rationale,
+        reasonCodes: request.body.reasonCodes,
+        decidedByUserId: actorId
+      };
+
+      // Call the application service
+      const result = await recordOnboardingReviewDecision(input, repository);
+
+      // Map result to HTTP responses
+      if (result.status === 'recorded') {
+        return reply.code(200).send({
+          data: {
+            id: result.onboardingCase.id,
+            memberOrganizationId: result.onboardingCase.memberOrganizationId,
+            status: result.onboardingCase.status,
+            decision: result.onboardingCase.decision,
+            updatedAt: result.onboardingCase.updatedAt
+          }
+        });
+      } else if (result.status === 'invalidInput') {
+        return reply.code(400).send(createApplicationValidationError('Invalid decision input', result.issues));
+      } else if (result.status === 'notFound') {
+        return reply.code(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: result.message
+          }
+        });
+      } else if (result.status === 'conflict') {
+        return reply.code(400).send(createApplicationValidationError(result.message));
       }
       
       // This should never happen, but TypeScript requires handling all cases

@@ -1,5 +1,8 @@
 import type { OnboardingCase } from '../domain/onboarding-case.js';
-import type { OnboardingCaseRepository } from '../application/create-onboarding-case.js';
+import type { OnboardingCaseRepository as CreateOnboardingCaseRepository } from '../application/create-onboarding-case.js';
+import type { OnboardingCaseRepository as RecordDecisionRepository } from '../application/record-onboarding-review-decision.js';
+
+export type OnboardingCaseRepository = CreateOnboardingCaseRepository & RecordDecisionRepository;
 
 export class InMemoryOnboardingCaseRepository implements OnboardingCaseRepository {
   private readonly cases: OnboardingCase[] = [];
