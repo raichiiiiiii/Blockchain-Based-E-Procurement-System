@@ -9,12 +9,14 @@ import ShariahReviewDecisionPage from './pages/ShariahReviewDecisionPage';
 import ShariahReviewHistoryPage from './pages/ShariahReviewHistoryPage';
 import DashboardShell from './components/dashboard/DashboardShell';
 import { initializeDashboardShell } from './lib/dashboard-contract';
+import { resolveDashboardTargetAccess } from './lib/dashboard-contract';
+import { DashboardRoleCode } from './types/dashboard';
 
 type PageKey = 'dashboard' | 'runway' | 'member-onboarding' | 'role-management' | 'role-assignment' | 'shariah-review-submission' | 'shariah-review-checklist' | 'shariah-review-decision' | 'shariah-review-history';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<PageKey>('dashboard');
-
+  const [dashboardShellState, setDashboardShellState] = useState<'ready' | 'forbidden' | 'error'>('ready');
 
   const demoUserContext = {
     userId: 'user-123',
@@ -28,24 +30,54 @@ function App() {
     demoUserContext.displayName,
   );
 
+  // Update dashboard shell state based on access resolution
+  if (dashboardShellState !== 'ready') {
+    dashboard.shellState = dashboardShellState;
+  }
 
-  const handlePageChange = (pageKey: string) => {
-    // Map targets to actual page keys
-    const pageMap: Record<string, PageKey> = {
-      'member-onboarding': 'member-onboarding',
-      'role-management': 'role-management',
-      'role-assignment': 'role-assignment',
-      'shariah-reviews': 'shariah-review-submission',
-      'shariah-checklists': 'shariah-review-checklist',
-      // Add other mappings as needed
-    };
+  const handlePageChange = (target: string) => {
+    // Resolve access for the target
+    const access = resolveDashboardTargetAccess(target, dashboard.activeRoleCode);
+    
+    switch (access) {
+      case 'allowed':
+        // Check if the target has an implemented page
+        const targetInfo = Object.values(resolveDashboardTargetAccess as any).find(
+          (t: any) => t.target === target
+        );
+        
+        // We need to map targets to page keys
+        const targetToPageKey: Record<string, PageKey> = {
+          'member-onboarding': 'member-onboarding',
+          'role-management': 'role-management',
+          'role-assignment': 'role-assignment',
+          'shariah-reviews': 'shariah-review-submission',
+          'shariah-checklists': 'shariah-review-checklist',
+          'shariah-decisions': 'shariah-review-decision',
+          'shariah-history': 'shariah-review-history',
+          'runway': 'runway'
+        };
 
-    const page = pageMap[pageKey];
-    if (page) {
-      setCurrentPage(page);
-    } else {
-      // Default to dashboard for unrecognized pages
-      setCurrentPage('dashboard');
+        const pageKey = targetToPageKey[target];
+        if (pageKey) {
+          setCurrentPage(pageKey);
+          setDashboardShellState('ready');
+        } else {
+          // Target is allowed but page is not implemented
+          setDashboardShellState('error');
+        }
+        break;
+        
+      case 'forbidden':
+        setDashboardShellState('forbidden');
+        setCurrentPage('dashboard');
+        break;
+        
+      case 'unavailable':
+      case 'unknown':
+        setDashboardShellState('error');
+        setCurrentPage('dashboard');
+        break;
     }
   };
 
@@ -59,7 +91,10 @@ function App() {
             backgroundColor: '#f5f5f5'
           }}>
             <button
-              onClick={() => setCurrentPage('runway')}
+              onClick={() => {
+                setCurrentPage('runway');
+                setDashboardShellState('ready');
+              }}
               style={{
                 marginRight: '1rem',
                 padding: '0.5rem 1rem',
@@ -86,7 +121,10 @@ function App() {
             backgroundColor: '#f5f5f5'
           }}>
             <button
-              onClick={() => setCurrentPage('dashboard')}
+              onClick={() => {
+                setCurrentPage('dashboard');
+                setDashboardShellState('ready');
+              }}
               style={{
                 marginRight: '1rem',
                 padding: '0.5rem 1rem',
@@ -100,9 +138,11 @@ function App() {
               Dashboard
             </button>
             <button
-              onClick={() => setCurrentPage('runway')}
+              onClick={() => {
+                setCurrentPage('runway');
+                setDashboardShellState('ready');
+              }}
               style={{
-                marginRight: '1rem',
                 padding: '0.5rem 1rem',
                 backgroundColor: currentPage === 'runway' ? '#007bff' : '#fff',
                 color: currentPage === 'runway' ? '#fff' : '#000',
@@ -112,103 +152,6 @@ function App() {
               }}
             >
               Frontend Runway
-            </button>
-            <button
-              onClick={() => setCurrentPage('member-onboarding')}
-              style={{
-                marginRight: '1rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: currentPage === 'member-onboarding' ? '#007bff' : '#fff',
-                color: currentPage === 'member-onboarding' ? '#fff' : '#000',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Member Onboarding
-            </button>
-            <button
-              onClick={() => setCurrentPage('role-management')}
-              style={{
-                marginRight: '1rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: currentPage === 'role-management' ? '#007bff' : '#fff',
-                color: currentPage === 'role-management' ? '#fff' : '#000',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Role Management
-            </button>
-            <button
-              onClick={() => setCurrentPage('role-assignment')}
-              style={{
-                marginRight: '1rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: currentPage === 'role-assignment' ? '#007bff' : '#fff',
-                color: currentPage === 'role-assignment' ? '#fff' : '#000',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Role Assignment
-            </button>
-            <button
-              onClick={() => setCurrentPage('shariah-review-submission')}
-              style={{
-                marginRight: '1rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: currentPage === 'shariah-review-submission' ? '#007bff' : '#fff',
-                color: currentPage === 'shariah-review-submission' ? '#fff' : '#000',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Shariah Review Submission
-            </button>
-            <button
-              onClick={() => setCurrentPage('shariah-review-checklist')}
-              style={{
-                marginRight: '1rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: currentPage === 'shariah-review-checklist' ? '#007bff' : '#fff',
-                color: currentPage === 'shariah-review-checklist' ? '#fff' : '#000',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Shariah Checklist
-            </button>
-            <button
-              onClick={() => setCurrentPage('shariah-review-decision')}
-              style={{
-                marginRight: '1rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: currentPage === 'shariah-review-decision' ? '#007bff' : '#fff',
-                color: currentPage === 'shariah-review-decision' ? '#fff' : '#000',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Shariah Decision
-            </button>
-            <button
-              onClick={() => setCurrentPage('shariah-review-history')}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: currentPage === 'shariah-review-history' ? '#007bff' : '#fff',
-                color: currentPage === 'shariah-review-history' ? '#fff' : '#000',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Shariah History
             </button>
           </nav>
 

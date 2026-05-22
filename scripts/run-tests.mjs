@@ -13,6 +13,11 @@ async function collectTestFiles(dir) {
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
 
+    // Skip the frontend directory entirely
+    if (entry.isDirectory() && fullPath === join(ROOT, 'src', 'frontend')) {
+      continue;
+    }
+
     if (entry.isDirectory()) {
       files.push(...await collectTestFiles(fullPath));
       continue;

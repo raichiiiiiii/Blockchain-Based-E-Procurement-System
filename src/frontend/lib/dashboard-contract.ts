@@ -303,6 +303,213 @@ export const ROLE_NAVIGATION_GROUPS: Record<DashboardRoleCode, DashboardNavigati
   ]
 };
 
+// Define known dashboard targets with availability status
+export const DASHBOARD_TARGETS: Record<string, {
+  target: string;
+  label: string;
+  allowedRoles: DashboardRoleCode[];
+  pageKey?: string;
+  availability: 'available' | 'placeholder';
+  blockedMessage?: string;
+  unavailableMessage?: string;
+}> = {
+  // Implemented pages
+  'member-onboarding': {
+    target: 'member-onboarding',
+    label: 'Member Onboarding',
+    allowedRoles: ['administrator'],
+    pageKey: 'member-onboarding',
+    availability: 'available'
+  },
+  'role-management': {
+    target: 'role-management',
+    label: 'Role Management',
+    allowedRoles: ['administrator'],
+    pageKey: 'role-management',
+    availability: 'available'
+  },
+  'role-assignment': {
+    target: 'role-assignment',
+    label: 'Role Assignment',
+    allowedRoles: ['administrator'],
+    pageKey: 'role-assignment',
+    availability: 'available'
+  },
+  'shariah-reviews': {
+    target: 'shariah-reviews',
+    label: 'Shariah Reviews',
+    allowedRoles: ['shariahReviewer', 'complianceReviewer'],
+    pageKey: 'shariah-review-submission',
+    availability: 'available'
+  },
+  'shariah-checklists': {
+    target: 'shariah-checklists',
+    label: 'Shariah Checklists',
+    allowedRoles: ['shariahReviewer'],
+    pageKey: 'shariah-review-checklist',
+    availability: 'available'
+  },
+  'shariah-decisions': {
+    target: 'shariah-decisions',
+    label: 'Shariah Decisions',
+    allowedRoles: ['shariahReviewer'],
+    pageKey: 'shariah-review-decision',
+    availability: 'available'
+  },
+  'shariah-history': {
+    target: 'shariah-history',
+    label: 'Shariah History',
+    allowedRoles: ['shariahReviewer', 'complianceReviewer'],
+    pageKey: 'shariah-review-history',
+    availability: 'available'
+  },
+  'runway': {
+    target: 'runway',
+    label: 'Frontend Runway',
+    allowedRoles: ['administrator'],
+    pageKey: 'runway',
+    availability: 'available'
+  },
+  // Placeholder targets
+  'member-management': {
+    target: 'member-management',
+    label: 'Member Management',
+    allowedRoles: ['administrator'],
+    availability: 'placeholder'
+  },
+  'tenders': {
+    target: 'tenders',
+    label: 'Tenders',
+    allowedRoles: ['buyer'],
+    availability: 'placeholder'
+  },
+  'orders': {
+    target: 'orders',
+    label: 'Orders',
+    allowedRoles: ['buyer'],
+    availability: 'placeholder'
+  },
+  'responses': {
+    target: 'responses',
+    label: 'Tender Responses',
+    allowedRoles: ['supplier'],
+    availability: 'placeholder'
+  },
+  'deliveries': {
+    target: 'deliveries',
+    label: 'Deliveries',
+    allowedRoles: ['supplier'],
+    availability: 'placeholder'
+  },
+  'facilities': {
+    target: 'facilities',
+    label: 'Financing Facilities',
+    allowedRoles: ['financier'],
+    availability: 'placeholder'
+  },
+  'settlements': {
+    target: 'settlements',
+    label: 'Settlements',
+    allowedRoles: ['financier'],
+    availability: 'placeholder'
+  },
+  'kyc-queue': {
+    target: 'kyc-queue',
+    label: 'KYC Queue',
+    allowedRoles: ['complianceReviewer'],
+    availability: 'placeholder'
+  },
+  'aml-reviews': {
+    target: 'aml-reviews',
+    label: 'AML Reviews',
+    allowedRoles: ['complianceReviewer'],
+    availability: 'placeholder'
+  },
+  'checklists': {
+    target: 'checklists',
+    label: 'Checklists',
+    allowedRoles: ['shariahReviewer'],
+    availability: 'placeholder'
+  },
+  'access-history': {
+    target: 'access-history',
+    label: 'Access History',
+    allowedRoles: ['auditor'],
+    availability: 'placeholder'
+  },
+  'investigations': {
+    target: 'investigations',
+    label: 'Investigations',
+    allowedRoles: ['auditor'],
+    availability: 'placeholder'
+  },
+  'monitoring': {
+    target: 'monitoring',
+    label: 'Monitoring',
+    allowedRoles: ['securityOperator'],
+    availability: 'placeholder'
+  },
+  'incidents': {
+    target: 'incidents',
+    label: 'Incidents',
+    allowedRoles: ['securityOperator'],
+    availability: 'placeholder'
+  }
+};
+
+// Access resolver result types
+export type DashboardTargetAccess = 'allowed' | 'forbidden' | 'unavailable' | 'unknown';
+
+// Resolve access to a dashboard target for a given role
+export function resolveDashboardTargetAccess(
+  target: string,
+  activeRoleCode: DashboardRoleCode | undefined
+): DashboardTargetAccess {
+  // If no role is assigned, deny access to role-specific targets
+  if (!activeRoleCode) {
+    return 'forbidden';
+  }
+
+  // Check if target exists in our registry
+  const targetInfo = DASHBOARD_TARGETS[target];
+  if (!targetInfo) {
+    return 'unknown';
+  }
+
+  // Check if the active role is allowed for this target
+  if (!targetInfo.allowedRoles.includes(activeRoleCode)) {
+    return 'forbidden';
+  }
+
+  // If target is a placeholder, mark as unavailable
+  if (targetInfo.availability === 'placeholder') {
+    return 'unavailable';
+  }
+
+  // Target is allowed and available
+  return 'allowed';
+}
+
+// Filter navigation groups based on active role
+export function filterNavigationGroupsByRole(
+  navigationGroups: DashboardNavigationGroup[],
+  activeRoleCode: DashboardRoleCode | undefined
+): DashboardNavigationGroup[] {
+  if (!activeRoleCode) {
+    return [];
+  }
+
+  return navigationGroups
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => 
+        item.visibility === 'visible' && 
+        item.allowedRoles.includes(activeRoleCode)
+      )
+    }))
+    .filter(group => group.items.length > 0);
+}
+
 // Create placeholder widgets for each role and zone
 export function createPlaceholderWidgets(role: DashboardRoleCode): DashboardWidget[] {
   const zones = Object.keys(WIDGET_ZONES);
