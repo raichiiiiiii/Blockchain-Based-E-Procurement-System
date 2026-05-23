@@ -1,9 +1,10 @@
 # Dashboard State-Flow Recommendations
 
-Status: Draft recommendation for Scrum Master / Product Owner review  
+Status: ADR-aligned reference for PBI-017 implementation  
 Owner: Frontend + Architecture + Scrum Master  
 Related feature: PBI-017 — Role-based UI and operational dashboards  
 Related requirement: R17 — Role-based UI and dashboards  
+Related decision record: `docs/architecture/adr/ADR-001-dashboard-auth-boundary-and-state-flow.md`  
 Related source files:
 - `docs/drafts/Pre-SRS-v3.pdf`
 - `docs/contracts/API_CONTRACTS.md`
@@ -12,11 +13,28 @@ Related source files:
 
 ## 1. Purpose
 
-This document records the recommended UI state-flow model for the PBI-017 role-based dashboard and the assumptions that must be resolved before high-fidelity UI work or major frontend refactoring continues.
+This document records the ADR-aligned UI state-flow model for the PBI-017 role-based dashboard.
 
-The recommendation is intentionally state-first. The low-fidelity Figma prototype should be derived from these states instead of inventing screen flows visually.
+It exists as a working reference for future dashboard implementation, Figma iteration, and Aider task prompts. It supersedes earlier draft wording that treated login, account creation, or public self-registration as dashboard-owned state.
 
-## 2. Context from SRS
+## 2. ADR-001 decision summary
+
+ADR-001 is the controlling decision for PBI-017 dashboard state flow.
+
+ADR-001 decides that:
+
+1. PBI-017 starts only after a trusted authenticated actor context exists.
+2. PBI-017 must not implement full authentication, login, session issuance, logout, public account creation, or public SME self-registration.
+3. Authentication/session management must be handled by a separate backlog item or already-approved platform capability.
+4. The dashboard may consume a session or actor-context contract, but must not define that contract.
+5. Dashboard role resolution must use server-derived actor context and backend role/assignment data.
+6. Frontend role labels must not grant backend privileges.
+7. Backend authorization remains authoritative for protected actions.
+8. `pendingReview` organizations must see a limited/status dashboard or onboarding-status experience, not the full operational dashboard.
+9. `inactive`, `suspended`, and `deleted` organizations must not receive operational protected-write affordances.
+10. Buyer, supplier, and financier areas may exist only as placeholders or disabled components until their backend workflow contracts are approved.
+
+## 3. Context from SRS
 
 The dashboard must represent the actual software system, not a generic admin panel.
 
@@ -31,11 +49,40 @@ The preliminary SRS defines the product scope as:
 
 The SRS also constrains the MVP to a centralized-first or hybrid architecture. A full permissioned blockchain deployment is not assumed for the MVP. Blockchain usage should be limited to integrity verification, proof anchoring, or selective audit evidence where justified.
 
-## 3. Existing contract facts
+## 4. PBI-017 state-flow boundary
 
-The following facts are already present in `API_CONTRACTS.md` and `STATE_MODELS.md` and should constrain the UI flow.
+### In boundary
 
-### 3.1 Authentication and actor context
+PBI-017 may own:
+
+- dashboard shell states
+- role-to-dashboard mapping
+- role-to-widget visibility mapping
+- organization-state dashboard gate behavior
+- limited/status dashboard for `pendingReview` organizations
+- UX-level `noRole`, `unsupportedRole`, `forbidden`, `loading`, and `error` states
+- placeholder rendering for backend-contract-pending areas
+- contract-backed widgets where backend contracts are stable
+
+### Out of boundary
+
+PBI-017 must not own:
+
+- login endpoint implementation
+- session or token issuance
+- logout or session invalidation
+- public account creation
+- public SME self-registration
+- password recovery
+- MFA
+- SSO or external identity-provider rollout
+- backend authorization rules beyond consuming already-approved protected-action contracts
+
+## 5. Existing contract facts
+
+The following facts are already present in `API_CONTRACTS.md`, `STATE_MODELS.md`, and ADR-001 and should constrain the UI flow.
+
+### 5.1 Authentication and actor context
 
 Current contract facts:
 
@@ -44,13 +91,14 @@ Current contract facts:
 - Actor identity for protected writes and sensitive reads must come from trusted server-side request context.
 - Client-supplied actor headers may exist as scaffolding but are not authoritative public-contract inputs.
 
-Recommendation:
+ADR-aligned recommendation:
 
-- UI may include conceptual login and account-creation states for design purposes.
-- Do not treat these as implemented API contracts until authentication/session endpoints are formally defined.
+- Figma and frontend state-flow work should start from `Resolved Actor Context`, not from a login screen.
+- Login and account creation may appear only as upstream/out-of-scope annotations.
+- Do not treat authentication/session states as PBI-017 deliverables.
 - Do not make frontend dashboard role selection imply backend authorization.
 
-### 3.2 Member organization lifecycle
+### 5.2 Member organization lifecycle
 
 Current states:
 
@@ -67,24 +115,26 @@ Key rules:
 - `pendingReview`, `inactive`, and `suspended` organizations are blocked from protected actions.
 - `deleted` organizations may not initiate new operational actions.
 
-Recommendation:
+ADR-aligned recommendation:
 
-- The frontend should show an explicit limited/pending state for `pendingReview` rather than routing directly to a full operational dashboard.
-- Protected write buttons should either be hidden or route to a safe blocked state when the organization is not `active`.
+- `pendingReview` organizations should see a limited/status dashboard, not a full operational dashboard.
+- `inactive`, `suspended`, and `deleted` organizations should route to blocked or status-only states for operational actions.
+- Protected write affordances should be hidden or disabled when organization state is not operational.
 
-### 3.3 User lifecycle
+### 5.3 User lifecycle
 
 Current states:
 
 - `active`
 - `inactive`
 
-Recommendation:
+ADR-aligned recommendation:
 
 - `inactive` users should resolve to an access-blocked state before dashboard role selection.
-- Historical visibility can remain possible where a backend endpoint permits it, but protected writes must be blocked.
+- Historical visibility may remain possible only where a backend endpoint permits it.
+- Protected writes must remain blocked.
 
-### 3.4 Role and role-assignment lifecycle
+### 5.4 Role and role-assignment lifecycle
 
 Role states:
 
@@ -96,13 +146,14 @@ Role assignment states:
 - `active`
 - `revoked`
 
-Recommendation:
+ADR-aligned recommendation:
 
 - Only active role assignments should influence dashboard role resolution.
-- Revoked role assignments should remain historical and should not grant dashboard access.
-- Inactive roles should not appear as assignable in UI controls.
+- Revoked role assignments remain historical and must not grant dashboard access.
+- Inactive roles must not appear as assignable controls in dashboard UI.
+- Dashboard role codes must pass through an explicit role-to-dashboard mapping seam.
 
-### 3.5 Shariah review workflow
+### 5.5 Shariah review workflow
 
 Current workflow states:
 
@@ -126,7 +177,7 @@ Recommendation:
 - UI must not show approval/rejection actions before `checklistComplete`.
 - If a decision is attempted from `submitted` or `checklistInProgress`, the UI should display a validation state instead of pretending the action is allowed.
 
-### 3.6 Dashboard shell states
+### 5.6 Dashboard shell states
 
 Current shell states:
 
@@ -137,54 +188,51 @@ Current shell states:
 - `loading`
 - `error`
 
-Recommendation:
+ADR-aligned recommendation:
 
 - These states should remain the outer shell state machine.
 - Business workflow state should be rendered inside the relevant component only after the shell reaches `ready`.
-- `forbidden` is a frontend UX guard only; backend authorization remains authoritative.
+- `forbidden` is a frontend UX guard only.
+- Backend authorization remains authoritative.
 
-## 4. Recommended state-tree model
+## 6. Recommended state-tree model
 
-The recommended high-level tree is:
+The ADR-aligned high-level tree is:
 
 ```text
-Entry / Auth
-├── Login
-│   ├── Authenticated Session
-│   │   ├── User active
-│   │   │   ├── Dashboard role resolution
-│   │   │   │   ├── ready
-│   │   │   │   │   ├── Membership / RBAC component
-│   │   │   │   │   ├── Supplier component
-│   │   │   │   │   ├── Buyer component
-│   │   │   │   │   ├── Financing component
-│   │   │   │   │   ├── Compliance component
-│   │   │   │   │   ├── Shariah review component
-│   │   │   │   │   └── Audit / access-history component
-│   │   │   │   ├── noRole
-│   │   │   │   ├── unsupportedRole
-│   │   │   │   ├── forbidden
-│   │   │   │   └── error
-│   │   │   └── Organization state gate
-│   │   │       ├── pendingReview
-│   │   │       ├── active
-│   │   │       ├── inactive
-│   │   │       ├── suspended
-│   │   │       └── deleted
-│   │   └── User inactive
-│   ├── Auth error
-│   └── Auth unavailable
-└── Account creation / onboarding
-    ├── Validation error
-    ├── Conflict
-    └── Member Organization: pendingReview
-        ├── Compliance review
-        │   ├── active
-        │   └── suspended
-        └── Protected write blocked
+Upstream Auth / Session Capability
+└── Resolved Actor Context
+    ├── User inactive
+    │   └── Access Blocked
+    └── User active
+        └── Active role assignment gate
+            ├── no active assignments
+            │   └── Dashboard: noRole
+            ├── unsupported roleCode
+            │   └── Dashboard: unsupportedRole
+            └── supported roleCode
+                └── Role-to-dashboard mapping seam
+                    └── Organization state gate
+                        ├── pendingReview
+                        │   └── Limited / Status Dashboard
+                        ├── active
+                        │   └── Dashboard: ready
+                        │       ├── Membership / RBAC component
+                        │       ├── Shariah Review component
+                        │       ├── Audit / Access History component
+                        │       ├── KYC / AML component placeholder
+                        │       ├── Buyer component placeholder
+                        │       ├── Supplier component placeholder
+                        │       └── Financing / PLS component placeholder
+                        ├── inactive
+                        │   └── Status-only / Blocked State
+                        ├── suspended
+                        │   └── Status-only / Blocked State
+                        └── deleted
+                            └── Status-only / Blocked State
 ```
 
-## 5. Recommended Mermaid diagram
+## 7. Recommended Mermaid diagram
 
 The source Mermaid chart is committed separately at:
 
@@ -196,175 +244,141 @@ Rendered form:
 
 ```mermaid
 flowchart TD
-  Entry["Entry"] --> Auth["Auth Screen"]
+  Upstream["Upstream Auth / Session Capability\nOutside PBI-017"] --> Actor["Resolved Actor Context"]
 
-  Auth -->|"Submit credentials"| Authenticating["Authenticating"]
-  Auth -->|"Create account / onboarding"| OnboardingForm["Registration / Onboarding Screen"]
+  Actor --> UserState{"User state"}
+  UserState -->|"inactive"| UserBlocked["Access Blocked"]
+  UserState -->|"active"| AssignmentGate{"Active role assignment?"}
 
-  Authenticating -->|"Accepted"| Session["Session Context"]
-  Authenticating -->|"Invalid credentials"| AuthError["Auth Error"]
-  Authenticating -->|"Service unavailable"| AuthUnavailable["Auth Unavailable"]
-  AuthError --> Auth
-  AuthUnavailable --> Auth
+  AssignmentGate -->|"none"| DashboardNoRole["Dashboard: noRole"]
+  AssignmentGate -->|"unsupported roleCode"| DashboardUnsupported["Dashboard: unsupportedRole"]
+  AssignmentGate -->|"supported roleCode"| RoleMapping["Role-to-dashboard mapping seam"]
 
-  OnboardingForm -->|"Submit details"| RegistrationSubmitted["Registration Submitted"]
-  RegistrationSubmitted -->|"Validation failed"| RegistrationValidationError["Registration Validation Error"]
-  RegistrationSubmitted -->|"Duplicate registrationNumber"| RegistrationConflict["Registration Conflict"]
-  RegistrationSubmitted -->|"Member organization created"| OrgPending["Member Organization: pendingReview"]
-  RegistrationValidationError --> OnboardingForm
-  RegistrationConflict --> OnboardingForm
+  RoleMapping --> OrgGate{"Organization state"}
+  OrgGate -->|"pendingReview"| PendingStatus["Limited / Status Dashboard"]
+  OrgGate -->|"active"| DashboardReady["Dashboard: ready"]
+  OrgGate -->|"inactive"| OrgBlocked["Status-only / Blocked State"]
+  OrgGate -->|"suspended"| OrgBlocked
+  OrgGate -->|"deleted"| OrgBlocked
 
-  Session -->|"Resolve server-derived user context"| UserState{"User state"}
-  UserState -->|"inactive"| AccessBlocked["Access Blocked"]
-  UserState -->|"active"| DashboardRole{"Dashboard role resolution"}
+  DashboardReady --> Membership["Membership / RBAC Component\ncontract-backed"]
+  DashboardReady --> Shariah["Shariah Review Component\ncontract-backed"]
+  DashboardReady --> Audit["Audit / Access History Component\ncontract-backed when contracts stable"]
+  DashboardReady --> Compliance["KYC / AML Component\ncontract-pending"]
+  DashboardReady --> Buyer["Buyer Component\nplaceholder"]
+  DashboardReady --> Supplier["Supplier Component\nplaceholder"]
+  DashboardReady --> Financing["Financing / PLS Component\nplaceholder"]
 
-  DashboardRole -->|"No assigned role"| DashboardNoRole["Dashboard: noRole"]
-  DashboardRole -->|"Unsupported roleCode"| DashboardUnsupported["Dashboard: unsupportedRole"]
-  DashboardRole -->|"Supported roleCode"| OrgState{"Organization state"}
+  Membership -->|"create organization"| MemberPending["Member Organization: pendingReview"]
+  Membership -->|"activate organization"| MemberActive["Member Organization: active"]
+  Membership -->|"assign active role"| AssignmentActive["Role Assignment: active"]
+  Membership -->|"revoke assignment"| AssignmentRevoked["Role Assignment: revoked"]
 
-  OrgState -->|"pendingReview"| OrgPending
-  OrgState -->|"inactive"| OrgInactive["Member Organization: inactive"]
-  OrgState -->|"suspended"| OrgSuspended["Member Organization: suspended"]
-  OrgState -->|"deleted"| OrgDeleted["Member Organization: deleted"]
-  OrgState -->|"active"| DashboardReady["Dashboard: ready"]
+  Shariah -->|"submit review"| ReviewSubmitted["Review: submitted"]
+  ReviewSubmitted -->|"save checklist draft"| ReviewProgress["Review: checklistInProgress"]
+  ReviewProgress -->|"save partial checklist"| ReviewProgress
+  ReviewProgress -->|"completion rules pass"| ReviewComplete["Review: checklistComplete"]
+  ReviewProgress -->|"completion rules fail"| ValidationError["VALIDATION_ERROR"]
+  ReviewSubmitted -->|"decision attempted"| ValidationError
+  ReviewComplete -->|"approve"| ReviewApproved["Review: approved"]
+  ReviewComplete -->|"reject"| ReviewRejected["Review: rejected"]
+  ReviewComplete -->|"conditional approve"| ReviewConditional["Review: conditionalApproved"]
 
-  DashboardReady --> Membership["Membership / RBAC Component"]
-  DashboardReady --> Supplier["Supplier Component"]
-  DashboardReady --> Buyer["Buyer Component"]
-  DashboardReady --> Financing["Financing Component"]
-  DashboardReady --> Compliance["Compliance Component"]
-  DashboardReady --> Shariah["Shariah Review Component"]
-  DashboardReady --> Audit["Audit / Access History Component"]
+  Audit -->|"query history"| AccessHistory["Access History Results"]
+  Audit -->|"query sequence"| AccessSequence["Access Event Sequence"]
+  Audit -->|"no records"| EmptyResult["Empty Result"]
 
-  Membership -->|"Create organization"| OrgPending
-  Membership -->|"Activate organization"| OrgActive["Member Organization: active"]
-  Membership -->|"Assign role"| AssignmentActive["Role Assignment: active"]
-  Membership -->|"Revoke role"| AssignmentRevoked["Role Assignment: revoked"]
+  DashboardReady -->|"known route outside role"| DashboardForbidden["Dashboard: forbidden"]
+  DashboardReady -->|"unknown or unavailable target"| DashboardError["Dashboard: error"]
+  DashboardReady -->|"backend denies protected action"| BackendForbidden["Backend: FORBIDDEN"]
 
-  Compliance -->|"Approve case"| OrgActive
-  Compliance -->|"Flag / suspend case"| OrgSuspended
+  PendingStatus -->|"protected write attempted"| BackendForbidden
+  OrgBlocked -->|"protected write attempted"| BackendForbidden
+  UserBlocked --> BackendForbidden
 
-  Shariah -->|"Submit review"| ReviewSubmitted["Review: submitted"]
-  ReviewSubmitted -->|"Save checklist"| ReviewProgress["Review: checklistInProgress"]
-  ReviewProgress -->|"Save partial checklist"| ReviewProgress
-  ReviewProgress -->|"Completion rules pass"| ReviewComplete["Review: checklistComplete"]
-  ReviewProgress -->|"Completion rules fail"| ValidationError["VALIDATION_ERROR"]
-  ReviewSubmitted -->|"Decision attempted"| ValidationError
-  ReviewComplete -->|"Approve"| ReviewApproved["Review: approved"]
-  ReviewComplete -->|"Reject"| ReviewRejected["Review: rejected"]
-  ReviewComplete -->|"Conditional approve"| ReviewConditional["Review: conditionalApproved"]
-
-  Audit -->|"Query history"| AccessHistory["Access History Results"]
-  Audit -->|"Query sequence"| AccessSequence["Access Event Sequence"]
-  Audit -->|"No records"| EmptyResult["Empty Result"]
-
-  DashboardReady -->|"Known route outside role"| DashboardForbidden["Dashboard: forbidden"]
-  DashboardReady -->|"Unknown / unavailable target"| DashboardError["Dashboard: error"]
-  DashboardReady -->|"Protected action denied by backend"| BackendForbidden["Backend: FORBIDDEN"]
-
-  AccessBlocked --> BackendForbidden
-  OrgPending -->|"Protected write attempted"| BackendForbidden
-  OrgInactive -->|"Protected write attempted"| BackendForbidden
-  OrgSuspended -->|"Protected write attempted"| BackendForbidden
-  OrgDeleted -->|"Operational action attempted"| BackendForbidden
+  Buyer -->|"backend workflow contract absent"| PlaceholderNotice["Disabled Placeholder"]
+  Supplier -->|"backend workflow contract absent"| PlaceholderNotice
+  Financing -->|"backend workflow contract absent"| PlaceholderNotice
+  Compliance -->|"PBI-002 contract pending"| PlaceholderNotice
 ```
 
-## 6. Design guidance for future Figma iteration
+## 8. Widget readiness matrix
 
-Future low-fidelity frames should be tree-structured.
+ADR-001 requires dashboard widgets to be classified before implementation.
+
+| Widget area | Classification | Implementation guidance |
+|---|---|---|
+| Membership / RBAC | contract-backed | May consume completed membership and access-control baseline. |
+| Shariah Review | contract-backed | May consume Shariah review submission, checklist, decision, and history contracts. |
+| Audit / Access History | contract-backed when contracts stable | May consume access-history contracts when relevant PBIs are stable; must not reopen PBI-022 scope. |
+| KYC / AML | contract-pending | Depends on PBI-002 contracts stabilizing. |
+| Buyer | placeholder | Requires procure-to-pay contracts. |
+| Supplier | placeholder | Requires supplier/procurement workflow contracts. |
+| Financing / PLS | placeholder | Requires escrow, PLS, receivables, and financing contracts. |
+
+## 9. Design guidance for future Figma iteration
+
+Future low-fidelity frames should be tree-structured and ADR-aligned.
 
 Recommended visual rules:
 
+- Start from `Resolved Actor Context`, not login.
 - Frames should represent system components or states only.
 - Do not put explanatory workflow prose inside product frames.
 - Put explanations, assumptions, and traceability notes outside the frames as annotations.
 - Use connectors or labels outside frames to describe transitions.
 - Start with state change first, then create low-fidelity component frames.
+- Buyer, supplier, and financing frames should appear as disabled/placeholder nodes until backend contracts exist.
 
 Recommended tree layout:
 
 ```text
-Auth / Entry
-├── Session resolution
-│   ├── Dashboard shell states
-│   └── Backend forbidden state
-└── Account creation / onboarding
-    └── Organization pending review
-        └── Compliance resolution
-
-Dashboard ready
-├── Membership / RBAC
-├── Supplier
-├── Buyer
-├── Financing
-├── Compliance
-├── Shariah Review
-└── Audit / Access History
+Resolved Actor Context
+├── User State Gate
+├── Role Assignment Gate
+└── Organization State Gate
+    ├── Limited / Status Dashboard
+    ├── Blocked / Status-only State
+    └── Dashboard Ready
+        ├── Contract-backed components
+        └── Placeholder components
 ```
 
-## 7. Open decisions for Scrum Master / PO
+## 10. Open follow-up needs
 
-### 7.1 Authentication and self-registration contract
+### 10.1 Authentication/session backlog item
 
-Question:
+ADR-001 requires a separate backlog item for login, session/token issuance, logout/session invalidation, and authenticated request validation if one does not already exist.
 
-- Is account creation a public self-service SME onboarding flow, an administrator-created organization flow, or both?
+PBI-017 should consume that capability when available rather than implementing it directly.
 
-Reason:
+### 10.2 Role-to-dashboard mapping seam
 
-- Current API contracts define protected bearer-auth assumptions and member organization creation, but do not define public login/register endpoints.
+The dashboard must explicitly map backend role assignments to dashboard role profiles.
 
-Recommendation:
+Open implementation consideration:
 
-- Create a separate enabler for frontend auth/session model before making login/create-account screens production-like.
+- dashboard roleCode `administrator` must not be treated as automatic backend `admin` privilege.
+- backend authorization must remain authoritative.
 
-### 7.2 Organization-state gate before dashboard access
+### 10.3 Organization-state gate tests
 
-Question:
+Future implementation should include tests or evidence for:
 
-- Should `pendingReview` organizations see a limited dashboard, a blocked dashboard, or only an onboarding status screen?
+- `pendingReview` limited/status state
+- inactive user blocked state
+- inactive organization blocked/status-only state
+- suspended organization blocked/status-only state
+- deleted organization blocked/status-only state
 
-Recommendation:
+### 10.4 Placeholder classification tests/evidence
 
-- Use limited dashboard/status screen for `pendingReview`.
-- Block protected writes until organization becomes `active`.
+Future implementation should include evidence that buyer, supplier, financing, and KYC/AML areas are disabled or placeholder where backend contracts are pending.
 
-### 7.3 Dashboard role vocabulary vs backend role catalog
+## 11. Recommended next action
 
-Question:
-
-- Should dashboard role codes such as `administrator` be formally mapped to backend role codes such as `admin`, or should the backend role vocabulary be aligned later?
-
-Recommendation:
-
-- Keep a documented mapping seam.
-- Do not allow frontend role codes to grant backend privileges.
-
-### 7.4 Scope of buyer/supplier/financier screens in MVP
-
-Question:
-
-- Should buyer, supplier, and financier dashboards remain placeholders under PBI-146, or should specific workflow stories be added before high-fidelity UI work?
-
-Recommendation:
-
-- Keep placeholders until procure-to-pay and financing backend contracts are defined or prioritized.
-
-### 7.5 Figma low-fidelity prototype acceptance rule
-
-Question:
-
-- Should Figma prototype acceptance require clickable interactions, or is a state-tree frame map sufficient for Sprint 5?
-
-Recommendation:
-
-- Accept state-tree frame map first.
-- Add click-through only after the state tree is approved.
-
-## 8. Recommended next action
-
-1. Scrum Master / PO reviews this document.
-2. Resolve open decisions in section 7.
-3. Update `API_CONTRACTS.md` or create an auth/session enabler if needed.
-4. Rebuild the low-fidelity Figma prototype as a tree using `dashboard-state-flow.mermaid` as the source.
-5. Only after the tree is approved, proceed to visual UI layout refinement.
+1. Use ADR-001 as the controlling decision.
+2. Use this document and `dashboard-state-flow.mermaid` as implementation references.
+3. Rebuild the low-fidelity Figma prototype as a tree from `Resolved Actor Context`.
+4. Do not add login/account creation screens to PBI-017 UI work except as out-of-scope annotations.
+5. Implement or document dashboard state behavior before adding high-fidelity UI polish.
