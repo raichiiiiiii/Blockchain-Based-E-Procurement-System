@@ -22,6 +22,9 @@ import type { UserStatusLookup } from '../modules/shared/application/user-status
 import type { MemberStatusLookup } from '../modules/shared/application/member-status-lookup.js';
 import type { AccessAuditEventRepository } from '../modules/shared/application/access-audit-event-repository.js';
 import { registerAccessHistoryRoutes } from '../modules/shared/api/access-history.routes.js';
+import { registerTransactionHistoryRoutes } from '../modules/procurement/api/transaction-history.routes.js';
+import type { ProcureToPayLifecycleEventRepository } from '../modules/procurement/application/procure-to-pay-lifecycle-event-repository.js';
+import { InMemoryProcureToPayLifecycleEventRepository } from '../modules/procurement/infrastructure/in-memory-procure-to-pay-lifecycle-event-repository.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -37,6 +40,7 @@ export function createTestableServer(options?: {
   userStatusLookup?: UserStatusLookup;
   memberStatusLookup?: MemberStatusLookup;
   accessAuditEventRepository?: AccessAuditEventRepository;
+  procureToPayLifecycleEventRepository?: ProcureToPayLifecycleEventRepository;
 }) {
   const server = fastify();
 
@@ -79,6 +83,7 @@ export function createTestableServer(options?: {
   const userStatusLookup = options?.userStatusLookup;
   const memberStatusLookup = options?.memberStatusLookup;
   const accessAuditEventRepository = options?.accessAuditEventRepository;
+  const procureToPayLifecycleEventRepository = options?.procureToPayLifecycleEventRepository ?? new InMemoryProcureToPayLifecycleEventRepository();
 
   // Register membership routes
   server.register(registerMembershipRoutes, {
@@ -116,6 +121,12 @@ export function createTestableServer(options?: {
   server.register(registerAccessHistoryRoutes, {
     prefix: '/api/v1',
     accessAuditEventRepository
+  });
+
+  // Register transaction-history routes
+  server.register(registerTransactionHistoryRoutes, {
+    prefix: '/api/v1',
+    repository: procureToPayLifecycleEventRepository
   });
 
   return server;
