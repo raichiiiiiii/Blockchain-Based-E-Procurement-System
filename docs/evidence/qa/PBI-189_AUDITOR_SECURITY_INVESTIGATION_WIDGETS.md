@@ -21,6 +21,7 @@ This evidence document covers the implementation of auditor and security operato
    - `src/frontend/pages/AccessEventDetailPage.tsx`
    - `src/frontend/pages/AccessEventSequencePage.tsx`
    - `src/frontend/pages/SecurityInvestigationPlaceholderPage.tsx`
+5. `docs/evidence/qa/PBI-189_AUDITOR_SECURITY_INVESTIGATION_WIDGETS.md` - Updated implementation evidence and final validation result.
 
 ## Contract Consumed
 
@@ -94,6 +95,18 @@ Security operator widgets are implemented as placeholders/contract-pending becau
 2. No security-specific audit API is approved in the contracts
 3. Security operators should see investigation affordances without gaining unauthorized access
 4. Copy clearly states that access-history APIs currently require auditor backend authorization
+5. The `security-investigation-placeholder` action routes to `security-investigation`, which resolves as unavailable because the target is a placeholder.
+
+## Navigation and Legacy Target Note
+
+Approved PBI-189 navigation entries are limited to:
+
+- `access-history-search`
+- `access-event-detail`
+- `access-event-sequence`
+- `security-investigation`
+
+Legacy generic targets (`access-history`, `investigations`, `monitoring`, `incidents`) are not exposed as approved PBI-189 navigation entries.
 
 ## Payload Preservation Note
 
@@ -132,21 +145,21 @@ This implementation complies with ADR-001 by:
 
 ## Validation Commands/Results
 
+Manual validation was executed locally by the developer after the final security placeholder action fix and reported as passing on 2026-05-23.
+
 ```bash
 npm run frontend:build
-# Successfully builds without errors
+# PASS
 
 npm run build
-# Successfully builds without errors
+# PASS
 
 npm test
-# All existing tests pass
+# PASS
 
 git diff --check
-# No whitespace errors
+# PASS
 ```
-
-Note: Validation commands need to be rerun after this fix.
 
 ## Known Limitations
 
@@ -156,11 +169,10 @@ Note: Validation commands need to be rerun after this fix.
 
 ## Follow-up Recommendations for PBI-190
 
-1. Implement actual API calls in the frontend pages
+1. Implement or harden actual API calls in the frontend pages if backend/browser integration scope allows it
 2. Add proper error handling for API responses
-3. Implement real data display for search results, event details, and sequences
-4. Add comprehensive frontend tests for widget filtering and access resolution
-5. Enhance UI/UX for better user experience
-6. Add loading states for API calls
-7. Implement proper validation for form inputs
-8. Add pagination support for search results
+3. Implement real data display for search results, event details, and sequences if API binding is approved
+4. Add loading states for API calls
+5. Implement proper validation for form inputs
+6. Validate empty-result, validation-error, forbidden, not-found, and incomplete-sequence states
+7. Keep securityOperator access-history behavior placeholder/forbidden unless backend contracts explicitly change
