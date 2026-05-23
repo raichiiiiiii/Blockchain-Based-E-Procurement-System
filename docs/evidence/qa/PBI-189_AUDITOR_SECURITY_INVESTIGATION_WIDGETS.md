@@ -66,6 +66,8 @@ Added the following targets to the dashboard target registry:
    - availability: placeholder
    - pageKey: security-investigation
 
+Note: Legacy generic targets (`access-history`, `investigations`, `monitoring`, `incidents`) are retained for backward compatibility but are not exposed as approved PBI-189 navigation entries.
+
 ## Action-Entry Mapping Table
 
 | Widget ID | Action Entry | Target | Allowed Role | Navigation Behavior |
@@ -144,6 +146,8 @@ git diff --check
 # No whitespace errors
 ```
 
+Note: Validation commands need to be rerun after this fix.
+
 ## Known Limitations
 
 1. Actual API fetching is scaffolded with clear contract notes rather than implemented
@@ -160,6 +164,3 @@ git diff --check
 6. Add loading states for API calls
 7. Implement proper validation for form inputs
 8. Add pagination support for search results
-
-```
-This completes the implementation of PBI-189, providing auditor and security operator investigation widgets that adhere to the defined contracts while preserving backend semantics and authorization boundaries.

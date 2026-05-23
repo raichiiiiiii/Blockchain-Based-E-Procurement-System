@@ -228,6 +228,8 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                       <div className="widget-content">
                         <p>Security investigation functionality is contract-pending.</p>
                         <p>Current access-history APIs require auditor backend authorization.</p>
+                        <p>Security dashboard visibility does not grant access-history API permission.</p>
+                        <p>No fake results or metrics are shown.</p>
                         <button 
                           className="action-button"
                           onClick={() => onPageChange('security-investigation')}

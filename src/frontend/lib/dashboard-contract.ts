@@ -275,17 +275,25 @@ export const ROLE_NAVIGATION_GROUPS: Record<DashboardRoleCode, DashboardNavigati
       label: 'Audit',
       items: [
         {
-          id: 'access-history',
-          label: 'Access History',
+          id: 'access-history-search',
+          label: 'Access History Search',
           target: 'access-history-search',
           allowedRoles: ['auditor'],
           visibility: 'visible',
           blockedBehavior: 'hide'
         },
         {
-          id: 'investigations',
-          label: 'Investigations',
-          target: 'investigations',
+          id: 'access-event-detail',
+          label: 'Event Detail',
+          target: 'access-event-detail',
+          allowedRoles: ['auditor'],
+          visibility: 'visible',
+          blockedBehavior: 'hide'
+        },
+        {
+          id: 'access-event-sequence',
+          label: 'Event Sequence',
+          target: 'access-event-sequence',
           allowedRoles: ['auditor'],
           visibility: 'visible',
           blockedBehavior: 'hide'
@@ -299,17 +307,9 @@ export const ROLE_NAVIGATION_GROUPS: Record<DashboardRoleCode, DashboardNavigati
       label: 'Security',
       items: [
         {
-          id: 'monitoring',
-          label: 'Monitoring',
+          id: 'security-investigation',
+          label: 'Security Investigation',
           target: 'security-investigation',
-          allowedRoles: ['securityOperator'],
-          visibility: 'visible',
-          blockedBehavior: 'hide'
-        },
-        {
-          id: 'incidents',
-          label: 'Incidents',
-          target: 'incidents',
           allowedRoles: ['securityOperator'],
           visibility: 'visible',
           blockedBehavior: 'hide'
