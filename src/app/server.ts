@@ -22,6 +22,11 @@ import type { UserStatusLookup } from '../modules/shared/application/user-status
 import type { MemberStatusLookup } from '../modules/shared/application/member-status-lookup.js';
 import type { AccessAuditEventRepository } from '../modules/shared/application/access-audit-event-repository.js';
 import { registerAccessHistoryRoutes } from '../modules/shared/api/access-history.routes.js';
+import authRoutes from '../modules/auth/api/auth.routes.js';
+import { InMemoryPlatformUserCredentialRepository } from '../modules/auth/infrastructure/in-memory-platform-user-credential-repository.js';
+import { InMemoryAuthSessionRepository } from '../modules/auth/infrastructure/in-memory-auth-session-repository.js';
+import type { PlatformUserCredentialRepository } from '../modules/auth/application/platform-user-credential-repository.js';
+import type { AuthSessionRepository } from '../modules/auth/application/auth-session-repository.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -37,6 +42,8 @@ export function createTestableServer(options?: {
   userStatusLookup?: UserStatusLookup;
   memberStatusLookup?: MemberStatusLookup;
   accessAuditEventRepository?: AccessAuditEventRepository;
+  credentialRepository?: PlatformUserCredentialRepository;
+  sessionRepository?: AuthSessionRepository;
 }) {
   const server = fastify();
 
@@ -79,6 +86,15 @@ export function createTestableServer(options?: {
   const userStatusLookup = options?.userStatusLookup;
   const memberStatusLookup = options?.memberStatusLookup;
   const accessAuditEventRepository = options?.accessAuditEventRepository;
+  const credentialRepository = options?.credentialRepository ?? new InMemoryPlatformUserCredentialRepository();
+  const sessionRepository = options?.sessionRepository ?? new InMemoryAuthSessionRepository();
+
+  // Register auth routes
+  server.register(authRoutes, {
+    prefix: '/api/v1',
+    credentialRepository,
+    sessionRepository
+  });
 
   // Register membership routes
   server.register(registerMembershipRoutes, {
