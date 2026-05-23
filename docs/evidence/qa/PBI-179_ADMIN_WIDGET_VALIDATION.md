@@ -264,26 +264,33 @@ Expected result: no fake member-management page is shown.
 
 ## Validation Commands and Results
 
-These commands must be run locally after this evidence-only commit:
+Manual validation was executed locally by the developer and reported as passing on 2026-05-23.
 
 ```bash
 npm run frontend:build
+# PASS
+
 npm run build
+# PASS
+
 npm test
+# PASS
+
 git diff --check
+# PASS
 ```
 
 Remote inspection result:
 
 - Code/evidence was inspected on origin.
 - This PBI-179 evidence file was created through repository inspection.
-- Local command execution has not yet been recorded for this evidence commit.
+- Local command execution was performed by the developer and reported back as all passed.
 
 ## Closure Assessment
 
-PBI-147 is acceptable for closure if local validation passes after this evidence commit.
+PBI-147 is acceptable for closure.
 
-Confirmed by inspection:
+Confirmed by inspection and local validation report:
 
 - PBI-176 contract exists and was accepted.
 - PBI-177 widgets exist and use approved action targets.
@@ -293,6 +300,7 @@ Confirmed by inspection:
 - Member-management remains placeholder/unavailable.
 - Backend authorization boundary copy remains visible.
 - ADR-001 follow-up gaps remain documented and are not hidden.
+- Required build/test/whitespace validation commands were reported as passing locally.
 
 ## Known Limitations
 
