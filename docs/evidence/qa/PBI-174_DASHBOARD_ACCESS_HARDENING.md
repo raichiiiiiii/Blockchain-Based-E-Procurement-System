@@ -54,21 +54,18 @@ When a user attempts to access a forbidden route:
 - Unknown targets result in `unknown` access status
 - Both cases render the dashboard shell with `error` state and appropriate message
 
-## Validation Commands and Results
+## Validation
+- `npm run frontend:build`: PASS
+- `npm run build`: PASS
+- `npm test`: PASS
 
-### Build Validation
-```bash
-npm run frontend:build
-# Result: PASS - No build errors
+## Test Scope Note
+The repository now treats `npm test` / `npm run test:backend` as the backend/module test runner and intentionally excludes `src/frontend`.
 
-npm run build
-# Result: PASS - No build errors
-```
+No frontend unit test file is committed for PBI-174 because the repository does not yet have a dedicated frontend test runner for Vite/React code. The attempted Node/ts-node frontend test path was not retained because frontend source uses Vite/Bundler-style module resolution that is not reliably executed by the backend-style Node test runner.
 
-### Test Scope Note
-No frontend unit test file is committed for PBI-174 because the repository does not yet have a dedicated frontend test runner for Vite/React code.
+Dashboard access resolver behavior is validated through frontend TypeScript build/typecheck and documented behavior until a dedicated frontend test runner is introduced.
 
-The existing `npm test` script is the backend/module test runner and intentionally excludes `src/frontend` after this task. Dashboard access resolver behavior is validated through frontend TypeScript build/typecheck and documented behavior until a dedicated frontend test runner is introduced.
 ## Known Limitations
 
 1. **Frontend Dashboard Role Does Not Establish Backend Authorization**
