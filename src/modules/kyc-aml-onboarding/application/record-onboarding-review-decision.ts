@@ -117,7 +117,6 @@ export async function recordOnboardingReviewDecision(
   }
 
   // Find the onboarding case
-  // Find the onboarding case
   const onboardingCase = await repository.findById(input.caseId);
   if (!onboardingCase) {
     return {

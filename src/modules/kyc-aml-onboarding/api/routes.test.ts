@@ -615,12 +615,14 @@ describe('POST /api/v1/kyc-aml-onboarding-cases', () => {
 describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
   test('should record pass decision and update status to approved', async () => {
     const repository = new InMemoryOnboardingCaseRepository();
+    const auditRepo = createInMemoryAccessAuditRepository();
     const server = createTestableServer();
     
     // Register the KYC/AML routes
     await server.register(registerKYCAMLRoutes, { 
       repository, 
-      prefix: '/api/v1'
+      prefix: '/api/v1',
+      accessAuditEventRepository: auditRepo.repository
     });
 
     // First create a case
@@ -696,16 +698,29 @@ describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
     assert.strictEqual(responseBody.data.decision.decidedByUserId, 'reviewer_789');
     assert.ok(responseBody.data.decision.decidedAt);
     assert.ok(responseBody.data.updatedAt);
+
+    // Assert audit event was recorded
+    assert.strictEqual(auditRepo.events.length, 2); // Case creation + decision
+    const auditEvent = auditRepo.events[1];
+    assert.strictEqual(auditEvent.action, 'recordKycAmlOnboardingCaseDecision');
+    assert.strictEqual(auditEvent.targetType, 'kycAmlOnboardingCase');
+    assert.strictEqual(auditEvent.targetId, createdCase.id);
+    assert.strictEqual(auditEvent.actorUserId, 'reviewer_789');
+    assert.strictEqual(auditEvent.outcome, 'success');
+    assert.strictEqual(auditEvent.module, 'kyc-aml-onboarding');
+    assert.strictEqual(auditEvent.method, 'POST');
   });
 
   test('should record fail decision with reason codes and update status to rejected', async () => {
     const repository = new InMemoryOnboardingCaseRepository();
+    const auditRepo = createInMemoryAccessAuditRepository();
     const server = createTestableServer();
     
     // Register the KYC/AML routes
     await server.register(registerKYCAMLRoutes, { 
       repository, 
-      prefix: '/api/v1'
+      prefix: '/api/v1',
+      accessAuditEventRepository: auditRepo.repository
     });
 
     // First create a case
@@ -780,16 +795,29 @@ describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
     assert.strictEqual(responseBody.data.decision.outcome, 'fail');
     assert.strictEqual(responseBody.data.decision.rationale, 'Identity verification failed');
     assert.deepStrictEqual(responseBody.data.decision.reasonCodes, ['identity_verification_failed']);
+    assert.strictEqual(responseBody.data.decision.decidedByUserId, 'reviewer_789');
+
+    // Assert audit event was recorded
+    assert.strictEqual(auditRepo.events.length, 2); // Case creation + decision
+    const auditEvent = auditRepo.events[1];
+    assert.strictEqual(auditEvent.action, 'recordKycAmlOnboardingCaseDecision');
+    assert.strictEqual(auditEvent.targetType, 'kycAmlOnboardingCase');
+    assert.strictEqual(auditEvent.targetId, createdCase.id);
+    assert.strictEqual(auditEvent.actorUserId, 'reviewer_789');
+    assert.strictEqual(auditEvent.outcome, 'success');
+    assert.strictEqual(auditEvent.module, 'kyc-aml-onboarding');
   });
 
   test('should record flag decision with reason codes and update status to flagged', async () => {
     const repository = new InMemoryOnboardingCaseRepository();
+    const auditRepo = createInMemoryAccessAuditRepository();
     const server = createTestableServer();
     
     // Register the KYC/AML routes
     await server.register(registerKYCAMLRoutes, { 
       repository, 
-      prefix: '/api/v1'
+      prefix: '/api/v1',
+      accessAuditEventRepository: auditRepo.repository
     });
 
     // First create a case
@@ -864,16 +892,29 @@ describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
     assert.strictEqual(responseBody.data.decision.outcome, 'flag');
     assert.strictEqual(responseBody.data.decision.rationale, 'Beneficial ownership evidence requires manual compliance follow-up');
     assert.deepStrictEqual(responseBody.data.decision.reasonCodes, ['beneficial_ownership_unverified', 'manual_compliance_concern']);
+    assert.strictEqual(responseBody.data.decision.decidedByUserId, 'reviewer_789');
+
+    // Assert audit event was recorded
+    assert.strictEqual(auditRepo.events.length, 2); // Case creation + decision
+    const auditEvent = auditRepo.events[1];
+    assert.strictEqual(auditEvent.action, 'recordKycAmlOnboardingCaseDecision');
+    assert.strictEqual(auditEvent.targetType, 'kycAmlOnboardingCase');
+    assert.strictEqual(auditEvent.targetId, createdCase.id);
+    assert.strictEqual(auditEvent.actorUserId, 'reviewer_789');
+    assert.strictEqual(auditEvent.outcome, 'success');
+    assert.strictEqual(auditEvent.module, 'kyc-aml-onboarding');
   });
 
   test('should record block decision with reason codes and update status to blocked', async () => {
     const repository = new InMemoryOnboardingCaseRepository();
+    const auditRepo = createInMemoryAccessAuditRepository();
     const server = createTestableServer();
     
     // Register the KYC/AML routes
     await server.register(registerKYCAMLRoutes, { 
       repository, 
-      prefix: '/api/v1'
+      prefix: '/api/v1',
+      accessAuditEventRepository: auditRepo.repository
     });
 
     // First create a case
@@ -948,16 +989,29 @@ describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
     assert.strictEqual(responseBody.data.decision.outcome, 'block');
     assert.strictEqual(responseBody.data.decision.rationale, 'High risk activity detected');
     assert.deepStrictEqual(responseBody.data.decision.reasonCodes, ['high_risk_activity']);
+    assert.strictEqual(responseBody.data.decision.decidedByUserId, 'reviewer_789');
+
+    // Assert audit event was recorded
+    assert.strictEqual(auditRepo.events.length, 2); // Case creation + decision
+    const auditEvent = auditRepo.events[1];
+    assert.strictEqual(auditEvent.action, 'recordKycAmlOnboardingCaseDecision');
+    assert.strictEqual(auditEvent.targetType, 'kycAmlOnboardingCase');
+    assert.strictEqual(auditEvent.targetId, createdCase.id);
+    assert.strictEqual(auditEvent.actorUserId, 'reviewer_789');
+    assert.strictEqual(auditEvent.outcome, 'success');
+    assert.strictEqual(auditEvent.module, 'kyc-aml-onboarding');
   });
 
   test('should return 404 when case does not exist', async () => {
     const repository = new InMemoryOnboardingCaseRepository();
+    const auditRepo = createInMemoryAccessAuditRepository();
     const server = createTestableServer();
     
     // Register the KYC/AML routes
     await server.register(registerKYCAMLRoutes, { 
       repository, 
-      prefix: '/api/v1'
+      prefix: '/api/v1',
+      accessAuditEventRepository: auditRepo.repository
     });
 
     const decisionPayload = {
@@ -978,6 +1032,17 @@ describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
     const responseBody = response.json();
     assert.strictEqual(responseBody.error.code, 'NOT_FOUND');
     assert.ok(responseBody.error.message.includes('not found'));
+
+    // Assert audit event was recorded
+    assert.strictEqual(auditRepo.events.length, 1);
+    const auditEvent = auditRepo.events[0];
+    assert.strictEqual(auditEvent.action, 'recordKycAmlOnboardingCaseDecision');
+    assert.strictEqual(auditEvent.targetType, 'kycAmlOnboardingCase');
+    assert.strictEqual(auditEvent.targetId, 'nonexistent-case');
+    assert.strictEqual(auditEvent.actorUserId, 'reviewer_789');
+    assert.strictEqual(auditEvent.outcome, 'notFound');
+    assert.strictEqual(auditEvent.reason, 'case_not_found');
+    assert.strictEqual(auditEvent.module, 'kyc-aml-onboarding');
   });
 
   test('should return 400 when outcome is missing', async () => {
@@ -1626,12 +1691,14 @@ describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
 
   test('should return 400 when trying to record decision on already decided case', async () => {
     const repository = new InMemoryOnboardingCaseRepository();
+    const auditRepo = createInMemoryAccessAuditRepository();
     const server = createTestableServer();
     
     // Register the KYC/AML routes
     await server.register(registerKYCAMLRoutes, { 
       repository, 
-      prefix: '/api/v1'
+      prefix: '/api/v1',
+      accessAuditEventRepository: auditRepo.repository
     });
 
     // First create a case
@@ -1718,6 +1785,17 @@ describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
     const responseBody = secondDecisionResponse.json();
     assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
     assert.ok(responseBody.error.message.includes('Decision already recorded'));
+
+    // Assert audit event was recorded for conflict
+    assert.strictEqual(auditRepo.events.length, 3); // Case creation + first decision + conflict
+    const auditEvent = auditRepo.events[2];
+    assert.strictEqual(auditEvent.action, 'recordKycAmlOnboardingCaseDecision');
+    assert.strictEqual(auditEvent.targetType, 'kycAmlOnboardingCase');
+    assert.strictEqual(auditEvent.targetId, createdCase.id);
+    assert.strictEqual(auditEvent.actorUserId, 'reviewer_789');
+    assert.strictEqual(auditEvent.outcome, 'conflict');
+    assert.strictEqual(auditEvent.reason, 'invalid_state_transition');
+    assert.strictEqual(auditEvent.module, 'kyc-aml-onboarding');
   });
 
   test('should return 400 when trying to record decision on non-submitted case', async () => {
@@ -1755,12 +1833,14 @@ describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
     
     await repository.save(approvedCase);
     
+    const auditRepo = createInMemoryAccessAuditRepository();
     const server = createTestableServer();
     
     // Register the KYC/AML routes
     await server.register(registerKYCAMLRoutes, { 
       repository, 
-      prefix: '/api/v1'
+      prefix: '/api/v1',
+      accessAuditEventRepository: auditRepo.repository
     });
 
     // Try to record a decision on the already-approved case
@@ -1783,6 +1863,17 @@ describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
     const responseBody = decisionResponse.json();
     assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
     assert.ok(responseBody.error.message.includes('Cannot record decision'));
+
+    // Assert audit event was recorded for conflict
+    assert.strictEqual(auditRepo.events.length, 1);
+    const auditEvent = auditRepo.events[0];
+    assert.strictEqual(auditEvent.action, 'recordKycAmlOnboardingCaseDecision');
+    assert.strictEqual(auditEvent.targetType, 'kycAmlOnboardingCase');
+    assert.strictEqual(auditEvent.targetId, approvedCase.id);
+    assert.strictEqual(auditEvent.actorUserId, 'reviewer_789');
+    assert.strictEqual(auditEvent.outcome, 'conflict');
+    assert.strictEqual(auditEvent.reason, 'invalid_state_transition');
+    assert.strictEqual(auditEvent.module, 'kyc-aml-onboarding');
   });
 
   test('should ignore client authored decidedByUserId and use trusted actor context', async () => {
@@ -1866,12 +1957,14 @@ describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
 
   test('should return 400 when x-actor-id header is missing for decision', async () => {
     const repository = new InMemoryOnboardingCaseRepository();
+    const auditRepo = createInMemoryAccessAuditRepository();
     const server = createTestableServer();
     
     // Register the KYC/AML routes
     await server.register(registerKYCAMLRoutes, { 
       repository, 
-      prefix: '/api/v1'
+      prefix: '/api/v1',
+      accessAuditEventRepository: auditRepo.repository
     });
 
     const decisionPayload = {
@@ -1890,6 +1983,17 @@ describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
     const responseBody = response.json();
     assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
     assert.ok(responseBody.error.message.includes('Missing or invalid actor context'));
+
+    // Assert audit event was recorded
+    assert.strictEqual(auditRepo.events.length, 1);
+    const auditEvent = auditRepo.events[0];
+    assert.strictEqual(auditEvent.action, 'recordKycAmlOnboardingCaseDecision');
+    assert.strictEqual(auditEvent.targetType, 'kycAmlOnboardingCase');
+    assert.strictEqual(auditEvent.targetId, 'some-case');
+    assert.strictEqual(auditEvent.actorUserId, 'unknown');
+    assert.strictEqual(auditEvent.outcome, 'validationError');
+    assert.strictEqual(auditEvent.reason, 'missing_actor_context');
+    assert.strictEqual(auditEvent.module, 'kyc-aml-onboarding');
   });
 
   test('should allow pass outcome without reason codes', async () => {
@@ -1970,5 +2074,187 @@ describe('POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision', () => {
     assert.strictEqual(decisionResponse.statusCode, 200);
     const responseBody = decisionResponse.json();
     assert.strictEqual(responseBody.data.status, 'approved');
+  });
+
+  test('should return 403 when user is not authorized to record decision', async () => {
+    const repository = new InMemoryOnboardingCaseRepository();
+    const auditRepo = createInMemoryAccessAuditRepository();
+    const server = createTestableServer();
+    
+    // Register the KYC/AML routes with a denied authorization function
+    await server.register(registerKYCAMLRoutes, { 
+      repository, 
+      prefix: '/api/v1',
+      authorizeDecision: async (): Promise<boolean> => false,
+      accessAuditEventRepository: auditRepo.repository
+    });
+
+    // First create a case
+    const createPayload = {
+      memberOrganizationId: 'org_123',
+      kyc: {
+        legalName: 'Test Company',
+        registrationNumber: '123456789',
+        countryCode: 'MYS',
+        businessType: 'Corporation'
+      },
+      aml: {
+        declaredBusinessActivity: 'Import/Export',
+        expectedMonthlyTransactionValue: '10000.00',
+        declaredSanctionsExposure: false,
+        declaredPepExposure: false
+      },
+      evidenceReferences: [
+        {
+          type: 'companyRegistration',
+          name: 'ssm-registration.pdf',
+          uri: 'https://storage.example.com/ssm-registration.pdf',
+          mediaType: 'application/pdf'
+        },
+        {
+          type: 'authorizedRepresentativeIdentity',
+          name: 'director-id.pdf',
+          uri: 'https://storage.example.com/director-id.pdf',
+          mediaType: 'application/pdf'
+        },
+        {
+          type: 'amlDeclaration',
+          name: 'aml-declaration.pdf',
+          uri: 'https://storage.example.com/aml-declaration.pdf',
+          mediaType: 'application/pdf'
+        }
+      ]
+    };
+
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/kyc-aml-onboarding-cases',
+      payload: createPayload,
+      headers: {
+        'x-actor-id': 'user_456'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdCase = createResponse.json().data;
+
+    // Try to record a decision with unauthorized user
+    const decisionPayload = {
+      outcome: 'pass',
+      rationale: 'All documents verified successfully'
+    };
+
+    const decisionResponse = await server.inject({
+      method: 'POST',
+      url: `/api/v1/kyc-aml-onboarding-cases/${createdCase.id}/decision`,
+      payload: decisionPayload,
+      headers: {
+        'x-actor-id': 'unauthorized_user'
+      }
+    });
+
+    assert.strictEqual(decisionResponse.statusCode, 403);
+    const responseBody = decisionResponse.json();
+    assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
+    assert.strictEqual(responseBody.error.message, 'User is not authorized to record KYC/AML onboarding decision');
+
+    // Assert audit event was recorded
+    assert.strictEqual(auditRepo.events.length, 2); // Case creation + forbidden decision
+    const auditEvent = auditRepo.events[1];
+    assert.strictEqual(auditEvent.action, 'recordKycAmlOnboardingCaseDecision');
+    assert.strictEqual(auditEvent.targetType, 'kycAmlOnboardingCase');
+    assert.strictEqual(auditEvent.targetId, createdCase.id);
+    assert.strictEqual(auditEvent.actorUserId, 'unauthorized_user');
+    assert.strictEqual(auditEvent.outcome, 'forbidden');
+    assert.strictEqual(auditEvent.reason, 'reviewer_authorization_required');
+    assert.strictEqual(auditEvent.module, 'kyc-aml-onboarding');
+  });
+
+  test('should not mutate case when reviewer is unauthorized', async () => {
+    const repository = new InMemoryOnboardingCaseRepository();
+    const server = createTestableServer();
+    
+    // Register the KYC/AML routes with a denied authorization function
+    await server.register(registerKYCAMLRoutes, { 
+      repository, 
+      prefix: '/api/v1',
+      authorizeDecision: async (): Promise<boolean> => false
+    });
+
+    // First create a case
+    const createPayload = {
+      memberOrganizationId: 'org_123',
+      kyc: {
+        legalName: 'Test Company',
+        registrationNumber: '123456789',
+        countryCode: 'MYS',
+        businessType: 'Corporation'
+      },
+      aml: {
+        declaredBusinessActivity: 'Import/Export',
+        expectedMonthlyTransactionValue: '10000.00',
+        declaredSanctionsExposure: false,
+        declaredPepExposure: false
+      },
+      evidenceReferences: [
+        {
+          type: 'companyRegistration',
+          name: 'ssm-registration.pdf',
+          uri: 'https://storage.example.com/ssm-registration.pdf',
+          mediaType: 'application/pdf'
+        },
+        {
+          type: 'authorizedRepresentativeIdentity',
+          name: 'director-id.pdf',
+          uri: 'https://storage.example.com/director-id.pdf',
+          mediaType: 'application/pdf'
+        },
+        {
+          type: 'amlDeclaration',
+          name: 'aml-declaration.pdf',
+          uri: 'https://storage.example.com/aml-declaration.pdf',
+          mediaType: 'application/pdf'
+        }
+      ]
+    };
+
+    const createResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/kyc-aml-onboarding-cases',
+      payload: createPayload,
+      headers: {
+        'x-actor-id': 'user_456'
+      }
+    });
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    const createdCase = createResponse.json().data;
+
+    // Verify initial status
+    const initialCase = await repository.findById(createdCase.id);
+    assert.strictEqual(initialCase?.status, 'submitted');
+    assert.strictEqual(initialCase?.decision, undefined);
+
+    // Try to record a decision with unauthorized user
+    const decisionPayload = {
+      outcome: 'pass',
+      rationale: 'All documents verified successfully'
+    };
+
+    const decisionResponse = await server.inject({
+      method: 'POST',
+      url: `/api/v1/kyc-aml-onboarding-cases/${createdCase.id}/decision`,
+      payload: decisionPayload,
+      headers: {
+        'x-actor-id': 'unauthorized_user'
+      }
+    });
+
+    assert.strictEqual(decisionResponse.statusCode, 403);
+
+    // Verify case was not mutated
+    const unchangedCase = await repository.findById(createdCase.id);
+    assert.strictEqual(unchangedCase?.status, 'submitted');
+    assert.strictEqual(unchangedCase?.decision, undefined);
   });
 });

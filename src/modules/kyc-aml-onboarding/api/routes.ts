@@ -18,22 +18,47 @@ export interface KycAmlOnboardingCaseCreateAuditEvent {
   reason?: string;
 }
 
-// Authorization seam type definition
+// Define the audit event interface for kyc/aml onboarding case decision
+export interface KycAmlOnboardingCaseDecisionAuditEvent {
+  action: 'recordKycAmlOnboardingCaseDecision';
+  targetType: 'kycAmlOnboardingCase';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success' | 'forbidden' | 'notFound' | 'validationError' | 'conflict';
+  actorId: string;
+  reason?: string;
+}
+
+// Authorization seam type definition for submission
 export type OnboardingSubmissionAuthorization = (
   actorId: string,
   organizationId: string
 ) => Promise<boolean>;
 
-// Default authorization function
+// Authorization seam type definition for decision
+export type OnboardingDecisionAuthorization = (
+  actorId: string,
+  caseId: string
+) => Promise<boolean>;
+
+// Default authorization function for submission
 export const allowAuthenticatedSubmission: OnboardingSubmissionAuthorization = async (
   actorId,
   organizationId
 ): Promise<boolean> => actorId.trim().length > 0 && organizationId.trim().length > 0;
 
+// Default authorization function for decision
+export const allowAuthenticatedDecision: OnboardingDecisionAuthorization = async (
+  actorId,
+  caseId
+): Promise<boolean> => actorId.trim().length > 0 && caseId.trim().length > 0;
+
 interface KYCAMLRoutesOptions {
   repository: OnboardingCaseRepository;
   accessAuditEventRepository?: AccessAuditEventRepository;
   authorizeSubmission?: OnboardingSubmissionAuthorization;
+  authorizeDecision?: OnboardingDecisionAuthorization;
 }
 
 interface CreateOnboardingCaseRequest {
@@ -70,7 +95,8 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
   const {
     repository,
     accessAuditEventRepository,
-    authorizeSubmission = allowAuthenticatedSubmission
+    authorizeSubmission = allowAuthenticatedSubmission,
+    authorizeDecision = allowAuthenticatedDecision
   } = options;
 
   // POST /api/v1/kyc-aml-onboarding-cases - Submit a new KYC/AML onboarding case
@@ -327,14 +353,54 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
     async (request, reply) => {
       // Extract and validate actorId from trusted actor context
       const actorId = request.actorContext?.userId;
+      const caseId = request.params.caseId;
 
       if (!actorId) {
+        // Record audit event for missing actor context
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: 'unknown',
+          action: 'recordKycAmlOnboardingCaseDecision',
+          targetType: 'kycAmlOnboardingCase',
+          targetId: caseId,
+          outcome: 'validationError',
+          reason: 'missing_actor_context',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding-cases/:caseId/decision',
+          method: 'POST'
+        });
+
         return reply.code(400).send(createApplicationValidationError('Missing or invalid actor context'));
+      }
+
+      // Check authorization for decision
+      const isAuthorized = await authorizeDecision(actorId, caseId);
+      if (!isAuthorized) {
+        // Record audit event for unauthorized reviewer
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: actorId,
+          action: 'recordKycAmlOnboardingCaseDecision',
+          targetType: 'kycAmlOnboardingCase',
+          targetId: caseId,
+          outcome: 'forbidden',
+          reason: 'reviewer_authorization_required',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding-cases/:caseId/decision',
+          method: 'POST'
+        });
+
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'User is not authorized to record KYC/AML onboarding decision'
+          }
+        });
       }
 
       // Construct the input for the application service
       const input: RecordOnboardingReviewDecisionInput = {
-        caseId: request.params.caseId,
+        caseId: caseId,
         outcome: request.body.outcome,
         rationale: request.body.rationale,
         reasonCodes: request.body.reasonCodes,
@@ -346,6 +412,19 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
 
       // Map result to HTTP responses
       if (result.status === 'recorded') {
+        // Record audit event for successful decision
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: actorId,
+          action: 'recordKycAmlOnboardingCaseDecision',
+          targetType: 'kycAmlOnboardingCase',
+          targetId: result.onboardingCase.id,
+          outcome: 'success',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding-cases/:caseId/decision',
+          method: 'POST'
+        });
+
         return reply.code(200).send({
           data: {
             id: result.onboardingCase.id,
@@ -356,8 +435,36 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
           }
         });
       } else if (result.status === 'invalidInput') {
+        // Record audit event for invalid input
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: actorId,
+          action: 'recordKycAmlOnboardingCaseDecision',
+          targetType: 'kycAmlOnboardingCase',
+          targetId: caseId,
+          outcome: 'validationError',
+          reason: 'invalid_decision_input',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding-cases/:caseId/decision',
+          method: 'POST'
+        });
+
         return reply.code(400).send(createApplicationValidationError('Invalid decision input', result.issues));
       } else if (result.status === 'notFound') {
+        // Record audit event for not found case
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: actorId,
+          action: 'recordKycAmlOnboardingCaseDecision',
+          targetType: 'kycAmlOnboardingCase',
+          targetId: caseId,
+          outcome: 'notFound',
+          reason: 'case_not_found',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding-cases/:caseId/decision',
+          method: 'POST'
+        });
+
         return reply.code(404).send({
           error: {
             code: 'NOT_FOUND',
@@ -365,6 +472,20 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
           }
         });
       } else if (result.status === 'conflict') {
+        // Record audit event for conflict/invalid state transition
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: actorId,
+          action: 'recordKycAmlOnboardingCaseDecision',
+          targetType: 'kycAmlOnboardingCase',
+          targetId: caseId,
+          outcome: 'conflict',
+          reason: 'invalid_state_transition',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding-cases/:caseId/decision',
+          method: 'POST'
+        });
+
         return reply.code(400).send(createApplicationValidationError(result.message));
       }
       
