@@ -41,6 +41,7 @@ This evidence file validates the implementation of administrator-facing dashboar
 ## Files Changed
 
 - `src/frontend/lib/dashboard-contract.ts`
+- `src/frontend/components/dashboard/DashboardShell.tsx`
 - `src/frontend/components/dashboard/DashboardWidgetZone.tsx`
 - `docs/evidence/qa/PBI-177_ADMIN_DASHBOARD_WIDGETS.md` (this file)
 
@@ -55,13 +56,13 @@ The following administrator-specific widgets were implemented:
 
 | Widget ID | Title | Zone | Status |
 |-----------|-------|------|--------|
-| admin-member-onboarding-widget | Member Onboarding | primary | active |
-| admin-role-management-widget | Role Management | primary | active |
-| admin-role-assignment-widget | Role Assignment | primary | active |
+| admin-membership-overview | Member Onboarding | primary | active |
+| admin-role-catalog-overview | Role Management | primary | active |
+| admin-role-assignment-overview | Role Assignment | primary | active |
 | admin-member-onboarding-action | Create New Organization | actions | active |
 | admin-role-management-action | Manage Roles | actions | active |
 | admin-role-assignment-action | Assign Roles | actions | active |
-| admin-authorization-alert | Authorization Boundary | alerts | active |
+| admin-access-boundary-alert | Authorization Boundary | alerts | active |
 | admin-member-management-placeholder | Member Management | secondary | placeholder |
 
 ## Widget-Zone Placement Table
@@ -79,12 +80,13 @@ The following administrator-specific widgets were implemented:
 
 | Widget ID | Action Text | Target Page |
 |-----------|-------------|-------------|
-| admin-member-onboarding-widget | Open Member Onboarding | member-onboarding |
-| admin-role-management-widget | Open Role Management | role-management |
-| admin-role-assignment-widget | Open Role Assignment | role-assignment |
+| admin-membership-overview | Open Member Onboarding | member-onboarding |
+| admin-role-catalog-overview | Open Role Management | role-management |
+| admin-role-assignment-overview | Open Role Assignment | role-assignment |
 | admin-member-onboarding-action | Go to Create New Organization | member-onboarding |
 | admin-role-management-action | Go to Manage Roles | role-management |
 | admin-role-assignment-action | Go to Assign Roles | role-assignment |
+| admin-member-management-placeholder | View Member Management (Unavailable) | member-management |
 
 ## Placeholder/Unavailable Behavior for Member-Management
 
@@ -143,30 +145,26 @@ All commands passed without errors, confirming:
 
 2. **No Frontend Unit Tests**: There is no existing frontend unit-test infrastructure for rendered components. Adding such tests would require new testing infrastructure which is out of scope for this PBI.
 
-3. **Navigation Implementation**: The action buttons currently only log navigation targets to the console rather than performing actual navigation. In a complete implementation, these would integrate with the router.
+3. **Organization State Gating**: Per ADR-001, organization state gating (pendingReview, inactive, etc.) is not yet implemented. This remains a gap identified in PBI-175.
 
-4. **Organization State Gating**: Per ADR-001, organization state gating (pendingReview, inactive, etc.) is not yet implemented. This remains a gap identified in PBI-175.
-
-5. **Summary Data**: No summary data widgets were implemented as no stable list/summary APIs exist yet.
+4. **Summary Data**: No summary data widgets were implemented as no stable list/summary APIs exist yet.
 
 ## Follow-up Recommendations for PBI-178
 
 1. **Replace Demo Context**: Integrate with real authentication and actor context when available.
 
-2. **Implement Navigation**: Connect action buttons to actual page navigation rather than console logging.
+2. **Add Organization State Gating**: Implement the organization state gates required by ADR-001.
 
-3. **Add Organization State Gating**: Implement the organization state gates required by ADR-001.
+3. **Add Summary Widgets**: Once backend summary/list APIs are available, implement summary data widgets.
 
-4. **Add Summary Widgets**: Once backend summary/list APIs are available, implement summary data widgets.
+4. **Add Frontend Tests**: Establish frontend component testing infrastructure and add tests for dashboard widgets.
 
-5. **Add Frontend Tests**: Establish frontend component testing infrastructure and add tests for dashboard widgets.
+5. **Implement Member Management**: Complete the member management functionality that currently exists as a placeholder.
 
-6. **Implement Member Management**: Complete the member management functionality that currently exists as a placeholder.
+6. **Add Real Data Integration**: Connect widgets to actual backend APIs for real-time data display.
 
-7. **Add Real Data Integration**: Connect widgets to actual backend APIs for real-time data display.
+7. **Implement Role Switching**: Add UI for switching between multiple assigned roles.
 
-8. **Implement Role Switching**: Add UI for switching between multiple assigned roles.
+8. **Add Audit Trail Widgets**: Implement widgets for access history and audit trail viewing.
 
-9. **Add Audit Trail Widgets**: Implement widgets for access history and audit trail viewing.
-
-10. **Enhance Accessibility**: Improve accessibility features for all dashboard components.
+9. **Enhance Accessibility**: Improve accessibility features for all dashboard components.

@@ -515,7 +515,7 @@ function createAdministratorWidgets(): DashboardWidget[] {
   return [
     // Primary zone widgets
     {
-      id: 'admin-member-onboarding-widget',
+      id: 'admin-membership-overview',
       title: 'Member Onboarding',
       zoneId: 'primary',
       allowedRoles: ['administrator'],
@@ -524,7 +524,7 @@ function createAdministratorWidgets(): DashboardWidget[] {
       placeholder: false
     },
     {
-      id: 'admin-role-management-widget',
+      id: 'admin-role-catalog-overview',
       title: 'Role Management',
       zoneId: 'primary',
       allowedRoles: ['administrator'],
@@ -533,7 +533,7 @@ function createAdministratorWidgets(): DashboardWidget[] {
       placeholder: false
     },
     {
-      id: 'admin-role-assignment-widget',
+      id: 'admin-role-assignment-overview',
       title: 'Role Assignment',
       zoneId: 'primary',
       allowedRoles: ['administrator'],
@@ -571,7 +571,7 @@ function createAdministratorWidgets(): DashboardWidget[] {
     },
     // Alerts zone widget
     {
-      id: 'admin-authorization-alert',
+      id: 'admin-access-boundary-alert',
       title: 'Authorization Boundary',
       zoneId: 'alerts',
       allowedRoles: ['administrator'],

@@ -84,6 +84,7 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ dashboard, onPageChange
                 key={zone.id}
                 zone={zone}
                 widgets={widgets.filter(w => w.zoneId === zone.id)}
+                onPageChange={onPageChange}
               />
             ))}
           </div>

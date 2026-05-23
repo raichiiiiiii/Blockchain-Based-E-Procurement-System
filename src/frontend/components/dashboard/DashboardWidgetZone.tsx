@@ -4,9 +4,10 @@ import { DashboardWidgetZone as DashboardWidgetZoneType, DashboardWidget } from 
 interface DashboardWidgetZoneProps {
   zone: DashboardWidgetZoneType;
   widgets: DashboardWidget[];
+  onPageChange: (target: string) => void;
 }
 
-const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets }) => {
+const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets, onPageChange }) => {
   // Special rendering for the alerts zone with authorization boundary message
   if (zone.id === 'alerts') {
     return (
@@ -21,7 +22,7 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
             widgets.map(widget => (
               <div key={widget.id} className={`widget widget-${widget.status}`}>
                 <h3>{widget.title}</h3>
-                {widget.id === 'admin-authorization-alert' ? (
+                {widget.id === 'admin-access-boundary-alert' ? (
                   <div className="widget-content">
                     <p><strong>Backend authorization remains authoritative.</strong></p>
                     <p>Frontend role visibility does not grant backend admin privileges.</p>
@@ -64,22 +65,19 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                       className="action-button"
                       onClick={() => {
                         // Map widget IDs to target pages
-                        let target = '';
                         switch (widget.id) {
                           case 'admin-member-onboarding-action':
-                            target = 'member-onboarding';
+                            onPageChange('member-onboarding');
                             break;
                           case 'admin-role-management-action':
-                            target = 'role-management';
+                            onPageChange('role-management');
                             break;
                           case 'admin-role-assignment-action':
-                            target = 'role-assignment';
+                            onPageChange('role-assignment');
                             break;
                           default:
                             return;
                         }
-                        // In a real implementation, this would trigger navigation
-                        console.log(`Navigate to ${target}`);
                       }}
                     >
                       Go to {widget.title}
@@ -119,35 +117,32 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                 <h3>{widget.title}</h3>
                 {widget.status === 'active' && !widget.placeholder ? (
                   <div className="widget-content">
-                    {widget.id === 'admin-member-onboarding-widget' && (
+                    {widget.id === 'admin-membership-overview' && (
                       <p>Process new member organization registrations and begin onboarding workflows.</p>
                     )}
-                    {widget.id === 'admin-role-management-widget' && (
+                    {widget.id === 'admin-role-catalog-overview' && (
                       <p>Define and manage role definitions, permissions, and organizational access policies.</p>
                     )}
-                    {widget.id === 'admin-role-assignment-widget' && (
+                    {widget.id === 'admin-role-assignment-overview' && (
                       <p>Assign roles to users within organizations and manage active assignments.</p>
                     )}
                     <button 
                       className="action-button"
                       onClick={() => {
                         // Map widget IDs to target pages
-                        let target = '';
                         switch (widget.id) {
-                          case 'admin-member-onboarding-widget':
-                            target = 'member-onboarding';
+                          case 'admin-membership-overview':
+                            onPageChange('member-onboarding');
                             break;
-                          case 'admin-role-management-widget':
-                            target = 'role-management';
+                          case 'admin-role-catalog-overview':
+                            onPageChange('role-management');
                             break;
-                          case 'admin-role-assignment-widget':
-                            target = 'role-assignment';
+                          case 'admin-role-assignment-overview':
+                            onPageChange('role-assignment');
                             break;
                           default:
                             return;
                         }
-                        // In a real implementation, this would trigger navigation
-                        console.log(`Navigate to ${target}`);
                       }}
                     >
                       Open {widget.title}
@@ -189,6 +184,12 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                   <div className="widget-placeholder">
                     <p>Member management functionality is not yet implemented.</p>
                     <p>This area will provide tools for managing existing member organizations.</p>
+                    <button 
+                      className="action-button"
+                      onClick={() => onPageChange('member-management')}
+                    >
+                      View Member Management (Unavailable)
+                    </button>
                   </div>
                 ) : widget.status === 'placeholder' ? (
                   <div className="widget-placeholder">
