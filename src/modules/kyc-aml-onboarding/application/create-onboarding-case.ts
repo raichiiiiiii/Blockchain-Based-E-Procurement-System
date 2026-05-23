@@ -1,4 +1,4 @@
-import type { OnboardingCase, KYCData, AMLData, EvidenceReference } from '../domain/onboarding-case.js';
+import type { OnboardingCase, KYCData, AMLData, EvidenceReference, OnboardingCaseStatus } from '../domain/onboarding-case.js';
 
 export interface CreateOnboardingCaseInput {
   memberOrganizationId: string;
@@ -38,6 +38,7 @@ export interface OnboardingCaseRepository {
   save(onboardingCase: OnboardingCase): Promise<void>;
   findById(id: string): Promise<OnboardingCase | null>;
   findOpenCaseByOrganizationId(organizationId: string): Promise<OnboardingCase | null>;
+  findLatestByOrganizationId(memberOrganizationId: string): Promise<OnboardingCase | null>;
 }
 
 export async function createOnboardingCase(

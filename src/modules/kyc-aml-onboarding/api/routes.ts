@@ -6,6 +6,7 @@ import { createApplicationValidationError } from '../../shared/api/validation-er
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
 import { recordAccessAuditEvent } from '../../shared/application/record-access-audit-event.js';
 import { getOnboardingStatusHistory } from '../application/get-onboarding-status-history.js';
+import { getOnboardingEligibility } from '../application/get-onboarding-eligibility.js';
 
 // Define the audit event interface for kyc/aml onboarding case creation
 export interface KycAmlOnboardingCaseCreateAuditEvent {
@@ -31,6 +32,18 @@ export interface KycAmlOnboardingCaseDecisionAuditEvent {
   reason?: string;
 }
 
+// Define the audit event interface for kyc/aml onboarding eligibility check
+export interface KycAmlOnboardingEligibilityCheckAuditEvent {
+  action: 'checkKycAmlOnboardingEligibility';
+  targetType: 'kycAmlOnboardingEligibility';
+  targetId: string;
+  timestamp: string;
+  requestId: string;
+  outcome: 'success' | 'forbidden' | 'validationError';
+  actorId: string;
+  reason?: string;
+}
+
 // Authorization seam type definition for submission
 export type OnboardingSubmissionAuthorization = (
   actorId: string,
@@ -47,6 +60,12 @@ export type OnboardingDecisionAuthorization = (
 export type OnboardingStatusHistoryAuthorization = (
   actorId: string,
   caseId: string
+) => Promise<boolean>;
+
+// Authorization seam type definition for eligibility check
+export type OnboardingEligibilityAuthorization = (
+  actorId: string,
+  memberOrganizationId: string
 ) => Promise<boolean>;
 
 // Default authorization function for submission
@@ -67,12 +86,19 @@ export const allowAuthenticatedStatusHistory: OnboardingStatusHistoryAuthorizati
   caseId
 ): Promise<boolean> => actorId.trim().length > 0 && caseId.trim().length > 0;
 
+// Default authorization function for eligibility check
+export const allowAuthenticatedEligibility: OnboardingEligibilityAuthorization = async (
+  actorId,
+  memberOrganizationId
+): Promise<boolean> => actorId.trim().length > 0 && memberOrganizationId.trim().length > 0;
+
 interface KYCAMLRoutesOptions {
   repository: OnboardingCaseRepository;
   accessAuditEventRepository?: AccessAuditEventRepository;
   authorizeSubmission?: OnboardingSubmissionAuthorization;
   authorizeDecision?: OnboardingDecisionAuthorization;
   authorizeStatusHistory?: OnboardingStatusHistoryAuthorization;
+  authorizeEligibility?: OnboardingEligibilityAuthorization;
 }
 
 interface CreateOnboardingCaseRequest {
@@ -111,8 +137,118 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
     accessAuditEventRepository,
     authorizeSubmission = allowAuthenticatedSubmission,
     authorizeDecision = allowAuthenticatedDecision,
-    authorizeStatusHistory = allowAuthenticatedStatusHistory
+    authorizeStatusHistory = allowAuthenticatedStatusHistory,
+    authorizeEligibility = allowAuthenticatedEligibility
   } = options;
+
+  // GET /api/v1/kyc-aml-onboarding/eligibility/{memberOrganizationId} - Get onboarding eligibility for an organization
+  fastify.get<{ Params: { memberOrganizationId: string } }>(
+    '/kyc-aml-onboarding/eligibility/:memberOrganizationId',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['memberOrganizationId'],
+          properties: {
+            memberOrganizationId: { type: 'string' }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      // Extract and validate actorId from trusted actor context
+      const actorId = request.actorContext?.userId;
+
+      if (!actorId) {
+        // Record audit event for missing actor context
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: 'unknown',
+          action: 'checkKycAmlOnboardingEligibility',
+          targetType: 'kycAmlOnboardingEligibility',
+          targetId: request.params.memberOrganizationId,
+          outcome: 'validationError',
+          reason: 'missing_actor_context',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding/eligibility/:memberOrganizationId',
+          method: 'GET'
+        });
+
+        return reply.code(400).send(createApplicationValidationError('Missing or invalid x-actor-id header'));
+      }
+
+      const memberOrganizationId = request.params.memberOrganizationId;
+      
+      // Check authorization for eligibility retrieval
+      const isAuthorized = await authorizeEligibility(actorId, memberOrganizationId);
+      if (!isAuthorized) {
+        // Record audit event for unauthorized eligibility check
+        await recordAccessAuditEvent(accessAuditEventRepository, {
+          requestId: request.id,
+          actorUserId: actorId,
+          action: 'checkKycAmlOnboardingEligibility',
+          targetType: 'kycAmlOnboardingEligibility',
+          targetId: memberOrganizationId,
+          outcome: 'forbidden',
+          reason: 'eligibility_authorization_required',
+          module: 'kyc-aml-onboarding',
+          route: '/api/v1/kyc-aml-onboarding/eligibility/:memberOrganizationId',
+          method: 'GET'
+        });
+
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'User is not authorized to retrieve KYC/AML onboarding eligibility'
+          }
+        });
+      }
+      
+      const result = await getOnboardingEligibility(memberOrganizationId, repository);
+      
+      // Record audit event for successful eligibility check with specific reason
+      let auditReason: string;
+      switch (result.eligibility) {
+        case 'eligible':
+          auditReason = 'eligibility_eligible';
+          break;
+        case 'flagged':
+          auditReason = 'eligibility_flagged';
+          break;
+        case 'blocked':
+          auditReason = 'eligibility_blocked';
+          break;
+        case 'notEligible':
+          auditReason = 'eligibility_not_eligible';
+          break;
+        case 'pendingReview':
+          auditReason = 'eligibility_pending_review';
+          break;
+        case 'unknown':
+          auditReason = 'eligibility_unknown';
+          break;
+        default:
+          auditReason = 'eligibility_unknown';
+      }
+      
+      await recordAccessAuditEvent(accessAuditEventRepository, {
+        requestId: request.id,
+        actorUserId: actorId,
+        action: 'checkKycAmlOnboardingEligibility',
+        targetType: 'kycAmlOnboardingEligibility',
+        targetId: memberOrganizationId,
+        outcome: 'success',
+        reason: auditReason,
+        module: 'kyc-aml-onboarding',
+        route: '/api/v1/kyc-aml-onboarding/eligibility/:memberOrganizationId',
+        method: 'GET'
+      });
+      
+      return reply.code(200).send({
+        data: result
+      });
+    }
+  );
 
   // GET /api/v1/kyc-aml-onboarding-cases/{caseId}/status-history - Get status history for a KYC/AML onboarding case
   fastify.get<{ Params: { caseId: string } }>(
