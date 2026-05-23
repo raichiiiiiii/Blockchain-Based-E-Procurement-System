@@ -1,203 +1,271 @@
-# Auth Session Contract
+# MVP Authentication and Session Contract
 
-Status: Proposed
-Date: 2026-05-23
-Owners: Security / Platform
-Related ADR: docs/architecture/adr/ADR-002-auth-session-management-boundary.md
-Related PBIs: PBI-253, PBI-254, PBI-255, PBI-256, PBI-257, PBI-258, PBI-259, PBI-260, PBI-261, PBI-262
-Related requirements: R03, R22
+Status: Approved for PBI-254 implementation baseline  
+Owner: Security Engineer / Backend Engineer  
+Related PBIs: PBI-253, PBI-254, PBI-255, PBI-256, PBI-257, PBI-258, PBI-259, PBI-260, PBI-261, PBI-262  
+Related requirements: R03, R22  
+Related ADR: `docs/architecture/adr/ADR-002-auth-session-management-boundary.md`
 
 ## 1. Purpose
 
-This document defines the MVP authentication and session contract used by protected backend routes and consuming feature branches.
+This document defines the MVP authentication and session contract for platform users. It is the binding source for login, issued-session handling, authenticated request validation, logout or invalidation, trusted actor-context derivation, auth failure responses, and downstream protected-route consumption.
 
-The goal is to provide a stable contract for login, session or token issuance, authenticated request validation, trusted actor-context derivation, logout or session invalidation, and standardized auth failure behavior.
+This contract prevents feature branches from inventing local authentication or actor-context semantics.
 
-This contract exists so PBI-005, PBI-002, PBI-017, PBI-006, PBI-007, and PBI-015 can consume actor context consistently without redefining authentication behavior in each feature branch.
+## 2. Scope
 
-## 2. Non-goals
+In scope:
 
-The MVP auth/session contract does not include external enterprise identity-provider integration, SSO, MFA, password recovery, public account creation, public SME self-registration, DID/VC federation, authorization policy redesign, role assignment redesign, or dashboard UI implementation.
+- platform-user login
+- local MVP session issuance
+- bearer authenticated requests
+- session expiry
+- logout or session invalidation
+- missing, invalid, expired, or revoked session handling
+- trusted actor-context population
+- auth failure response shape
+- consumer guidance for protected routes and audit emitters
 
-## 3. Contract principles
+Out of scope:
 
-1. Authentication proves the user/session identity.
-2. Authorization decides whether the authenticated actor may perform a specific action.
-3. Audit attribution must use server-derived actor context, not client-authored actor headers.
-4. Protected routes must not trust userId, organizationId, role, or permission values supplied directly by request payload or arbitrary headers.
-5. Authentication failures must use the standardized API error-envelope family.
-6. Feature branches must consume this contract rather than defining local auth behavior.
+- external identity provider integration
+- SSO
+- MFA
+- password recovery
+- public account creation
+- public SME self-registration
+- DID/VC federation
+- browser session UI
+- route-specific authorization policy redesign
 
-## 4. Login contract
+## 3. Authentication strategy
 
-Endpoint:
+MVP authentication uses a platform-owned opaque bearer session value. API consumers must not parse the bearer value or infer authorization decisions from its shape. Backend validation owns session verification and actor-context derivation.
 
-```text
-POST /auth/login
-```
+Protected requests use the standard authorization header with the bearer scheme.
+
+## 4. Login endpoint
+
+`POST /api/v1/auth/login`
 
 Request fields:
 
-```text
-user identifier: string
-secret credential: string
+- `username`: required string
+- `password`: required string
+
+Request rules:
+
+- trim leading and trailing whitespace from `username`
+- do not trim the submitted secret value before credential comparison
+- empty `username` or secret returns `VALIDATION_ERROR`
+- invalid credentials return `UNAUTHORIZED`
+- login does not create accounts
+- login does not reveal which credential factor failed
+
+Success response shape:
+
+```json
+{
+  "data": {
+    "sessionToken": "opaque-session-value",
+    "sessionId": "auth-session-123",
+    "expiresAt": "2026-05-23T12:00:00.000Z",
+    "actor": {
+      "actorUserId": "user-123",
+      "actorOrganizationId": "org-123",
+      "actorRoleCodes": ["auditor"],
+      "authenticationSessionId": "auth-session-123",
+      "authenticationMethod": "localPassword"
+    }
+  }
+}
 ```
 
-The exact user identifier field may be finalized during PBI-254. If email is used instead of username, update this contract before implementation closes.
+## 5. Logout endpoint
 
-Successful response shape:
+`POST /api/v1/auth/logout`
 
-```text
-status: 200
-session.accessToken: string
-session.tokenType: Bearer
-session.expiresAt: ISO-8601 timestamp
-actor.actorUserId: string
-actor.actorOrganizationId: string or null
-actor.roleCodes: string array
+Logout requires a valid bearer session. Successful logout invalidates the current session so it cannot authorize later protected requests.
+
+Success response shape:
+
+```json
+{
+  "data": {
+    "loggedOut": true
+  }
+}
 ```
 
-The access token may represent a signed token or opaque session reference depending on the implementation decision made in PBI-254.
+Logout does not delete user records and does not revoke roles or organization membership.
 
-Failed login response shape:
+## 6. Session model
 
-```text
-status: 401
-error.code: AUTHENTICATION_FAILED
-error.message: Invalid credentials
-error.details: object
+Session records use this semantic shape:
+
+```ts
+export type AuthSession = {
+  sessionId: string;
+  tokenHash: string;
+  actorUserId: string;
+  actorOrganizationId?: string;
+  actorRoleCodes: string[];
+  status: 'active' | 'revoked' | 'expired';
+  issuedAt: string;
+  expiresAt: string;
+  revokedAt?: string;
+  authenticationMethod: 'localPassword';
+};
 ```
 
-## 5. Authenticated request contract
+Status semantics:
 
-Protected routes must receive authentication through the approved transport mechanism.
+- `active`: may authenticate requests until `expiresAt`
+- `expired`: past `expiresAt` and must be rejected
+- `revoked`: explicitly invalidated and must be rejected
 
-Recommended MVP form:
+Default MVP session duration is 8 hours. This value may later become configurable.
 
-```text
-Authorization: Bearer <access-token>
+## 7. Authenticated request validation
+
+Protected-route middleware must:
+
+1. read the authorization header
+2. require the bearer scheme
+3. validate the session through the session repository or validation seam
+4. reject missing, malformed, invalid, expired, or revoked sessions before business logic runs
+5. populate trusted actor context for route handlers and audit emitters
+
+## 8. Trusted actor context
+
+Authenticated request validation populates:
+
+```ts
+export type TrustedActorContext = {
+  actorUserId: string;
+  actorOrganizationId?: string;
+  actorRoleCodes: string[];
+  authenticationSessionId: string;
+  authenticationMethod: 'localPassword';
+  isAuthenticated: true;
+};
 ```
 
-Protected routes must not rely on raw client-authored actor headers for trusted decisions.
+Rules:
 
-## 6. Trusted actor context
+- protected routes must read actor identity from trusted actor context
+- protected routes must not trust client-authored actor headers for production behavior
+- client-authored actor headers may remain only as documented test scaffolding
+- audit emitters for protected actions must use the same trusted actor context
 
-After authentication succeeds, middleware or plugin code must populate trusted actor context for route handlers and audit emitters.
+## 9. Auth failure responses
 
-Minimum actor context fields:
+Authentication failures use the standard error envelope.
 
-```text
-actorUserId: string
-actorOrganizationId: optional string
-roleCodes: optional string array
-sessionId: optional string
-authenticationMethod: mvp-session or mvp-token
+Missing credentials:
+
+```json
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Authentication required"
+  }
+}
 ```
 
-Route handlers should consume the request actor context through a shared helper or typed request extension, not by parsing sessions or tokens directly inside business routes.
+Malformed authorization header:
 
-## 7. Invalid or missing authentication
-
-Missing authentication response shape:
-
-```text
-status: 401
-error.code: AUTHENTICATION_REQUIRED
-error.message: Authentication is required
-error.details: object
+```json
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Invalid authorization header"
+  }
+}
 ```
 
-Invalid, expired, or revoked session response shape:
+Invalid login credentials:
 
-```text
-status: 401
-error.code: INVALID_SESSION
-error.message: The session is invalid or expired
-error.details: object
+```json
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Invalid username or password"
+  }
+}
 ```
 
-Authorization failures after successful authentication remain authorization failures and should use the approved forbidden response pattern rather than authentication errors.
+Invalid or unusable session:
 
-## 8. Logout or session invalidation
-
-Endpoint:
-
-```text
-POST /auth/logout
+```json
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Invalid or expired session"
+  }
+}
 ```
 
-Authentication:
+## 10. Authorization boundary
 
-```text
-Authorization: Bearer <access-token>
-```
+Authentication proves that a request has a valid actor session. Authorization remains route-specific.
 
-Successful response shape:
+Examples:
 
-```text
-status: 204
-body: empty
-```
+- auditor-only routes still check the auditor role after authentication
+- administrator-only routes still check administrator role or permission after authentication
+- organization status and deactivation checks remain separate unless a later task integrates them explicitly
 
-After logout or invalidation, the same session or token must no longer authorize protected requests.
+## 11. Audit expectations
 
-## 9. Audit expectations
-
-The MVP auth/session implementation should support audit attribution for protected actions.
-
-Minimum expectations:
-
-- protected action audit events use actorUserId from trusted actor context
-- actorOrganizationId is included when available and relevant
-- auth/session failures may be logged internally if the audit policy requires it
-- route handlers must not use client-authored actor identity for audit attribution
-
-## 10. Consumer guidance
-
-### PBI-005
-
-Use trusted actor context when recording procure-to-pay lifecycle events.
-
-### PBI-002
-
-Use trusted actor context for compliance officer, reviewer, and requester attribution.
-
-### PBI-017
-
-Use trusted actor context for dashboard state resolution. PBI-017 must not implement login, session issuance, logout, account creation, or public registration.
-
-### PBI-006 and PBI-007
-
-Use trusted actor context for escrow, PLS contract, activation, distribution, release, and status-change audit records.
-
-### PBI-015
-
-Use trusted actor context for export requester identity, export job creation, retrieval, and audit evidence.
-
-## 11. Test expectations
-
-The auth/session implementation should include tests for:
+Authentication-sensitive events should be auditable where applicable:
 
 - successful login
-- invalid login
-- missing authentication rejection
-- invalid authentication rejection
-- expired or revoked session rejection, if represented
+- failed login
 - logout or session invalidation
-- protected route access with valid auth
-- protected route rejection without valid auth
-- trusted actor context population
-- audit attribution through trusted actor context
+- invalid protected request attempt
+- expired or revoked session use
 
-## 12. Open implementation decisions
+Audit records must not store raw credential secrets or raw bearer session values. Session references should use `sessionId` or token hash metadata only.
 
-PBI-254 must finalize:
+## 12. Threat assumptions
 
-- signed token versus opaque session reference
-- exact login identifier field
-- session expiration duration
-- whether refresh tokens are excluded from MVP
-- storage adapter for session or token state
-- test-only handling for legacy actor headers, if any
+MVP threat assumptions:
 
-Until PBI-254 closes, this file is a proposed contract and should not be treated as fully accepted implementation detail.
+- attackers may send forged actor headers
+- attackers may omit or modify bearer sessions
+- attackers may replay revoked or expired sessions
+- attackers may attempt invalid login
+- attackers may attempt protected routes without authentication
+- server-side code is trusted to validate sessions and populate actor context
+- transport-layer protection is assumed for deployment, but not implemented in application code
+
+## 13. Security rules
+
+- credential secrets must not be returned in responses
+- credential secrets must not be logged
+- raw bearer session values must not be logged
+- session validation uses token hashes or equivalent validation seams where stored
+- error responses must not reveal whether a username exists
+- protected-route business logic must not run when authentication fails
+
+## 14. Consumer guidance
+
+Backend protected routes must consume trusted actor context populated by auth middleware. They must not parse bearer values directly.
+
+Audit emitters must use trusted actor context for actor attribution.
+
+PBI-017 dashboard routing and role-specific widgets may consume authenticated actor context but must not implement login or session mechanics.
+
+PBI-005, PBI-002, PBI-006, PBI-007, and PBI-015 protected workflow branches must derive actor attribution from the shared auth/session middleware once it lands on `main`.
+
+## 15. Later implementation ownership
+
+- PBI-255 owns repository seams and in-memory adapter.
+- PBI-256 owns login endpoint and session issuance.
+- PBI-257 owns authenticated request validation middleware.
+- PBI-258 owns protected-route and audit-emitter integration.
+- PBI-259 owns logout/session invalidation.
+- PBI-260 owns full auth regression tests.
+- PBI-261 owns durable doc updates after implementation.
+- PBI-262 owns merge-gate/rebase guidance.
