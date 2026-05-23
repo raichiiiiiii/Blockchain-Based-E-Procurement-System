@@ -2,19 +2,19 @@ import { test } from 'node:test';
 import * as assert from 'node:assert';
 import fastify from 'fastify';
 import { createHash, randomBytes } from 'node:crypto';
+import actorContextPlugin from '../../../app/plugins/actor-context-plugin.js';
 import { InMemoryAuthSessionRepository } from '../infrastructure/in-memory-auth-session-repository.js';
 import { createAuthenticatedRequestPreHandler } from './authenticated-request.js';
 import type { AuthSession } from '../domain/auth-session.js';
 
-function hashToken(token: string): string {
+function hashTestToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
 function createTestSession(overrides: Partial<AuthSession> = {}): AuthSession {
-  const token = randomBytes(32).toString('hex');
   return {
     sessionId: `session_${randomBytes(16).toString('hex')}`,
-    tokenHash: hashToken(token),
+    tokenHash: hashTestToken(randomBytes(32).toString('hex')),
     actorUserId: 'user-123',
     actorOrganizationId: 'org-123',
     actorRoleCodes: ['auditor', 'viewer'],
@@ -26,21 +26,22 @@ function createTestSession(overrides: Partial<AuthSession> = {}): AuthSession {
   };
 }
 
-test('authenticated request middleware - valid token populates actor context', async () => {
+async function createProtectedTestApp(sessionRepository: InMemoryAuthSessionRepository) {
   const app = fastify();
+  await app.register(actorContextPlugin);
+  app.addHook('preHandler', createAuthenticatedRequestPreHandler(sessionRepository));
+  return app;
+}
+
+test('authenticated request middleware - valid token populates actor context', async () => {
   const sessionRepository = new InMemoryAuthSessionRepository();
-
   const session = createTestSession();
-  await sessionRepository.save(session);
-
   const token = randomBytes(32).toString('hex');
-  const tokenHash = hashToken(token);
-
-  const updatedSession = { ...session, tokenHash };
+  const tokenHash = hashTestToken(token);
+  const updatedSession: AuthSession = { ...session, tokenHash };
   await sessionRepository.save(updatedSession);
 
-  app.addHook('preHandler', createAuthenticatedRequestPreHandler(sessionRepository));
-
+  const app = await createProtectedTestApp(sessionRepository);
   app.get('/protected', (request) => {
     return {
       success: true,
@@ -70,10 +71,8 @@ test('authenticated request middleware - valid token populates actor context', a
 });
 
 test('authenticated request middleware - missing authorization header', async () => {
-  const app = fastify();
   const sessionRepository = new InMemoryAuthSessionRepository();
-
-  app.addHook('preHandler', createAuthenticatedRequestPreHandler(sessionRepository));
+  const app = await createProtectedTestApp(sessionRepository);
 
   app.get('/protected', () => {
     return { success: true };
@@ -91,10 +90,8 @@ test('authenticated request middleware - missing authorization header', async ()
 });
 
 test('authenticated request middleware - malformed authorization header', async () => {
-  const app = fastify();
   const sessionRepository = new InMemoryAuthSessionRepository();
-
-  app.addHook('preHandler', createAuthenticatedRequestPreHandler(sessionRepository));
+  const app = await createProtectedTestApp(sessionRepository);
 
   app.get('/protected', () => {
     return { success: true };
@@ -115,10 +112,8 @@ test('authenticated request middleware - malformed authorization header', async 
 });
 
 test('authenticated request middleware - unsupported auth scheme', async () => {
-  const app = fastify();
   const sessionRepository = new InMemoryAuthSessionRepository();
-
-  app.addHook('preHandler', createAuthenticatedRequestPreHandler(sessionRepository));
+  const app = await createProtectedTestApp(sessionRepository);
 
   app.get('/protected', () => {
     return { success: true };
@@ -139,10 +134,8 @@ test('authenticated request middleware - unsupported auth scheme', async () => {
 });
 
 test('authenticated request middleware - invalid token', async () => {
-  const app = fastify();
   const sessionRepository = new InMemoryAuthSessionRepository();
-
-  app.addHook('preHandler', createAuthenticatedRequestPreHandler(sessionRepository));
+  const app = await createProtectedTestApp(sessionRepository);
 
   app.get('/protected', () => {
     return { success: true };
@@ -163,23 +156,17 @@ test('authenticated request middleware - invalid token', async () => {
 });
 
 test('authenticated request middleware - expired session', async () => {
-  const app = fastify();
   const sessionRepository = new InMemoryAuthSessionRepository();
-
   const session = createTestSession({
     status: 'active',
     expiresAt: new Date(Date.now() - 1000).toISOString()
   });
-  await sessionRepository.save(session);
-
   const token = randomBytes(32).toString('hex');
-  const tokenHash = hashToken(token);
-
-  const updatedSession = { ...session, tokenHash };
+  const tokenHash = hashTestToken(token);
+  const updatedSession: AuthSession = { ...session, tokenHash };
   await sessionRepository.save(updatedSession);
 
-  app.addHook('preHandler', createAuthenticatedRequestPreHandler(sessionRepository));
-
+  const app = await createProtectedTestApp(sessionRepository);
   app.get('/protected', () => {
     return { success: true };
   });
@@ -202,22 +189,16 @@ test('authenticated request middleware - expired session', async () => {
 });
 
 test('authenticated request middleware - revoked session', async () => {
-  const app = fastify();
   const sessionRepository = new InMemoryAuthSessionRepository();
-
   const session = createTestSession({
     status: 'revoked'
   });
-  await sessionRepository.save(session);
-
   const token = randomBytes(32).toString('hex');
-  const tokenHash = hashToken(token);
-
-  const updatedSession = { ...session, tokenHash };
+  const tokenHash = hashTestToken(token);
+  const updatedSession: AuthSession = { ...session, tokenHash };
   await sessionRepository.save(updatedSession);
 
-  app.addHook('preHandler', createAuthenticatedRequestPreHandler(sessionRepository));
-
+  const app = await createProtectedTestApp(sessionRepository);
   app.get('/protected', () => {
     return { success: true };
   });
@@ -237,11 +218,9 @@ test('authenticated request middleware - revoked session', async () => {
 });
 
 test('authenticated request middleware - auth failure prevents protected handler execution', async () => {
-  const app = fastify();
   const sessionRepository = new InMemoryAuthSessionRepository();
+  const app = await createProtectedTestApp(sessionRepository);
   let handlerExecuted = false;
-
-  app.addHook('preHandler', createAuthenticatedRequestPreHandler(sessionRepository));
 
   app.get('/protected', () => {
     handlerExecuted = true;
