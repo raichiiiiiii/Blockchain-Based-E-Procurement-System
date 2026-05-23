@@ -277,7 +277,7 @@ export const ROLE_NAVIGATION_GROUPS: Record<DashboardRoleCode, DashboardNavigati
         {
           id: 'access-history',
           label: 'Access History',
-          target: 'access-history',
+          target: 'access-history-search',
           allowedRoles: ['auditor'],
           visibility: 'visible',
           blockedBehavior: 'hide'
@@ -301,7 +301,7 @@ export const ROLE_NAVIGATION_GROUPS: Record<DashboardRoleCode, DashboardNavigati
         {
           id: 'monitoring',
           label: 'Monitoring',
-          target: 'monitoring',
+          target: 'security-investigation',
           allowedRoles: ['securityOperator'],
           visibility: 'visible',
           blockedBehavior: 'hide'
@@ -354,7 +354,7 @@ export const DASHBOARD_TARGETS: Record<string, {
   'shariah-reviews': {
     target: 'shariah-reviews',
     label: 'Shariah Reviews',
-    allowedRoles: ['shariahReviewer'], // Fixed: Only shariahReviewer allowed
+    allowedRoles: ['shariahReviewer'],
     pageKey: 'shariah-review-submission',
     availability: 'available'
   },
@@ -375,7 +375,7 @@ export const DASHBOARD_TARGETS: Record<string, {
   'shariah-history': {
     target: 'shariah-history',
     label: 'Shariah History',
-    allowedRoles: ['shariahReviewer'], // Fixed: Only shariahReviewer allowed
+    allowedRoles: ['shariahReviewer'],
     pageKey: 'shariah-review-history',
     availability: 'available'
   },
@@ -385,6 +385,36 @@ export const DASHBOARD_TARGETS: Record<string, {
     allowedRoles: ['administrator'],
     pageKey: 'runway',
     availability: 'available'
+  },
+  // New auditor targets
+  'access-history-search': {
+    target: 'access-history-search',
+    label: 'Access History Search',
+    allowedRoles: ['auditor'],
+    pageKey: 'access-history-search',
+    availability: 'available'
+  },
+  'access-event-detail': {
+    target: 'access-event-detail',
+    label: 'Access Event Detail',
+    allowedRoles: ['auditor'],
+    pageKey: 'access-event-detail',
+    availability: 'available'
+  },
+  'access-event-sequence': {
+    target: 'access-event-sequence',
+    label: 'Access Event Sequence',
+    allowedRoles: ['auditor'],
+    pageKey: 'access-event-sequence',
+    availability: 'available'
+  },
+  // New security operator target
+  'security-investigation': {
+    target: 'security-investigation',
+    label: 'Security Investigation',
+    allowedRoles: ['securityOperator'],
+    pageKey: 'security-investigation',
+    availability: 'placeholder'
   },
   // Placeholder targets
   'member-management': {
@@ -714,6 +744,77 @@ function createShariahReviewerWidgets(): DashboardWidget[] {
   ];
 }
 
+// Create auditor widgets according to PBI-188 contract
+function createAuditorWidgets(): DashboardWidget[] {
+  return [
+    // Primary zone widgets
+    {
+      id: 'auditor-access-history-search-overview',
+      title: 'Access History Search',
+      zoneId: 'primary',
+      allowedRoles: ['auditor'],
+      status: 'active',
+      downstreamPbi: 'PBI-189',
+      placeholder: false
+    },
+    {
+      id: 'auditor-event-detail-overview',
+      title: 'Event Detail',
+      zoneId: 'primary',
+      allowedRoles: ['auditor'],
+      status: 'active',
+      downstreamPbi: 'PBI-189',
+      placeholder: false
+    },
+    // Investigation zone widgets
+    {
+      id: 'auditor-event-sequence-overview',
+      title: 'Event Sequence',
+      zoneId: 'investigation',
+      allowedRoles: ['auditor'],
+      status: 'active',
+      downstreamPbi: 'PBI-189',
+      placeholder: false
+    },
+    // Alerts zone widget
+    {
+      id: 'auditor-investigation-boundary-alert',
+      title: 'Investigation Boundary',
+      zoneId: 'alerts',
+      allowedRoles: ['auditor'],
+      status: 'active',
+      downstreamPbi: 'PBI-189',
+      placeholder: false
+    }
+  ];
+}
+
+// Create security operator widgets according to PBI-188 contract
+function createSecurityOperatorWidgets(): DashboardWidget[] {
+  return [
+    // Primary zone widget
+    {
+      id: 'security-investigation-placeholder',
+      title: 'Security Investigation',
+      zoneId: 'primary',
+      allowedRoles: ['securityOperator'],
+      status: 'placeholder',
+      downstreamPbi: 'PBI-189',
+      placeholder: true
+    },
+    // Alerts zone widget
+    {
+      id: 'security-investigation-boundary-alert',
+      title: 'Investigation Boundary',
+      zoneId: 'alerts',
+      allowedRoles: ['securityOperator'],
+      status: 'active',
+      downstreamPbi: 'PBI-189',
+      placeholder: false
+    }
+  ];
+}
+
 // Create placeholder widgets for each role and zone
 export function createPlaceholderWidgets(role: DashboardRoleCode): DashboardWidget[] {
   // For administrator role, return specific widgets as per PBI-176
@@ -729,6 +830,16 @@ export function createPlaceholderWidgets(role: DashboardRoleCode): DashboardWidg
   // For shariah reviewer role, return specific widgets as per PBI-180
   if (role === 'shariahReviewer') {
     return createShariahReviewerWidgets();
+  }
+  
+  // For auditor role, return specific widgets as per PBI-188
+  if (role === 'auditor') {
+    return createAuditorWidgets();
+  }
+  
+  // For security operator role, return specific widgets as per PBI-188
+  if (role === 'securityOperator') {
+    return createSecurityOperatorWidgets();
   }
 
   // For other roles, create generic placeholder widgets

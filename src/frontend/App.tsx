@@ -7,12 +7,16 @@ import ShariahReviewSubmissionPage from './pages/ShariahReviewSubmissionPage';
 import ShariahReviewChecklistPage from './pages/ShariahReviewChecklistPage';
 import ShariahReviewDecisionPage from './pages/ShariahReviewDecisionPage';
 import ShariahReviewHistoryPage from './pages/ShariahReviewHistoryPage';
+import AccessHistorySearchPage from './pages/AccessHistorySearchPage';
+import AccessEventDetailPage from './pages/AccessEventDetailPage';
+import AccessEventSequencePage from './pages/AccessEventSequencePage';
+import SecurityInvestigationPlaceholderPage from './pages/SecurityInvestigationPlaceholderPage';
 import DashboardShell from './components/dashboard/DashboardShell';
 import { initializeDashboardShell } from './lib/dashboard-contract';
 import { resolveDashboardTargetAccess } from './lib/dashboard-contract';
 import { DashboardRoleCode } from './types/dashboard';
 
-type PageKey = 'dashboard' | 'runway' | 'member-onboarding' | 'role-management' | 'role-assignment' | 'shariah-review-submission' | 'shariah-review-checklist' | 'shariah-review-decision' | 'shariah-review-history';
+type PageKey = 'dashboard' | 'runway' | 'member-onboarding' | 'role-management' | 'role-assignment' | 'shariah-review-submission' | 'shariah-review-checklist' | 'shariah-review-decision' | 'shariah-review-history' | 'access-history-search' | 'access-event-detail' | 'access-event-sequence' | 'security-investigation';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<PageKey>('dashboard');
@@ -21,7 +25,7 @@ function App() {
   const demoUserContext = {
     userId: 'user-123',
     displayName: 'Admin User',
-    roleCodes: ['administrator'],
+    roleCodes: ['administrator', 'auditor', 'securityOperator'],
   };
 
   const dashboard = initializeDashboardShell(
@@ -55,7 +59,11 @@ function App() {
           'shariah-checklists': 'shariah-review-checklist',
           'shariah-decisions': 'shariah-review-decision',
           'shariah-history': 'shariah-review-history',
-          'runway': 'runway'
+          'runway': 'runway',
+          'access-history-search': 'access-history-search',
+          'access-event-detail': 'access-event-detail',
+          'access-event-sequence': 'access-event-sequence',
+          'security-investigation': 'security-investigation'
         };
 
         const pageKey = targetToPageKey[target];
@@ -164,6 +172,10 @@ function App() {
             {currentPage === 'shariah-review-checklist' && <ShariahReviewChecklistPage />}
             {currentPage === 'shariah-review-decision' && <ShariahReviewDecisionPage />}
             {currentPage === 'shariah-review-history' && <ShariahReviewHistoryPage />}
+            {currentPage === 'access-history-search' && <AccessHistorySearchPage />}
+            {currentPage === 'access-event-detail' && <AccessEventDetailPage />}
+            {currentPage === 'access-event-sequence' && <AccessEventSequencePage />}
+            {currentPage === 'security-investigation' && <SecurityInvestigationPlaceholderPage />}
           </div>
         </>
       )}

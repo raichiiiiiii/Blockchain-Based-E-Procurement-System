@@ -39,6 +39,16 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                     <p>Checklist and decision actions remain governed by backend state and actor context.</p>
                     <p>Backend FORBIDDEN and VALIDATION_ERROR responses remain authoritative.</p>
                   </div>
+                ) : widget.id === 'auditor-investigation-boundary-alert' ? (
+                  <div className="widget-content">
+                    <p><strong>Investigation dashboard visibility is not backend authorization.</strong></p>
+                    <p>Access-history payloads, evidence fields, ordering, and completeness semantics remain governed by the backend access-history contracts.</p>
+                  </div>
+                ) : widget.id === 'security-investigation-boundary-alert' ? (
+                  <div className="widget-content">
+                    <p><strong>Security dashboard visibility does not grant access-history API permission.</strong></p>
+                    <p>Auditor-only backend contracts remain authoritative until an approved security investigation contract exists.</p>
+                  </div>
                 ) : widget.status === 'placeholder' ? (
                   <div className="widget-placeholder">
                     <p>This is a placeholder widget for {widget.title.toLowerCase()}.</p>
@@ -192,33 +202,73 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                         <p>Completion failures must surface validation errors, not frontend success.</p>
                       </div>
                     )}
-                    <button 
-                      className="action-button"
-                      onClick={() => {
-                        // Map widget IDs to target pages
-                        switch (widget.id) {
-                          case 'admin-membership-overview':
-                            onPageChange('member-onboarding');
-                            break;
-                          case 'admin-role-catalog-overview':
-                            onPageChange('role-management');
-                            break;
-                          case 'admin-role-assignment-overview':
-                            onPageChange('role-assignment');
-                            break;
-                          case 'shariah-review-submission-overview':
-                            onPageChange('shariah-reviews');
-                            break;
-                          case 'shariah-checklist-overview':
-                            onPageChange('shariah-checklists');
-                            break;
-                          default:
-                            return;
-                        }
-                      }}
-                    >
-                      Open {widget.title}
-                    </button>
+                    {widget.id === 'auditor-access-history-search-overview' && (
+                      <div className="widget-content">
+                        <p>Search access history events using various filters.</p>
+                        <button 
+                          className="action-button"
+                          onClick={() => onPageChange('access-history-search')}
+                        >
+                          Open Access History Search
+                        </button>
+                      </div>
+                    )}
+                    {widget.id === 'auditor-event-detail-overview' && (
+                      <div className="widget-content">
+                        <p>Inspect individual audit event evidence and details.</p>
+                        <button 
+                          className="action-button"
+                          onClick={() => onPageChange('access-event-detail')}
+                        >
+                          Open Event Detail
+                        </button>
+                      </div>
+                    )}
+                    {widget.id === 'security-investigation-placeholder' && (
+                      <div className="widget-content">
+                        <p>Security investigation functionality is contract-pending.</p>
+                        <p>Current access-history APIs require auditor backend authorization.</p>
+                        <button 
+                          className="action-button"
+                          onClick={() => onPageChange('security-investigation')}
+                        >
+                          View Security Investigation (Unavailable)
+                        </button>
+                      </div>
+                    )}
+                    {(widget.id === 'admin-membership-overview' ||
+                      widget.id === 'admin-role-catalog-overview' ||
+                      widget.id === 'admin-role-assignment-overview' ||
+                      widget.id === 'shariah-review-submission-overview' ||
+                      widget.id === 'shariah-checklist-overview') && (
+                      <button 
+                        className="action-button"
+                        onClick={() => {
+                          // Map widget IDs to target pages
+                          switch (widget.id) {
+                            case 'admin-membership-overview':
+                              onPageChange('member-onboarding');
+                              break;
+                            case 'admin-role-catalog-overview':
+                              onPageChange('role-management');
+                              break;
+                            case 'admin-role-assignment-overview':
+                              onPageChange('role-assignment');
+                              break;
+                            case 'shariah-review-submission-overview':
+                              onPageChange('shariah-reviews');
+                              break;
+                            case 'shariah-checklist-overview':
+                              onPageChange('shariah-checklists');
+                              break;
+                            default:
+                              return;
+                          }
+                        }}
+                      >
+                        Open {widget.title}
+                      </button>
+                    )}
                   </div>
                 ) : widget.status === 'placeholder' ? (
                   <div className="widget-placeholder">
@@ -358,6 +408,49 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                       onClick={() => onPageChange('shariah-history')}
                     >
                       View {widget.title}
+                    </button>
+                  </div>
+                ) : widget.status === 'placeholder' ? (
+                  <div className="widget-placeholder">
+                    <p>This is a placeholder widget for {widget.title.toLowerCase()}.</p>
+                    <p>Functionality will be implemented in future stories.</p>
+                  </div>
+                ) : null}
+              </div>
+            ))
+          ) : (
+            <div className="zone-empty">
+              <p>{zone.emptyState.message}</p>
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  // Special rendering for the investigation zone
+  if (zone.id === 'investigation') {
+    return (
+      <section className={`widget-zone widget-zone-${zone.id}`}>
+        <header>
+          <h2>{zone.label}</h2>
+          <p className="zone-purpose">{zone.purpose}</p>
+        </header>
+
+        <div className="widgets">
+          {widgets.length > 0 ? (
+            widgets.map(widget => (
+              <div key={widget.id} className={`widget widget-${widget.status}`}>
+                <h3>{widget.title}</h3>
+                {widget.id === 'auditor-event-sequence-overview' && widget.status === 'active' && !widget.placeholder ? (
+                  <div className="widget-content">
+                    <p>Inspect actor or target chronological sequences.</p>
+                    <p>Completeness metadata must be shown when present.</p>
+                    <button 
+                      className="action-button"
+                      onClick={() => onPageChange('access-event-sequence')}
+                    >
+                      Open Event Sequence
                     </button>
                   </div>
                 ) : widget.status === 'placeholder' ? (
