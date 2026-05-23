@@ -810,6 +810,3 @@ export function initializeDashboardShell(
     shellState: 'ready',
   };
 }
-```
-
-src/frontend/components/dashboard/DashboardWidgetZone.tsx
