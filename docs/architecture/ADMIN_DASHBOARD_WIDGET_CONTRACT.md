@@ -1,10 +1,14 @@
 # Administrator Dashboard Widget Contract
 
-Status: Draft contract for PBI-176  
+Status: Accepted for PBI-177 implementation  
+Accepted: PBI-176 accepted by Scrum Master / Product Owner on 2026-05-23  
 Owner: Frontend + Architecture  
 Related feature: PBI-017 — Role-based UI and operational dashboards  
 Related story: PBI-147 — Administrator dashboard widgets  
-Related task: PBI-176 — Define administrator widget contract and membership or access-control action entry mapping  
+Related completed task: PBI-176 — Define administrator widget contract and membership or access-control action entry mapping  
+Related implementation task: PBI-177 — Implement administrator dashboard widgets for member onboarding, roles, and assignments  
+Related hardening task: PBI-178 — Add administrator widget permission filtering and summary-state hardening  
+Related validation task: PBI-179 — Execute administrator widget validation, documentation updates, and evidence closure  
 Related requirement: R17 — Role-based UI and dashboards  
 Related decision record: `docs/architecture/adr/ADR-001-dashboard-auth-boundary-and-state-flow.md`
 
