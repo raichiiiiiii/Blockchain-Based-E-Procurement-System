@@ -3,11 +3,12 @@ import type { FastifyPluginAsync } from 'fastify';
 
 // Define the trusted actor context shape
 export interface TrustedActorContext {
-  userId?: string;
-  authorizationContext: {
-    roles?: string[];
-  };
-  isAuthenticated: boolean;
+  actorUserId: string;
+  actorOrganizationId?: string;
+  actorRoleCodes: string[];
+  authenticationSessionId: string;
+  authenticationMethod: 'localPassword';
+  isAuthenticated: true;
 }
 
 // Keep the Fastify request augmentation here so ts-node/esm sees it
@@ -20,14 +21,18 @@ declare module 'fastify' {
 /**
  * Actor Context Plugin
  *
- * Transitional scaffolding only:
- * currently seeds trusted request context from x-actor-* headers.
- * This must later be replaced by server-derived auth context.
+ * Handles both legacy header-based context (for testing) and new session-based context
  */
 const actorContextPlugin: FastifyPluginAsync = async (fastify) => {
   fastify.decorateRequest('actorContext', null);
 
   fastify.addHook('onRequest', async (request) => {
+    // If actorContext is already set by auth middleware, don't override it
+    if (request.actorContext) {
+      return;
+    }
+
+    // Legacy header-based context for testing purposes
     const rawActorId = request.headers['x-actor-id'];
     const rawActorRole = request.headers['x-actor-role'];
 
@@ -45,11 +50,16 @@ const actorContextPlugin: FastifyPluginAsync = async (fastify) => {
       roles = rawActorRole.map((r) => String(r).trim()).filter(Boolean);
     }
 
-    request.actorContext = {
-      userId,
-      authorizationContext: { roles },
-      isAuthenticated: !!userId
-    };
+    // Only set legacy context if we have a user ID
+    if (userId) {
+      request.actorContext = {
+        actorUserId: userId,
+        actorRoleCodes: roles || [],
+        authenticationSessionId: 'legacy-session',
+        authenticationMethod: 'localPassword',
+        isAuthenticated: true
+      };
+    }
   });
 };
 
