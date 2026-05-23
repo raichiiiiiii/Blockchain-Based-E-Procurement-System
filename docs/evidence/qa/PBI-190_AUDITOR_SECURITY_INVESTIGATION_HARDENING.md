@@ -16,10 +16,10 @@ This evidence document covers the hardening of auditor and security operator das
 ## Files Changed
 
 1. `src/frontend/pages/AccessHistorySearchPage.tsx` - Added comprehensive state handling for search scenarios
-2. `src/frontend/pages/AccessEventDetailPage.tsx` - Added comprehensive state handling for event detail scenarios
-3. `src/frontend/pages/AccessEventSequencePage.tsx` - Added comprehensive state handling for sequence scenarios
+2. `src/frontend/pages/AccessEventDetailPage.tsx` - Added comprehensive state handling for event detail scenarios and removed synthesized evidence hash values
+3. `src/frontend/pages/AccessEventSequencePage.tsx` - Added comprehensive state handling for sequence scenarios and deterministic completeness scaffold behavior
 4. `src/frontend/pages/SecurityInvestigationPlaceholderPage.tsx` - Enhanced placeholder messaging and restrictions
-5. `docs/evidence/qa/PBI-190_AUDITOR_SECURITY_INVESTIGATION_HARDENING.md` - Created this evidence document
+5. `docs/evidence/qa/PBI-190_AUDITOR_SECURITY_INVESTIGATION_HARDENING.md` - Created and updated this evidence document
 
 ## Contract Consumed
 
@@ -34,22 +34,22 @@ This implementation consumes the following contracts:
 Implemented in all three main pages:
 1. **AccessHistorySearchPage**: Shows "No access history events matched your search criteria" with clear note that this is a successful search with `data.items = []`
 2. **AccessEventSequencePage**: Shows "No access events found for the specified sequence" with clear note that this is a successful empty result
-3. **AccessEventDetailPage**: Does not have an empty result state since it's a specific lookup - uses NotFound instead
+3. **AccessEventDetailPage**: Does not have an empty result state since it is a specific lookup - uses NotFound instead
 
 ## Validation-Error Behavior
 
-All pages implement robust validation:
-1. **AccessHistorySearchPage**: Validates time range consistency (from ≤ to)
+All pages implement validation:
+1. **AccessHistorySearchPage**: Validates time range consistency (from <= to)
 2. **AccessEventDetailPage**: Validates that Event ID is provided
 3. **AccessEventSequencePage**: Validates required fields based on mode (actorUserId for actor mode, targetType+targetId for target mode) and time range consistency
 
-Each validation error clearly indicates it's a VALIDATION_ERROR, not an empty result.
+Each validation error clearly indicates it is a VALIDATION_ERROR, not an empty result.
 
 ## Forbidden-State Behavior
 
 All pages handle forbidden states:
 1. When user lacks auditor role for access-history APIs
-2. Clear messaging that "Backend FORBIDDEN means auditor authorization failed or actor lacks access"
+2. Clear messaging that backend FORBIDDEN means auditor authorization failed or actor lacks access
 3. Consistent presentation across all entry points
 
 ## Event-Detail Not-Found Behavior
@@ -59,13 +59,35 @@ Implemented in AccessEventDetailPage:
 2. Clearly labeled as NOT_FOUND semantics, not empty result
 3. Distinct from validation errors or forbidden states
 
+## Event-Detail Evidence-Value Preservation
+
+AccessEventDetailPage no longer renders synthetic evidence hash values such as `sha256-placeholder` or `previous-sha256-placeholder`.
+
+The success scaffold now shows a backend event-detail schema preview and marks each field as "backend-provided value only" until real API binding is implemented.
+
+This preserves the contract rule that the frontend must not synthesize:
+
+- `evidence.payloadHash`
+- `evidence.canonicalization`
+- `evidence.previousEventHash`
+
 ## Sequence Completeness Behavior
 
 Implemented in AccessEventSequencePage:
 1. Handles completeness status: complete | partial | unknown
-2. Shows completeness warning when status is not 'complete'
-3. Includes reason ("completeness_not_proven") and explanatory message
-4. Clearly states that "Unknown completeness must not be presented as complete lifecycle evidence"
+2. Shows completeness warning when status is partial or unknown
+3. Includes reason (`completeness_not_proven`) and explanatory message
+4. Clearly states that unknown completeness must not be presented as complete lifecycle evidence
+5. Uses deterministic scaffold inputs instead of random completeness selection
+
+Deterministic scaffold controls:
+
+- `complete` -> successWithItems with completenessStatus complete
+- `partial` -> incompleteOrUnknown with completenessStatus partial
+- `unknown` -> incompleteOrUnknown with completenessStatus unknown
+- `empty` -> empty result
+- `forbidden` -> forbidden state
+- `error` -> generic error state
 
 ## SecurityOperator Placeholder Behavior
 
@@ -89,8 +111,8 @@ All implementations preserve backend audit semantics:
 
 The implementation maintains the backend authorization boundary by:
 1. Clearly distinguishing between frontend visibility and backend authorization
-2. Explicitly stating that "Investigation dashboard visibility is not backend authorization"
-3. Maintaining that "Auditor-only backend contracts remain authoritative"
+2. Explicitly stating that investigation dashboard visibility is not backend authorization
+3. Maintaining that auditor-only backend contracts remain authoritative
 4. Ensuring security operators cannot access auditor-only APIs
 5. Using the existing `resolveDashboardTargetAccess(...)` function for all access resolution
 
@@ -116,7 +138,7 @@ This implementation complies with ADR-001 by:
 
 ## Validation Commands/Results
 
-Manual validation was executed locally by the developer and reported as passing on 2026-05-23.
+Manual validation was executed locally by the developer before post-inspection fixes and reported as passing on 2026-05-23.
 
 ```bash
 npm run frontend:build
@@ -132,6 +154,8 @@ git diff --check
 # PASS
 ```
 
+After the post-inspection fixes to AccessEventDetailPage and AccessEventSequencePage, rerun the same validation commands before accepting PBI-190.
+
 ## Known Limitations
 
 1. Actual API fetching is scaffolded with clear contract notes rather than implemented
@@ -141,10 +165,9 @@ git diff --check
 
 ## Follow-up Recommendations for PBI-191
 
-1. Implement actual API calls in the frontend pages if backend/browser integration scope allows it
-2. Add proper error handling for real API responses
-3. Implement real data display for search results, event details, and sequences if API binding is approved
-4. Add loading states for API calls
-5. Implement proper validation for form inputs against real API constraints
-6. Validate all error states with real backend responses
-7. Keep securityOperator access-history behavior placeholder/forbidden unless backend contracts explicitly change
+1. Validate all PBI-190 state paths with repository inspection and local command results
+2. Keep real API binding as future scope unless explicitly approved
+3. Add proper error handling for real API responses if API binding is approved
+4. Implement real data display for search results, event details, and sequences if API binding is approved
+5. Validate all error states with real backend responses once integration is implemented
+6. Keep securityOperator access-history behavior placeholder/forbidden unless backend contracts explicitly change
