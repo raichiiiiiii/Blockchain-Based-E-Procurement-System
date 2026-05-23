@@ -27,6 +27,22 @@ export function getHighestPriorityRole(roles: string[]): DashboardRoleCode | nul
   return null;
 }
 
+// Filter widgets by active role code for security hardening
+export function filterWidgetsByRole(
+  widgets: DashboardWidget[],
+  activeRoleCode: DashboardRoleCode | undefined
+): DashboardWidget[] {
+  if (!activeRoleCode) {
+    // If no active role, only show widgets that allow all roles (empty allowedRoles array)
+    return widgets.filter(widget => widget.allowedRoles.length === 0);
+  }
+
+  // Filter widgets to only include those allowed for the active role
+  return widgets.filter(widget => 
+    widget.allowedRoles.includes(activeRoleCode)
+  );
+}
+
 // Define widget zones as per API_CONTRACTS.md section 15.4
 export const WIDGET_ZONES: Record<string, DashboardWidgetZone> = {
   summary: {

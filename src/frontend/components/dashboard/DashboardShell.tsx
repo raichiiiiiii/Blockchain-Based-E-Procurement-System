@@ -1,5 +1,6 @@
 import React from 'react';
-import { DashboardShell as DashboardShellType } from '../../types/dashboard';
+import { DashboardShell as DashboardShellType, DashboardWidget } from '../../types/dashboard';
+import { filterWidgetsByRole } from '../../lib/dashboard-contract';
 import DashboardNavigation from './DashboardNavigation';
 import DashboardWidgetZone from './DashboardWidgetZone';
 import DashboardStateMessage from './DashboardStateMessage';
@@ -19,6 +20,9 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ dashboard, onPageChange
     widgetZones, 
     widgets 
   } = dashboard;
+
+  // Filter widgets by active role for security hardening
+  const filteredWidgets = filterWidgetsByRole(widgets, activeRoleCode);
 
   // Render shell state messages
   if (shellState !== 'ready') {
@@ -83,7 +87,7 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ dashboard, onPageChange
               <DashboardWidgetZone
                 key={zone.id}
                 zone={zone}
-                widgets={widgets.filter(w => w.zoneId === zone.id)}
+                widgets={filteredWidgets.filter(w => w.zoneId === zone.id)}
                 onPageChange={onPageChange}
               />
             ))}
