@@ -182,7 +182,7 @@ Implementation maintains ADR-001 boundaries:
 
 ## Validation Commands and Results
 
-Manual validation was executed locally by the developer and reported as passing before this evidence correction:
+Manual validation was executed locally by the developer after the final evidence/code correction and reported as passing on 2026-05-23.
 
 ```bash
 npm run frontend:build
@@ -197,8 +197,6 @@ npm test
 git diff --check
 # PASS
 ```
-
-After the final evidence/code correction commit, run the same validation commands again before accepting PBI-182.
 
 ## Tests Added
 
