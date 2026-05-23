@@ -240,26 +240,27 @@ Known ADR-001 follow-up gaps remain documented:
 
 ## Validation Commands and Results
 
-These commands must be run locally after this evidence-only commit:
+Manual validation was executed locally by the developer after this evidence-only commit and reported as passing on 2026-05-23.
 
 ```bash
 npm run frontend:build
+# PASS
+
 npm run build
+# PASS
+
 npm test
+# PASS
+
 git diff --check
+# PASS
 ```
-
-Remote inspection result:
-
-- Code and evidence were inspected on origin.
-- This PBI-183 evidence file was created through repository inspection.
-- Local command execution has not yet been recorded for this evidence commit.
 
 ## Closure Assessment
 
-PBI-148 is acceptable for closure if local validation passes after this evidence commit.
+PBI-148 is acceptable for closure.
 
-Confirmed by inspection:
+Confirmed by inspection and local validation report:
 
 - PBI-180 contract exists and defines the compliance/review widget behavior.
 - PBI-181 implements compliance and Shariah reviewer widgets.
@@ -270,6 +271,7 @@ Confirmed by inspection:
 - Direct access outside assigned review roles resolves forbidden.
 - Backend authorization boundary remains explicit.
 - ADR-001 follow-up gaps remain documented and are not hidden.
+- Required build/test/whitespace validation commands were reported as passing locally.
 
 ## Known Limitations
 
@@ -293,8 +295,7 @@ Confirmed by inspection:
 
 ## Follow-up Recommendations
 
-1. Record final local validation results in this evidence file.
-2. Reconcile `feature/PBI-017-role-based-ui-dashboards` with `main` before final feature merge.
-3. Keep ADR-001 actor-context and organization-state gates as explicit follow-up work.
-4. Defer real KYC/AML workflow and summary metrics until stable backend contracts exist.
-5. Use the PBI-180/PBI-183 pattern as a baseline for auditor/security widget contracts in the next story chain.
+1. Reconcile `feature/PBI-017-role-based-ui-dashboards` with `main` before final feature merge.
+2. Keep ADR-001 actor-context and organization-state gates as explicit follow-up work.
+3. Defer real KYC/AML workflow and summary metrics until stable backend contracts exist.
+4. Use the PBI-180/PBI-183 pattern as a baseline for auditor/security widget contracts in the next story chain.
