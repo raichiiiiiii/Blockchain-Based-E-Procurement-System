@@ -1,7 +1,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { randomBytes, createHash } from 'node:crypto';
-import { LogoutUserService } from './logout-user.js';
+import { LogoutUserError, LogoutUserService } from './logout-user.js';
 import { InMemoryAuthSessionRepository } from '../infrastructure/in-memory-auth-session-repository.js';
 import type { AuthSession } from '../domain/auth-session.js';
 
@@ -24,6 +24,18 @@ function createTestSession(overrides: Partial<AuthSession> = {}): AuthSession {
   };
 }
 
+async function assertLogoutUnauthorized(
+  action: () => Promise<unknown>,
+  expectedMessage: string
+): Promise<void> {
+  await assert.rejects(
+    action,
+    (error: unknown) => error instanceof LogoutUserError
+      && error.code === 'UNAUTHORIZED'
+      && error.message === expectedMessage
+  );
+}
+
 describe('LogoutUserService', () => {
   let logoutService: LogoutUserService;
   let sessionRepository: InMemoryAuthSessionRepository;
@@ -33,15 +45,14 @@ describe('LogoutUserService', () => {
     logoutService = new LogoutUserService(sessionRepository);
   });
 
-  it('should successfully logout with valid token', async () => {
+  it('successfully logs out with valid token', async () => {
     const session = createTestSession();
     const token = randomBytes(32).toString('hex');
     const tokenHash = hashTestToken(token);
     const updatedSession: AuthSession = { ...session, tokenHash };
     await sessionRepository.save(updatedSession);
 
-    const authHeader = `Bearer ${token}`;
-    await logoutService.logout(authHeader);
+    await logoutService.logout(`Bearer ${token}`);
 
     const revokedSession = await sessionRepository.findByTokenHash(tokenHash);
     assert.ok(revokedSession);
@@ -49,85 +60,68 @@ describe('LogoutUserService', () => {
     assert.ok(revokedSession.revokedAt);
   });
 
-  it('should throw error when authorization header is missing', async () => {
-    await assert.rejects(
-      async () => await logoutService.logout(undefined),
-      (error) => {
-        assert.ok(error instanceof LogoutUserService.LogoutUserError);
-        assert.equal(error.code, 'UNAUTHORIZED');
-        assert.equal(error.message, 'Authentication required');
-        return true;
-      }
+  it('throws error when authorization header is missing', async () => {
+    await assertLogoutUnauthorized(
+      () => logoutService.logout(undefined),
+      'Authentication required'
     );
   });
 
-  it('should throw error when authorization header is malformed', async () => {
-    await assert.rejects(
-      async () => await logoutService.logout('InvalidHeader'),
-      (error) => {
-        assert.ok(error instanceof LogoutUserService.LogoutUserError);
-        assert.equal(error.code, 'UNAUTHORIZED');
-        assert.equal(error.message, 'Invalid authorization header');
-        return true;
-      }
+  it('throws error when authorization header is malformed', async () => {
+    await assertLogoutUnauthorized(
+      () => logoutService.logout('InvalidHeader'),
+      'Invalid authorization header'
     );
   });
 
-  it('should throw error when authorization header has unsupported scheme', async () => {
-    await assert.rejects(
-      async () => await logoutService.logout('Basic someToken'),
-      (error) => {
-        assert.ok(error instanceof LogoutUserService.LogoutUserError);
-        assert.equal(error.code, 'UNAUTHORIZED');
-        assert.equal(error.message, 'Invalid authorization header');
-        return true;
-      }
+  it('throws error when authorization header has unsupported scheme', async () => {
+    await assertLogoutUnauthorized(
+      () => logoutService.logout('Basic someToken'),
+      'Invalid authorization header'
     );
   });
 
-  it('should throw error when token is empty', async () => {
-    await assert.rejects(
-      async () => await logoutService.logout('Bearer '),
-      (error) => {
-        assert.ok(error instanceof LogoutUserService.LogoutUserError);
-        assert.equal(error.code, 'UNAUTHORIZED');
-        assert.equal(error.message, 'Invalid authorization header');
-        return true;
-      }
+  it('throws error when token is empty', async () => {
+    await assertLogoutUnauthorized(
+      () => logoutService.logout('Bearer '),
+      'Invalid authorization header'
     );
   });
 
-  it('should throw error when token is invalid', async () => {
-    await assert.rejects(
-      async () => await logoutService.logout('Bearer invalidToken'),
-      (error) => {
-        assert.ok(error instanceof LogoutUserService.LogoutUserError);
-        assert.equal(error.code, 'UNAUTHORIZED');
-        assert.equal(error.message, 'Invalid or expired session');
-        return true;
-      }
+  it('throws error when token is invalid', async () => {
+    await assertLogoutUnauthorized(
+      () => logoutService.logout('Bearer invalidToken'),
+      'Invalid or expired session'
     );
   });
 
-  it('should throw error when session is already revoked', async () => {
+  it('throws error when session is already revoked', async () => {
     const session = createTestSession({ status: 'revoked' });
     const token = randomBytes(32).toString('hex');
     const tokenHash = hashTestToken(token);
     const updatedSession: AuthSession = { ...session, tokenHash };
     await sessionRepository.save(updatedSession);
 
-    await assert.rejects(
-      async () => await logoutService.logout(`Bearer ${token}`),
-      (error) => {
-        assert.ok(error instanceof LogoutUserService.LogoutUserError);
-        assert.equal(error.code, 'UNAUTHORIZED');
-        assert.equal(error.message, 'Invalid or expired session');
-        return true;
-      }
+    await assertLogoutUnauthorized(
+      () => logoutService.logout(`Bearer ${token}`),
+      'Invalid or expired session'
     );
   });
 
-  it('should throw error when session is expired', async () => {
+  it('throws error when session status is expired', async () => {
+    const session = createTestSession({ status: 'expired' });
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = hashTestToken(token);
+    const updatedSession: AuthSession = { ...session, tokenHash };
+    await sessionRepository.save(updatedSession);
+
+    await assertLogoutUnauthorized(
+      () => logoutService.logout(`Bearer ${token}`),
+      'Invalid or expired session'
+    );
+  });
+
+  it('throws error when active session is past expiresAt', async () => {
     const session = createTestSession({
       status: 'active',
       expiresAt: new Date(Date.now() - 1000).toISOString()
@@ -137,18 +131,13 @@ describe('LogoutUserService', () => {
     const updatedSession: AuthSession = { ...session, tokenHash };
     await sessionRepository.save(updatedSession);
 
-    await assert.rejects(
-      async () => await logoutService.logout(`Bearer ${token}`),
-      (error) => {
-        assert.ok(error instanceof LogoutUserService.LogoutUserError);
-        assert.equal(error.code, 'UNAUTHORIZED');
-        assert.equal(error.message, 'Invalid or expired session');
-        return true;
-      }
+    await assertLogoutUnauthorized(
+      () => logoutService.logout(`Bearer ${token}`),
+      'Invalid or expired session'
     );
   });
 
-  it('should revoke session and set revokedAt timestamp', async () => {
+  it('revokes session and sets revokedAt timestamp', async () => {
     const session = createTestSession();
     const token = randomBytes(32).toString('hex');
     const tokenHash = hashTestToken(token);
@@ -163,8 +152,8 @@ describe('LogoutUserService', () => {
     assert.ok(revokedSession);
     assert.equal(revokedSession.status, 'revoked');
     assert.ok(revokedSession.revokedAt);
-    
-    const revokedAt = new Date(revokedSession.revokedAt!);
+
+    const revokedAt = new Date(revokedSession.revokedAt);
     assert.ok(revokedAt >= beforeLogout);
     assert.ok(revokedAt <= afterLogout);
   });

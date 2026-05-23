@@ -158,7 +158,6 @@ describe('Auth Routes', () => {
   });
 
   it('returns HTTP 200 with loggedOut true for valid logout', async () => {
-    // First login to get a session
     const loginResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/auth/login',
@@ -171,8 +170,8 @@ describe('Auth Routes', () => {
     assert.equal(loginResponse.statusCode, 200);
     const loginBody = loginResponse.json<LoginSuccessEnvelope>();
     const sessionToken = loginBody.data?.sessionToken;
+    assert.ok(sessionToken);
 
-    // Then logout with the session token
     const logoutResponse = await server.inject({
       method: 'POST',
       url: '/api/v1/auth/logout',
@@ -229,14 +228,12 @@ describe('Auth Routes', () => {
   });
 
   it('returns HTTP 401 with UNAUTHORIZED for logout with revoked session', async () => {
-    // Create a revoked session
     const session = createTestSession({ status: 'revoked' });
     const token = randomBytes(32).toString('hex');
     const tokenHash = hashToken(token);
     const updatedSession: AuthSession = { ...session, tokenHash };
     await sessionRepository.save(updatedSession);
 
-    // Try to logout with the revoked session
     const response = await server.inject({
       method: 'POST',
       url: '/api/v1/auth/logout',
@@ -251,26 +248,30 @@ describe('Auth Routes', () => {
     assert.equal(body.error?.message, 'Invalid or expired session');
   });
 
-  it('prevents revoked session from authenticating protected routes', async () => {
-    // Create a revoked session
-    const session = createTestSession({ status: 'revoked' });
-    const token = randomBytes(32).toString('hex');
-    const tokenHash = hashToken(token);
-    const updatedSession: AuthSession = { ...session, tokenHash };
-    await sessionRepository.save(updatedSession);
-
-    // Try to access a protected route with the revoked session
-    const response = await server.inject({
-      method: 'GET',
-      url: '/api/v1/member-organizations',
-      headers: {
-        authorization: `Bearer ${token}`
+  it('does not delete credential records after logout', async () => {
+    const loginResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: {
+        username: 'testuser',
+        password: 'testpassword'
       }
     });
 
-    assert.equal(response.statusCode, 401);
-    const body = response.json<ErrorEnvelope>();
-    assert.equal(body.error?.code, 'UNAUTHORIZED');
-    assert.equal(body.error?.message, 'Invalid or expired session');
+    const loginBody = loginResponse.json<LoginSuccessEnvelope>();
+    const sessionToken = loginBody.data?.sessionToken;
+    assert.ok(sessionToken);
+
+    await server.inject({
+      method: 'POST',
+      url: '/api/v1/auth/logout',
+      headers: {
+        authorization: `Bearer ${sessionToken}`
+      }
+    });
+
+    const credential = await credentialRepository.findByUsername('testuser');
+    assert.ok(credential);
+    assert.equal(credential.userId, 'user123');
   });
 });

@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { PlatformUserCredentialRepository } from '../application/platform-user-credential-repository.js';
 import type { AuthSessionRepository } from '../application/auth-session-repository.js';
 import { LoginUserError, LoginUserService } from '../application/login-user.js';
-import { LogoutUserService } from '../application/logout-user.js';
+import { LogoutUserError, LogoutUserService } from '../application/logout-user.js';
 import type { ValidationErrorEnvelope } from '../../shared/api/validation-error-helper.js';
 
 interface AuthRoutesOptions {
@@ -75,14 +75,14 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, opts) 
   fastify.post('/auth/logout', async (request, reply) => {
     try {
       await logoutService.logout(request.headers.authorization);
-      
+
       return reply.status(200).send({
         data: {
           loggedOut: true
         }
       });
     } catch (error) {
-      if (error instanceof LogoutUserService.LogoutUserError) {
+      if (error instanceof LogoutUserError) {
         return reply.status(401).send({
           error: {
             code: error.code,

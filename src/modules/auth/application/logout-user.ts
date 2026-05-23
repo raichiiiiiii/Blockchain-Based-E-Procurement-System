@@ -1,6 +1,6 @@
 import type { AuthSessionRepository } from './auth-session-repository.js';
 import type { AuthSession } from '../domain/auth-session.js';
-import { hashToken } from './session-token.js';
+import { hashToken, isSessionExpired } from './session-token.js';
 
 export class LogoutUserError extends Error {
   constructor(
@@ -18,7 +18,6 @@ export class LogoutUserService {
   ) {}
 
   async logout(authorizationHeader: string | undefined): Promise<void> {
-    // Check if authorization header exists
     if (!authorizationHeader) {
       throw new LogoutUserError('UNAUTHORIZED', 'Authentication required');
     }
@@ -40,15 +39,10 @@ export class LogoutUserService {
       throw new LogoutUserError('UNAUTHORIZED', 'Invalid or expired session');
     }
 
-    if (session.status === 'revoked') {
+    if (session.status === 'revoked' || session.status === 'expired' || isSessionExpired(session.expiresAt)) {
       throw new LogoutUserError('UNAUTHORIZED', 'Invalid or expired session');
     }
 
-    if (session.status === 'expired') {
-      throw new LogoutUserError('UNAUTHORIZED', 'Invalid or expired session');
-    }
-
-    // Update session to revoked status
     const updatedSession: AuthSession = {
       ...session,
       status: 'revoked',
