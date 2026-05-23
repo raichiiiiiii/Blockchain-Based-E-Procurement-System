@@ -5,6 +5,7 @@ import { recordOnboardingReviewDecision, type RecordOnboardingReviewDecisionInpu
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
 import { recordAccessAuditEvent } from '../../shared/application/record-access-audit-event.js';
+import { getOnboardingStatusHistory } from '../application/get-onboarding-status-history.js';
 
 // Define the audit event interface for kyc/aml onboarding case creation
 export interface KycAmlOnboardingCaseCreateAuditEvent {
@@ -98,6 +99,47 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
     authorizeSubmission = allowAuthenticatedSubmission,
     authorizeDecision = allowAuthenticatedDecision
   } = options;
+
+  // GET /api/v1/kyc-aml-onboarding-cases/{caseId}/status-history - Get status history for a KYC/AML onboarding case
+  fastify.get<{ Params: { caseId: string } }>(
+    '/kyc-aml-onboarding-cases/:caseId/status-history',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['caseId'],
+          properties: {
+            caseId: { type: 'string' }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      // Extract and validate actorId from trusted actor context
+      const actorId = request.actorContext?.userId;
+
+      if (!actorId) {
+        return reply.code(400).send(createApplicationValidationError('Missing or invalid x-actor-id header'));
+      }
+
+      const caseId = request.params.caseId;
+      
+      const result = await getOnboardingStatusHistory(caseId, repository);
+      
+      if (result.status === 'notFound') {
+        return reply.code(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: result.message
+          }
+        });
+      }
+      
+      return reply.code(200).send({
+        data: result.data
+      });
+    }
+  );
 
   // POST /api/v1/kyc-aml-onboarding-cases - Submit a new KYC/AML onboarding case
   fastify.post<{ Body: CreateOnboardingCaseRequest }>(
