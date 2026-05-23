@@ -1,72 +1,57 @@
 flowchart TD
-  Entry["Entry"] --> Auth["Auth Screen"]
+  Upstream["Upstream Auth / Session Capability\nOutside PBI-017"] --> Actor["Resolved Actor Context"]
 
-  Auth -->|"Submit credentials"| Authenticating["Authenticating"]
-  Auth -->|"Create account / onboarding"| OnboardingForm["Registration / Onboarding Screen"]
+  Actor --> UserState{"User state"}
+  UserState -->|"inactive"| UserBlocked["Access Blocked"]
+  UserState -->|"active"| AssignmentGate{"Active role assignment?"}
 
-  Authenticating -->|"Accepted"| Session["Session Context"]
-  Authenticating -->|"Invalid credentials"| AuthError["Auth Error"]
-  Authenticating -->|"Service unavailable"| AuthUnavailable["Auth Unavailable"]
-  AuthError --> Auth
-  AuthUnavailable --> Auth
+  AssignmentGate -->|"none"| DashboardNoRole["Dashboard: noRole"]
+  AssignmentGate -->|"unsupported roleCode"| DashboardUnsupported["Dashboard: unsupportedRole"]
+  AssignmentGate -->|"supported roleCode"| RoleMapping["Role-to-dashboard mapping seam"]
 
-  OnboardingForm -->|"Submit details"| RegistrationSubmitted["Registration Submitted"]
-  RegistrationSubmitted -->|"Validation failed"| RegistrationValidationError["Registration Validation Error"]
-  RegistrationSubmitted -->|"Duplicate registrationNumber"| RegistrationConflict["Registration Conflict"]
-  RegistrationSubmitted -->|"Member organization created"| OrgPending["Member Organization: pendingReview"]
-  RegistrationValidationError --> OnboardingForm
-  RegistrationConflict --> OnboardingForm
+  RoleMapping --> OrgGate{"Organization state"}
+  OrgGate -->|"pendingReview"| PendingStatus["Limited / Status Dashboard"]
+  OrgGate -->|"active"| DashboardReady["Dashboard: ready"]
+  OrgGate -->|"inactive"| OrgBlocked["Status-only / Blocked State"]
+  OrgGate -->|"suspended"| OrgBlocked
+  OrgGate -->|"deleted"| OrgBlocked
 
-  Session -->|"Resolve server-derived user context"| UserState{"User state"}
-  UserState -->|"inactive"| AccessBlocked["Access Blocked"]
-  UserState -->|"active"| DashboardRole{"Dashboard role resolution"}
+  DashboardReady --> Membership["Membership / RBAC Component\ncontract-backed"]
+  DashboardReady --> Shariah["Shariah Review Component\ncontract-backed"]
+  DashboardReady --> Audit["Audit / Access History Component\ncontract-backed when contracts stable"]
+  DashboardReady --> Compliance["KYC / AML Component\ncontract-pending"]
+  DashboardReady --> Buyer["Buyer Component\nplaceholder"]
+  DashboardReady --> Supplier["Supplier Component\nplaceholder"]
+  DashboardReady --> Financing["Financing / PLS Component\nplaceholder"]
 
-  DashboardRole -->|"No assigned role"| DashboardNoRole["Dashboard: noRole"]
-  DashboardRole -->|"Unsupported roleCode"| DashboardUnsupported["Dashboard: unsupportedRole"]
-  DashboardRole -->|"Supported roleCode"| OrgState{"Organization state"}
+  Membership -->|"create organization"| MemberPending["Member Organization: pendingReview"]
+  Membership -->|"activate organization"| MemberActive["Member Organization: active"]
+  Membership -->|"assign active role"| AssignmentActive["Role Assignment: active"]
+  Membership -->|"revoke assignment"| AssignmentRevoked["Role Assignment: revoked"]
 
-  OrgState -->|"pendingReview"| OrgPending
-  OrgState -->|"inactive"| OrgInactive["Member Organization: inactive"]
-  OrgState -->|"suspended"| OrgSuspended["Member Organization: suspended"]
-  OrgState -->|"deleted"| OrgDeleted["Member Organization: deleted"]
-  OrgState -->|"active"| DashboardReady["Dashboard: ready"]
+  Shariah -->|"submit review"| ReviewSubmitted["Review: submitted"]
+  ReviewSubmitted -->|"save checklist draft"| ReviewProgress["Review: checklistInProgress"]
+  ReviewProgress -->|"save partial checklist"| ReviewProgress
+  ReviewProgress -->|"completion rules pass"| ReviewComplete["Review: checklistComplete"]
+  ReviewProgress -->|"completion rules fail"| ValidationError["VALIDATION_ERROR"]
+  ReviewSubmitted -->|"decision attempted"| ValidationError
+  ReviewComplete -->|"approve"| ReviewApproved["Review: approved"]
+  ReviewComplete -->|"reject"| ReviewRejected["Review: rejected"]
+  ReviewComplete -->|"conditional approve"| ReviewConditional["Review: conditionalApproved"]
 
-  DashboardReady --> Membership["Membership / RBAC Component"]
-  DashboardReady --> Supplier["Supplier Component"]
-  DashboardReady --> Buyer["Buyer Component"]
-  DashboardReady --> Financing["Financing Component"]
-  DashboardReady --> Compliance["Compliance Component"]
-  DashboardReady --> Shariah["Shariah Review Component"]
-  DashboardReady --> Audit["Audit / Access History Component"]
+  Audit -->|"query history"| AccessHistory["Access History Results"]
+  Audit -->|"query sequence"| AccessSequence["Access Event Sequence"]
+  Audit -->|"no records"| EmptyResult["Empty Result"]
 
-  Membership -->|"Create organization"| OrgPending
-  Membership -->|"Activate organization"| OrgActive["Member Organization: active"]
-  Membership -->|"Assign role"| AssignmentActive["Role Assignment: active"]
-  Membership -->|"Revoke role"| AssignmentRevoked["Role Assignment: revoked"]
+  DashboardReady -->|"known route outside role"| DashboardForbidden["Dashboard: forbidden"]
+  DashboardReady -->|"unknown or unavailable target"| DashboardError["Dashboard: error"]
+  DashboardReady -->|"backend denies protected action"| BackendForbidden["Backend: FORBIDDEN"]
 
-  Compliance -->|"Approve case"| OrgActive
-  Compliance -->|"Flag / suspend case"| OrgSuspended
+  PendingStatus -->|"protected write attempted"| BackendForbidden
+  OrgBlocked -->|"protected write attempted"| BackendForbidden
+  UserBlocked --> BackendForbidden
 
-  Shariah -->|"Submit review"| ReviewSubmitted["Review: submitted"]
-  ReviewSubmitted -->|"Save checklist"| ReviewProgress["Review: checklistInProgress"]
-  ReviewProgress -->|"Save partial checklist"| ReviewProgress
-  ReviewProgress -->|"Completion rules pass"| ReviewComplete["Review: checklistComplete"]
-  ReviewProgress -->|"Completion rules fail"| ValidationError["VALIDATION_ERROR"]
-  ReviewSubmitted -->|"Decision attempted"| ValidationError
-  ReviewComplete -->|"Approve"| ReviewApproved["Review: approved"]
-  ReviewComplete -->|"Reject"| ReviewRejected["Review: rejected"]
-  ReviewComplete -->|"Conditional approve"| ReviewConditional["Review: conditionalApproved"]
-
-  Audit -->|"Query history"| AccessHistory["Access History Results"]
-  Audit -->|"Query sequence"| AccessSequence["Access Event Sequence"]
-  Audit -->|"No records"| EmptyResult["Empty Result"]
-
-  DashboardReady -->|"Known route outside role"| DashboardForbidden["Dashboard: forbidden"]
-  DashboardReady -->|"Unknown / unavailable target"| DashboardError["Dashboard: error"]
-  DashboardReady -->|"Protected action denied by backend"| BackendForbidden["Backend: FORBIDDEN"]
-
-  AccessBlocked --> BackendForbidden
-  OrgPending -->|"Protected write attempted"| BackendForbidden
-  OrgInactive -->|"Protected write attempted"| BackendForbidden
-  OrgSuspended -->|"Protected write attempted"| BackendForbidden
-  OrgDeleted -->|"Operational action attempted"| BackendForbidden
+  Buyer -->|"backend workflow contract absent"| PlaceholderNotice["Disabled Placeholder"]
+  Supplier -->|"backend workflow contract absent"| PlaceholderNotice
+  Financing -->|"backend workflow contract absent"| PlaceholderNotice
+  Compliance -->|"PBI-002 contract pending"| PlaceholderNotice
