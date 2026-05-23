@@ -2,35 +2,38 @@
 
 Status: Draft execution sheet
 Owner: Scrum Master / Tech Lead
-Audience: Team A - PBI-005, Team B - PBI-002, Team C - PBI-017
+Audience: Auth Gate - PBI-253, Team A - PBI-005, Team B - PBI-002, Team C - PBI-017
 Source of truth: backlog/backlog.csv
-Last updated: YYYY-MM-DD
+Last updated: 2026-05-23
 
 ## 1. Sprint objective
 
-Sprint 5 develops three planned feature lanes concurrently after completion of PBI-022:
+Sprint 5 develops three planned feature lanes concurrently after completion of PBI-022, with PBI-253 added as a required pre-merge authentication/session gate:
 
+0. PBI-253 - Authentication and session management for platform users
 1. PBI-005 - Immutable audit trail for procure-to-pay events
 2. PBI-002 - KYC and AML onboarding workflow
 3. PBI-017 - Role-based UI and operational dashboards
 
-The sprint objective is to let three developer teams work independently on separate branches while keeping shared contracts, shared files, and merge order controlled.
+The sprint objective is to let three developer teams work independently on separate branches while keeping shared contracts, shared files, merge order, and actor-context integration controlled.
 
 ## 2. Sprint 5 feature branches
 
 | Team | Feature | Branch | Merge Priority |
 |---|---|---|---|
+| Auth Gate | PBI-253 - Authentication and session management for platform users | feature/PBI-253-auth-session-management | 0 |
 | Team A | PBI-005 - Immutable audit trail for procure-to-pay events | feature/PBI-005-immutable-audit-trail | 1 |
 | Team B | PBI-002 - KYC and AML onboarding workflow | feature/PBI-002-kyc-aml-onboarding | 2 |
 | Team C | PBI-017 - Role-based UI and operational dashboards | feature/PBI-017-role-based-ui-dashboards | 3 |
 
 Merge order must remain:
 
-1. feature/PBI-005-immutable-audit-trail
-2. feature/PBI-002-kyc-aml-onboarding
-3. feature/PBI-017-role-based-ui-dashboards
+1. feature/PBI-253-auth-session-management
+2. feature/PBI-005-immutable-audit-trail
+3. feature/PBI-002-kyc-aml-onboarding
+4. feature/PBI-017-role-based-ui-dashboards
 
-Reason: PBI-005 stabilizes audit and transaction-history contracts that PBI-002 and PBI-017 may consume or reference.
+Reason: PBI-253 stabilizes authenticated actor context for protected routes and audit attribution. PBI-005 stabilizes audit and transaction-history contracts that PBI-002 and PBI-017 may consume or reference.
 
 ## 3. Operating rules
 
@@ -38,6 +41,9 @@ Reason: PBI-005 stabilizes audit and transaction-history contracts that PBI-002 
 - Use this file only as the sprint execution guide.
 - Execute task PBIs, not parent feature PBIs.
 - Each Aider session must target one task PBI only.
+- PBI-253 owns authentication/session behavior and trusted actor-context integration.
+- PBI-017 must not implement login, session issuance, logout, account creation, or public registration.
+- Feature teams must not define local actor-context behavior inside PBI-005, PBI-002, or PBI-017.
 - Do not silently change shared contracts.
 - Do not redefine completed PBI-022 audit or access-history semantics.
 - Do not move UI work back into PBI-022.
@@ -45,7 +51,7 @@ Reason: PBI-005 stabilizes audit and transaction-history contracts that PBI-002 
 - Any architecture or module-boundary decision must be captured as an ADR or explicit non-ADR rationale.
 - Shared files must have one owner per wave.
 - Parent stories close only after all child tasks are complete and evidence is available.
-- Parent features close only after all planned child stories and tasks required for that feature are complete.
+- Parent features and enablers close only after all planned child stories and tasks required for that item are complete.
 
 ## 4. Shared contract hotspots
 
@@ -53,6 +59,9 @@ Before implementation diverges, the teams must agree on these shared points:
 
 | Contract or Risk Area | Primary Owner | Affected Teams |
 |---|---|---|
+| Auth/session contract | Auth Gate | Team A, Team B, Team C |
+| Trusted actor context shape | Auth Gate | Team A, Team B, Team C |
+| Auth failure behavior | Auth Gate | Team A, Team B, Team C |
 | Audit event schema | Team A | Team A, Team B, Team C |
 | Transaction-history contract | Team A | Team A, Team C |
 | KYC and AML status lifecycle | Team B | Team B, Team C |
@@ -67,13 +76,14 @@ Before implementation diverges, the teams must agree on these shared points:
 
 ### Parent context
 
-This wave supports all three feature lanes:
+This wave supports all active Sprint 5 lanes:
 
+- PBI-253
 - PBI-002
 - PBI-005
 - PBI-017
 
-It exists to prevent hidden dependency mistakes, duplicate shared-file edits, and incompatible branch contracts.
+It exists to prevent hidden dependency mistakes, duplicate shared-file edits, incompatible branch contracts, and auth/dashboard scope drift.
 
 ### Tasks
 
@@ -87,13 +97,67 @@ It exists to prevent hidden dependency mistakes, duplicate shared-file edits, an
 - backlog/parallel-plan-PBI-002-PBI-005-PBI-017.md
 - shared-contract matrix
 - shared-file ownership map
-- merge order confirmation
+- merge order confirmation including PBI-253 as gate zero
 - ADR trigger list
 - owner for each shared contract
 
 ### Exit condition
 
-No feature implementation starts until PBI-138 and PBI-139 are complete.
+No feature implementation starts until PBI-138 and PBI-139 are complete. No production-like protected-route behavior from PBI-005, PBI-002, or PBI-017 should merge before PBI-253 lands on main.
+
+## 5A. Auth Gate - PBI-253 Authentication and Session Management
+
+### Parent enabler context: PBI-253
+
+Enabler: PBI-253 - Authentication and session management for platform users
+
+Purpose:
+
+- define the MVP auth/session contract
+- implement login and session issuance
+- validate authenticated requests
+- populate trusted actor context
+- integrate actor context with protected routes and audit emitters
+- provide logout/session invalidation
+- provide rebase guidance for PBI-005, PBI-002, and PBI-017
+
+Primary branch:
+
+- feature/PBI-253-auth-session-management
+
+Merge priority:
+
+- 0
+
+Key dependencies:
+
+- PBI-003
+- PBI-022
+- PBI-087
+- ADR-001
+- ADR-002
+- AUTH_SESSION_CONTRACT.md
+
+### Auth Gate execution order
+
+| Order | Parent | Task | Purpose |
+|---|---|---|---|
+| G1.1 | PBI-253 | PBI-254 - Do define MVP authentication/session contract and threat assumptions | Finalize login, session/token, logout, invalid-session, actor-context, and failure-response semantics |
+| G1.2 | PBI-253 | PBI-255 - Do implement MVP user credential and session domain model with repository seams | Add auth domain/application primitives and repository seams |
+| G2.1 | PBI-253 | PBI-256 - Do implement login endpoint and session or token issuance | Implement login route and session/token issuance |
+| G2.2 | PBI-253 | PBI-257 - Do implement authenticated request validation middleware for protected routes | Validate session/token and populate trusted actor context |
+| G3.1 | PBI-253 | PBI-258 - Do integrate authenticated actor context with protected routes and audit emitters | Ensure protected routes and audit emitters consume trusted actor context |
+| G3.2 | PBI-253 | PBI-259 - Do implement logout or session invalidation and invalid-session behavior | Implement logout/invalidation and reject invalidated sessions |
+| G4.1 | PBI-253 | PBI-260 - Do add authentication and actor-context regression tests for protected-route consumers | Prove auth success/failure and trusted actor-context behavior |
+| G4.2 | PBI-253 | PBI-261 - Do update API contracts, architecture docs, and sprint coordination notes for auth/session boundary | Document auth/session and actor-context consumption |
+| G4.3 | PBI-253 | PBI-262 - Do prepare auth branch merge gate and rebase guidance for PBI-005, PBI-002, and PBI-017 | Prepare merge evidence and branch rebase instructions |
+
+### Exit condition
+
+- PBI-253 is merge-ready.
+- AUTH_SESSION_CONTRACT.md is updated if implementation decisions changed.
+- ADR-002 is updated from Proposed to Accepted or carries a clear implementation approval note.
+- PBI-005, PBI-002, and PBI-017 teams have rebase guidance.
 
 # Team A - PBI-005 Immutable Audit Trail
 
@@ -107,6 +171,7 @@ Purpose:
 - preserve actor, timestamp, correlation, and immutable reference evidence
 - expose ordered transaction history
 - avoid overstating completeness when history has gaps
+- consume trusted actor context from PBI-253 after auth lands
 
 Primary branch:
 
@@ -122,6 +187,7 @@ Key dependencies:
 - PBI-022
 - PBI-138
 - PBI-139
+- PBI-253 before merge
 
 ## 7. Team A execution order
 
@@ -149,6 +215,7 @@ Parent context:
 - PBI-143 implements the write side of PBI-005.
 - It records PO, delivery, invoice, and settlement lifecycle events.
 - It depends on PBI-145 for the approved event contract.
+- It must consume PBI-253 actor context after auth lands.
 
 | Order | Parent Story | Task | Purpose |
 |---|---|---|---|
@@ -162,6 +229,7 @@ Exit condition:
 - PBI-143 can be marked complete only after PBI-164 to PBI-167 are complete.
 - Event samples and validation evidence exist.
 - Append-only and correlation behavior are tested.
+- Actor attribution aligns with PBI-253 after auth merge.
 
 ### Wave A3 - ordered transaction-history retrieval story
 
@@ -214,6 +282,7 @@ Purpose:
 - record KYC and AML review decisions
 - expose onboarding status and history
 - expose downstream eligibility so blocked or flagged SMEs cannot transact without explicit eligibility result
+- consume trusted actor context from PBI-253 after auth lands
 
 Primary branch:
 
@@ -229,6 +298,7 @@ Key dependencies:
 - PBI-022
 - PBI-138
 - PBI-139
+- PBI-253 before merge
 
 ## 9. Team B execution order
 
@@ -243,6 +313,7 @@ Parent context:
 - PBI-140 creates the intake side of PBI-002.
 - It must define the data contract before service work.
 - It must emit audit evidence for regulated onboarding.
+- It must consume PBI-253 actor context after auth lands.
 
 | Order | Parent Story | Task | Purpose |
 |---|---|---|---|
@@ -347,10 +418,12 @@ Feature: PBI-017 - Role-based UI and operational dashboards
 Purpose:
 
 - provide role-specific dashboard shell
+- consume authenticated actor context from PBI-253
 - expose administrator widgets
 - expose compliance/review widgets
 - expose auditor/security investigation widgets consuming completed PBI-022 APIs
 - hide or block actions outside the user's role
+- avoid implementing login, session issuance, logout, account creation, or public registration
 
 Primary branch:
 
@@ -369,6 +442,9 @@ Key dependencies:
 - PBI-122
 - PBI-138
 - PBI-139
+- PBI-253 before merge
+- ADR-001
+- ADR-002
 
 ## 11. Team C execution order
 
@@ -383,6 +459,7 @@ Parent context:
 - PBI-146 creates the shared dashboard shell.
 - Other widget stories depend on this shell.
 - This is the first Team C implementation slice.
+- It consumes auth context but does not implement auth.
 
 | Order | Parent Story | Task | Purpose |
 |---|---|---|---|
@@ -397,6 +474,7 @@ Exit condition:
 - Role navigation is tested.
 - Blocked route behavior is tested.
 - Shell evidence exists.
+- Login/session implementation is not added to PBI-017.
 
 ### Wave C2 - administrator dashboard widgets story
 
@@ -480,16 +558,19 @@ Exit condition:
 
 ## 12. Parallel execution model
 
-After Wave 0 is complete, the three teams may work concurrently.
+After Wave 0 is complete, the teams may work concurrently.
 
 | Lane | Can start after | Must not block |
 |---|---|---|
+| Auth Gate - PBI-253 | ADR-002 and AUTH_SESSION_CONTRACT.md exist | Local contract work for Team A/B/C |
 | Team A - PBI-005 | PBI-138, PBI-139 | Team B and Team C local implementation |
 | Team B - PBI-002 | PBI-138, PBI-139 | Team A contract stabilization |
-| Team C - PBI-017 | PBI-138, PBI-139 | Team A and Team B backend implementation |
+| Team C - PBI-017 | PBI-138, PBI-139, ADR-001 | Team A and Team B backend implementation |
 
 However:
 
+- PBI-253 must merge before production-like protected-route behavior from PBI-005, PBI-002, or PBI-017 is merged.
+- Team C must not implement auth/session/account creation in PBI-017.
 - Team C must not consume unstable backend contracts unless those contracts are explicitly marked ready.
 - Team B must not redefine audit event schema created by Team A.
 - Team A must publish transaction-history and audit-event contracts before Team B or Team C depend on them.
@@ -502,61 +583,77 @@ However:
 1. PBI-138
 2. PBI-139
 
+### Auth Gate - pre-merge integration gate
+
+3. PBI-254
+4. PBI-255
+5. PBI-256
+6. PBI-257
+7. PBI-258
+8. PBI-259
+9. PBI-260
+10. PBI-261
+11. PBI-262
+
 ### Team A - critical path
 
-3. PBI-145
-4. PBI-164
-5. PBI-165
-6. PBI-166
-7. PBI-167
-8. PBI-168
-9. PBI-169
-10. PBI-170
-11. PBI-171
-12. PBI-149
+12. PBI-145
+13. PBI-164
+14. PBI-165
+15. PBI-166
+16. PBI-167
+17. PBI-168
+18. PBI-169
+19. PBI-170
+20. PBI-171
+21. PBI-149
 
 ### Team B - KYC and AML lane
 
-13. PBI-152
-14. PBI-153
-15. PBI-154
-16. PBI-155
-17. PBI-156
-18. PBI-157
-19. PBI-158
-20. PBI-159
-21. PBI-160
-22. PBI-161
-23. PBI-162
-24. PBI-163
-25. PBI-184
-26. PBI-185
-27. PBI-186
-28. PBI-187
+22. PBI-152
+23. PBI-153
+24. PBI-154
+25. PBI-155
+26. PBI-156
+27. PBI-157
+28. PBI-158
+29. PBI-159
+30. PBI-160
+31. PBI-161
+32. PBI-162
+33. PBI-163
+34. PBI-184
+35. PBI-185
+36. PBI-186
+37. PBI-187
 
 ### Team C - dashboard lane
 
-29. PBI-172
-30. PBI-173
-31. PBI-174
-32. PBI-175
-33. PBI-176
-34. PBI-177
-35. PBI-178
-36. PBI-179
-37. PBI-180
-38. PBI-181
-39. PBI-182
-40. PBI-183
-41. PBI-188
-42. PBI-189
-43. PBI-190
-44. PBI-191
+38. PBI-172
+39. PBI-173
+40. PBI-174
+41. PBI-175
+42. PBI-176
+43. PBI-177
+44. PBI-178
+45. PBI-179
+46. PBI-180
+47. PBI-181
+48. PBI-182
+49. PBI-183
+50. PBI-188
+51. PBI-189
+52. PBI-190
+53. PBI-191
 
 ## 14. Story closure map
 
-| Parent Feature | Parent Story | Closing Tasks |
+| Parent Feature or Enabler | Parent Story or Slice | Closing Tasks |
 |---|---|---|
+| PBI-253 | Auth contract/model | PBI-254, PBI-255 |
+| PBI-253 | Login/middleware | PBI-256, PBI-257 |
+| PBI-253 | Protected-route/audit integration | PBI-258, PBI-259 |
+| PBI-253 | Validation/docs/merge gate | PBI-260, PBI-261, PBI-262 |
 | PBI-005 | PBI-143 | PBI-164, PBI-165, PBI-166, PBI-167 |
 | PBI-005 | PBI-144 | PBI-168, PBI-169, PBI-170, PBI-171 |
 | PBI-005 | Contract and consumer readiness | PBI-145, PBI-149 |
@@ -583,6 +680,13 @@ A task is Done only when:
 - no shared contract drift is introduced
 - any ADR-triggering decision is captured
 
+An enabler is Done only when:
+
+- the technical capability exists
+- consuming teams can use it without local redefinition
+- required contract docs are updated
+- tests prove the capability is safe for feature consumption
+
 A story is Done only when:
 
 - all child tasks are Done
@@ -601,6 +705,10 @@ A feature is Done only when:
 
 Create or update an ADR when any task changes:
 
+- auth/session boundary
+- session strategy
+- trusted actor context shape
+- protected-route actor-source behavior
 - audit event schema
 - transaction-history field semantics
 - append-only persistence boundary
@@ -648,6 +756,7 @@ At sprint close:
 - incomplete but started task PBIs get Sprint = Sprint 5 and Status = In-Progress or Blocked
 - unstarted planned PBIs remain Planned
 - parent stories become Completed only when all child tasks are completed
-- parent features remain In-Progress unless all required child stories are completed and PO acceptance is recorded
+- parent features or enablers remain In-Progress unless all required child stories are completed and PO acceptance is recorded
 
 Do not mark a parent feature complete just because one branch merged partially.
+Do not merge PBI-005, PBI-002, or PBI-017 before PBI-253 unless a new ADR explicitly changes this rule.
