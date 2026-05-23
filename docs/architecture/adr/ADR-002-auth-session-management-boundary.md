@@ -1,6 +1,6 @@
 # ADR-002: Define MVP authentication and session management boundary
 
-Status: Proposed
+Status: Accepted
 Date: 2026-05-23
 Owners: Scrum Master / Product Owner / Architecture / Security
 Related PBIs: PBI-253, PBI-254, PBI-255, PBI-256, PBI-257, PBI-258, PBI-259, PBI-260, PBI-261, PBI-262
@@ -130,4 +130,4 @@ The auth/session branch should provide tests or evidence for:
 
 ## Status note
 
-This ADR starts as Proposed because exact token/session mechanics may be confirmed during PBI-254. It should be marked Accepted once PBI-254 finalizes the contract and implementation begins under the agreed boundary.
+PBI-254 finalized the MVP auth/session contract in `docs/contracts/AUTH_SESSION_CONTRACT.md`. Implementation tasks PBI-255 through PBI-260 must follow that contract unless a new ADR revision is approved.
