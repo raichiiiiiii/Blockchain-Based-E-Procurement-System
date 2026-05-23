@@ -60,6 +60,9 @@ export async function getOnboardingStatusHistory(
     });
   }
   
+  // Sort history entries chronologically (oldest to newest)
+  history.sort((a, b) => new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime());
+  
   return {
     status: 'success',
     data: {

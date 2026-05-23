@@ -66,6 +66,11 @@ describe('GET /api/v1/kyc-aml-onboarding-cases/{caseId}/status-history', () => {
     assert.strictEqual(entry.toStatus, 'submitted');
     assert.strictEqual(entry.actorUserId, 'user_456');
     assert.strictEqual(entry.occurredAt, '2023-01-01T10:00:00Z');
+    
+    // Verify privacy-safe response - no sensitive data included
+    assert.strictEqual(Object.hasOwn(responseBody.data, 'kyc'), false);
+    assert.strictEqual(Object.hasOwn(responseBody.data, 'aml'), false);
+    assert.strictEqual(Object.hasOwn(responseBody.data, 'evidenceReferences'), false);
   });
 
   test('should return status history for decided flagged case', async () => {
@@ -147,6 +152,11 @@ describe('GET /api/v1/kyc-aml-onboarding-cases/{caseId}/status-history', () => {
     assert.strictEqual(decisionEntry.outcome, 'flag');
     assert.strictEqual(decisionEntry.rationale, 'Requires manual review');
     assert.deepStrictEqual(decisionEntry.reasonCodes, ['manual_compliance_concern', 'beneficial_ownership_unverified']);
+    
+    // Verify privacy-safe response - no sensitive data included
+    assert.strictEqual(Object.hasOwn(responseBody.data, 'kyc'), false);
+    assert.strictEqual(Object.hasOwn(responseBody.data, 'aml'), false);
+    assert.strictEqual(Object.hasOwn(responseBody.data, 'evidenceReferences'), false);
   });
 
   test('should return status history for decided approved case', async () => {
@@ -226,6 +236,11 @@ describe('GET /api/v1/kyc-aml-onboarding-cases/{caseId}/status-history', () => {
     assert.strictEqual(decisionEntry.occurredAt, '2023-01-02T15:30:00Z');
     assert.strictEqual(decisionEntry.outcome, 'pass');
     assert.strictEqual(decisionEntry.rationale, 'All documents verified successfully');
+    
+    // Verify privacy-safe response - no sensitive data included
+    assert.strictEqual(Object.hasOwn(responseBody.data, 'kyc'), false);
+    assert.strictEqual(Object.hasOwn(responseBody.data, 'aml'), false);
+    assert.strictEqual(Object.hasOwn(responseBody.data, 'evidenceReferences'), false);
   });
 
   test('should return status history for decided rejected case', async () => {
@@ -462,5 +477,157 @@ describe('GET /api/v1/kyc-aml-onboarding-cases/{caseId}/status-history', () => {
     const responseBody = response.json();
     assert.strictEqual(responseBody.error.code, 'VALIDATION_ERROR');
     assert.ok(responseBody.error.message.includes('Missing or invalid x-actor-id header'));
+  });
+
+  test('should return 403 when user is not authorized to retrieve status history', async () => {
+    // Setup
+    const repository = new InMemoryOnboardingCaseRepository();
+    const server = createTestableServer();
+    
+    // Register routes with denied authorization
+    await server.register(registerKYCAMLRoutes, { 
+      repository, 
+      prefix: '/api/v1',
+      authorizeStatusHistory: async (): Promise<boolean> => false
+    });
+
+    // Create a case directly in repository
+    const submittedCase: OnboardingCase = {
+      id: 'test-case-123',
+      memberOrganizationId: 'org_123',
+      kyc: {
+        legalName: 'Test Company',
+        registrationNumber: '123456789',
+        countryCode: 'MYS',
+        businessType: 'Corporation'
+      },
+      aml: {
+        declaredBusinessActivity: 'Import/Export',
+        expectedMonthlyTransactionValue: '10000.00',
+        declaredSanctionsExposure: false,
+        declaredPepExposure: false
+      },
+      evidenceReferences: [],
+      status: 'submitted',
+      submittedByUserId: 'user_456',
+      createdAt: '2023-01-01T10:00:00Z',
+      updatedAt: '2023-01-01T10:00:00Z'
+    };
+    
+    await repository.save(submittedCase);
+
+    // Make request with unauthorized user
+    const response = await server.inject({
+      method: 'GET',
+      url: '/api/v1/kyc-aml-onboarding-cases/test-case-123/status-history',
+      headers: {
+        'x-actor-id': 'unauthorized_user'
+      }
+    });
+
+    // Assertions
+    assert.strictEqual(response.statusCode, 403);
+    const responseBody = response.json();
+    assert.strictEqual(responseBody.error.code, 'FORBIDDEN');
+    assert.strictEqual(responseBody.error.message, 'User is not authorized to retrieve KYC/AML onboarding status history');
+  });
+
+  test('should not call repository when user is not authorized to retrieve status history', async () => {
+    // Setup
+    let repositoryCalled = false;
+    
+    // Create a mock repository that tracks if findById is called
+    const mockRepository = {
+      findById: async (id: string) => {
+        repositoryCalled = true;
+        return null;
+      },
+      save: async () => {}
+    } as any;
+    
+    const server = createTestableServer();
+    
+    // Register routes with denied authorization
+    await server.register(registerKYCAMLRoutes, { 
+      repository: mockRepository,
+      prefix: '/api/v1',
+      authorizeStatusHistory: async (): Promise<boolean> => false
+    });
+
+    // Make request with unauthorized user
+    const response = await server.inject({
+      method: 'GET',
+      url: '/api/v1/kyc-aml-onboarding-cases/test-case-123/status-history',
+      headers: {
+        'x-actor-id': 'unauthorized_user'
+      }
+    });
+
+    // Assertions
+    assert.strictEqual(response.statusCode, 403);
+    assert.strictEqual(repositoryCalled, false, 'Repository findById should not be called for unauthorized users');
+  });
+
+  test('should order history entries chronologically from oldest to newest', async () => {
+    // Setup
+    const repository = new InMemoryOnboardingCaseRepository();
+    const server = createTestableServer();
+    
+    await server.register(registerKYCAMLRoutes, { 
+      repository, 
+      prefix: '/api/v1'
+    });
+
+    // Create a case with decision where decision timestamp is earlier than createdAt
+    // This tests that sorting works correctly regardless of field names
+    const testCase: OnboardingCase = {
+      id: 'test-case-chronological',
+      memberOrganizationId: 'org_chrono',
+      kyc: {
+        legalName: 'Chronological Test Company',
+        registrationNumber: '999888777',
+        countryCode: 'MYS',
+        businessType: 'Corporation'
+      },
+      aml: {
+        declaredBusinessActivity: 'Testing',
+        expectedMonthlyTransactionValue: '1000.00',
+        declaredSanctionsExposure: false,
+        declaredPepExposure: false
+      },
+      evidenceReferences: [],
+      status: 'approved',
+      submittedByUserId: 'user_chrono',
+      createdAt: '2023-01-03T10:00:00Z', // Created after decision (artificial scenario to test sorting)
+      updatedAt: '2023-01-04T15:30:00Z',
+      decision: {
+        outcome: 'pass',
+        rationale: 'Testing chronological ordering',
+        decidedByUserId: 'reviewer_chrono',
+        decidedAt: '2023-01-02T15:30:00Z' // Decision happened before creation (artificial scenario)
+      }
+    };
+    
+    await repository.save(testCase);
+
+    // Make request
+    const response = await server.inject({
+      method: 'GET',
+      url: '/api/v1/kyc-aml-onboarding-cases/test-case-chronological/status-history',
+      headers: {
+        'x-actor-id': 'user_chrono'
+      }
+    });
+
+    // Assertions
+    assert.strictEqual(response.statusCode, 200);
+    const responseBody = response.json();
+    
+    // History should be sorted chronologically (oldest to newest)
+    assert.strictEqual(responseBody.data.history.length, 2);
+    assert.strictEqual(responseBody.data.history[0].type, 'decisionRecorded'); // Older timestamp
+    assert.strictEqual(responseBody.data.history[0].occurredAt, '2023-01-02T15:30:00Z');
+    assert.strictEqual(responseBody.data.history[1].type, 'caseSubmitted'); // Newer timestamp
+    assert.strictEqual(responseBody.data.history[1].occurredAt, '2023-01-03T10:00:00Z');
   });
 });

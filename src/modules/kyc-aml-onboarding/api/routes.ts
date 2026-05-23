@@ -43,6 +43,12 @@ export type OnboardingDecisionAuthorization = (
   caseId: string
 ) => Promise<boolean>;
 
+// Authorization seam type definition for status history retrieval
+export type OnboardingStatusHistoryAuthorization = (
+  actorId: string,
+  caseId: string
+) => Promise<boolean>;
+
 // Default authorization function for submission
 export const allowAuthenticatedSubmission: OnboardingSubmissionAuthorization = async (
   actorId,
@@ -55,11 +61,18 @@ export const allowAuthenticatedDecision: OnboardingDecisionAuthorization = async
   caseId
 ): Promise<boolean> => actorId.trim().length > 0 && caseId.trim().length > 0;
 
+// Default authorization function for status history retrieval
+export const allowAuthenticatedStatusHistory: OnboardingStatusHistoryAuthorization = async (
+  actorId,
+  caseId
+): Promise<boolean> => actorId.trim().length > 0 && caseId.trim().length > 0;
+
 interface KYCAMLRoutesOptions {
   repository: OnboardingCaseRepository;
   accessAuditEventRepository?: AccessAuditEventRepository;
   authorizeSubmission?: OnboardingSubmissionAuthorization;
   authorizeDecision?: OnboardingDecisionAuthorization;
+  authorizeStatusHistory?: OnboardingStatusHistoryAuthorization;
 }
 
 interface CreateOnboardingCaseRequest {
@@ -97,7 +110,8 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
     repository,
     accessAuditEventRepository,
     authorizeSubmission = allowAuthenticatedSubmission,
-    authorizeDecision = allowAuthenticatedDecision
+    authorizeDecision = allowAuthenticatedDecision,
+    authorizeStatusHistory = allowAuthenticatedStatusHistory
   } = options;
 
   // GET /api/v1/kyc-aml-onboarding-cases/{caseId}/status-history - Get status history for a KYC/AML onboarding case
@@ -123,6 +137,17 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
       }
 
       const caseId = request.params.caseId;
+      
+      // Check authorization for status history retrieval
+      const isAuthorized = await authorizeStatusHistory(actorId, caseId);
+      if (!isAuthorized) {
+        return reply.code(403).send({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'User is not authorized to retrieve KYC/AML onboarding status history'
+          }
+        });
+      }
       
       const result = await getOnboardingStatusHistory(caseId, repository);
       
