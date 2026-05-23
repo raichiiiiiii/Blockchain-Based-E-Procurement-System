@@ -53,6 +53,20 @@ const registerTransactionHistoryRoutes: FastifyPluginAsync<TransactionHistoryRou
     Querystring: TransactionHistoryQuerystring;
   }>(
     '/procurement/transactions/:caseId/history',
+    {
+      preHandler: async (request, reply) => {
+        // Check if the actor has auditor role using actorContext
+        const actorRoles = request.actorContext?.authorizationContext.roles;
+        if (!request.actorContext || !request.actorContext.isAuthenticated || !actorRoles || !actorRoles.includes('auditor')) {
+          return reply.code(403).send({
+            error: {
+              code: 'FORBIDDEN',
+              message: 'User must have auditor role to query transaction history'
+            }
+          });
+        }
+      }
+    },
     async (request, reply) => {
       const { caseId } = request.params;
       

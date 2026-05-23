@@ -4,10 +4,12 @@ import fastify from 'fastify';
 import { registerTransactionHistoryRoutes } from './transaction-history.routes.js';
 import { InMemoryProcureToPayLifecycleEventRepository } from '../infrastructure/in-memory-procure-to-pay-lifecycle-event-repository.js';
 import { createProcureToPayLifecycleEvent } from '../application/procure-to-pay-lifecycle-event-builder.js';
+import actorContextPlugin from '../../../app/plugins/actor-context-plugin.js';
 
 describe('Transaction History API Routes', () => {
-  it('returns related lifecycle events for a caseId', async () => {
+  it('returns related lifecycle events for a caseId when authorized', async () => {
     const app = fastify();
+    app.register(actorContextPlugin);
     const repository = new InMemoryProcureToPayLifecycleEventRepository();
     
     // Create events for the target case
@@ -62,7 +64,11 @@ describe('Transaction History API Routes', () => {
     
     const response = await app.inject({
       method: 'GET',
-      url: '/procurement/transactions/ptp-case-123/history'
+      url: '/procurement/transactions/ptp-case-123/history',
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
     });
     
     assert.strictEqual(response.statusCode, 200);
@@ -74,8 +80,9 @@ describe('Transaction History API Routes', () => {
     assert.ok(result.data.completeness);
   });
 
-  it('excludes events from other caseIds', async () => {
+  it('excludes events from other caseIds when authorized', async () => {
     const app = fastify();
+    app.register(actorContextPlugin);
     const repository = new InMemoryProcureToPayLifecycleEventRepository();
     
     // Create events for different cases
@@ -112,7 +119,11 @@ describe('Transaction History API Routes', () => {
     
     const response = await app.inject({
       method: 'GET',
-      url: '/procurement/transactions/ptp-case-123/history'
+      url: '/procurement/transactions/ptp-case-123/history',
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
     });
     
     assert.strictEqual(response.statusCode, 200);
@@ -122,8 +133,9 @@ describe('Transaction History API Routes', () => {
     assert.ok(result.data.completeness);
   });
 
-  it('optionally filters by correlationId if provided', async () => {
+  it('optionally filters by correlationId if provided when authorized', async () => {
     const app = fastify();
+    app.register(actorContextPlugin);
     const repository = new InMemoryProcureToPayLifecycleEventRepository();
     
     // Create events with different correlationIds for the same case
@@ -160,7 +172,11 @@ describe('Transaction History API Routes', () => {
     
     const response = await app.inject({
       method: 'GET',
-      url: '/procurement/transactions/ptp-case-123/history?correlationId=corr-1'
+      url: '/procurement/transactions/ptp-case-123/history?correlationId=corr-1',
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
     });
     
     assert.strictEqual(response.statusCode, 200);
@@ -170,8 +186,9 @@ describe('Transaction History API Routes', () => {
     assert.ok(result.data.completeness);
   });
 
-  it('orders by occurredAt ascending', async () => {
+  it('orders by occurredAt ascending when authorized', async () => {
     const app = fastify();
+    app.register(actorContextPlugin);
     const repository = new InMemoryProcureToPayLifecycleEventRepository();
     
     const event1 = createProcureToPayLifecycleEvent({
@@ -224,7 +241,11 @@ describe('Transaction History API Routes', () => {
     
     const response = await app.inject({
       method: 'GET',
-      url: '/procurement/transactions/ptp-case-123/history'
+      url: '/procurement/transactions/ptp-case-123/history',
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
     });
     
     assert.strictEqual(response.statusCode, 200);
@@ -236,8 +257,9 @@ describe('Transaction History API Routes', () => {
     assert.ok(result.data.completeness);
   });
 
-  it('uses eventId ascending as tie-breaker when occurredAt is identical', async () => {
+  it('uses eventId ascending as tie-breaker when occurredAt is identical when authorized', async () => {
     const app = fastify();
+    app.register(actorContextPlugin);
     const repository = new InMemoryProcureToPayLifecycleEventRepository();
     
     // Create events with identical occurredAt but different eventIds
@@ -291,7 +313,11 @@ describe('Transaction History API Routes', () => {
     
     const response = await app.inject({
       method: 'GET',
-      url: '/procurement/transactions/ptp-case-123/history'
+      url: '/procurement/transactions/ptp-case-123/history',
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
     });
     
     assert.strictEqual(response.statusCode, 200);
@@ -303,15 +329,20 @@ describe('Transaction History API Routes', () => {
     assert.ok(result.data.completeness);
   });
 
-  it('returns an empty successful result for a valid caseId with no events', async () => {
+  it('returns an empty successful result for a valid caseId with no events when authorized', async () => {
     const app = fastify();
+    app.register(actorContextPlugin);
     const repository = new InMemoryProcureToPayLifecycleEventRepository();
     
     app.register(registerTransactionHistoryRoutes, { repository });
     
     const response = await app.inject({
       method: 'GET',
-      url: '/procurement/transactions/ptp-case-123/history'
+      url: '/procurement/transactions/ptp-case-123/history',
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
     });
     
     assert.strictEqual(response.statusCode, 200);
@@ -329,14 +360,19 @@ describe('Transaction History API Routes', () => {
     assert.strictEqual(result.data.completeness.message, 'No events have been recorded for this case');
   });
 
-  it('returns an empty successful result when no repository is provided', async () => {
+  it('returns an empty successful result when no repository is provided when authorized', async () => {
     const app = fastify();
+    app.register(actorContextPlugin);
     
     app.register(registerTransactionHistoryRoutes);
     
     const response = await app.inject({
       method: 'GET',
-      url: '/procurement/transactions/ptp-case-123/history'
+      url: '/procurement/transactions/ptp-case-123/history',
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
     });
     
     assert.strictEqual(response.statusCode, 200);
@@ -356,12 +392,17 @@ describe('Transaction History API Routes', () => {
 
   it('rejects blank caseId', async () => {
     const app = fastify();
+    app.register(actorContextPlugin);
     
     app.register(registerTransactionHistoryRoutes);
     
     const response = await app.inject({
       method: 'GET',
-      url: '/procurement/transactions/%20%20%20/history' // URL encoded spaces
+      url: '/procurement/transactions/%20%20%20/history', // URL encoded spaces
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
     });
     
     assert.strictEqual(response.statusCode, 400);
@@ -373,44 +414,63 @@ describe('Transaction History API Routes', () => {
 
   it('rejects blank correlationId', async () => {
     const app = fastify();
+    app.register(actorContextPlugin);
     
     app.register(registerTransactionHistoryRoutes);
     
     const response = await app.inject({
       method: 'GET',
-      url: '/procurement/transactions/ptp-case-123/history?correlationId=%20%20%20' // URL encoded spaces
+      url: '/procurement/transactions/ptp-case-123/history?correlationId=%20%20%20', // URL encoded spaces
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
     });
     
     assert.strictEqual(response.statusCode, 400);
     const result = JSON.parse(response.body);
     assert.ok(result.error);
     assert.strictEqual(result.error.code, 'VALIDATION_ERROR');
-    assert.ok(result.error.details.issues.some((issue: any) => 
-      issue.path === 'correlationId' && issue.message.includes('cannot be blank')
-    ));
+    assert.ok(result.error.details.issues.some((issue: unknown) => {
+      if (typeof issue === 'object' && issue !== null && 'path' in issue && 'message' in issue) {
+        return (issue as { path: string; message: string }).path === 'correlationId' && 
+               (issue as { path: string; message: string }).message.includes('cannot be blank');
+      }
+      return false;
+    }));
   });
 
   it('rejects unsupported query parameters', async () => {
     const app = fastify();
+    app.register(actorContextPlugin);
     
     app.register(registerTransactionHistoryRoutes);
     
     const response = await app.inject({
       method: 'GET',
-      url: '/procurement/transactions/ptp-case-123/history?unsupportedParam=value'
+      url: '/procurement/transactions/ptp-case-123/history?unsupportedParam=value',
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
     });
     
     assert.strictEqual(response.statusCode, 400);
     const result = JSON.parse(response.body);
     assert.ok(result.error);
     assert.strictEqual(result.error.code, 'VALIDATION_ERROR');
-    assert.ok(result.error.details.issues.some((issue: any) => 
-      issue.path === 'unsupportedParam' && issue.message.includes('Unsupported query parameter')
-    ));
+    assert.ok(result.error.details.issues.some((issue: unknown) => {
+      if (typeof issue === 'object' && issue !== null && 'path' in issue && 'message' in issue) {
+        return (issue as { path: string; message: string }).path === 'unsupportedParam' && 
+               (issue as { path: string; message: string }).message.includes('Unsupported query parameter');
+      }
+      return false;
+    }));
   });
 
-  it('projects lifecycle event fields without mutating stored events', async () => {
+  it('projects lifecycle event fields without mutating stored events when authorized', async () => {
     const app = fastify();
+    app.register(actorContextPlugin);
     const repository = new InMemoryProcureToPayLifecycleEventRepository();
     
     const event = createProcureToPayLifecycleEvent({
@@ -436,7 +496,11 @@ describe('Transaction History API Routes', () => {
     
     const response = await app.inject({
       method: 'GET',
-      url: '/procurement/transactions/ptp-case-123/history'
+      url: '/procurement/transactions/ptp-case-123/history',
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
     });
     
     assert.strictEqual(response.statusCode, 200);
@@ -464,8 +528,9 @@ describe('Transaction History API Routes', () => {
     assert.ok(result.data.completeness);
   });
 
-  it('preserves immutableReference fields in returned projections', async () => {
+  it('preserves immutableReference fields in returned projections when authorized', async () => {
     const app = fastify();
+    app.register(actorContextPlugin);
     const repository = new InMemoryProcureToPayLifecycleEventRepository();
 
     const previousEvent = createProcureToPayLifecycleEvent({
@@ -510,7 +575,11 @@ describe('Transaction History API Routes', () => {
 
     const response = await app.inject({
       method: 'GET',
-      url: '/procurement/transactions/ptp-case-123/history'
+      url: '/procurement/transactions/ptp-case-123/history',
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
     });
 
     assert.strictEqual(response.statusCode, 200);
@@ -528,5 +597,106 @@ describe('Transaction History API Routes', () => {
     assert.strictEqual(resultEvent.immutableReference.sourceRecordRef, 'source-record-ref');
     assert.strictEqual(resultEvent.immutableReference.anchorRef, 'anchor-ref');
     assert.ok(result.data.completeness);
+  });
+
+  it('rejects requests without actor context with HTTP 403', async () => {
+    const app = fastify();
+    const repository = new InMemoryProcureToPayLifecycleEventRepository();
+    
+    app.register(registerTransactionHistoryRoutes, { repository });
+    
+    const response = await app.inject({
+      method: 'GET',
+      url: '/procurement/transactions/ptp-case-123/history'
+    });
+    
+    assert.strictEqual(response.statusCode, 403);
+    const result = JSON.parse(response.body);
+    assert.ok(result.error);
+    assert.strictEqual(result.error.code, 'FORBIDDEN');
+    assert.strictEqual(result.error.message, 'User must have auditor role to query transaction history');
+    // Ensure no data is leaked
+    assert.strictEqual(result.data, undefined);
+  });
+
+  it('rejects requests with unauthenticated actor with HTTP 403', async () => {
+    const app = fastify();
+    app.register(actorContextPlugin);
+    const repository = new InMemoryProcureToPayLifecycleEventRepository();
+    
+    app.register(registerTransactionHistoryRoutes, { repository });
+    
+    const response = await app.inject({
+      method: 'GET',
+      url: '/procurement/transactions/ptp-case-123/history',
+      headers: {
+        // No x-actor-id header means unauthenticated
+        'x-actor-role': 'auditor'
+      }
+    });
+    
+    assert.strictEqual(response.statusCode, 403);
+    const result = JSON.parse(response.body);
+    assert.ok(result.error);
+    assert.strictEqual(result.error.code, 'FORBIDDEN');
+    assert.strictEqual(result.error.message, 'User must have auditor role to query transaction history');
+    // Ensure no data is leaked
+    assert.strictEqual(result.data, undefined);
+  });
+
+  it('rejects requests from authenticated actor without auditor role with HTTP 403', async () => {
+    const app = fastify();
+    app.register(actorContextPlugin);
+    const repository = new InMemoryProcureToPayLifecycleEventRepository();
+    
+    app.register(registerTransactionHistoryRoutes, { repository });
+    
+    const response = await app.inject({
+      method: 'GET',
+      url: '/procurement/transactions/ptp-case-123/history',
+      headers: {
+        'x-actor-id': 'buyer-user-1',
+        'x-actor-role': 'buyer'
+      }
+    });
+    
+    assert.strictEqual(response.statusCode, 403);
+    const result = JSON.parse(response.body);
+    assert.ok(result.error);
+    assert.strictEqual(result.error.code, 'FORBIDDEN');
+    assert.strictEqual(result.error.message, 'User must have auditor role to query transaction history');
+    // Ensure no data is leaked
+    assert.strictEqual(result.data, undefined);
+  });
+
+  it('allows authorized auditor to receive empty successful history for unknown case', async () => {
+    const app = fastify();
+    app.register(actorContextPlugin);
+    const repository = new InMemoryProcureToPayLifecycleEventRepository();
+    
+    app.register(registerTransactionHistoryRoutes, { repository });
+    
+    const response = await app.inject({
+      method: 'GET',
+      url: '/procurement/transactions/unknown-case-id/history',
+      headers: {
+        'x-actor-id': 'auditor-user-1',
+        'x-actor-role': 'auditor'
+      }
+    });
+    
+    assert.strictEqual(response.statusCode, 200);
+    const result = JSON.parse(response.body);
+    assert.strictEqual(result.data.caseId, 'unknown-case-id');
+    assert.strictEqual(result.data.items.length, 0);
+    assert.deepStrictEqual(result.data.ordering, {
+      primary: 'occurredAt',
+      secondary: 'eventId',
+      direction: 'ascending'
+    });
+    assert.ok(result.data.completeness);
+    assert.strictEqual(result.data.completeness.status, 'unknown');
+    assert.strictEqual(result.data.completeness.reason, 'no_events_recorded');
+    assert.strictEqual(result.data.completeness.message, 'No events have been recorded for this case');
   });
 });
