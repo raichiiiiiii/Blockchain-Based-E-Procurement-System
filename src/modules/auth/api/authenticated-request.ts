@@ -1,35 +1,12 @@
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AuthSession } from '../domain/auth-session.js';
 import type { AuthSessionRepository } from '../application/auth-session-repository.js';
 import { hashToken, isSessionExpired } from '../application/session-token.js';
 
-// Define the trusted actor context shape as per AUTH_SESSION_CONTRACT.md
-export interface TrustedActorContext {
-  actorUserId: string;
-  actorOrganizationId?: string;
-  actorRoleCodes: string[];
-  authenticationSessionId: string;
-  authenticationMethod: 'localPassword';
-  isAuthenticated: true;
-}
-
-// Augment Fastify request type
-declare module 'fastify' {
-  interface FastifyRequest {
-    actorContext: TrustedActorContext | null;
-  }
-}
-
-/**
- * Creates a preHandler middleware for validating authenticated requests
- * @param sessionRepository The repository to lookup sessions
- * @returns Fastify preHandler function
- */
 export function createAuthenticatedRequestPreHandler(sessionRepository: AuthSessionRepository) {
-  return async function(request: FastifyRequest, reply: FastifyReply) {
-    // Get authorization header
+  return async function authenticatedRequestPreHandler(request: FastifyRequest, reply: FastifyReply) {
     const authHeader = request.headers.authorization;
-    
-    // Check if authorization header exists
+
     if (!authHeader) {
       return reply.status(401).send({
         error: {
@@ -38,8 +15,7 @@ export function createAuthenticatedRequestPreHandler(sessionRepository: AuthSess
         }
       });
     }
-    
-    // Check if it's a bearer token
+
     const bearerPrefix = 'Bearer ';
     if (!authHeader.startsWith(bearerPrefix)) {
       return reply.status(401).send({
@@ -49,17 +25,20 @@ export function createAuthenticatedRequestPreHandler(sessionRepository: AuthSess
         }
       });
     }
-    
-    // Extract token
+
     const token = authHeader.substring(bearerPrefix.length);
-    
-    // Hash token for lookup
+    if (!token.trim()) {
+      return reply.status(401).send({
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'Invalid authorization header'
+        }
+      });
+    }
+
     const tokenHash = hashToken(token);
-    
-    // Find session
     const session = await sessionRepository.findByTokenHash(tokenHash);
-    
-    // Check if session exists
+
     if (!session) {
       return reply.status(401).send({
         error: {
@@ -68,8 +47,7 @@ export function createAuthenticatedRequestPreHandler(sessionRepository: AuthSess
         }
       });
     }
-    
-    // Check session status
+
     if (session.status === 'revoked') {
       return reply.status(401).send({
         error: {
@@ -78,18 +56,16 @@ export function createAuthenticatedRequestPreHandler(sessionRepository: AuthSess
         }
       });
     }
-    
-    // Check if session is expired
+
     if (session.status === 'expired' || isSessionExpired(session.expiresAt)) {
-      // Update session status to expired if it wasn't already marked
       if (session.status !== 'expired') {
-        const updatedSession = {
+        const updatedSession: AuthSession = {
           ...session,
           status: 'expired'
         };
         await sessionRepository.save(updatedSession);
       }
-      
+
       return reply.status(401).send({
         error: {
           code: 'UNAUTHORIZED',
@@ -97,15 +73,18 @@ export function createAuthenticatedRequestPreHandler(sessionRepository: AuthSess
         }
       });
     }
-    
-    // Attach trusted actor context to request
+
     request.actorContext = {
+      userId: session.actorUserId,
+      authorizationContext: {
+        roles: session.actorRoleCodes
+      },
+      isAuthenticated: true,
       actorUserId: session.actorUserId,
       actorOrganizationId: session.actorOrganizationId,
       actorRoleCodes: session.actorRoleCodes,
       authenticationSessionId: session.sessionId,
-      authenticationMethod: session.authenticationMethod,
-      isAuthenticated: true
+      authenticationMethod: session.authenticationMethod
     };
   };
 }
