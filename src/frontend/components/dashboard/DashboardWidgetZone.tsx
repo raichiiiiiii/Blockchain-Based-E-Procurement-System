@@ -31,11 +31,13 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                   <div className="widget-content">
                     <p><strong>Compliance dashboard visibility is not backend authorization.</strong></p>
                     <p>Backend authorization and governed workflow state remain authoritative.</p>
+                    <p>Forbidden backend outcomes must remain visible as blocked actions, not frontend success.</p>
                   </div>
                 ) : widget.id === 'shariah-review-boundary-alert' ? (
                   <div className="widget-content">
                     <p><strong>Review dashboard visibility is not backend authorization.</strong></p>
                     <p>Checklist and decision actions remain governed by backend state and actor context.</p>
+                    <p>Backend FORBIDDEN and VALIDATION_ERROR responses remain authoritative.</p>
                   </div>
                 ) : widget.status === 'placeholder' ? (
                   <div className="widget-placeholder">
@@ -71,6 +73,14 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                 <h3>{widget.title}</h3>
                 {widget.status === 'active' && !widget.placeholder ? (
                   <div className="widget-content">
+                    {widget.id === 'shariah-decision-overview' && (
+                      <div className="widget-status-note">
+                        <p>Decision recording is a governed workflow entry point.</p>
+                        <p>Final decisions are valid only from <strong>checklistComplete</strong>.</p>
+                        <p><strong>submitted</strong> and <strong>checklistInProgress</strong> reviews cannot directly record a final decision.</p>
+                        <p>Backend VALIDATION_ERROR remains authoritative if workflow state rules fail.</p>
+                      </div>
+                    )}
                     <button 
                       className="action-button"
                       onClick={() => {
@@ -101,28 +111,37 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                     <p>This is a placeholder widget for {widget.title.toLowerCase()}.</p>
                     <p>Functionality will be implemented in future stories.</p>
                     {widget.id === 'compliance-kyc-queue-overview' && (
-                      <button 
-                        className="action-button"
-                        onClick={() => onPageChange('kyc-queue')}
-                      >
-                        View KYC Queue (Unavailable)
-                      </button>
+                      <>
+                        <p>KYC queue workflow is contract-pending. No queue count is available.</p>
+                        <button 
+                          className="action-button"
+                          onClick={() => onPageChange('kyc-queue')}
+                        >
+                          View KYC Queue (Unavailable)
+                        </button>
+                      </>
                     )}
                     {widget.id === 'compliance-aml-review-overview' && (
-                      <button 
-                        className="action-button"
-                        onClick={() => onPageChange('aml-reviews')}
-                      >
-                        View AML Reviews (Unavailable)
-                      </button>
+                      <>
+                        <p>AML review workflow is contract-pending. No review count is available.</p>
+                        <button 
+                          className="action-button"
+                          onClick={() => onPageChange('aml-reviews')}
+                        >
+                          View AML Reviews (Unavailable)
+                        </button>
+                      </>
                     )}
                     {widget.id === 'compliance-onboarding-status-overview' && (
-                      <button 
-                        className="action-button"
-                        onClick={() => onPageChange('onboarding-status')}
-                      >
-                        View Onboarding Status (Unavailable)
-                      </button>
+                      <>
+                        <p>Onboarding status review is contract-pending. No blocked or flagged count is available.</p>
+                        <button 
+                          className="action-button"
+                          onClick={() => onPageChange('onboarding-status')}
+                        >
+                          View Onboarding Status (Unavailable)
+                        </button>
+                      </>
                     )}
                   </div>
                 ) : null}
@@ -164,10 +183,14 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                       <p>Assign roles to users within organizations and manage active assignments.</p>
                     )}
                     {widget.id === 'shariah-review-submission-overview' && (
-                      <p>Submit new Shariah review requests for products or services requiring compliance assessment.</p>
+                      <p>Submit new Shariah review requests for products or services requiring compliance assessment. Protected writes remain backend-authorized.</p>
                     )}
                     {widget.id === 'shariah-checklist-overview' && (
-                      <p>Complete Shariah compliance checklists for submitted reviews.</p>
+                      <div className="widget-status-note">
+                        <p>Complete Shariah compliance checklists for submitted reviews.</p>
+                        <p>Checklist completion depends on mandatory item, comment, and evidence rules.</p>
+                        <p>Completion failures must surface validation errors, not frontend success.</p>
+                      </div>
                     )}
                     <button 
                       className="action-button"
@@ -202,20 +225,26 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                     <p>This is a placeholder widget for {widget.title.toLowerCase()}.</p>
                     <p>Functionality will be implemented in future stories.</p>
                     {widget.id === 'compliance-kyc-queue-overview' && (
-                      <button 
-                        className="action-button"
-                        onClick={() => onPageChange('kyc-queue')}
-                      >
-                        View KYC Queue (Unavailable)
-                      </button>
+                      <>
+                        <p>KYC queue workflow is contract-pending. Missing data is unavailable, not zero.</p>
+                        <button 
+                          className="action-button"
+                          onClick={() => onPageChange('kyc-queue')}
+                        >
+                          View KYC Queue (Unavailable)
+                        </button>
+                      </>
                     )}
                     {widget.id === 'compliance-aml-review-overview' && (
-                      <button 
-                        className="action-button"
-                        onClick={() => onPageChange('aml-reviews')}
-                      >
-                        View AML Reviews (Unavailable)
-                      </button>
+                      <>
+                        <p>AML review workflow is contract-pending. Missing data is unavailable, not zero.</p>
+                        <button 
+                          className="action-button"
+                          onClick={() => onPageChange('aml-reviews')}
+                        >
+                          View AML Reviews (Unavailable)
+                        </button>
+                      </>
                     )}
                   </div>
                 ) : null}
@@ -270,12 +299,15 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                     <p>This is a placeholder widget for {widget.title.toLowerCase()}.</p>
                     <p>Functionality will be implemented in future stories.</p>
                     {widget.id === 'compliance-onboarding-status-overview' && (
-                      <button 
-                        className="action-button"
-                        onClick={() => onPageChange('onboarding-status')}
-                      >
-                        View Onboarding Status (Unavailable)
-                      </button>
+                      <>
+                        <p>Onboarding eligibility checks are contract-pending. Missing blocked or flagged data is unavailable, not zero.</p>
+                        <button 
+                          className="action-button"
+                          onClick={() => onPageChange('onboarding-status')}
+                        >
+                          View Onboarding Status (Unavailable)
+                        </button>
+                      </>
                     )}
                   </div>
                 ) : null}
@@ -319,6 +351,8 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                 ) : widget.id === 'shariah-history-overview' && widget.status === 'active' && !widget.placeholder ? (
                   <div className="widget-content">
                     <p>View the complete history and status progression for Shariah reviews.</p>
+                    <p>Intermediate histories are valid and must not be treated as errors.</p>
+                    <p>Absence of a final decision is not an error condition.</p>
                     <button 
                       className="action-button"
                       onClick={() => onPageChange('shariah-history')}
