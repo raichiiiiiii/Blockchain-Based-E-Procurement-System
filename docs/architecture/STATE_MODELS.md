@@ -367,7 +367,66 @@ For the current MVP state model, `approved`, `rejected`, `flagged`, and `blocked
 [FLAG-KYC-AML-OUTCOME-STATES]
 KYC/AML review outcome states and transition rules are now defined for MVP. Reopen, remediation, expiry, and appeal behavior remain deferred to future PBIs.
 
-## 15. Provisional protected functions list
+## 15. KYC/AML onboarding status/history read model
+
+### Purpose
+Define the read model for retrieving current onboarding status and decision history for an onboarding case.
+
+### Status values
+- `submitted`
+- `approved`
+- `rejected`
+- `flagged`
+- `blocked`
+
+### Current status derivation
+The `currentStatus` field is derived from the latest valid recorded state in the onboarding case lifecycle.
+
+### Finality indicator
+The `isFinal` field indicates whether the current status represents a final decision state:
+- `false` for `submitted` (intermediate state)
+- `true` for `approved`, `rejected`, `flagged`, and `blocked` (final states)
+
+### History event types
+- `caseSubmitted`
+- `decisionRecorded`
+
+### History ordering
+History entries are ordered chronologically from oldest to newest:
+1. `caseSubmitted` event (always present)
+2. `decisionRecorded` event (present when a decision has been recorded)
+
+### Intermediate-state behavior
+For cases in the `submitted` state with no decision recorded:
+- `currentStatus` is `submitted`
+- `isFinal` is `false`
+- History contains only the `caseSubmitted` event
+
+### Final-state behavior
+For cases with a recorded decision:
+- `currentStatus` reflects the decision outcome (`approved`, `rejected`, `flagged`, or `blocked`)
+- `isFinal` is `true`
+- History contains both the `caseSubmitted` event and the `decisionRecorded` event
+
+### History entry fields
+Each history entry includes:
+- `type`: The event type (`caseSubmitted` or `decisionRecorded`)
+- `fromStatus`: The previous status before the change (null for initial submission)
+- `toStatus`: The resulting status after the change
+- `actorUserId`: Opaque user identifier of the actor who performed the action
+- `occurredAt`: ISO 8601 UTC timestamp of when the action occurred
+
+Decision-specific fields (present only in `decisionRecorded` events):
+- `outcome`: The decision outcome (`pass`, `fail`, `flag`, or `block`)
+- `rationale`: The decision justification
+- `reasonCodes`: Array of reason codes explaining the decision
+
+### Completeness rules
+- All state transitions that have occurred must be represented in the history
+- Intermediate histories (submitted only) are valid and must return successfully
+- Absence of a final decision is not an error condition and must be handled gracefully
+
+## 16. Provisional protected functions list
 
 Protected functions draft:
 - create member organization
@@ -382,7 +441,7 @@ Protected functions draft:
 [FLAG-PROTECTED-FUNCTIONS]
 This list must be formally approved before deactivation enforcement is treated as fully final.
 
-## 16. Open state-model decisions
+## 17. Open state-model decisions
 
 [FLAG-MEMBERSHIP-INITIAL-STATE]
 Current working assumption: `pendingReview`

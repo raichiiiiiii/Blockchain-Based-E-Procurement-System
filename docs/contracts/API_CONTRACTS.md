@@ -1399,6 +1399,7 @@ Safe response behavior:
 
 [FLAG-READ-AUDIT]
 History-read logging requirements are not yet finalized, but sensitive history access is expected to be auditable in Sprint 1.
+
 ## 15. KYC/AML onboarding contracts
 
 ### 15.1 Submit onboarding case
@@ -1672,3 +1673,114 @@ Out of scope for this contract section:
 
 [FLAG-KYC-AML-OUTCOME-STATES]
 KYC/AML review outcome states and transition rules are now defined for MVP. Reopen, remediation, expiry, and appeal behavior remain deferred to future PBIs.
+
+### 15.3 Get KYC/AML onboarding case status and history
+
+`GET /api/v1/kyc-aml-onboarding-cases/{caseId}/status-history`
+
+Purpose:
+- Retrieve the current onboarding status and decision history for an onboarding case.
+- Support backend/API consumers and future dashboard consumers.
+- This endpoint is backend/read-contract capability, not dashboard UI.
+
+Response for submitted case with no decision:
+
+```json
+{
+  "data": {
+    "id": "kyc_aml_case_123",
+    "memberOrganizationId": "org_123",
+    "currentStatus": "submitted",
+    "isFinal": false,
+    "history": [
+      {
+        "type": "caseSubmitted",
+        "fromStatus": null,
+        "toStatus": "submitted",
+        "actorUserId": "user_123",
+        "occurredAt": "2026-03-15T00:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+Response for decided case:
+
+```json
+{
+  "data": {
+    "id": "kyc_aml_case_123",
+    "memberOrganizationId": "org_123",
+    "currentStatus": "flagged",
+    "isFinal": true,
+    "history": [
+      {
+        "type": "caseSubmitted",
+        "fromStatus": null,
+        "toStatus": "submitted",
+        "actorUserId": "user_123",
+        "occurredAt": "2026-03-15T00:00:00Z"
+      },
+      {
+        "type": "decisionRecorded",
+        "fromStatus": "submitted",
+        "toStatus": "flagged",
+        "outcome": "flag",
+        "rationale": "Beneficial ownership evidence requires manual compliance follow-up.",
+        "reasonCodes": [
+          "beneficial_ownership_unverified",
+          "manual_compliance_concern"
+        ],
+        "actorUserId": "user_456",
+        "occurredAt": "2026-03-15T01:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+Status values:
+- `submitted`
+- `approved`
+- `rejected`
+- `flagged`
+- `blocked`
+
+History event types:
+- `caseSubmitted`
+- `decisionRecorded`
+
+Ordering rule:
+- History entries are returned chronologically from oldest to newest.
+- `caseSubmitted` appears before `decisionRecorded`.
+- If no decision exists, history contains only the `caseSubmitted` event.
+
+Intermediate-state behavior:
+- `submitted` with no decision is valid and not an error.
+- `currentStatus` is `submitted`.
+- `isFinal` is false.
+- History contains the intake/submission event only.
+
+Final-state behavior:
+- `approved`, `rejected`, `flagged`, and `blocked` are final MVP decision states.
+- `isFinal` is true for `approved`, `rejected`, `flagged`, and `blocked`.
+- No reopen/remediation/appeal behavior is defined in this contract.
+
+Authorization semantics:
+- Retrieval is protected.
+- Caller identity must come from trusted actor context.
+- Authorized compliance, banking, or platform users may retrieve status/history according to later implementation policy.
+- Unauthorized retrieval returns `403 FORBIDDEN`.
+- Missing actor context returns `400 VALIDATION_ERROR` or `401/403` only if an existing project-wide rule requires it.
+
+Privacy semantics:
+- Response must not expose raw KYC evidence content.
+- Response may expose evidence/reference identifiers only if later implementation needs them.
+- Decision rationale and reason codes are compliance-sensitive and should be returned only to authorized readers.
+
+Negative-path behavior:
+- Missing case returns `404 NOT_FOUND`.
+- Malformed caseId returns `400 VALIDATION_ERROR` if route validation detects it.
+- Unauthorized reader returns `403 FORBIDDEN`.
+- Empty history should not occur for a valid case; if implementation cannot reconstruct any history later, it must return an explicit incomplete-history signal rather than pretending completeness.
