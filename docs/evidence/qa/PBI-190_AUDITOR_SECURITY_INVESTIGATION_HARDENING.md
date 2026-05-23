@@ -138,7 +138,7 @@ This implementation complies with ADR-001 by:
 
 ## Validation Commands/Results
 
-Manual validation was executed locally by the developer before post-inspection fixes and reported as passing on 2026-05-23.
+Manual validation was executed locally by the developer after post-inspection fixes and reported as passing on 2026-05-23.
 
 ```bash
 npm run frontend:build
@@ -154,7 +154,20 @@ git diff --check
 # PASS
 ```
 
-After the post-inspection fixes to AccessEventDetailPage and AccessEventSequencePage, rerun the same validation commands before accepting PBI-190.
+## Closure Assessment
+
+PBI-190 is acceptable for closure.
+
+Confirmed by inspection and local validation report:
+
+- Empty-result states are distinct from error states.
+- Validation errors are distinct from empty results.
+- Forbidden states preserve backend authorization semantics.
+- Event-detail misses are shown as NOT_FOUND, not empty results.
+- Event-detail scaffold no longer synthesizes evidence hash values.
+- Sequence completeness scaffold is deterministic and does not claim complete lifecycle evidence unless the complete path is selected.
+- SecurityOperator investigation remains unavailable/contract-pending.
+- Required build/test/whitespace validation commands were reported as passing locally.
 
 ## Known Limitations
 
