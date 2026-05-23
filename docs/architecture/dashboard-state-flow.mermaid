@@ -1,0 +1,72 @@
+flowchart TD
+  Entry["Entry"] --> Auth["Auth Screen"]
+
+  Auth -->|"Submit credentials"| Authenticating["Authenticating"]
+  Auth -->|"Create account / onboarding"| OnboardingForm["Registration / Onboarding Screen"]
+
+  Authenticating -->|"Accepted"| Session["Session Context"]
+  Authenticating -->|"Invalid credentials"| AuthError["Auth Error"]
+  Authenticating -->|"Service unavailable"| AuthUnavailable["Auth Unavailable"]
+  AuthError --> Auth
+  AuthUnavailable --> Auth
+
+  OnboardingForm -->|"Submit details"| RegistrationSubmitted["Registration Submitted"]
+  RegistrationSubmitted -->|"Validation failed"| RegistrationValidationError["Registration Validation Error"]
+  RegistrationSubmitted -->|"Duplicate registrationNumber"| RegistrationConflict["Registration Conflict"]
+  RegistrationSubmitted -->|"Member organization created"| OrgPending["Member Organization: pendingReview"]
+  RegistrationValidationError --> OnboardingForm
+  RegistrationConflict --> OnboardingForm
+
+  Session -->|"Resolve server-derived user context"| UserState{"User state"}
+  UserState -->|"inactive"| AccessBlocked["Access Blocked"]
+  UserState -->|"active"| DashboardRole{"Dashboard role resolution"}
+
+  DashboardRole -->|"No assigned role"| DashboardNoRole["Dashboard: noRole"]
+  DashboardRole -->|"Unsupported roleCode"| DashboardUnsupported["Dashboard: unsupportedRole"]
+  DashboardRole -->|"Supported roleCode"| OrgState{"Organization state"}
+
+  OrgState -->|"pendingReview"| OrgPending
+  OrgState -->|"inactive"| OrgInactive["Member Organization: inactive"]
+  OrgState -->|"suspended"| OrgSuspended["Member Organization: suspended"]
+  OrgState -->|"deleted"| OrgDeleted["Member Organization: deleted"]
+  OrgState -->|"active"| DashboardReady["Dashboard: ready"]
+
+  DashboardReady --> Membership["Membership / RBAC Component"]
+  DashboardReady --> Supplier["Supplier Component"]
+  DashboardReady --> Buyer["Buyer Component"]
+  DashboardReady --> Financing["Financing Component"]
+  DashboardReady --> Compliance["Compliance Component"]
+  DashboardReady --> Shariah["Shariah Review Component"]
+  DashboardReady --> Audit["Audit / Access History Component"]
+
+  Membership -->|"Create organization"| OrgPending
+  Membership -->|"Activate organization"| OrgActive["Member Organization: active"]
+  Membership -->|"Assign role"| AssignmentActive["Role Assignment: active"]
+  Membership -->|"Revoke role"| AssignmentRevoked["Role Assignment: revoked"]
+
+  Compliance -->|"Approve case"| OrgActive
+  Compliance -->|"Flag / suspend case"| OrgSuspended
+
+  Shariah -->|"Submit review"| ReviewSubmitted["Review: submitted"]
+  ReviewSubmitted -->|"Save checklist"| ReviewProgress["Review: checklistInProgress"]
+  ReviewProgress -->|"Save partial checklist"| ReviewProgress
+  ReviewProgress -->|"Completion rules pass"| ReviewComplete["Review: checklistComplete"]
+  ReviewProgress -->|"Completion rules fail"| ValidationError["VALIDATION_ERROR"]
+  ReviewSubmitted -->|"Decision attempted"| ValidationError
+  ReviewComplete -->|"Approve"| ReviewApproved["Review: approved"]
+  ReviewComplete -->|"Reject"| ReviewRejected["Review: rejected"]
+  ReviewComplete -->|"Conditional approve"| ReviewConditional["Review: conditionalApproved"]
+
+  Audit -->|"Query history"| AccessHistory["Access History Results"]
+  Audit -->|"Query sequence"| AccessSequence["Access Event Sequence"]
+  Audit -->|"No records"| EmptyResult["Empty Result"]
+
+  DashboardReady -->|"Known route outside role"| DashboardForbidden["Dashboard: forbidden"]
+  DashboardReady -->|"Unknown / unavailable target"| DashboardError["Dashboard: error"]
+  DashboardReady -->|"Protected action denied by backend"| BackendForbidden["Backend: FORBIDDEN"]
+
+  AccessBlocked --> BackendForbidden
+  OrgPending -->|"Protected write attempted"| BackendForbidden
+  OrgInactive -->|"Protected write attempted"| BackendForbidden
+  OrgSuspended -->|"Protected write attempted"| BackendForbidden
+  OrgDeleted -->|"Operational action attempted"| BackendForbidden
