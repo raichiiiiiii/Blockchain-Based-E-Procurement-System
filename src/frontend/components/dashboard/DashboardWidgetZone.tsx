@@ -224,20 +224,6 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                         </button>
                       </div>
                     )}
-                    {widget.id === 'security-investigation-placeholder' && (
-                      <div className="widget-content">
-                        <p>Security investigation functionality is contract-pending.</p>
-                        <p>Current access-history APIs require auditor backend authorization.</p>
-                        <p>Security dashboard visibility does not grant access-history API permission.</p>
-                        <p>No fake results or metrics are shown.</p>
-                        <button 
-                          className="action-button"
-                          onClick={() => onPageChange('security-investigation')}
-                        >
-                          View Security Investigation (Unavailable)
-                        </button>
-                      </div>
-                    )}
                     {(widget.id === 'admin-membership-overview' ||
                       widget.id === 'admin-role-catalog-overview' ||
                       widget.id === 'admin-role-assignment-overview' ||
@@ -295,6 +281,20 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                           onClick={() => onPageChange('aml-reviews')}
                         >
                           View AML Reviews (Unavailable)
+                        </button>
+                      </>
+                    )}
+                    {widget.id === 'security-investigation-placeholder' && (
+                      <>
+                        <p>Security investigation functionality is contract-pending.</p>
+                        <p>Current access-history APIs require auditor backend authorization.</p>
+                        <p>Security dashboard visibility does not grant access-history API permission.</p>
+                        <p>No fake results or metrics are shown.</p>
+                        <button 
+                          className="action-button"
+                          onClick={() => onPageChange('security-investigation')}
+                        >
+                          View Security Investigation (Unavailable)
                         </button>
                       </>
                     )}
