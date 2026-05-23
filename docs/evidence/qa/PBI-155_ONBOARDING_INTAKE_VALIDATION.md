@@ -1,17 +1,17 @@
-# PBI-155 — Onboarding Intake Validation and Evidence Closure
+# PBI-155 - Onboarding Intake Validation and Evidence Closure
 
 Status: Completed validation evidence  
-Parent Story: PBI-140 — Compliance officer onboarding case submission  
-Parent Feature: PBI-002 — KYC and AML onboarding workflow  
+Parent Story: PBI-140 - Compliance officer onboarding case submission  
+Parent Feature: PBI-002 - KYC and AML onboarding workflow  
 Branch: feature/PBI-002-kyc-aml-onboarding  
 
 ## 1. Purpose
 
 This evidence note closes the onboarding intake story validation for PBI-140 after completion of:
 
-- PBI-152 — onboarding intake contract definition
-- PBI-153 — onboarding intake API and service validation
-- PBI-154 — audit capture, authorization seam, and duplicate/open-case hardening
+- PBI-152 - onboarding intake contract definition
+- PBI-153 - onboarding intake API and service validation
+- PBI-154 - audit capture, authorization seam, and duplicate/open-case hardening
 
 The purpose is to show that the onboarding intake flow accepts valid KYC/AML submissions, rejects invalid submissions with the canonical validation envelope, records audit evidence, blocks unauthorized submissions, and prevents duplicate open cases.
 
@@ -183,6 +183,6 @@ PBI-140 is ready for story-level review after completion of PBI-152, PBI-153, PB
 
 PBI-002 remains in progress because later story slices are still pending:
 
-- PBI-141 — review decision
-- PBI-142 — onboarding status/history
-- PBI-150 — downstream onboarding eligibility
+- PBI-141 - review decision
+- PBI-142 - onboarding status/history
+- PBI-150 - downstream onboarding eligibility
