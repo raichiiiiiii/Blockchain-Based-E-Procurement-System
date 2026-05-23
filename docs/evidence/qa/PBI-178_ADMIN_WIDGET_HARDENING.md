@@ -2,34 +2,35 @@
 
 ## PBI Summary and Scope
 
-This evidence file validates the hardening of administrator-facing dashboard widgets as defined in PBI-178. The implementation strengthens security and data integrity by ensuring administrator-only widgets are never exposed to non-administrator roles, unavailable summary states are handled properly, and access control is maintained.
+This evidence file validates the hardening of administrator-facing dashboard widgets as defined in PBI-178. The implementation strengthens dashboard safety by adding a defensive widget-filtering layer, preserving administrator-only widget visibility, maintaining placeholder/unavailable behavior for incomplete targets, and avoiding misleading summary data.
 
 ### In Scope
-- Added defensive widget filtering to ensure administrator widgets are visible only when activeRoleCode is `administrator`
-- Ensured administrator action shortcuts cannot render for non-administrator roles
-- Preserved routing through existing dashboard target access resolver for all actions
-- Maintained `member-management` as placeholder/unavailable
-- Added summary-state hardening to prevent fabrication of member/role/assignment counts
-- Ensured unavailable summary data is not displayed as real metrics
-- Preserved backend `FORBIDDEN` as authoritative and prevented reinterpretation as frontend success
-- Updated PBI-178 evidence documentation
+
+- Added defensive widget filtering so administrator widgets render only when `activeRoleCode` is `administrator`.
+- Ensured administrator action shortcuts cannot render for non-administrator dashboard roles.
+- Preserved routing through the existing dashboard page-change handler and target access resolver path.
+- Maintained `member-management` as placeholder/unavailable.
+- Preserved summary-state honesty by avoiding fabricated member, role, or assignment counts.
+- Preserved backend `FORBIDDEN` as authoritative and prevented frontend dashboard visibility from being treated as backend authorization.
+- Updated PBI-178 evidence documentation.
 
 ### Out of Scope
-- Real authentication, login, logout, session issuance, token issuance, public account creation, or public self-registration
-- Backend API changes
-- Backend authorization changes
-- Actor-context implementation
-- Organization-state gate implementation
-- KYC/AML widgets
-- Shariah reviewer widgets
-- Auditor/security widgets
-- Buyer widgets
-- Supplier widgets
-- Financing/PLS widgets
-- High-fidelity UI redesign
-- Adding frontend test frameworks or new dependencies
-- Changing API error-envelope semantics
-- Changing ADR-001
+
+- Real authentication, login, logout, session issuance, token issuance, public account creation, or public self-registration.
+- Backend API changes.
+- Backend authorization changes.
+- Actor-context implementation.
+- Organization-state gate implementation.
+- KYC/AML widgets.
+- Shariah reviewer widgets.
+- Auditor/security widgets.
+- Buyer widgets.
+- Supplier widgets.
+- Financing/PLS widgets.
+- High-fidelity UI redesign.
+- Adding frontend test frameworks or new dependencies.
+- Changing API error-envelope semantics.
+- Changing ADR-001.
 
 ## Files Changed
 
@@ -40,87 +41,121 @@ This evidence file validates the hardening of administrator-facing dashboard wid
 
 ## Contract Consumed
 
-This implementation consumes the administrator widget contract defined in:
+This implementation consumes:
+
 - `docs/architecture/ADMIN_DASHBOARD_WIDGET_CONTRACT.md`
 - `docs/contracts/API_CONTRACTS.md` section 15
+- `docs/architecture/adr/ADR-001-dashboard-auth-boundary-and-state-flow.md`
 
 ## Permission Filtering Behavior
 
-Added a new helper function `filterWidgetsByRole` in `src/frontend/lib/dashboard-contract.ts` that:
-- Takes an array of widgets and the active role code
-- Filters widgets to only include those allowed for the active role
-- Handles cases where no active role exists (returns widgets with empty allowedRoles)
-- Is applied in `DashboardShell.tsx` before rendering widgets
+A new helper function was added in `src/frontend/lib/dashboard-contract.ts`:
+
+```typescript
+filterWidgetsByRole(widgets, activeRoleCode)
+```
+
+Behavior:
+
+- If `activeRoleCode` is present, widgets are rendered only when `widget.allowedRoles.includes(activeRoleCode)`.
+- If `activeRoleCode` is missing, role-specific widgets are not rendered.
+- `DashboardShell.tsx` applies this helper before widgets are passed into each `DashboardWidgetZone`.
+
+This adds a defensive render-time filter in addition to the existing role-specific widget creation path.
 
 ## Administrator-Only Widget List
 
-The following administrator-specific widgets are now strictly filtered to only show for administrators:
+The following administrator-specific widgets are filtered so they render only when the active dashboard role is `administrator`:
 
 | Widget ID | Title | Zone |
-|-----------|-------|------|
-| admin-membership-overview | Member Onboarding | primary |
-| admin-role-catalog-overview | Role Management | primary |
-| admin-role-assignment-overview | Role Assignment | primary |
-| admin-member-onboarding-action | Create New Organization | actions |
-| admin-role-management-action | Manage Roles | actions |
-| admin-role-assignment-action | Assign Roles | actions |
-| admin-access-boundary-alert | Authorization Boundary | alerts |
-| admin-member-management-placeholder | Member Management | secondary |
+|---|---|---|
+| `admin-membership-overview` | Member Onboarding | `primary` |
+| `admin-role-catalog-overview` | Role Management | `primary` |
+| `admin-role-assignment-overview` | Role Assignment | `primary` |
+| `admin-member-onboarding-action` | Create New Organization | `actions` |
+| `admin-role-management-action` | Manage Roles | `actions` |
+| `admin-role-assignment-action` | Assign Roles | `actions` |
+| `admin-access-boundary-alert` | Authorization Boundary | `alerts` |
+| `admin-member-management-placeholder` | Member Management | `secondary` |
 
 ## Non-Administrator Visibility Result
 
-When a user with a non-administrator role accesses the dashboard:
-- All administrator-specific widgets are completely filtered out
-- Only widgets explicitly allowed for that role are displayed
-- No administrator navigation items appear in the menu
-- No administrator action buttons are rendered
+When a non-administrator dashboard role is active:
+
+- administrator-specific widgets are filtered out;
+- administrator action buttons are not rendered;
+- administrator navigation items remain governed by the existing navigation role filtering;
+- only widgets whose `allowedRoles` include the active role are eligible to render.
 
 ## Action-Entry Hardening Summary
 
-Administrator widget buttons:
-- Continue to call `onPageChange(...)` as before
-- Do not bypass `App.tsx` / central dashboard target access resolver
-- Still flow through the existing dashboard target access resolver
-- Maintain proper access control checks
+Administrator widget buttons continue to call `onPageChange(...)` rather than navigating directly.
+
+Approved targets remain:
+
+| Action source | Target |
+|---|---|
+| `admin-membership-overview` | `member-onboarding` |
+| `admin-role-catalog-overview` | `role-management` |
+| `admin-role-assignment-overview` | `role-assignment` |
+| `admin-member-onboarding-action` | `member-onboarding` |
+| `admin-role-management-action` | `role-management` |
+| `admin-role-assignment-action` | `role-assignment` |
+| `admin-member-management-placeholder` | `member-management` |
+
+Because these calls flow through the dashboard page-change handler, `member-management` continues to resolve through the existing target registry as `unavailable` rather than routing to a fake page.
 
 ## Member-Management Placeholder/Unavailable Behavior
 
 The member-management functionality continues as a placeholder widget:
+
 - Widget ID: `admin-member-management-placeholder`
-- Title: "Member Management"
+- Title: `Member Management`
 - Status: `placeholder`
-- Message: "Member management functionality is not yet implemented. This area will provide tools for managing existing member organizations."
-- When accessed through navigation, it correctly resolves to `unavailable` state as defined in the dashboard contract
+- Message: `Member management functionality is not yet implemented. This area will provide tools for managing existing member organizations.`
+
+When accessed through dashboard navigation or widget action, `member-management` resolves to the dashboard unavailable/error path according to the target registry.
 
 ## Summary-State Honesty Note
 
 No fabricated counts were implemented. The current implementation:
-- Does not show any summary data in the summary zone
-- Uses placeholder messaging for all widgets that would normally show data
-- Maintains honest representation of what functionality is actually available
-- Explicitly shows "No summary data available" when no widgets are present in the summary zone
+
+- does not show member, role, or assignment summary counts;
+- keeps the summary zone empty when no stable summary data source exists;
+- uses placeholder/unavailable copy for incomplete functionality;
+- does not present absent data as zero or as a real metric.
 
 ## Backend Authorization Boundary Note
 
-The explicit "Authorization Boundary" widget in the alerts zone maintains the message:
-"Backend authorization remains authoritative. Frontend role visibility does not grant backend admin privileges."
+The `admin-access-boundary-alert` widget retains this message:
 
-This ensures administrators are constantly reminded that dashboard access does not automatically confer backend privileges.
+```text
+Backend authorization remains authoritative. Frontend role visibility does not grant backend admin privileges.
+```
+
+This preserves the ADR-001 boundary that dashboard visibility is not backend authorization.
 
 ## ADR-001 Compliance Note
 
-The implementation complies with ADR-001 by:
-- Not implementing authentication, login, or session management
-- Using server-derived actor context (simulated in current scaffold)
-- Keeping frontend role labels separate from backend privileges
-- Maintaining backend authorization as authoritative
-- Properly handling placeholder/unavailable states for incomplete functionality
-- Preserving existing dashboard shell, navigation, and widget-zone contracts
-- Adding defensive filtering to prevent accidental exposure of admin widgets
+The implementation aligns with ADR-001 by:
+
+- not implementing authentication, login, or session management;
+- keeping frontend role labels separate from backend privileges;
+- preserving backend authorization as authoritative;
+- preserving placeholder/unavailable states for incomplete functionality;
+- preserving existing dashboard shell, navigation, and widget-zone contracts;
+- adding defensive filtering to prevent accidental exposure of administrator widgets.
+
+Known ADR-001 gaps from PBI-175 remain follow-up scope:
+
+- real server-derived actor context integration;
+- inactive user gate;
+- organization-state gate for `pendingReview`, `inactive`, `suspended`, and `deleted`;
+- active/revoked role-assignment status gate.
 
 ## Validation Commands and Results
 
-The following validation commands were executed successfully:
+The following validation commands were executed locally by the developer and reported as passing:
 
 ```bash
 npm run frontend:build
@@ -129,101 +164,33 @@ npm test
 git diff --check
 ```
 
-All commands passed without errors, confirming:
-- TypeScript compilation succeeds
-- Build process completes
-- Existing tests continue to pass
-- No whitespace issues in diffs
+Result: PASS.
 
 ## Tests Added
 
-Added a focused Node test for the new widget filtering helper function in `src/frontend/lib/dashboard-contract.test.ts`:
+No new test framework or dependency was added.
 
-```typescript
-import { filterWidgetsByRole } from './dashboard-contract';
-import { DashboardWidget } from '../types/dashboard';
-
-describe('filterWidgetsByRole', () => {
-  const testWidgets: DashboardWidget[] = [
-    {
-      id: 'admin-widget',
-      title: 'Admin Widget',
-      zoneId: 'primary',
-      allowedRoles: ['administrator'],
-      status: 'active',
-      downstreamPbi: 'PBI-178',
-      placeholder: false
-    },
-    {
-      id: 'buyer-widget',
-      title: 'Buyer Widget',
-      zoneId: 'primary',
-      allowedRoles: ['buyer'],
-      status: 'active',
-      downstreamPbi: 'PBI-178',
-      placeholder: false
-    },
-    {
-      id: 'universal-widget',
-      title: 'Universal Widget',
-      zoneId: 'secondary',
-      allowedRoles: [], // No specific role restrictions
-      status: 'active',
-      downstreamPbi: 'PBI-178',
-      placeholder: false
-    }
-  ];
-
-  it('should filter widgets for administrator role', () => {
-    const filtered = filterWidgetsByRole(testWidgets, 'administrator');
-    expect(filtered).toHaveLength(2);
-    expect(filtered.map(w => w.id)).toContain('admin-widget');
-    expect(filtered.map(w => w.id)).toContain('universal-widget');
-  });
-
-  it('should filter widgets for buyer role', () => {
-    const filtered = filterWidgetsByRole(testWidgets, 'buyer');
-    expect(filtered).toHaveLength(2);
-    expect(filtered.map(w => w.id)).toContain('buyer-widget');
-    expect(filtered.map(w => w.id)).toContain('universal-widget');
-  });
-
-  it('should return only universal widgets when no active role', () => {
-    const filtered = filterWidgetsByRole(testWidgets, undefined);
-    expect(filtered).toHaveLength(1);
-    expect(filtered[0].id).toBe('universal-widget');
-  });
-});
-```
+No committed frontend unit test file was added for PBI-178 because the repository still does not have a dedicated frontend component/unit test runner. Validation relies on TypeScript build, frontend build, existing backend/module tests, and repository inspection for this slice.
 
 ## Known Limitations
 
-1. **Demo Actor Context**: The dashboard still uses a hardcoded demo user context rather than real authentication. In a production environment, this would be replaced with actual authenticated user data.
+1. **Demo actor context**
+   - The dashboard still uses a hardcoded demo user context rather than real authentication/session data.
 
-2. **Organization State Gating**: Per ADR-001, organization state gating (pendingReview, inactive, etc.) is not yet implemented. This remains a gap identified in PBI-175.
+2. **Organization-state gate not implemented**
+   - `pendingReview`, `inactive`, `suspended`, and `deleted` organization states are still follow-up scope under ADR-001.
 
-3. **Summary Data**: No summary data widgets were implemented as no stable list/summary APIs exist yet.
+3. **No real summary data**
+   - No member/role/assignment counts are rendered because no stable summary/list source is consumed by this dashboard widget slice.
 
-4. **Visual Design**: The implementation focuses on functional hardening rather than visual improvements.
+4. **Visual design remains scaffolded**
+   - The implementation focuses on functional hardening rather than visual refinement.
 
 ## Follow-up Recommendations for PBI-179
 
-1. **Replace Demo Context**: Integrate with real authentication and actor context when available.
-
-2. **Add Organization State Gating**: Implement the organization state gates required by ADR-001.
-
-3. **Add Summary Widgets**: Once backend summary/list APIs are available, implement summary data widgets with proper data fetching.
-
-4. **Expand Test Coverage**: Add more comprehensive tests for the dashboard components when frontend testing infrastructure is established.
-
-5. **Implement Member Management**: Complete the member management functionality that currently exists as a placeholder.
-
-6. **Add Real Data Integration**: Connect widgets to actual backend APIs for real-time data display.
-
-7. **Implement Role Switching**: Add UI for switching between multiple assigned roles.
-
-8. **Add Audit Trail Widgets**: Implement widgets for access history and audit trail viewing.
-
-9. **Enhance Accessibility**: Improve accessibility features for all dashboard components.
-
-10. **Performance Optimization**: Add lazy loading for widgets and optimize rendering performance.
+1. Validate administrator widget visibility for administrator and non-administrator roles.
+2. Validate action-entry behavior for `member-onboarding`, `role-management`, `role-assignment`, and placeholder `member-management`.
+3. Validate that summary data is not fabricated.
+4. Validate that backend authorization boundary copy remains visible.
+5. Record screenshots or equivalent UI evidence for administrator widgets and a non-administrator dashboard state.
+6. Keep ADR-001 actor-context and organization-state gaps documented as follow-up scope unless Scrum Master / PO reprioritizes them.
