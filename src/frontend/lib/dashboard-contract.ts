@@ -510,8 +510,96 @@ export function filterNavigationGroupsByRole(
     .filter(group => group.items.length > 0);
 }
 
+// Create administrator-specific widgets according to PBI-176 contract
+function createAdministratorWidgets(): DashboardWidget[] {
+  return [
+    // Primary zone widgets
+    {
+      id: 'admin-member-onboarding-widget',
+      title: 'Member Onboarding',
+      zoneId: 'primary',
+      allowedRoles: ['administrator'],
+      status: 'active',
+      downstreamPbi: 'PBI-177',
+      placeholder: false
+    },
+    {
+      id: 'admin-role-management-widget',
+      title: 'Role Management',
+      zoneId: 'primary',
+      allowedRoles: ['administrator'],
+      status: 'active',
+      downstreamPbi: 'PBI-177',
+      placeholder: false
+    },
+    {
+      id: 'admin-role-assignment-widget',
+      title: 'Role Assignment',
+      zoneId: 'primary',
+      allowedRoles: ['administrator'],
+      status: 'active',
+      downstreamPbi: 'PBI-177',
+      placeholder: false
+    },
+    // Actions zone widgets
+    {
+      id: 'admin-member-onboarding-action',
+      title: 'Create New Organization',
+      zoneId: 'actions',
+      allowedRoles: ['administrator'],
+      status: 'active',
+      downstreamPbi: 'PBI-177',
+      placeholder: false
+    },
+    {
+      id: 'admin-role-management-action',
+      title: 'Manage Roles',
+      zoneId: 'actions',
+      allowedRoles: ['administrator'],
+      status: 'active',
+      downstreamPbi: 'PBI-177',
+      placeholder: false
+    },
+    {
+      id: 'admin-role-assignment-action',
+      title: 'Assign Roles',
+      zoneId: 'actions',
+      allowedRoles: ['administrator'],
+      status: 'active',
+      downstreamPbi: 'PBI-177',
+      placeholder: false
+    },
+    // Alerts zone widget
+    {
+      id: 'admin-authorization-alert',
+      title: 'Authorization Boundary',
+      zoneId: 'alerts',
+      allowedRoles: ['administrator'],
+      status: 'active',
+      downstreamPbi: 'PBI-177',
+      placeholder: false
+    },
+    // Secondary zone placeholder widget
+    {
+      id: 'admin-member-management-placeholder',
+      title: 'Member Management',
+      zoneId: 'secondary',
+      allowedRoles: ['administrator'],
+      status: 'placeholder',
+      downstreamPbi: 'PBI-177',
+      placeholder: true
+    }
+  ];
+}
+
 // Create placeholder widgets for each role and zone
 export function createPlaceholderWidgets(role: DashboardRoleCode): DashboardWidget[] {
+  // For administrator role, return specific widgets as per PBI-176
+  if (role === 'administrator') {
+    return createAdministratorWidgets();
+  }
+
+  // For other roles, create generic placeholder widgets
   const zones = Object.keys(WIDGET_ZONES);
   return zones.flatMap(zoneId => {
     // Create 1-2 placeholder widgets per zone
