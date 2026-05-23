@@ -27,7 +27,6 @@ import { InMemoryPlatformUserCredentialRepository } from '../modules/auth/infras
 import { InMemoryAuthSessionRepository } from '../modules/auth/infrastructure/in-memory-auth-session-repository.js';
 import type { PlatformUserCredentialRepository } from '../modules/auth/application/platform-user-credential-repository.js';
 import type { AuthSessionRepository } from '../modules/auth/application/auth-session-repository.js';
-import { createAuthenticatedRequestPreHandler } from '../modules/auth/api/authenticated-request.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -89,9 +88,6 @@ export function createTestableServer(options?: {
   const accessAuditEventRepository = options?.accessAuditEventRepository;
   const credentialRepository = options?.credentialRepository ?? new InMemoryPlatformUserCredentialRepository();
   const sessionRepository = options?.sessionRepository ?? new InMemoryAuthSessionRepository();
-
-  // Create authenticated request pre-handler
-  const authenticatedRequestPreHandler = createAuthenticatedRequestPreHandler(sessionRepository);
 
   // Register auth routes
   server.register(authRoutes, {
