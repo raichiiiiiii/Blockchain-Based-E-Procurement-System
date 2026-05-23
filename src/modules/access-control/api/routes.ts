@@ -16,6 +16,7 @@ import type { UserStatusLookup } from '../../shared/application/user-status-look
 import type { MemberStatusLookup } from '../../shared/application/member-status-lookup.js';
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
 import { recordAccessAuditEvent } from '../../shared/application/record-access-audit-event.js';
+import { getRequestActorContext } from '../../auth/api/request-actor-context.js';
 
 // Define the audit event interface for role creation
 export interface RoleCreateAuditEvent {
@@ -120,7 +121,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!actorRoles || !actorRoles.includes('admin')) {
           // Emit audit event for forbidden access
-          const actorId = request.actorContext?.userId || 'unknown';
+          const actorContext = getRequestActorContext(request);
+          const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
+          
           const auditEvent: RoleCreateAuditEvent = {
             action: 'createRole',
             targetType: 'role',
@@ -136,7 +139,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           // Record shared access audit event
           await recordAccessAuditEvent(options.accessAuditEventRepository, {
             requestId: request.id,
-            actorUserId: request.actorContext?.userId ?? 'unknown',
+            actorUserId: actorId,
             action: 'createRole',
             targetType: 'role',
             targetId: 'unknown',
@@ -175,11 +178,12 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       }
     },
     async (request, reply) => {
+      // Get actorId from trusted actor context using helper
+      const actorContext = getRequestActorContext(request);
+      const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
+
       // Call the application service directly with the request body
       const result = await createRole(request.body, repository);
-
-      // Get actorId from trusted actor context
-      const actorId = request.actorContext?.userId || 'unknown';
 
       // Map result to HTTP responses
       if (result.status === 'created') {
@@ -199,7 +203,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'createRole',
           targetType: 'role',
           targetId: result.role.id,
@@ -229,7 +233,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'createRole',
           targetType: 'role',
           targetId: 'unknown',
@@ -259,7 +263,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!actorRoles || !actorRoles.includes('admin')) {
           // Emit audit event for forbidden access
-          const actorId = request.actorContext?.userId || 'unknown';
+          const actorContext = getRequestActorContext(request);
+          const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
+          
           const auditEvent: RoleUpdateAuditEvent = {
             action: 'updateRole',
             targetType: 'role',
@@ -275,7 +281,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           // Record shared access audit event
           await recordAccessAuditEvent(options.accessAuditEventRepository, {
             requestId: request.id,
-            actorUserId: request.actorContext?.userId ?? 'unknown',
+            actorUserId: actorId,
             action: 'updateRole',
             targetType: 'role',
             targetId: request.params.roleId,
@@ -332,11 +338,12 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       }
     },
     async (request, reply) => {
+      // Get actorId from trusted actor context using helper
+      const actorContext = getRequestActorContext(request);
+      const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
+
       // Call the application service directly with the request params and body
       const result = await updateRole(request.params.roleId, request.body, repository);
-
-      // Get actorId from trusted actor context
-      const actorId = request.actorContext?.userId || 'unknown';
 
       // Map result to HTTP responses
       if (result.status === 'updated') {
@@ -356,7 +363,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'updateRole',
           targetType: 'role',
           targetId: result.role.id,
@@ -386,7 +393,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'updateRole',
           targetType: 'role',
           targetId: request.params.roleId,
@@ -427,7 +434,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!actorRoles || !actorRoles.includes('admin')) {
           // Emit audit event for forbidden access
-          const actorId = request.actorContext?.userId || 'unknown';
+          const actorContext = getRequestActorContext(request);
+          const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
+          
           const auditEvent: RoleAssignmentCreateAuditEvent = {
             action: 'createRoleAssignment',
             targetType: 'roleAssignment',
@@ -443,7 +452,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           // Record shared access audit event
           await recordAccessAuditEvent(options.accessAuditEventRepository, {
             requestId: request.id,
-            actorUserId: request.actorContext?.userId ?? 'unknown',
+            actorUserId: actorId,
             action: 'createRoleAssignment',
             targetType: 'roleAssignment',
             targetId: 'unknown',
@@ -508,8 +517,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         protectedAccess
       );
 
-      // Get actorId from trusted actor context
-      const actorId = request.actorContext?.userId || 'unknown';
+      // Get actorId from trusted actor context using helper
+      const actorContext = getRequestActorContext(request);
+      const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
 
       // Map result to HTTP responses
       if (result.status === 'created') {
@@ -529,7 +539,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
           targetId,
@@ -559,7 +569,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
           targetId,
@@ -593,7 +603,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
           targetId,
@@ -624,7 +634,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
           targetId,
@@ -654,7 +664,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
           targetId,
@@ -684,7 +694,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
           targetId,
@@ -716,7 +726,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'createRoleAssignment',
           targetType: 'roleAssignment',
           targetId,
@@ -746,7 +756,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!actorRoles || !actorRoles.includes('admin')) {
           // Emit audit event for forbidden access
-          const actorId = request.actorContext?.userId || 'unknown';
+          const actorContext = getRequestActorContext(request);
+          const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
+          
           const auditEvent: RoleAssignmentRemoveAuditEvent = {
             action: 'removeRoleAssignment',
             targetType: 'roleAssignment',
@@ -769,7 +781,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           // Record shared access audit event for admin denial
           await recordAccessAuditEvent(options.accessAuditEventRepository, {
             requestId: request.id,
-            actorUserId: request.actorContext?.userId ?? 'unknown',
+            actorUserId: actorId,
             action: 'removeRoleAssignment',
             targetType: 'roleAssignment',
             targetId: `${query.userId}:${query.organizationId}:${query.roleId}`,
@@ -817,8 +829,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
       // Call the remove role assignment service
       const result = await removeRoleAssignment(userId, organizationId, roleId, assignmentRepository, protectedAccess);
 
-      // Get actorId from trusted actor context
-      const actorId = request.actorContext?.userId || 'unknown';
+      // Get actorId from trusted actor context using helper
+      const actorContext = getRequestActorContext(request);
+      const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
 
       // Map result to HTTP responses
       if (result.status === 'removed' || result.status === 'alreadyRevoked') {
@@ -838,7 +851,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event for success
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'removeRoleAssignment',
           targetType: 'roleAssignment',
           targetId: `${userId}:${organizationId}:${roleId}`,
@@ -855,7 +868,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event for not found
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'removeRoleAssignment',
           targetType: 'roleAssignment',
           targetId: `${userId}:${organizationId}:${roleId}`,
@@ -890,7 +903,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event for access denied
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'removeRoleAssignment',
           targetType: 'roleAssignment',
           targetId: `${userId}:${organizationId}:${roleId}`,
@@ -920,7 +933,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!actorRoles || !actorRoles.includes('admin')) {
           // Emit audit event for forbidden access
-          const actorId = request.actorContext?.userId || 'unknown';
+          const actorContext = getRequestActorContext(request);
+          const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
+          
           const auditEvent: RoleAssignmentChangeAuditEvent = {
             action: 'changeRoleAssignment',
             targetType: 'roleAssignment',
@@ -936,7 +951,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
           // Record shared access audit event for admin denial
           await recordAccessAuditEvent(options.accessAuditEventRepository, {
             requestId: request.id,
-            actorUserId: request.actorContext?.userId ?? 'unknown',
+            actorUserId: actorId,
             action: 'changeRoleAssignment',
             targetType: 'roleAssignment',
             targetId: 'unknown',
@@ -989,8 +1004,9 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         protectedAccess
       );
 
-      // Get actorId from trusted actor context
-      const actorId = request.actorContext?.userId || 'unknown';
+      // Get actorId from trusted actor context using helper
+      const actorContext = getRequestActorContext(request);
+      const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
 
       // Map result to HTTP responses
       if (result.status === 'changed') {
@@ -1010,7 +1026,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event for success
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'changeRoleAssignment',
           targetType: 'roleAssignment',
           targetId: `${userId}:${organizationId}:${newRoleId}`,
@@ -1044,7 +1060,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event for not found
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'changeRoleAssignment',
           targetType: 'roleAssignment',
           targetId: `${userId}:${organizationId}:${newRoleId}`,
@@ -1065,7 +1081,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event for role not found
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'changeRoleAssignment',
           targetType: 'roleAssignment',
           targetId: `${request.body.userId}:${request.body.organizationId}:${request.body.newRoleId}`,
@@ -1097,7 +1113,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event for conflict
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'changeRoleAssignment',
           targetType: 'roleAssignment',
           targetId: `${userId}:${organizationId}:${newRoleId}`,
@@ -1118,7 +1134,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event for same role IDs
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'changeRoleAssignment',
           targetType: 'roleAssignment',
           targetId: `${request.body.userId}:${request.body.organizationId}:${request.body.newRoleId}`,
@@ -1150,7 +1166,7 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
         // Record shared access audit event for access denied
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'changeRoleAssignment',
           targetType: 'roleAssignment',
           targetId: `${request.body.userId}:${request.body.organizationId}:${request.body.newRoleId}`,

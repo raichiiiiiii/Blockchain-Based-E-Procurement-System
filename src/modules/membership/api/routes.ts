@@ -5,6 +5,7 @@ import type { MemberOrganizationRepository } from '../application/member-organiz
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
 import { recordAccessAuditEvent } from '../../shared/application/record-access-audit-event.js';
+import { getRequestActorContext } from '../../auth/api/request-actor-context.js';
 
 // Define the audit event interface for member organization creation
 export interface MemberOrgCreateAuditEvent {
@@ -51,6 +52,10 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
       }
     },
     async (request, reply) => {
+      // Extract actor context using the new helper
+      const actorContext = getRequestActorContext(request);
+      const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
+
       const result = await createMemberOrganization(request.body, options.repository);
 
       // Handle invalid input
@@ -60,7 +65,7 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
         // Record validation error audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'createMemberOrganization',
           targetType: 'memberOrganization',
           targetId: 'unknown',
@@ -79,7 +84,7 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
         // Record conflict audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'createMemberOrganization',
           targetType: 'memberOrganization',
           targetId: 'unknown',
@@ -100,9 +105,6 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
 
       // Handle draft prepared
       if (result.status === 'draftPrepared') {
-        // Get actorId from trusted actor context
-        const actorId = request.actorContext?.userId || 'unknown';
-
         // Emit provisional audit event with typed interface
         const auditEvent: MemberOrgCreateAuditEvent = {
           action: 'createMemberOrganization',
@@ -120,7 +122,7 @@ const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = as
         // Record success audit event
         await recordAccessAuditEvent(options.accessAuditEventRepository, {
           requestId: request.id,
-          actorUserId: request.actorContext?.userId ?? 'unknown',
+          actorUserId: actorId,
           action: 'createMemberOrganization',
           targetType: 'memberOrganization',
           targetId: result.organization.id,

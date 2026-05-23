@@ -27,6 +27,7 @@ import { InMemoryPlatformUserCredentialRepository } from '../modules/auth/infras
 import { InMemoryAuthSessionRepository } from '../modules/auth/infrastructure/in-memory-auth-session-repository.js';
 import type { PlatformUserCredentialRepository } from '../modules/auth/application/platform-user-credential-repository.js';
 import type { AuthSessionRepository } from '../modules/auth/application/auth-session-repository.js';
+import { createAuthenticatedRequestPreHandler } from '../modules/auth/api/authenticated-request.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -89,6 +90,9 @@ export function createTestableServer(options?: {
   const credentialRepository = options?.credentialRepository ?? new InMemoryPlatformUserCredentialRepository();
   const sessionRepository = options?.sessionRepository ?? new InMemoryAuthSessionRepository();
 
+  // Create authenticated request pre-handler
+  const authenticatedRequestPreHandler = createAuthenticatedRequestPreHandler(sessionRepository);
+
   // Register auth routes
   server.register(authRoutes, {
     prefix: '/api/v1',
@@ -96,7 +100,7 @@ export function createTestableServer(options?: {
     sessionRepository
   });
 
-  // Register membership routes
+  // Register membership routes with authentication for protected endpoints
   server.register(registerMembershipRoutes, {
     prefix: '/api/v1',
     repository: memberOrganizationRepository,
@@ -104,7 +108,7 @@ export function createTestableServer(options?: {
     accessAuditEventRepository
   });
 
-  // Register access-control routes
+  // Register access-control routes with authentication for protected endpoints
   server.register(registerAccessControlRoutes, {
     prefix: '/api/v1',
     repository: roleRepository,
@@ -118,7 +122,7 @@ export function createTestableServer(options?: {
     accessAuditEventRepository
   });
 
-  // Register shariah-review routes
+  // Register shariah-review routes with authentication for protected endpoints
   server.register(registerShariahReviewRoutes, {
     prefix: '/api/v1',
     repository: shariahReviewRepository,
@@ -128,7 +132,7 @@ export function createTestableServer(options?: {
     accessAuditEventRepository
   });
 
-  // Register access-history routes
+  // Register access-history routes with authentication for protected endpoints
   server.register(registerAccessHistoryRoutes, {
     prefix: '/api/v1',
     accessAuditEventRepository
