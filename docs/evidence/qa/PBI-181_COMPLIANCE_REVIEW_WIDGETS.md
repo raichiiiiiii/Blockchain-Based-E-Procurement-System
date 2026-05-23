@@ -46,9 +46,9 @@ PBI-181 implements compliance/review dashboard widgets and governed workflow ent
 
 ## Files Changed
 
-- `src/frontend/lib/dashboard-contract.ts` - Added widget factory functions for compliance/review roles
-- `src/frontend/components/dashboard/DashboardWidgetZone.tsx` - Updated to render compliance/review widgets
-- `docs/evidence/qa/PBI-181_COMPLIANCE_REVIEW_WIDGETS.md` - Created this evidence file
+- `src/frontend/lib/dashboard-contract.ts` - Added widget factory functions for compliance/review roles and registered placeholder/available review targets.
+- `src/frontend/components/dashboard/DashboardWidgetZone.tsx` - Updated to render compliance/review widgets and route governed action buttons through `onPageChange(...)`.
+- `docs/evidence/qa/PBI-181_COMPLIANCE_REVIEW_WIDGETS.md` - Created this evidence file.
 
 ## Contract Consumed
 
@@ -86,13 +86,36 @@ The implementation consumes the accepted compliance/review widget contract:
 | `shariah-decision-overview` | `shariah-decisions` | `navigate` | Routes to existing decision page |
 | `shariah-history-overview` | `shariah-history` | `navigate` | Routes to existing history page |
 
+## Role Visibility and Direct-Access Behavior
+
+The dashboard target registry keeps Shariah workflow targets restricted to `shariahReviewer`:
+
+| Target | Allowed role |
+|---|---|
+| `shariah-reviews` | `shariahReviewer` |
+| `shariah-checklists` | `shariahReviewer` |
+| `shariah-decisions` | `shariahReviewer` |
+| `shariah-history` | `shariahReviewer` |
+
+Expected direct-access behavior:
+
+```text
+activeRoleCode = complianceReviewer + target = shariah-reviews
+-> resolveDashboardTargetAccess(...) returns forbidden
+
+activeRoleCode = complianceReviewer + target = shariah-history
+-> resolveDashboardTargetAccess(...) returns forbidden
+```
+
+This preserves the PBI-180 rule that direct access to a known review target outside the active role renders the dashboard forbidden state instead of exposing the governed Shariah workflow.
+
 ## KYC/AML Placeholder/Contract-Pending Behavior
 
 All compliance reviewer widgets related to KYC/AML are implemented as placeholders:
 - No fake queue counts are displayed
 - No fake blocked/flagged counts are displayed
 - No claims about KYC/AML backend workflow implementation
-- All action buttons lead to unavailable/error states
+- Compliance action buttons route through `onPageChange(...)` to placeholder/unavailable targets
 - Clear messaging indicates functionality is pending
 
 ## Shariah Workflow-State Note
@@ -102,6 +125,7 @@ Shariah reviewer widgets correctly reflect workflow semantics:
 - Decision recording widget includes appropriate copy about workflow prerequisites
 - Final decision states (approved, rejected, conditionalApproved) are treated as terminal
 - No implication that decisions can be made from submitted or checklistInProgress states
+- Detailed workflow-state hardening remains PBI-182 scope unless reliable review-state data is available in the current frontend path
 
 ## Backend Authorization Boundary Note
 
@@ -128,16 +152,6 @@ Implementation maintains ADR-001 boundaries:
 - Dashboard widgets remain frontend shell affordances only
 - Actor-context and organization-state gates remain as documented follow-up scope
 
-## Role-Based Access Control Alignment
-
-Shariah review targets are restricted to `shariahReviewer` role only:
-- `shariah-reviews` - Only accessible by `shariahReviewer`
-- `shariah-checklists` - Only accessible by `shariahReviewer`
-- `shariah-decisions` - Only accessible by `shariahReviewer`
-- `shariah-history` - Only accessible by `shariahReviewer`
-
-Direct access by `complianceReviewer` to Shariah targets will resolve as `forbidden` through `resolveDashboardTargetAccess`.
-
 ## Validation Commands and Results
 
 Manual validation was executed locally by the developer and reported as passing on 2026-05-23.
@@ -155,8 +169,6 @@ npm test
 git diff --check
 # PASS
 ```
-
-Note: These validation commands need to be rerun after implementing the fixes for full verification.
 
 ## Known Limitations
 
