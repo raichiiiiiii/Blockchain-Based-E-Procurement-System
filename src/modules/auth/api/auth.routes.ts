@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { PlatformUserCredentialRepository } from '../application/platform-user-credential-repository.js';
 import type { AuthSessionRepository } from '../application/auth-session-repository.js';
 import { LoginUserError, LoginUserService } from '../application/login-user.js';
+import { LogoutUserService } from '../application/logout-user.js';
 import type { ValidationErrorEnvelope } from '../../shared/api/validation-error-helper.js';
 
 interface AuthRoutesOptions {
@@ -21,6 +22,10 @@ function isValidationErrorEnvelope(error: unknown): error is ValidationErrorEnve
 const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, opts) => {
   const loginService = new LoginUserService(
     opts.credentialRepository,
+    opts.sessionRepository
+  );
+
+  const logoutService = new LogoutUserService(
     opts.sessionRepository
   );
 
@@ -49,6 +54,35 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, opts) 
       }
 
       if (error instanceof LoginUserError) {
+        return reply.status(401).send({
+          error: {
+            code: error.code,
+            message: error.message
+          }
+        });
+      }
+
+      request.log.error(error);
+      return reply.status(500).send({
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'An internal server error occurred'
+        }
+      });
+    }
+  });
+
+  fastify.post('/auth/logout', async (request, reply) => {
+    try {
+      await logoutService.logout(request.headers.authorization);
+      
+      return reply.status(200).send({
+        data: {
+          loggedOut: true
+        }
+      });
+    } catch (error) {
+      if (error instanceof LogoutUserService.LogoutUserError) {
         return reply.status(401).send({
           error: {
             code: error.code,
