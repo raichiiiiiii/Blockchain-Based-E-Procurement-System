@@ -6,13 +6,12 @@ import actorContextPlugin from '../../../app/plugins/actor-context-plugin.js';
 import { InMemoryAuthSessionRepository } from '../infrastructure/in-memory-auth-session-repository.js';
 import { InMemoryPlatformUserCredentialRepository } from '../infrastructure/in-memory-platform-user-credential-repository.js';
 import { createAuthenticatedRequestPreHandler } from './authenticated-request.js';
-import { LoginUserService } from '../application/login-user.js';
+import { LoginUserError, LoginUserService } from '../application/login-user.js';
 import { LogoutUserService } from '../application/logout-user.js';
 import type { AuthSession } from '../domain/auth-session.js';
 import type { PlatformUserCredential } from '../domain/platform-user-credential.js';
 import { getRequestActorContext } from './request-actor-context.js';
 
-// Helper functions
 function hashTestToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
@@ -40,7 +39,7 @@ async function createTestCredential(credentialRepository: InMemoryPlatformUserCr
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
-  
+
   await credentialRepository.save(credential);
   return credential;
 }
@@ -94,10 +93,9 @@ describe('Auth Regression Tests', () => {
         username: 'testuser',
         password: 'wrongpassword'
       }),
-      (err: any) => {
-        return err instanceof Error && 
-               err.message === 'Invalid username or password';
-      }
+      (error: unknown) => error instanceof LoginUserError
+        && error.code === 'UNAUTHORIZED'
+        && error.message === 'Invalid username or password'
     );
   });
 
@@ -117,7 +115,7 @@ describe('Auth Regression Tests', () => {
 
     assert.strictEqual(response.statusCode, 401);
     assert.strictEqual(handlerExecuted, false);
-    
+
     const payload = JSON.parse(response.payload);
     assert.strictEqual(payload.error.code, 'UNAUTHORIZED');
     assert.strictEqual(payload.error.message, 'Authentication required');
@@ -142,7 +140,7 @@ describe('Auth Regression Tests', () => {
 
     assert.strictEqual(response.statusCode, 401);
     assert.strictEqual(handlerExecuted, false);
-    
+
     const payload = JSON.parse(response.payload);
     assert.strictEqual(payload.error.code, 'UNAUTHORIZED');
     assert.strictEqual(payload.error.message, 'Invalid or expired session');
@@ -176,7 +174,7 @@ describe('Auth Regression Tests', () => {
 
     assert.strictEqual(response.statusCode, 401);
     assert.strictEqual(handlerExecuted, false);
-    
+
     const payload = JSON.parse(response.payload);
     assert.strictEqual(payload.error.code, 'UNAUTHORIZED');
     assert.strictEqual(payload.error.message, 'Invalid or expired session');
@@ -212,7 +210,7 @@ describe('Auth Regression Tests', () => {
 
     assert.strictEqual(response.statusCode, 401);
     assert.strictEqual(handlerExecuted, false);
-    
+
     const payload = JSON.parse(response.payload);
     assert.strictEqual(payload.error.code, 'UNAUTHORIZED');
     assert.strictEqual(payload.error.message, 'Invalid or expired session');
@@ -234,8 +232,7 @@ describe('Auth Regression Tests', () => {
   test('logged-out/revoked token cannot authenticate protected request middleware', async () => {
     await createTestCredential(credentialRepository);
     const token = await loginAndGetToken(loginService, 'testuser', 'testpassword');
-    
-    // Logout to revoke the session
+
     await logoutService.logout(`Bearer ${token}`);
 
     const app = await createProtectedTestApp(sessionRepository);
@@ -256,7 +253,7 @@ describe('Auth Regression Tests', () => {
 
     assert.strictEqual(response.statusCode, 401);
     assert.strictEqual(handlerExecuted, false);
-    
+
     const payload = JSON.parse(response.payload);
     assert.strictEqual(payload.error.code, 'UNAUTHORIZED');
     assert.strictEqual(payload.error.message, 'Invalid or expired session');
@@ -270,7 +267,7 @@ describe('Auth Regression Tests', () => {
     await sessionRepository.save(updatedSession);
 
     const app = await createProtectedTestApp(sessionRepository);
-    
+
     app.get('/protected', (request) => {
       return {
         success: true,
@@ -307,7 +304,7 @@ describe('Auth Regression Tests', () => {
     await sessionRepository.save(updatedSession);
 
     const app = await createProtectedTestApp(sessionRepository);
-    
+
     app.get('/protected', (request) => {
       const actorContext = getRequestActorContext(request);
       return {
@@ -327,8 +324,7 @@ describe('Auth Regression Tests', () => {
     assert.strictEqual(response.statusCode, 200);
     const payload = JSON.parse(response.payload);
     assert.strictEqual(payload.success, true);
-    
-    // Verify all required attributes are present
+
     assert.strictEqual(payload.actorContext.actorUserId, 'user-123');
     assert.strictEqual(payload.actorContext.actorOrganizationId, 'org-123');
     assert.deepStrictEqual(payload.actorContext.actorRoleCodes, ['auditor', 'viewer']);
@@ -341,8 +337,7 @@ describe('Auth Regression Tests', () => {
     const token = await loginAndGetToken(loginService, 'testuser', 'testpassword');
 
     const app = await createProtectedTestApp(sessionRepository);
-    
-    // Test-only protected route that returns actor context
+
     app.get('/test-protected', (request) => {
       return {
         success: true,
@@ -372,21 +367,19 @@ describe('Auth Regression Tests', () => {
     await createTestCredential(credentialRepository);
     const token = await loginAndGetToken(loginService, 'testuser', 'testpassword');
 
-    const auditRecords: Array<{actorUserId: string, action: string}> = [];
+    const auditRecords: Array<{ actorUserId: string; action: string }> = [];
 
     const app = await createProtectedTestApp(sessionRepository);
-    
-    // Test-only protected route that records audit attribution
+
     app.post('/test-action', (request) => {
       const actorContext = getRequestActorContext(request);
       const actorUserId = actorContext.actorUserId || 'unknown';
-      
-      // Record audit
+
       auditRecords.push({
         actorUserId,
         action: 'testAction'
       });
-      
+
       return {
         success: true,
         auditRecorded: true
@@ -400,7 +393,6 @@ describe('Auth Regression Tests', () => {
         authorization: `Bearer ${token}`
       },
       payload: {
-        // Try to fake actor identity in payload
         actorUserId: 'fake-user-id'
       }
     });
@@ -409,11 +401,10 @@ describe('Auth Regression Tests', () => {
     const payload = JSON.parse(response.payload);
     assert.strictEqual(payload.success, true);
     assert.strictEqual(payload.auditRecorded, true);
-    
-    // Verify audit used trusted context, not client payload
+
     assert.strictEqual(auditRecords.length, 1);
-    assert.strictEqual(auditRecords[0].actorUserId, 'user-123');
-    assert.strictEqual(auditRecords[0].action, 'testAction');
+    assert.strictEqual(auditRecords[0]?.actorUserId, 'user-123');
+    assert.strictEqual(auditRecords[0]?.action, 'testAction');
   });
 
   test('legacy actor-context compatibility remains available for existing tests', async () => {
@@ -424,9 +415,8 @@ describe('Auth Regression Tests', () => {
     await sessionRepository.save(updatedSession);
 
     const app = await createProtectedTestApp(sessionRepository);
-    
+
     app.get('/legacy-test', (request) => {
-      // Using legacy direct access to actorContext
       return {
         success: true,
         userId: request.actorContext?.userId,
