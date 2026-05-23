@@ -354,7 +354,7 @@ export const DASHBOARD_TARGETS: Record<string, {
   'shariah-reviews': {
     target: 'shariah-reviews',
     label: 'Shariah Reviews',
-    allowedRoles: ['shariahReviewer', 'complianceReviewer'],
+    allowedRoles: ['shariahReviewer'], // Fixed: Only shariahReviewer allowed
     pageKey: 'shariah-review-submission',
     availability: 'available'
   },
@@ -375,7 +375,7 @@ export const DASHBOARD_TARGETS: Record<string, {
   'shariah-history': {
     target: 'shariah-history',
     label: 'Shariah History',
-    allowedRoles: ['shariahReviewer', 'complianceReviewer'],
+    allowedRoles: ['shariahReviewer'], // Fixed: Only shariahReviewer allowed
     pageKey: 'shariah-review-history',
     availability: 'available'
   },
@@ -438,6 +438,12 @@ export const DASHBOARD_TARGETS: Record<string, {
   'aml-reviews': {
     target: 'aml-reviews',
     label: 'AML Reviews',
+    allowedRoles: ['complianceReviewer'],
+    availability: 'placeholder'
+  },
+  'onboarding-status': {
+    target: 'onboarding-status',
+    label: 'Onboarding Status',
     allowedRoles: ['complianceReviewer'],
     availability: 'placeholder'
   },
@@ -608,11 +614,121 @@ function createAdministratorWidgets(): DashboardWidget[] {
   ];
 }
 
+// Create compliance reviewer widgets according to PBI-180 contract
+function createComplianceReviewerWidgets(): DashboardWidget[] {
+  return [
+    // Primary zone widgets
+    {
+      id: 'compliance-kyc-queue-overview',
+      title: 'KYC Queue',
+      zoneId: 'primary',
+      allowedRoles: ['complianceReviewer'],
+      status: 'placeholder',
+      downstreamPbi: 'PBI-181',
+      placeholder: true
+    },
+    {
+      id: 'compliance-aml-review-overview',
+      title: 'AML Reviews',
+      zoneId: 'primary',
+      allowedRoles: ['complianceReviewer'],
+      status: 'placeholder',
+      downstreamPbi: 'PBI-181',
+      placeholder: true
+    },
+    // Summary zone widget
+    {
+      id: 'compliance-onboarding-status-overview',
+      title: 'Onboarding Status',
+      zoneId: 'summary',
+      allowedRoles: ['complianceReviewer'],
+      status: 'placeholder',
+      downstreamPbi: 'PBI-181',
+      placeholder: true
+    },
+    // Alerts zone widget
+    {
+      id: 'compliance-blocked-state-alert',
+      title: 'Compliance Authorization Boundary',
+      zoneId: 'alerts',
+      allowedRoles: ['complianceReviewer'],
+      status: 'active',
+      downstreamPbi: 'PBI-181',
+      placeholder: false
+    }
+  ];
+}
+
+// Create Shariah reviewer widgets according to PBI-180 contract
+function createShariahReviewerWidgets(): DashboardWidget[] {
+  return [
+    // Primary zone widgets
+    {
+      id: 'shariah-review-submission-overview',
+      title: 'Shariah Reviews',
+      zoneId: 'primary',
+      allowedRoles: ['shariahReviewer'],
+      status: 'active',
+      downstreamPbi: 'PBI-181',
+      placeholder: false
+    },
+    {
+      id: 'shariah-checklist-overview',
+      title: 'Shariah Checklist',
+      zoneId: 'primary',
+      allowedRoles: ['shariahReviewer'],
+      status: 'active',
+      downstreamPbi: 'PBI-181',
+      placeholder: false
+    },
+    // Actions zone widgets
+    {
+      id: 'shariah-decision-overview',
+      title: 'Shariah Decision',
+      zoneId: 'actions',
+      allowedRoles: ['shariahReviewer'],
+      status: 'active',
+      downstreamPbi: 'PBI-181',
+      placeholder: false
+    },
+    // Secondary zone widget (moved from actions)
+    {
+      id: 'shariah-history-overview',
+      title: 'Shariah History',
+      zoneId: 'secondary',
+      allowedRoles: ['shariahReviewer'],
+      status: 'active',
+      downstreamPbi: 'PBI-181',
+      placeholder: false
+    },
+    // Alerts zone widget
+    {
+      id: 'shariah-review-boundary-alert',
+      title: 'Shariah Review Boundary',
+      zoneId: 'alerts',
+      allowedRoles: ['shariahReviewer'],
+      status: 'active',
+      downstreamPbi: 'PBI-181',
+      placeholder: false
+    }
+  ];
+}
+
 // Create placeholder widgets for each role and zone
 export function createPlaceholderWidgets(role: DashboardRoleCode): DashboardWidget[] {
   // For administrator role, return specific widgets as per PBI-176
   if (role === 'administrator') {
     return createAdministratorWidgets();
+  }
+  
+  // For compliance reviewer role, return specific widgets as per PBI-180
+  if (role === 'complianceReviewer') {
+    return createComplianceReviewerWidgets();
+  }
+  
+  // For shariah reviewer role, return specific widgets as per PBI-180
+  if (role === 'shariahReviewer') {
+    return createShariahReviewerWidgets();
   }
 
   // For other roles, create generic placeholder widgets
