@@ -285,20 +285,27 @@ Notes:
 
 ## Validation Commands and Results
 
-The following validation commands should be run locally before final PBI-175 closure:
+Manual validation was executed locally by the developer and reported as passing on 2026-05-23.
 
 ```bash
 npm run frontend:build
+# PASS
+
 npm run build
+# PASS
+
 npm test
+# PASS
+
 git diff --check
+# PASS
 ```
 
 Remote inspection result:
 
-- The evidence file was updated by repository inspection only.
-- This reviewer did not execute local build/test commands in the GitHub workspace.
-- Do not treat this section as a substitute for local/manual command output.
+- The evidence file was updated by repository inspection.
+- Local command execution was performed by the developer and reported back as all passed.
+- No implementation changes were made as part of this validation evidence update.
 
 ## Closure Assessment
 
@@ -308,6 +315,7 @@ PBI-146 shell foundation is partially validated:
 - PBI-173 shell/navigation scaffold exists.
 - PBI-174 route access and shared negative-state handling exist.
 - ADR-001-aligned state-flow reference docs exist.
+- Required build/test/whitespace validation commands were reported as passing locally.
 
 However, PBI-146 should be closed only with explicit acknowledgement that the following ADR-001 validation expectations are not implemented yet:
 
