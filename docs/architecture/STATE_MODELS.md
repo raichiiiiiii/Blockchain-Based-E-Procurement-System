@@ -308,7 +308,125 @@ The history model maps workflow states to progression entries as follows:
 - Absence of a final decision is not an error condition and must be handled gracefully
 - All state transitions that have occurred must be represented in the history
 
-## 15. Provisional protected functions list
+## 13. KYC/AML onboarding intake state model
+
+### initial intake state
+- `submitted`
+
+### initial state meaning
+- `submitted`: the onboarding case was accepted into the compliance review workflow, but no KYC/AML review outcome has been recorded yet
+
+### initial state rule
+All newly accepted KYC/AML onboarding cases begin in `submitted` state.
+
+### deferred outcome model
+PBI-152 defines only the intake state needed for onboarding case creation. Review outcome states and transition rules are intentionally deferred to PBI-156.
+
+Do not treat `approved`, `rejected`, `flagged`, `blocked`, or any equivalent review outcome as approved by PBI-152.
+
+[FLAG-KYC-AML-OUTCOME-STATES]
+The KYC/AML review outcome vocabulary and transition model will be defined by PBI-156.
+
+## 14. KYC/AML onboarding review state model
+
+### resulting decision statuses
+- `approved`
+- `rejected`
+- `flagged`
+- `blocked`
+
+### outcome meanings
+- `approved`: the onboarding case has passed compliance review and is eligible for platform participation
+- `rejected`: the onboarding case has failed compliance review and is not eligible for platform participation
+- `flagged`: the onboarding case requires additional manual compliance review or follow-up before eligibility can be determined
+- `blocked`: the onboarding case has been identified as high-risk and is blocked from platform participation pending remediation or exception approval
+
+### initial state
+- `submitted`: the onboarding case has been accepted into the compliance review workflow
+
+### transition rules
+- `submitted` -> `approved` through review outcome `pass`
+- `submitted` -> `rejected` through review outcome `fail`
+- `submitted` -> `flagged` through review outcome `flag`
+- `submitted` -> `blocked` through review outcome `block`
+
+### finality assumption
+For the current MVP state model, `approved`, `rejected`, `flagged`, and `blocked` are treated as final decision states with no further transition until a later PBI defines reopen, remediation, expiry, or appeal behavior.
+
+### invalid transitions
+- No review decision may be recorded for a missing onboarding case
+- No review decision may be recorded when the current status is already `approved`, `rejected`, `flagged`, or `blocked`
+- No direct transition from `approved`, `rejected`, `flagged`, or `blocked` to another outcome state is allowed in this PBI.
+- Reopen, remediation, expiry, and appeal behavior are not defined by this state model.
+
+### deferred behavior
+- Reopen, remediation, expiry, and appeal behavior are intentionally deferred to future PBIs
+- Downstream eligibility enforcement is handled by PBI-150/PBI-184 onward, not by this state model
+- Sanctions screening implementation is out of scope for this state model
+
+[FLAG-KYC-AML-OUTCOME-STATES]
+KYC/AML review outcome states and transition rules are now defined for MVP. Reopen, remediation, expiry, and appeal behavior remain deferred to future PBIs.
+
+## 15. KYC/AML onboarding status/history read model
+
+### Purpose
+Define the read model for retrieving current onboarding status and decision history for an onboarding case.
+
+### Status values
+- `submitted`
+- `approved`
+- `rejected`
+- `flagged`
+- `blocked`
+
+### Current status derivation
+The `currentStatus` field is derived from the latest valid recorded state in the onboarding case lifecycle.
+
+### Finality indicator
+The `isFinal` field indicates whether the current status represents a final decision state:
+- `false` for `submitted` (intermediate state)
+- `true` for `approved`, `rejected`, `flagged`, and `blocked` (final states)
+
+### History event types
+- `caseSubmitted`
+- `decisionRecorded`
+
+### History ordering
+History entries are ordered chronologically from oldest to newest:
+1. `caseSubmitted` event (always present)
+2. `decisionRecorded` event (present when a decision has been recorded)
+
+### Intermediate-state behavior
+For cases in the `submitted` state with no decision recorded:
+- `currentStatus` is `submitted`
+- `isFinal` is `false`
+- History contains only the `caseSubmitted` event
+
+### Final-state behavior
+For cases with a recorded decision:
+- `currentStatus` reflects the decision outcome (`approved`, `rejected`, `flagged`, or `blocked`)
+- `isFinal` is `true`
+- History contains both the `caseSubmitted` event and the `decisionRecorded` event
+
+### History entry fields
+Each history entry includes:
+- `type`: The event type (`caseSubmitted` or `decisionRecorded`)
+- `fromStatus`: The previous status before the change (null for initial submission)
+- `toStatus`: The resulting status after the change
+- `actorUserId`: Opaque user identifier of the actor who performed the action
+- `occurredAt`: ISO 8601 UTC timestamp of when the action occurred
+
+Decision-specific fields (present only in `decisionRecorded` events):
+- `outcome`: The decision outcome (`pass`, `fail`, `flag`, or `block`)
+- `rationale`: The decision justification
+- `reasonCodes`: Array of reason codes explaining the decision
+
+### Completeness rules
+- All state transitions that have occurred must be represented in the history
+- Intermediate histories (submitted only) are valid and must return successfully
+- Absence of a final decision is not an error condition and must be handled gracefully
+
+## 16. Provisional protected functions list
 
 Protected functions draft:
 - create member organization
@@ -323,7 +441,7 @@ Protected functions draft:
 [FLAG-PROTECTED-FUNCTIONS]
 This list must be formally approved before deactivation enforcement is treated as fully final.
 
-## 14. Open state-model decisions
+## 17. Open state-model decisions
 
 [FLAG-MEMBERSHIP-INITIAL-STATE]
 Current working assumption: `pendingReview`
@@ -342,3 +460,6 @@ Current working assumption: seeded checklist items for Sprint 1
 
 [FLAG-CONDITIONAL-APPROVAL]
 Current working assumption: conditions require rationale and due date, but closure policy is still open
+
+[FLAG-KYC-AML-OUTCOME-STATES]
+Current working assumption: PBI-152 approves only `submitted` as the initial onboarding intake state. Review outcome states and transitions are now defined by PBI-156 for MVP, with reopen/remediation behavior deferred to future PBIs.

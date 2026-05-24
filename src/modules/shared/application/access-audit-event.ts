@@ -9,7 +9,8 @@ export type AccessAuditOutcome =
 export type AccessAuditModule =
   | 'membership'
   | 'access-control'
-  | 'shariah-review';
+  | 'shariah-review'
+  | 'kyc-aml-onboarding';
 
 export type AccessAuditActorSource = 'actorContext';
 

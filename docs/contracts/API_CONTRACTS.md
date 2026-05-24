@@ -1405,3 +1405,387 @@ History-read logging requirements are not yet finalized, but sensitive history a
 For procure-to-pay transaction history contracts, see the dedicated document at `docs/contracts/TRANSACTION_HISTORY_CONTRACT.md`.
 
 This section defines the lifecycle event fields, ordering rules, identifier semantics, and completeness/gap detection behavior for procure-to-pay transactions.
+## 16. KYC/AML onboarding contracts
+
+### 16.1 Submit onboarding case
+
+`POST /api/v1/kyc-aml-onboarding-cases`
+
+Purpose:
+- Accept a regulated onboarding case into the KYC/AML compliance review workflow.
+- Capture required KYC fields, AML declarations, and evidence references.
+- Create a traceable onboarding case in the initial `submitted` state.
+- This endpoint does not record final review outcomes.
+
+Request:
+
+```json
+{
+  "memberOrganizationId": "org_123",
+  "kyc": {
+    "legalName": "string",
+    "registrationNumber": "string",
+    "countryCode": "MYS",
+    "businessType": "string"
+  },
+  "aml": {
+    "declaredBusinessActivity": "string",
+    "expectedMonthlyTransactionValue": "10000.00",
+    "declaredSanctionsExposure": false,
+    "declaredPepExposure": false,
+    "riskSummary": "string"
+  },
+  "evidenceReferences": [
+    {
+      "type": "companyRegistration",
+      "name": "ssm-registration.pdf",
+      "uri": "string",
+      "mediaType": "application/pdf",
+      "checksum": "sha256-placeholder"
+    }
+  ]
+}
+```
+
+Required top-level fields:
+- `memberOrganizationId`
+- `kyc`
+- `aml`
+- `evidenceReferences`
+
+Required KYC fields:
+- `legalName`
+- `registrationNumber`
+- `countryCode`
+- `businessType`
+
+Required AML fields:
+- `declaredBusinessActivity`
+- `expectedMonthlyTransactionValue`
+- `declaredSanctionsExposure`
+- `declaredPepExposure`
+
+Evidence reference rules:
+- `evidenceReferences` must be a non-empty array.
+- Each evidence reference requires:
+  - `type`
+  - `name`
+  - `uri`
+  - `mediaType`
+- `checksum` is optional for MVP but recommended.
+- JSON field names use `camelCase`.
+
+Allowed evidence `type` values:
+- `companyRegistration`
+- `authorizedRepresentativeIdentity`
+- `beneficialOwnership`
+- `amlDeclaration`
+- `supportingDocument`
+
+Required evidence types for accepted intake:
+- `companyRegistration`
+- `authorizedRepresentativeIdentity`
+- `amlDeclaration`
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "kyc_aml_case_123",
+    "memberOrganizationId": "org_123",
+    "status": "submitted",
+    "submittedByUserId": "user_123",
+    "createdAt": "2026-03-15T00:00:00Z",
+    "updatedAt": "2026-03-15T00:00:00Z",
+    "evidenceReferences": [
+      {
+        "type": "companyRegistration",
+        "name": "ssm-registration.pdf",
+        "uri": "string",
+        "mediaType": "application/pdf",
+        "checksum": "sha256-placeholder"
+      }
+    ]
+  }
+}
+```
+
+Response field rules:
+- `id` is an opaque onboarding case identifier.
+- `submittedByUserId` is derived from trusted server-side actor context, not from a client-authored request field.
+- `status` is always `submitted` for newly accepted onboarding intake cases.
+- `createdAt` and `updatedAt` use ISO 8601 UTC strings.
+
+Initial status:
+- `submitted`
+
+Initial status meaning:
+- The onboarding case has been accepted into the compliance review workflow.
+- No KYC/AML review outcome has been recorded yet.
+- Review outcome states and transitions are intentionally deferred to PBI-156.
+
+Validation rules:
+- Missing required top-level fields return `400 VALIDATION_ERROR`.
+- Missing required KYC fields return `400 VALIDATION_ERROR`.
+- Missing required AML fields return `400 VALIDATION_ERROR`.
+- Empty `evidenceReferences` returns `400 VALIDATION_ERROR`.
+- Missing required evidence metadata returns `400 VALIDATION_ERROR`.
+- Missing required evidence types returns `400 VALIDATION_ERROR`.
+- Validation responses use the standard validation error envelope from section 5.
+
+Validation error response:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "details": {
+      "issues": [
+        {
+          "path": "kyc.legalName",
+          "message": "Legal name is required"
+        }
+      ]
+    }
+  }
+}
+```
+
+Out of scope for this contract section:
+- Review decision outcomes.
+- Final approval, rejection, blocked, or flagged states.
+- Downstream onboarding eligibility checks.
+- Audit event schema changes.
+- Dashboard UI behavior.
+
+[FLAG-KYC-AML-OUTCOME-STATES]
+KYC/AML review outcome states and transition rules are defined in section 15.2 for MVP.
+
+### 16.2 Record KYC/AML review decision
+
+`POST /api/v1/kyc-aml-onboarding-cases/{caseId}/decision`
+
+Purpose:
+- Record a compliance reviewer's decision on a submitted KYC/AML onboarding case.
+- Transition the onboarding case to an outcome state based on review findings.
+- Capture required rationale and reason codes for auditability.
+- This endpoint does not implement downstream eligibility enforcement, which is handled by PBI-150/PBI-184 onward.
+
+Request:
+
+```json
+{
+  "outcome": "flag",
+  "rationale": "Beneficial ownership evidence requires manual compliance follow-up.",
+  "reasonCodes": [
+    "beneficial_ownership_unverified",
+    "manual_compliance_concern"
+  ]
+}
+```
+
+Required fields:
+- `outcome`
+- `rationale`
+
+Allowed outcome values:
+- `pass`
+- `fail`
+- `flag`
+- `block`
+
+Outcome-to-status mapping:
+- `pass` -> `approved`
+- `fail` -> `rejected`
+- `flag` -> `flagged`
+- `block` -> `blocked`
+
+Required reason fields:
+- `rationale` is required for every outcome
+- `fail`, `flag`, and `block` require at least one `reasonCode`
+- `pass` may include `reasonCodes`, but does not require them
+
+Allowed reason codes:
+- `identity_verification_failed`
+- `beneficial_ownership_unverified`
+- `sanctions_exposure`
+- `pep_exposure`
+- `inconsistent_business_activity`
+- `missing_or_invalid_evidence`
+- `high_risk_activity`
+- `manual_compliance_concern`
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "kyc_aml_case_123",
+    "memberOrganizationId": "org_123",
+    "status": "flagged",
+    "decision": {
+      "outcome": "flag",
+      "rationale": "Beneficial ownership evidence requires manual compliance follow-up.",
+      "reasonCodes": [
+        "beneficial_ownership_unverified",
+        "manual_compliance_concern"
+      ],
+      "decidedByUserId": "user_456",
+      "decidedAt": "2026-03-15T00:00:00Z"
+    },
+    "updatedAt": "2026-03-15T00:00:00Z"
+  }
+}
+```
+
+Validation rules:
+- Missing `outcome` returns `400 VALIDATION_ERROR`
+- Unknown `outcome` returns `400 VALIDATION_ERROR`
+- Missing or blank `rationale` returns `400 VALIDATION_ERROR`
+- `fail`, `flag`, and `block` with empty or missing `reasonCodes` return `400 VALIDATION_ERROR`
+- Unknown reason code returns `400 VALIDATION_ERROR`
+- Invalid state transition returns `400 VALIDATION_ERROR`
+- Missing case returns `404 NOT_FOUND`
+- Unauthorized reviewer behavior belongs to PBI-158 hardening, but reviewer identity is server-derived
+
+Transition rules:
+- `submitted` -> `approved` through outcome `pass`
+- `submitted` -> `rejected` through outcome `fail`
+- `submitted` -> `flagged` through outcome `flag`
+- `submitted` -> `blocked` through outcome `block`
+
+Invalid transitions:
+- No review decision may be recorded for a missing onboarding case
+- No review decision may be recorded when the current status is already `approved`, `rejected`, `flagged`, or `blocked`
+- No direct transition from `approved`, `rejected`, `flagged`, or `blocked` to another outcome state is allowed in this PBI.
+- Reopen, remediation, expiry, and appeal behavior are not defined by this contract.
+
+Finality assumption:
+- For the current MVP contract, `approved`, `rejected`, `flagged`, and `blocked` are treated as decision states with no further transition until a later PBI defines reopen or remediation behavior
+
+Actor/source rules:
+- Decision maker identity must come from trusted actor context in implementation
+- Do not document `reviewedByUserId` or `decisionByUserId` as a client-authored request field
+- Response examples may include reviewer identity as a server-derived field
+
+Out of scope for this contract section:
+- Downstream workflow enforcement (handled by PBI-150/PBI-184 onward)
+- Sanctions screening implementation
+- Eligibility API implementation
+- Dashboard UI implementation
+
+[FLAG-KYC-AML-OUTCOME-STATES]
+KYC/AML review outcome states and transition rules are now defined for MVP. Reopen, remediation, expiry, and appeal behavior remain deferred to future PBIs.
+
+### 16.3 Get KYC/AML onboarding case status and history
+
+`GET /api/v1/kyc-aml-onboarding-cases/{caseId}/status-history`
+
+Purpose:
+- Retrieve the current onboarding status and decision history for an onboarding case.
+- Support backend/API consumers and future dashboard consumers.
+- This endpoint is backend/read-contract capability, not dashboard UI.
+
+Response for submitted case with no decision:
+
+```json
+{
+  "data": {
+    "id": "kyc_aml_case_123",
+    "memberOrganizationId": "org_123",
+    "currentStatus": "submitted",
+    "isFinal": false,
+    "history": [
+      {
+        "type": "caseSubmitted",
+        "fromStatus": null,
+        "toStatus": "submitted",
+        "actorUserId": "user_123",
+        "occurredAt": "2026-03-15T00:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+Response for decided case:
+
+```json
+{
+  "data": {
+    "id": "kyc_aml_case_123",
+    "memberOrganizationId": "org_123",
+    "currentStatus": "flagged",
+    "isFinal": true,
+    "history": [
+      {
+        "type": "caseSubmitted",
+        "fromStatus": null,
+        "toStatus": "submitted",
+        "actorUserId": "user_123",
+        "occurredAt": "2026-03-15T00:00:00Z"
+      },
+      {
+        "type": "decisionRecorded",
+        "fromStatus": "submitted",
+        "toStatus": "flagged",
+        "outcome": "flag",
+        "rationale": "Beneficial ownership evidence requires manual compliance follow-up.",
+        "reasonCodes": [
+          "beneficial_ownership_unverified",
+          "manual_compliance_concern"
+        ],
+        "actorUserId": "user_456",
+        "occurredAt": "2026-03-15T01:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+Status values:
+- `submitted`
+- `approved`
+- `rejected`
+- `flagged`
+- `blocked`
+
+History event types:
+- `caseSubmitted`
+- `decisionRecorded`
+
+Ordering rule:
+- History entries are returned chronologically from oldest to newest.
+- `caseSubmitted` appears before `decisionRecorded`.
+- If no decision exists, history contains only the `caseSubmitted` event.
+
+Intermediate-state behavior:
+- `submitted` with no decision is valid and not an error.
+- `currentStatus` is `submitted`.
+- `isFinal` is false.
+- History contains the intake/submission event only.
+
+Final-state behavior:
+- `approved`, `rejected`, `flagged`, and `blocked` are final MVP decision states.
+- `isFinal` is true for `approved`, `rejected`, `flagged`, and `blocked`.
+- No reopen/remediation/appeal behavior is defined in this contract.
+
+Authorization semantics:
+- Retrieval is protected.
+- Caller identity must come from trusted actor context.
+- Authorized compliance, banking, or platform users may retrieve status/history according to later implementation policy.
+- Unauthorized retrieval returns `403 FORBIDDEN`.
+- Missing actor context returns `400 VALIDATION_ERROR` or `401/403` only if an existing project-wide rule requires it.
+
+Privacy semantics:
+- Response must not expose raw KYC evidence content.
+- Response may expose evidence/reference identifiers only if later implementation needs them.
+- Decision rationale and reason codes are compliance-sensitive and should be returned only to authorized readers.
+
+Negative-path behavior:
+- Missing case returns `404 NOT_FOUND`.
+- Malformed caseId returns `400 VALIDATION_ERROR` if route validation detects it.
+- Unauthorized reader returns `403 FORBIDDEN`.
+- Empty history should not occur for a valid case; if implementation cannot reconstruct any history later, it must return an explicit incomplete-history signal rather than pretending completeness.
