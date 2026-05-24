@@ -159,6 +159,8 @@ describe('InMemoryProcureToPayLifecycleEventRepository', () => {
 
   it('duplicate payloadHash is rejected', async () => {
     const repository = new InMemoryProcureToPayLifecycleEventRepository();
+    const fixedOccurredAt = '2026-03-15T02:00:00.000Z';
+    const fixedRecordedAt = '2026-03-15T02:00:01.000Z';
     
     const event1 = createProcureToPayLifecycleEvent({
       requestId: 'req-123',
@@ -169,7 +171,9 @@ describe('InMemoryProcureToPayLifecycleEventRepository', () => {
       actorUserId: 'user-abc',
       targetType: 'purchaseOrder',
       targetId: 'po-def',
-      outcome: 'success'
+      outcome: 'success',
+      occurredAt: fixedOccurredAt,
+      recordedAt: fixedRecordedAt
     });
 
     // Create identical event with different eventId
@@ -183,7 +187,9 @@ describe('InMemoryProcureToPayLifecycleEventRepository', () => {
       actorUserId: 'user-abc',
       targetType: 'purchaseOrder',
       targetId: 'po-def',
-      outcome: 'success'
+      outcome: 'success',
+      occurredAt: fixedOccurredAt,
+      recordedAt: fixedRecordedAt
     });
 
     await repository.save(event1);
