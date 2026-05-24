@@ -27,6 +27,9 @@ import { InMemoryPlatformUserCredentialRepository } from '../modules/auth/infras
 import { InMemoryAuthSessionRepository } from '../modules/auth/infrastructure/in-memory-auth-session-repository.js';
 import type { PlatformUserCredentialRepository } from '../modules/auth/application/platform-user-credential-repository.js';
 import type { AuthSessionRepository } from '../modules/auth/application/auth-session-repository.js';
+import { registerTransactionHistoryRoutes } from '../modules/procurement/api/transaction-history.routes.js';
+import type { ProcureToPayLifecycleEventRepository } from '../modules/procurement/application/procure-to-pay-lifecycle-event-repository.js';
+import { InMemoryProcureToPayLifecycleEventRepository } from '../modules/procurement/infrastructure/in-memory-procure-to-pay-lifecycle-event-repository.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -44,6 +47,7 @@ export function createTestableServer(options?: {
   accessAuditEventRepository?: AccessAuditEventRepository;
   credentialRepository?: PlatformUserCredentialRepository;
   sessionRepository?: AuthSessionRepository;
+  procureToPayLifecycleEventRepository?: ProcureToPayLifecycleEventRepository;
 }) {
   const server = fastify();
 
@@ -88,6 +92,7 @@ export function createTestableServer(options?: {
   const accessAuditEventRepository = options?.accessAuditEventRepository;
   const credentialRepository = options?.credentialRepository ?? new InMemoryPlatformUserCredentialRepository();
   const sessionRepository = options?.sessionRepository ?? new InMemoryAuthSessionRepository();
+  const procureToPayLifecycleEventRepository = options?.procureToPayLifecycleEventRepository ?? new InMemoryProcureToPayLifecycleEventRepository();
 
   // Register auth routes
   server.register(authRoutes, {
@@ -132,6 +137,12 @@ export function createTestableServer(options?: {
   server.register(registerAccessHistoryRoutes, {
     prefix: '/api/v1',
     accessAuditEventRepository
+  });
+
+  // Register transaction-history routes
+  server.register(registerTransactionHistoryRoutes, {
+    prefix: '/api/v1',
+    repository: procureToPayLifecycleEventRepository
   });
 
   return server;

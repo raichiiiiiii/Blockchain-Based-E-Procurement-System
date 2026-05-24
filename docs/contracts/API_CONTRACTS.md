@@ -1399,3 +1399,9 @@ Safe response behavior:
 
 [FLAG-READ-AUDIT]
 History-read logging requirements are not yet finalized, but sensitive history access is expected to be auditable in Sprint 1.
+
+## 15. Procure-to-Pay Transaction History Contracts
+
+For procure-to-pay transaction history contracts, see the dedicated document at `docs/contracts/TRANSACTION_HISTORY_CONTRACT.md`.
+
+This section defines the lifecycle event fields, ordering rules, identifier semantics, and completeness/gap detection behavior for procure-to-pay transactions.
