@@ -217,27 +217,27 @@ Known follow-up gaps remain:
 
 ## Validation Commands and Results
 
-These commands must be run locally after this evidence-only commit:
+Manual validation was executed locally by the developer after this evidence-only commit and reported as passing on 2026-05-23.
 
 ```bash
 npm run frontend:build
+# PASS
+
 npm run build
+# PASS
+
 npm test
+# PASS
+
 git diff --check
+# PASS
 ```
-
-Remote inspection result:
-
-- Code and evidence were inspected on origin.
-- PBI-188, PBI-189, and PBI-190 artifacts are present.
-- PBI-191 evidence file was created through repository inspection.
-- Local command execution has not yet been recorded for this evidence commit.
 
 ## Closure Assessment
 
-PBI-151 is acceptable for closure if local validation passes after this evidence commit.
+PBI-151 is acceptable for closure.
 
-Confirmed by inspection:
+Confirmed by inspection and local validation report:
 
 - PBI-188 contract exists and defines auditor/security widget behavior.
 - PBI-189 implements auditor/security widgets and entry flows.
@@ -250,6 +250,7 @@ Confirmed by inspection:
 - Sequence completeness is deterministic and does not overstate completeness.
 - Backend authorization boundary remains explicit.
 - ADR-001 follow-up gaps remain documented.
+- Required build/test/whitespace validation commands were reported as passing locally.
 
 ## Known Limitations
 
@@ -262,9 +263,8 @@ Confirmed by inspection:
 
 ## Follow-up Recommendations
 
-1. Record final local validation results in this evidence file.
-2. Reconcile `feature/PBI-017-role-based-ui-dashboards` with `main` before final feature merge.
-3. Keep ADR-001 actor-context and organization-state gates as explicit follow-up work.
-4. Keep real access-history API binding as future scope unless explicitly approved.
-5. Do not grant securityOperator access-history API rights unless backend contracts are explicitly changed first.
-6. Use this evidence as the PBI-151 story-closure artifact.
+1. Reconcile `feature/PBI-017-role-based-ui-dashboards` with `main` before final feature merge.
+2. Keep ADR-001 actor-context and organization-state gates as explicit follow-up work.
+3. Keep real access-history API binding as future scope unless explicitly approved.
+4. Do not grant securityOperator access-history API rights unless backend contracts are explicitly changed first.
+5. Use this evidence as the PBI-151 story-closure artifact.
