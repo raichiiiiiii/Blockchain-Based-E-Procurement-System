@@ -10,6 +10,7 @@
     "start": "node dist/app/server.js",
     "dev": "node --loader ts-node/esm src/app/server.ts",
     "test": "node scripts/run-tests.mjs",
+    "test:backend": "node scripts/run-tests.mjs",
     "frontend:dev": "vite --config vite.config.ts",
     "frontend:build": "tsc -p tsconfig.frontend.json && vite build --config vite.config.ts",
     "frontend:preview": "vite preview --config vite.config.ts"
