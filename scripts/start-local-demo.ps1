@@ -60,7 +60,7 @@ function Invoke-RepoCommand {
   try {
     & $Command[0] $Command[1..($Command.Length - 1)]
     if ($LASTEXITCODE -ne 0) {
-      throw "Command failed with exit code $LASTEXITCODE: $($Command -join ' ')"
+      throw "Command failed with exit code ${LASTEXITCODE}: $($Command -join ' ')"
     }
   } finally {
     Pop-Location
@@ -164,7 +164,7 @@ if ($WithFabric) {
     }
     & powershell @deployArgs
     if ($LASTEXITCODE -ne 0) {
-      throw "Fabric deployment failed with exit code $LASTEXITCODE."
+      throw "Fabric deployment failed with exit code ${LASTEXITCODE}."
     }
   }
 } else {
