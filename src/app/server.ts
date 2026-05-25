@@ -39,6 +39,8 @@ import { registerEscrowRoutes } from '../modules/escrow/api/escrow.routes.js';
 import type { EscrowRepository } from '../modules/escrow/application/escrow-repository.js';
 import { InMemoryEscrowRepository } from '../modules/escrow/infrastructure/in-memory-escrow-repository.js';
 
+const DEFAULT_DEV_PORT = 3100;
+
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
   audit?: (event: MemberOrgCreateAuditEvent) => void;
@@ -181,7 +183,7 @@ export function createTestableServer(options?: {
 // Existing singleton server for normal runtime
 const server = createTestableServer();
 
-const PORT = Number(process.env.PORT ?? 3000);
+const PORT = Number(process.env.PORT ?? DEFAULT_DEV_PORT);
 
 const start = async () => {
   try {
