@@ -29,11 +29,12 @@ Use these files throughout Sprint 6:
 
 ```text
 backlog/backlog.csv
+backlog/deployment-ready-roadmap.csv
 backlog/plan.mermaid
 
 docs/report/srs-v3.tex
-docs/drafts/Pre-SRS-v3.pdf
-docs/drafts/business_proposal_digital_procurement_pls_seedbed.pdf
+docs/proposals/business_proposal_digital_procurement_pls_seedbed.tex
+docs/proposals/business_proposal_research_appendix.md
 
 docs/process/pbi-guideline.tex
 docs/process/CODING_RULES.md
@@ -61,10 +62,14 @@ docs/contracts/ONBOARDING_ELIGIBILITY_CONTRACT.md
 docs/contracts/BLOCKCHAIN_ANCHOR_CONTRACT.md
 docs/contracts/ESCROW_WORKFLOW_CONTRACT.md
 
+docs/sprint-planning/DEPLOYMENT_READY_MVP_ROADMAP.md
+
 docs/runbooks/local-demo.md
 docs/runbooks/postgres-local-dev.md
 docs/runbooks/fabric-local-network.md
 ```
+
+Note: older references to `docs/drafts/` were replaced with `docs/proposals/` to match the current documentation structure described in `docs/README.md`.
 
 ## 3. Product UI rule
 
@@ -362,6 +367,14 @@ PBI-336 to PBI-340
 PBI-344 to PBI-360
 ```
 
+### Wave 6 - actor-completion and deployment roadmap
+
+```text
+PBI-361 to PBI-428
+```
+
+See `docs/sprint-planning/DEPLOYMENT_READY_MVP_ROADMAP.md` and `backlog/deployment-ready-roadmap.csv`.
+
 ## 6. Sprint commitment recommendation
 
 Must have:
@@ -386,6 +399,19 @@ Stretch:
 ```text
 PBI-346 - Escrow backend first slice
 PBI-355 - Escrow UI first slice
+```
+
+Next release must have:
+
+```text
+PBI-361 - Complete actor-ready deployment MVP
+PBI-364 - Administrator workflow
+PBI-372 - Buyer and supplier procurement workflow
+PBI-383 - Compliance KYC/AML workflow
+PBI-393 - Shariah and PLS workflow
+PBI-406 - Regulator export workflow
+PBI-420 - Runtime PostgreSQL composition switch
+PBI-423 - Final UAT and supervisor demo readiness
 ```
 
 ## 7. Done gates
