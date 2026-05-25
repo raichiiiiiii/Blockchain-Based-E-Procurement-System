@@ -61,6 +61,21 @@ version: 1.0.0
 sequence: 1
 ```
 
+## Live Smoke Path
+
+After deployment, use the Fabric peer CLI from `fabric-samples/test-network` with the channel context established by the sample network scripts. Submit one metadata-only anchor and verify it with a matching and mismatching hash:
+
+```powershell
+$anchorJson='{"eventId":"smoke-event-001","caseIdHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","eventType":"smokeProof","payloadHash":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","schemaVersion":"1.0","canonicalization":"json-canonical-v1","occurredAt":"2026-05-26T00:00:00.000Z"}'
+peer chaincode invoke -C procurement-channel -n audit-anchor -c "{`"Args`":[`"anchorEvent`",$anchorJson]}"
+peer chaincode query -C procurement-channel -n audit-anchor -c '{"Args":["getAnchor","smoke-event-001"]}'
+peer chaincode query -C procurement-channel -n audit-anchor -c '{"Args":["verifyEvent","smoke-event-001","sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"]}'
+peer chaincode query -C procurement-channel -n audit-anchor -c '{"Args":["verifyEvent","smoke-event-001","sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"]}'
+peer chaincode query -C procurement-channel -n audit-anchor -c '{"Args":["verifyEvent","missing-event","sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"]}'
+```
+
+Expected verification states are `verified`, `mismatch`, and `notFound`. If the local Fabric peer CLI is unavailable, record the blocker in release evidence and rely on the chaincode unit tests as the automated baseline.
+
 ## Contract Functions
 
 `anchorEvent(anchorJson)` writes an append-only proof record:

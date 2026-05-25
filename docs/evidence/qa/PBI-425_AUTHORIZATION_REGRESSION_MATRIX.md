@@ -1,11 +1,11 @@
 # PBI-425 Authorization Regression Matrix
 
 Date: 2026-05-25  
-Status: Active baseline
+Status: Release baseline
 
 ## Scope
 
-This matrix records the authorization checks exercised during Wave 2 and the expected release behavior for later actor waves.
+This matrix records the authorization checks exercised across the actor-ready MVP waves and the expected release behavior for supervisor review.
 
 ## Wave 2 Executed Checks
 
@@ -112,7 +112,8 @@ Wave 6 PLS focused set: pass, 10 tests
 Full npm test: pass, 668 tests
 ```
 
-## Remaining Regression Work
+## Release Closure
 
-- Add backend persistent security alert read model when PBI-416 is pulled forward.
-- Run the complete matrix during Wave 7 release validation.
+- Backend persistent security alert read model remains post-MVP; current security operator scope is read-only demo metadata.
+- Complete matrix is included in Wave 7 release validation.
+- UI hiding is treated as product ergonomics only; backend tests remain the authoritative authorization evidence.

@@ -18,7 +18,7 @@ This runbook starts the local procurement MVP demo and records the current safe 
 ## Ports
 
 ```text
-Backend API: http://localhost:3000
+Backend API: http://localhost:3100
 Frontend dev server: http://localhost:5173
 PostgreSQL: localhost:5432
 ```
@@ -49,11 +49,25 @@ See `docs/runbooks/postgres-local-dev.md` for database details.
 ## Start Backend
 
 ```powershell
+$env:PORT="3100"
+$env:PERSISTENCE_ADAPTER="postgres"
+$env:DATABASE_URL="postgres://pls_app:pls_app_password@localhost:5432/pls_platform"
+$env:DATABASE_SSL_MODE="disable"
 npm run build
 npm run dev
 ```
 
-The backend exposes REST routes under `/api/v1`.
+The backend exposes REST routes under `/api/v1`. Use `PERSISTENCE_ADAPTER=memory` for a fully in-memory fast demo. Use `PERSISTENCE_ADAPTER=postgres` after migrations and seed have been applied to persist auth/session, membership/RBAC, access audit, procurement lifecycle events, blockchain anchor metadata, and escrow records. Procurement orders, KYC cases, export bundles, Shariah reviews, and PLS contracts currently use in-memory repositories unless their API route is supplied a dedicated adapter.
+
+## One-Command Local Startup
+
+On Windows PowerShell, the helper script can start PostgreSQL, apply migrations and seed data, then launch the backend and frontend:
+
+```powershell
+.\scripts\start-local-demo.ps1
+```
+
+Use `-SkipPostgres` to run a memory-only backend, or `-WithFabric` to add chaincode build/test and optional local Fabric deployment.
 
 ## Start Frontend
 

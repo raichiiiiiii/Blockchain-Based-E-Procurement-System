@@ -19,6 +19,7 @@ Copy-Item .env.example .env.local
 Required local variables:
 
 ```text
+PERSISTENCE_ADAPTER=memory
 DATABASE_URL=postgres://pls_app:pls_app_password@localhost:5432/pls_platform
 DATABASE_SSL_MODE=disable
 DB_MIGRATIONS_ENABLED=true
@@ -26,6 +27,15 @@ DEMO_SEED_ENABLED=true
 ```
 
 Do not commit local secrets or production database URLs.
+
+`PERSISTENCE_ADAPTER` controls runtime repository composition:
+
+```text
+memory   default, keeps the backend fast and isolated for tests
+postgres persists implemented runtime repositories after migration/seed
+```
+
+The current Postgres runtime path covers auth/session, member organizations, roles, role assignments, access audit events, procurement lifecycle events, blockchain anchor metadata, and escrow records. Routes without Postgres adapters remain on their in-memory repository until their adapter is implemented.
 
 ## Start PostgreSQL
 
@@ -74,6 +84,18 @@ npm run db:seed
 
 Demo credentials use username values such as `buyer.demo` and `auditor.demo` with the local
 demo password hash generated from `demo-password`. This is for local demonstration only.
+
+## Start Runtime With PostgreSQL
+
+After migration and seed:
+
+```powershell
+$env:PERSISTENCE_ADAPTER="postgres"
+$env:DATABASE_URL="postgres://pls_app:pls_app_password@localhost:5432/pls_platform"
+$env:DATABASE_SSL_MODE="disable"
+$env:PORT="3100"
+npm run dev
+```
 
 ## Smoke Checks
 

@@ -92,6 +92,22 @@ Recommended files:
 - `SPRINT3_TASKS.md`
 - `SPRINT4_TASKS.md`
 
+### Runbooks
+
+Use this group for reproducible local operation, deployment smoke tests, API quickstarts, and supervisor walkthrough scripts.
+
+Target folder: `docs/runbooks/`
+
+Current examples:
+
+- `local-demo.md`
+- `postgres-local-dev.md`
+- `fabric-local-network.md`
+- `api-quickstart.md`
+- `deployment-environment-guide.md`
+- `deployment-smoke-test.md`
+- `final-supervisor-demo-script.md`
+
 ### Evidence and QA artifacts
 
 Use this group for validation records, QA notes, closure evidence, and test evidence. Evidence should stay separate from stable source-of-truth documentation.

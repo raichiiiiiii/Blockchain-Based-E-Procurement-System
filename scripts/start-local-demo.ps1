@@ -191,9 +191,10 @@ $backendPortLiteral = Quote-PowerShellString -Value ([string]$BackendPort)
 $frontendPortLiteral = Quote-PowerShellString -Value ([string]$FrontendPort)
 $apiProxyLiteral = Quote-PowerShellString -Value $ApiProxyTarget
 $npmCommandLiteral = Quote-PowerShellString -Value $NpmCommand
+$persistenceAdapterLiteral = Quote-PowerShellString -Value $(if ($SkipPostgres) { 'memory' } else { 'postgres' })
 
 if (-not $SkipBackend) {
-  $backendCommand = "`$env:PORT = $backendPortLiteral; `$env:DATABASE_URL = $databaseUrlLiteral; `$env:DATABASE_SSL_MODE = $databaseSslLiteral; `$env:DB_MIGRATIONS_ENABLED = 'true'; `$env:DEMO_SEED_ENABLED = 'true'; & $npmCommandLiteral run dev"
+  $backendCommand = "`$env:PORT = $backendPortLiteral; `$env:PERSISTENCE_ADAPTER = $persistenceAdapterLiteral; `$env:DATABASE_URL = $databaseUrlLiteral; `$env:DATABASE_SSL_MODE = $databaseSslLiteral; `$env:DB_MIGRATIONS_ENABLED = 'true'; `$env:DEMO_SEED_ENABLED = 'true'; & $npmCommandLiteral run dev"
   Start-ServiceWindow -Title "PLS Backend API :$BackendPort" -CommandText $backendCommand
 } else {
   Write-Warn 'Skipping backend startup.'

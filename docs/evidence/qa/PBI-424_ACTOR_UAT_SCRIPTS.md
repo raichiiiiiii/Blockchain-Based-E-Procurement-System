@@ -1,11 +1,11 @@
 # PBI-424 Actor UAT Scripts
 
 Date: 2026-05-25  
-Status: Active baseline
+Status: Release baseline
 
 ## Purpose
 
-This file records executable actor UAT scripts for the deployment-ready MVP. Wave 2 completes the administrator script and keeps the remaining actor scripts visible for later waves.
+This file records executable actor UAT scripts for the deployment-ready MVP. Mandatory actor scripts are complete for supervisor review.
 
 ## Administrator
 
@@ -352,8 +352,72 @@ docs/evidence/qa/PBI-425_AUTHORIZATION_REGRESSION_MATRIX.md
 
 ## Platform Operator
 
-Status: Local demo, PostgreSQL, and Fabric runbooks exist; release hardening continues in Wave 7.
+Preconditions:
+
+- Node.js and npm are available.
+- Docker Desktop is available for PostgreSQL.
+- Fabric samples are optional for live chaincode deployment.
+
+Script:
+
+```text
+1. Read docs/runbooks/deployment-environment-guide.md.
+2. Run docker compose config.
+3. Start PostgreSQL.
+4. Run migration and seed dry-runs.
+5. Apply migrations and seed data when testing persistent mode.
+6. Start local demo with scripts/start-local-demo.ps1.
+7. Confirm backend API listens on port 3100.
+8. Confirm frontend listens on port 5173.
+9. Run chaincode build/test.
+10. If Fabric test-network is available, deploy AuditAnchorContract and run the smoke path.
+11. Record unavailable prerequisites as non-code blockers.
+```
+
+Expected result:
+
+```text
+Platform operator can start, validate, and troubleshoot the local MVP without relying on chat history.
+```
+
+Evidence:
+
+```text
+docs/runbooks/deployment-environment-guide.md
+docs/runbooks/deployment-smoke-test.md
+docs/runbooks/fabric-local-network.md
+docs/evidence/qa/RELEASE_VALIDATION_RESULTS.md
+```
 
 ## Developer / Integrator
 
-Status: API quickstart pending Wave 7.
+Preconditions:
+
+- Backend API is running.
+- Demo users are seeded or the in-memory demo catalog is available.
+
+Script:
+
+```text
+1. Read docs/runbooks/api-quickstart.md.
+2. Sign in through /api/v1/auth/login.
+3. Store the bearer token.
+4. Call a role-appropriate API path.
+5. Verify unauthorized access returns the shared error envelope.
+6. Call proof or escrow endpoint as an allowed actor.
+7. Confirm no raw private payload or fabricated blockchain reference is returned.
+8. Sign out through /api/v1/auth/logout.
+```
+
+Expected result:
+
+```text
+Developer can authenticate locally, call core APIs, inspect expected envelopes, and understand MVP integration boundaries.
+```
+
+Evidence:
+
+```text
+docs/runbooks/api-quickstart.md
+docs/evidence/qa/RELEASE_VALIDATION_RESULTS.md
+```

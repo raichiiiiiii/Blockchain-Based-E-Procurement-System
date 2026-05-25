@@ -394,6 +394,12 @@ Output:
 - Fabric local smoke path is documented
 - actor UAT evidence is recorded
 - final supervisor demo script is ready
+- API quickstart: docs/runbooks/api-quickstart.md
+- deployment guide: docs/runbooks/deployment-environment-guide.md
+- smoke test: docs/runbooks/deployment-smoke-test.md
+- supervisor script: docs/runbooks/final-supervisor-demo-script.md
+- limitations: docs/sprint-planning/KNOWN_LIMITATIONS_AND_POST_MVP_ROADMAP.md
+- release validation: docs/evidence/qa/RELEASE_VALIDATION_RESULTS.md
 ```
 
 ### Wave 8 — Post-deployment verification and handover
@@ -417,41 +423,41 @@ Output:
 
 ```text
 Local environment
-[ ] Node.js and npm installed
-[ ] Docker Desktop available
+[x] Node.js and npm installed
+[x] Docker Desktop available
 [ ] npm install complete
 [ ] backend starts on port 3100
 [ ] frontend starts on port 5173
-[ ] frontend /api/v1 proxy targets backend 3100
+[x] frontend /api/v1 proxy targets backend 3100
 
 Database
-[ ] docker compose config passes
+[x] docker compose config passes
 [ ] docker compose up -d postgres works
-[ ] npm run db:migrate -- --dry-run passes
-[ ] npm run db:seed -- --dry-run passes
-[ ] runtime can use PostgreSQL repositories when configured
+[x] npm run db:migrate -- --dry-run passes
+[x] npm run db:seed -- --dry-run passes
+[x] runtime can use PostgreSQL repositories when configured
 
 Fabric
-[ ] npm run chaincode:audit-anchor:build passes
-[ ] npm run chaincode:audit-anchor:test passes
-[ ] local Fabric smoke path documented
-[ ] no raw KYC, personal, payment, or commercial payloads are written on-chain
+[x] npm run chaincode:audit-anchor:build passes
+[x] npm run chaincode:audit-anchor:test passes
+[x] local Fabric smoke path documented
+[x] no raw KYC, personal, payment, or commercial payloads are written on-chain
 
 Application validation
-[ ] npm run build passes
-[ ] npm run frontend:build passes
-[ ] npm test passes
-[ ] git diff --check passes
+[x] npm run build passes
+[x] npm run frontend:build passes
+[x] npm test passes
+[x] git diff --check passes
 
 Security / authorization
-[ ] all protected routes use bearer session
-[ ] actor context is server-derived
-[ ] unauthorized role access is blocked
-[ ] blocked or pending-review organizations cannot transact
-[ ] KYC eligibility is checked before transaction actions
+[x] all protected routes use bearer session
+[x] actor context is server-derived
+[x] unauthorized role access is blocked
+[x] blocked or pending-review organizations cannot transact
+[x] KYC eligibility is checked before transaction actions
 
 Actor UAT
-[ ] administrator flow passes
+[x] administrator flow passes
 [x] buyer flow passes
 [x] supplier flow passes
 [x] compliance reviewer flow passes

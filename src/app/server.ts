@@ -52,8 +52,24 @@ import { InMemoryExportBundleRepository } from '../modules/reporting/infrastruct
 import { registerPlsRoutes } from '../modules/financing/api/pls.routes.js';
 import type { PlsContractRepository } from '../modules/financing/application/pls-contract-repository.js';
 import { InMemoryPlsContractRepository } from '../modules/financing/infrastructure/in-memory-pls-contract-repository.js';
+import { createPostgresPool, type PostgresExecutor } from '../infrastructure/database/postgres-client.js';
+import { PostgresMemberOrganizationRepository } from '../modules/membership/infrastructure/postgres-member-organization-repository.js';
+import { PostgresRoleRepository } from '../modules/access-control/infrastructure/postgres-role-repository.js';
+import { PostgresRoleAssignmentRepository } from '../modules/access-control/infrastructure/postgres-role-assignment-repository.js';
+import { PostgresAccessAuditEventRepository } from '../modules/shared/infrastructure/postgres-access-audit-event-repository.js';
+import { PostgresPlatformUserCredentialRepository } from '../modules/auth/infrastructure/postgres-platform-user-credential-repository.js';
+import { PostgresAuthSessionRepository } from '../modules/auth/infrastructure/postgres-auth-session-repository.js';
+import { PostgresProcureToPayLifecycleEventRepository } from '../modules/procurement/infrastructure/postgres-procure-to-pay-lifecycle-event-repository.js';
+import { PostgresBlockchainAnchorMetadataRepository } from '../modules/blockchain/infrastructure/postgres-blockchain-anchor-metadata-repository.js';
+import { PostgresEscrowRepository } from '../modules/escrow/infrastructure/postgres-escrow-repository.js';
 
 const DEFAULT_DEV_PORT = 3100;
+type RuntimePersistenceMode = 'memory' | 'postgres';
+
+type RuntimeServerDependencies = {
+  postgresPool?: PostgresExecutor & { end(): Promise<void> };
+  serverOptions: Parameters<typeof createTestableServer>[0];
+};
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -274,7 +290,48 @@ export function createTestableServer(options?: {
 }
 
 // Existing singleton server for normal runtime
-const server = createTestableServer({ registerKycAmlRoutes: true });
+function loadRuntimePersistenceMode(env: NodeJS.ProcessEnv = process.env): RuntimePersistenceMode {
+  return env.PERSISTENCE_ADAPTER === 'postgres' ? 'postgres' : 'memory';
+}
+
+function createRuntimeServerDependencies(
+  mode: RuntimePersistenceMode = loadRuntimePersistenceMode(),
+): RuntimeServerDependencies {
+  if (mode !== 'postgres') {
+    return {
+      serverOptions: {
+        registerKycAmlRoutes: true,
+      },
+    };
+  }
+
+  const postgresPool = createPostgresPool();
+
+  return {
+    postgresPool,
+    serverOptions: {
+      registerKycAmlRoutes: true,
+      memberRepository: new PostgresMemberOrganizationRepository(postgresPool),
+      roleRepository: new PostgresRoleRepository(postgresPool),
+      roleAssignmentRepository: new PostgresRoleAssignmentRepository(postgresPool),
+      accessAuditEventRepository: new PostgresAccessAuditEventRepository(postgresPool),
+      credentialRepository: new PostgresPlatformUserCredentialRepository(postgresPool),
+      sessionRepository: new PostgresAuthSessionRepository(postgresPool),
+      procureToPayLifecycleEventRepository: new PostgresProcureToPayLifecycleEventRepository(postgresPool),
+      blockchainAnchorMetadataRepository: new PostgresBlockchainAnchorMetadataRepository(postgresPool),
+      escrowRepository: new PostgresEscrowRepository(postgresPool),
+    },
+  };
+}
+
+const runtimeDependencies = createRuntimeServerDependencies();
+const server = createTestableServer(runtimeDependencies.serverOptions);
+
+if (runtimeDependencies.postgresPool) {
+  server.addHook('onClose', async () => {
+    await runtimeDependencies.postgresPool?.end();
+  });
+}
 
 const PORT = Number(process.env.PORT ?? DEFAULT_DEV_PORT);
 
