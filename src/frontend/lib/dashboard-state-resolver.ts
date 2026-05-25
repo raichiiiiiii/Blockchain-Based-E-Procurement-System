@@ -3,7 +3,16 @@ import type { FrontendActorContext } from './session-state';
 export type DashboardUserStatus = 'active' | 'inactive';
 export type DashboardOrganizationStatus = 'pendingReview' | 'active' | 'inactive' | 'suspended' | 'deleted';
 export type DashboardRoleAssignmentStatus = 'active' | 'revoked' | 'none';
-export type SupportedDashboardRole = 'buyer' | 'auditor';
+export type SupportedDashboardRole =
+  | 'administrator'
+  | 'buyer'
+  | 'supplier'
+  | 'complianceReviewer'
+  | 'shariahReviewer'
+  | 'financier'
+  | 'auditor'
+  | 'regulator'
+  | 'securityOperator';
 
 export type DashboardStateCode =
   | 'loading'
@@ -28,10 +37,20 @@ export type DashboardResolverInput = {
   backendAvailable?: boolean;
 };
 
-const ROLE_PRIORITY: SupportedDashboardRole[] = ['auditor', 'buyer'];
+const ROLE_PRIORITY: SupportedDashboardRole[] = [
+  'administrator',
+  'auditor',
+  'regulator',
+  'securityOperator',
+  'complianceReviewer',
+  'shariahReviewer',
+  'financier',
+  'buyer',
+  'supplier',
+];
 
 export function isSupportedDashboardRole(role: string): role is SupportedDashboardRole {
-  return role === 'buyer' || role === 'auditor';
+  return ROLE_PRIORITY.includes(role as SupportedDashboardRole);
 }
 
 function resolveSupportedRole(roleCodes: string[]): SupportedDashboardRole | undefined {

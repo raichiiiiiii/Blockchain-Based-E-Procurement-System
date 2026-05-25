@@ -3,7 +3,7 @@ import type {
   MemberOrganizationRepository,
   PersistedMemberOrganizationDraft,
 } from '../application/member-organization-repository.js';
-import type { MemberOrganization } from '../domain/member-organization.js';
+import type { MemberOrganization, MemberOrganizationStatus } from '../domain/member-organization.js';
 import type { PostgresExecutor } from '../../../infrastructure/database/postgres-client.js';
 import { toIsoString } from '../../../infrastructure/database/postgres-row-utils.js';
 
@@ -18,7 +18,7 @@ type MemberOrganizationRow = {
   contact_phone: string | null;
   country_code: string | null;
   notes: string | null;
-  status: 'pendingReview';
+  status: MemberOrganizationStatus;
   created_at: Date | string;
   updated_at: Date | string;
 };
@@ -94,10 +94,33 @@ export class PostgresMemberOrganizationRepository implements MemberOrganizationR
     return result.rows[0] ? toPersistedDraft(result.rows[0]) : null;
   }
 
+  async findAll(): Promise<PersistedMemberOrganizationDraft[]> {
+    const result = await this.db.query<MemberOrganizationRow>(
+      'SELECT * FROM member_organizations ORDER BY created_at DESC, id ASC',
+    );
+
+    return result.rows.map(row => toPersistedDraft(row));
+  }
+
   async findByRegistrationNumber(registrationNumber: string): Promise<PersistedMemberOrganizationDraft | null> {
     const result = await this.db.query<MemberOrganizationRow>(
       'SELECT * FROM member_organizations WHERE registration_number = $1',
       [registrationNumber],
+    );
+
+    return result.rows[0] ? toPersistedDraft(result.rows[0]) : null;
+  }
+
+  async updateStatus(id: string, status: MemberOrganizationStatus): Promise<PersistedMemberOrganizationDraft | null> {
+    const result = await this.db.query<MemberOrganizationRow>(
+      `
+        UPDATE member_organizations
+        SET status = $2,
+            updated_at = now()
+        WHERE id = $1
+        RETURNING *
+      `,
+      [id, status],
     );
 
     return result.rows[0] ? toPersistedDraft(result.rows[0]) : null;

@@ -1,0 +1,10 @@
+{
+  "id": "25175c79f55b44268e7f643e83f9b526",
+  "timestamp": "2026-05-25T06:25:28.811189Z",
+  "command_id": "5d15c7648b554e1d9f6079e872469fe7",
+  "order": 0,
+  "exit_code": 1,
+  "stdout": null,
+  "stderr": "chmod: cannot access '/workspace/project/.openhands/setup.sh': No such file or directory\n",
+  "kind": "BashOutput"
+}

@@ -3,8 +3,10 @@ import AppLayout from './components/layout/AppLayout';
 import DashboardStateView from './components/dashboard/DashboardStateView';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import AdminDashboard from './pages/AdminDashboard';
 import BuyerDashboard from './pages/BuyerDashboard';
 import AuditorDashboard from './pages/AuditorDashboard';
+import RoleDashboard from './pages/RoleDashboard';
 import { loginWithCredentials, loginWithDemoAccount, logoutSession, type DemoAccountId, type LoginCredentials } from './lib/auth-client';
 import {
   clearStoredSession,
@@ -80,7 +82,15 @@ function renderRoleDashboard(
     return <BuyerDashboard activeTarget={activeTarget} session={session} />;
   }
 
-  return <AuditorDashboard activeTarget={activeTarget} />;
+  if (role === 'administrator') {
+    return <AdminDashboard activeTarget={activeTarget} session={session} />;
+  }
+
+  if (role === 'auditor') {
+    return <AuditorDashboard activeTarget={activeTarget} />;
+  }
+
+  return <RoleDashboard role={role} activeTarget={activeTarget} />;
 }
 
 function App() {

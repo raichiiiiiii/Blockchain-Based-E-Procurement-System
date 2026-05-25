@@ -1,0 +1,8 @@
+{
+  "command": "git config --global user.name \"openhands\"",
+  "cwd": "/workspace/project",
+  "timeout": 30,
+  "id": "b96c10f7ab5949abbfbc7097d2809296",
+  "timestamp": "2026-05-25T06:25:28.241636Z",
+  "kind": "BashCommand"
+}

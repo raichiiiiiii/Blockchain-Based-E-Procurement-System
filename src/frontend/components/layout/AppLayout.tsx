@@ -13,8 +13,15 @@ type AppLayoutProps = {
 };
 
 const roleLabels: Record<SupportedDashboardRole, string> = {
+  administrator: 'Administrator',
   buyer: 'Buyer',
+  supplier: 'Supplier',
+  complianceReviewer: 'Compliance Reviewer',
+  shariahReviewer: 'Shariah Reviewer',
+  financier: 'Financier',
   auditor: 'Auditor',
+  regulator: 'Regulator',
+  securityOperator: 'Security Operator',
 };
 
 function AppLayout({

@@ -99,6 +99,51 @@ Not yet actor-complete:
 - Developer / Integrator quickstart workflow
 ```
 
+Wave 0 documentation lock status:
+
+```text
+Completed:
+- roadmap append accepted as Sprint 7 execution appendix
+- mandatory / should-have / stretch / post-MVP scope recorded
+- active roadmap references checked against docs/README.md structure
+- Sprint 6 recovery evidence mapped
+- local demo runbook created
+
+Evidence:
+- docs/evidence/qa/PBI-361_DEPLOYMENT_SCOPE_LOCK_VALIDATION.md
+```
+
+Wave 1 dashboard readiness status:
+
+```text
+Completed:
+- mandatory demo actor catalogue expanded
+- dashboard resolver recognizes administrator, buyer, supplier, compliance reviewer, Shariah reviewer, financier, auditor, and regulator roles
+- security operator dashboard entry added as should-have coverage
+- PostgreSQL-backed login can attach active organization and role context to issued sessions
+- role-specific dashboard navigation smoke tested in browser
+
+Evidence:
+- docs/evidence/qa/PBI-366_DASHBOARD_ACTOR_READINESS_VALIDATION.md
+```
+
+Wave 2 administrator workflow status:
+
+```text
+Completed:
+- administrator dashboard now exposes Members, Roles, and Access History surfaces
+- member organization list/detail/status routes require bearer-session administrator context
+- organization status actions support pendingReview, active, inactive, suspended, and deleted states
+- canonical administrator role is accepted by RBAC admin gates
+- access history is available to administrator as read-only governance evidence
+- admin UAT script and authorization matrix baseline created
+
+Evidence:
+- docs/evidence/qa/PBI-364_ADMIN_RBAC_WORKFLOW_VALIDATION.md
+- docs/evidence/qa/PBI-424_ACTOR_UAT_SCRIPTS.md
+- docs/evidence/qa/PBI-425_AUTHORIZATION_REGRESSION_MATRIX.md
+```
+
 ## 4. MVP scope boundary
 
 ### Mandatory deployment scope
@@ -161,17 +206,17 @@ Not yet actor-complete:
 
 | Actor | Objective | Entry point | Route / surface | Mandatory actions | Primary ReqIDs | Roadmap PBIs | Deployment status |
 |---|---|---|---|---|---|---|---|
-| Administrator | Govern members, roles, assignments, organization status | `/login` | `/dashboard`, `/members`, `/roles`, `/access-history` | Manage organizations, assign/revoke roles, inspect access history | R03, R17, R22 | PBI-364 to PBI-371 | Not ready until UI exists |
-| SME / Supplier | Receive orders, acknowledge, provide delivery evidence placeholder, view escrow status | `/login` | `/orders`, `/delivery-evidence`, `/escrow-status` | Acknowledge order, submit evidence metadata, view escrow | R05, R06, R17, R18, R22 | PBI-372 to PBI-382 | Not ready |
+| Administrator | Govern members, roles, assignments, organization status | `/login` | `/dashboard`, `/members`, `/roles`, `/access-history` | Manage organizations, assign/revoke roles, inspect access history | R03, R17, R22 | PBI-364 to PBI-371 | Workflow ready |
+| SME / Supplier | Receive orders, acknowledge, provide delivery evidence placeholder, view escrow status | `/login` | `/orders`, `/delivery-evidence`, `/escrow-status` | Acknowledge order, submit evidence metadata, view escrow | R05, R06, R17, R18, R22 | PBI-372 to PBI-382 | Dashboard entry ready; workflow pending |
 | Buyer / Procurement Officer | Create orders, create escrow, view proof | `/login` | `/orders`, `/escrow`, `/blockchain-proof` | Create order, create escrow from accepted order, view proof | R05, R06, R17, R22 | PBI-372 to PBI-382 | Partially ready |
-| Compliance Reviewer | Review KYC/AML cases and eligibility | `/login` | `/compliance`, `/compliance/cases/:id` | Approve, reject, flag, block, inspect eligibility | R02, R17, R22 | PBI-383 to PBI-392 | Backend partial, UI not ready |
-| Shariah Reviewer | Review PLS contracts and decisions | `/login` | `/shariah/reviews`, `/shariah/reviews/:id` | Complete checklist, approve/reject/conditional approve | R07, R20, R22 | PBI-393 to PBI-405 | Backend partial, UI not ready |
-| Bank / Financier | Review PLS contract and distribution | `/login` | `/financing`, `/financing/contracts/:id` | View PLS contract, inspect distribution record | R07, R17, R20, R26 | PBI-393 to PBI-405 | Not ready |
+| Compliance Reviewer | Review KYC/AML cases and eligibility | `/login` | `/compliance`, `/compliance/cases/:id` | Approve, reject, flag, block, inspect eligibility | R02, R17, R22 | PBI-383 to PBI-392 | Dashboard entry ready; workflow pending |
+| Shariah Reviewer | Review PLS contracts and decisions | `/login` | `/shariah/reviews`, `/shariah/reviews/:id` | Complete checklist, approve/reject/conditional approve | R07, R20, R22 | PBI-393 to PBI-405 | Dashboard entry ready; workflow pending |
+| Bank / Financier | Review PLS contract and distribution | `/login` | `/financing`, `/financing/contracts/:id` | View PLS contract, inspect distribution record | R07, R17, R20, R26 | PBI-393 to PBI-405 | Dashboard entry ready; workflow pending |
 | Auditor | Search audit trail and verify blockchain proof | `/login` | `/audit`, `/audit/events/:id`, `/blockchain-proof` | Search event, inspect proof, verify hash | R05, R15, R22 | PBI-406 to PBI-412 plus PBI-323/PBI-333 | Partially ready |
-| Security Operator | Inspect access alerts and proof anomalies | `/login` | `/security`, `/access-alerts` | View denied actions and proof failures | R22, R25, R28 | PBI-413 to PBI-417 | Should-have |
+| Security Operator | Inspect access alerts and proof anomalies | `/login` | `/security`, `/access-alerts` | View denied actions and proof failures | R22, R25, R28 | PBI-413 to PBI-417 | Dashboard entry ready; should-have workflow pending |
 | Network / Platform Operator | Start and validate local services | CLI/runbooks | runbooks and scripts | Start DB/API/frontend/Fabric smoke path | R25, R26 | PBI-418 to PBI-422 | Partially ready |
 | Developer / Integrator | Use local API and contracts | docs/API | quickstart/runbooks | Login, call escrow/proof/export APIs | R11, R12, R23, R26 | PBI-418 to PBI-422 | Should-have |
-| Regulator / Reporting User | Request and verify audit export | `/login` | `/exports`, `/exports/:bundleId` | Request bundle, verify integrity metadata | R15, R22, R28 | PBI-406 to PBI-412 | Not ready |
+| Regulator / Reporting User | Request and verify audit export | `/login` | `/exports`, `/exports/:bundleId` | Request bundle, verify integrity metadata | R15, R22, R28 | PBI-406 to PBI-412 | Dashboard entry ready; export workflow pending |
 
 ## 6. Execution waves
 
@@ -203,6 +248,7 @@ Output:
 - every mandatory demo actor can authenticate
 - dashboard resolver handles all mandatory actor roles
 - no dashboard path relies on role dropdown authorization
+- evidence: docs/evidence/qa/PBI-366_DASHBOARD_ACTOR_READINESS_VALIDATION.md
 ```
 
 ### Wave 2 — Actor flows and RBAC hardening
@@ -218,6 +264,7 @@ Output:
 - administrator workflow complete
 - role access matrix validated
 - unauthorized routes/actions blocked
+- evidence: docs/evidence/qa/PBI-364_ADMIN_RBAC_WORKFLOW_VALIDATION.md
 ```
 
 ### Wave 3 — Procurement and onboarding completion

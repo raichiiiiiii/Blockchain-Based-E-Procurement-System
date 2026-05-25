@@ -28,6 +28,13 @@ const demoAccounts: DemoAccount[] = [
     organizationId: 'demo-audit-org',
   },
   {
+    userId: 'demo-regulator-user',
+    username: 'regulator.demo',
+    displayName: 'Demo Regulator',
+    roleCode: 'regulator',
+    organizationId: 'demo-regulator-org',
+  },
+  {
     userId: 'demo-compliance-user',
     username: 'compliance.demo',
     displayName: 'Demo Compliance Reviewer',
@@ -74,6 +81,7 @@ const demoAccounts: DemoAccount[] = [
 const roleLabels: Record<string, string> = {
   administrator: 'Administrator',
   auditor: 'Auditor',
+  regulator: 'Regulator',
   complianceReviewer: 'Compliance Reviewer',
   shariahReviewer: 'Shariah Reviewer',
   buyer: 'Buyer',

@@ -23,6 +23,8 @@ type LoginSuccessEnvelope = {
     expiresAt?: string;
     actor?: {
       actorUserId?: string;
+      actorOrganizationId?: string;
+      actorRoleCodes?: string[];
       authenticationSessionId?: string;
       authenticationMethod?: string;
     };
@@ -63,6 +65,8 @@ describe('Auth Routes', () => {
       userId: 'user123',
       username: 'testuser',
       passwordHash: createHash('sha256').update('testpassword').digest('hex'),
+      actorOrganizationId: 'org123',
+      actorRoleCodes: ['auditor'],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -92,6 +96,8 @@ describe('Auth Routes', () => {
     assert.ok(body.data?.sessionId);
     assert.ok(body.data?.expiresAt);
     assert.equal(body.data?.actor?.actorUserId, 'user123');
+    assert.equal(body.data?.actor?.actorOrganizationId, 'org123');
+    assert.deepEqual(body.data?.actor?.actorRoleCodes, ['auditor']);
     assert.equal(body.data?.actor?.authenticationSessionId, body.data?.sessionId);
     assert.equal(body.data?.actor?.authenticationMethod, 'localPassword');
   });

@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import { strict as assert } from 'node:assert/strict';
 import { createMemberOrganization } from './create-member-organization.js';
 import type { MemberOrganizationRepository, PersistedMemberOrganizationDraft } from './member-organization-repository.js';
+import type { MemberOrganization, MemberOrganizationStatus } from '../domain/member-organization.js';
 
 // Simple test stub repository that tracks call count
 class TestMemberOrganizationRepository implements MemberOrganizationRepository {
@@ -12,7 +13,7 @@ class TestMemberOrganizationRepository implements MemberOrganizationRepository {
     this.existingOrg = org;
   }
 
-  async saveDraft(organization: any): Promise<PersistedMemberOrganizationDraft> {
+  async saveDraft(organization: MemberOrganization): Promise<PersistedMemberOrganizationDraft> {
     this.saveDraftCallCount++;
     return {
       ...organization,
@@ -22,11 +23,29 @@ class TestMemberOrganizationRepository implements MemberOrganizationRepository {
     };
   }
 
+  async findAll(): Promise<PersistedMemberOrganizationDraft[]> {
+    return this.existingOrg ? [this.existingOrg] : [];
+  }
+
   async findById(id: string): Promise<PersistedMemberOrganizationDraft | null> {
     return null;
   }
 
   async findByRegistrationNumber(registrationNumber: string): Promise<PersistedMemberOrganizationDraft | null> {
+    return this.existingOrg;
+  }
+
+  async updateStatus(id: string, status: MemberOrganizationStatus): Promise<PersistedMemberOrganizationDraft | null> {
+    if (!this.existingOrg || this.existingOrg.id !== id) {
+      return null;
+    }
+
+    this.existingOrg = {
+      ...this.existingOrg,
+      status,
+      updatedAt: new Date().toISOString()
+    };
+
     return this.existingOrg;
   }
 }

@@ -117,6 +117,28 @@ describe('LoginUserService', () => {
     assert.equal(sessionRepository.savedSessions[0]?.status, 'active');
   });
 
+  it('copies credential actor organization and roles into the issued session', async () => {
+    credentialRepository.addCredential({
+      userId: 'role-user',
+      username: 'roleuser',
+      passwordHash: hashedPassword,
+      actorOrganizationId: 'org-role-1',
+      actorRoleCodes: ['administrator', 'auditor'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+
+    const result = await loginService.login({
+      username: 'roleuser',
+      password: validPassword
+    });
+
+    assert.equal(result.actor.actorOrganizationId, 'org-role-1');
+    assert.deepEqual(result.actor.actorRoleCodes, ['administrator', 'auditor']);
+    assert.equal(sessionRepository.savedSessions.at(-1)?.actorOrganizationId, 'org-role-1');
+    assert.deepEqual(sessionRepository.savedSessions.at(-1)?.actorRoleCodes, ['administrator', 'auditor']);
+  });
+
   it('stores only tokenHash in the session repository', async () => {
     const result = await loginService.login({
       username: validUsername,

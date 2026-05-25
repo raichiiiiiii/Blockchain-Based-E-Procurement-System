@@ -1,4 +1,4 @@
-import type { MemberOrganization } from '../domain/member-organization.js';
+import type { MemberOrganization, MemberOrganizationStatus } from '../domain/member-organization.js';
 import type { MemberOrganizationRepository, PersistedMemberOrganizationDraft } from '../application/member-organization-repository.js';
 
 export class InMemoryMemberOrganizationRepository implements MemberOrganizationRepository {
@@ -17,13 +17,32 @@ export class InMemoryMemberOrganizationRepository implements MemberOrganizationR
     return persistedDraft;
   }
 
+  async findAll(): Promise<PersistedMemberOrganizationDraft[]> {
+    return this.drafts.map(draft => ({ ...draft }));
+  }
+
   async findById(id: string): Promise<PersistedMemberOrganizationDraft | null> {
     const draft = this.drafts.find(draft => draft.id === id);
-    return draft || null;
+    return draft ? { ...draft } : null;
   }
 
   async findByRegistrationNumber(registrationNumber: string): Promise<PersistedMemberOrganizationDraft | null> {
     const draft = this.drafts.find(draft => draft.registrationNumber === registrationNumber);
-    return draft || null;
+    return draft ? { ...draft } : null;
+  }
+
+  async updateStatus(id: string, status: MemberOrganizationStatus): Promise<PersistedMemberOrganizationDraft | null> {
+    const index = this.drafts.findIndex(draft => draft.id === id);
+    if (index === -1) {
+      return null;
+    }
+
+    this.drafts[index] = {
+      ...this.drafts[index],
+      status,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return { ...this.drafts[index] };
   }
 }

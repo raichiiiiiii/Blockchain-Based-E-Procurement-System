@@ -55,6 +55,10 @@ type ValidationIssue = {
   message: string;
 };
 
+function canReadAccessHistory(actorRoles: readonly string[] | undefined): boolean {
+  return actorRoles?.some(role => role === 'auditor' || role === 'administrator' || role === 'admin') ?? false;
+}
+
 // Helper function to validate access history query parameters
 function validateAccessHistoryQuery(query: AccessHistoryQuerystring): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
@@ -276,7 +280,7 @@ const registerAccessHistoryRoutes: FastifyPluginAsync<AccessHistoryRoutesOptions
       preHandler: async (request, reply) => {
         // Check if the actor has auditor role using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
-        if (!actorRoles || !actorRoles.includes('auditor')) {
+        if (!canReadAccessHistory(actorRoles)) {
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
@@ -337,7 +341,7 @@ const registerAccessHistoryRoutes: FastifyPluginAsync<AccessHistoryRoutesOptions
       preHandler: async (request, reply) => {
         // Check if the actor has auditor role using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
-        if (!actorRoles || !actorRoles.includes('auditor')) {
+        if (!canReadAccessHistory(actorRoles)) {
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',
@@ -417,7 +421,7 @@ const registerAccessHistoryRoutes: FastifyPluginAsync<AccessHistoryRoutesOptions
       preHandler: async (request, reply) => {
         // Check if the actor has auditor role using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
-        if (!actorRoles || !actorRoles.includes('auditor')) {
+        if (!canReadAccessHistory(actorRoles)) {
           return reply.code(403).send({
             error: {
               code: 'FORBIDDEN',

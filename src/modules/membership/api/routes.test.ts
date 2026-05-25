@@ -2,6 +2,9 @@ import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { createTestableServer } from '../../../app/server.js';
 import { InMemoryAccessAuditEventRepository } from '../../shared/infrastructure/in-memory-access-audit-event-repository.js';
+import { InMemoryMemberOrganizationRepository } from '../infrastructure/in-memory-member-organization-repository.js';
+import { InMemoryAuthSessionRepository } from '../../auth/infrastructure/in-memory-auth-session-repository.js';
+import { hashToken } from '../../auth/application/session-token.js';
 
 // Mock audit callback to capture audit events
 let capturedAuditEvents: any[] = [];
@@ -432,4 +435,212 @@ test('should work without accessAuditEventRepository for backward compatibility'
   const responseBody = response.json();
   assert.strictEqual(responseBody.data.registrationNumber, 'BACKWARD-COMPAT-001');
   assert.strictEqual(responseBody.data.legalName, 'Backward Compatibility Test Organization');
+});
+
+async function createMembershipAdminTestContext(roleCodes: string[]) {
+  const memberRepository = new InMemoryMemberOrganizationRepository();
+  const sessionRepository = new InMemoryAuthSessionRepository();
+  const accessAuditEventRepository = new InMemoryAccessAuditEventRepository();
+  const token = `token-${roleCodes.join('-')}-${Math.random().toString(36).slice(2)}`;
+
+  await sessionRepository.save({
+    sessionId: `session-${roleCodes.join('-')}`,
+    tokenHash: hashToken(token),
+    actorUserId: `actor-${roleCodes.join('-')}`,
+    actorOrganizationId: 'demo-platform-org',
+    actorRoleCodes: roleCodes,
+    status: 'active',
+    issuedAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    authenticationMethod: 'localPassword'
+  });
+
+  const server = createTestableServer({
+    audit: mockAuditCallback,
+    memberRepository,
+    sessionRepository,
+    accessAuditEventRepository
+  });
+  await server.ready();
+
+  return {
+    server,
+    memberRepository,
+    accessAuditEventRepository,
+    authHeader: `Bearer ${token}`
+  };
+}
+
+test('administrator session can list, inspect, and update member organization status', async () => {
+  const { server, memberRepository, accessAuditEventRepository, authHeader } =
+    await createMembershipAdminTestContext(['administrator']);
+
+  const organization = await memberRepository.saveDraft({
+    registrationNumber: 'ADMIN-WORKFLOW-001',
+    legalName: 'Admin Workflow Organization',
+    organizationType: 'Corporation',
+    status: 'pendingReview'
+  });
+
+  const listResponse = await server.inject({
+    method: 'GET',
+    url: '/api/v1/member-organizations',
+    headers: {
+      authorization: authHeader
+    }
+  });
+
+  assert.strictEqual(listResponse.statusCode, 200);
+  const listBody = listResponse.json();
+  assert.strictEqual(listBody.data.items.length, 1);
+  assert.strictEqual(listBody.data.items[0].id, organization.id);
+  assert.strictEqual(listBody.data.items[0].status, 'pendingReview');
+
+  const detailResponse = await server.inject({
+    method: 'GET',
+    url: `/api/v1/member-organizations/${organization.id}`,
+    headers: {
+      authorization: authHeader
+    }
+  });
+
+  assert.strictEqual(detailResponse.statusCode, 200);
+  assert.strictEqual(detailResponse.json().data.legalName, 'Admin Workflow Organization');
+
+  const statusResponse = await server.inject({
+    method: 'PATCH',
+    url: `/api/v1/member-organizations/${organization.id}/status`,
+    headers: {
+      authorization: authHeader
+    },
+    payload: {
+      status: 'active'
+    }
+  });
+
+  assert.strictEqual(statusResponse.statusCode, 200);
+  assert.strictEqual(statusResponse.json().data.status, 'active');
+
+  const storedOrganization = await memberRepository.findById(organization.id);
+  assert.strictEqual(storedOrganization?.status, 'active');
+
+  const auditEvents = await accessAuditEventRepository.list();
+  assert.ok(auditEvents.some(event =>
+    event.action === 'updateMemberOrganizationStatus' &&
+    event.targetId === organization.id &&
+    event.outcome === 'success'
+  ));
+});
+
+test('non-administrator session cannot list or update member organizations', async () => {
+  const { server, memberRepository, accessAuditEventRepository, authHeader } =
+    await createMembershipAdminTestContext(['buyer']);
+
+  const organization = await memberRepository.saveDraft({
+    registrationNumber: 'ADMIN-FORBIDDEN-001',
+    legalName: 'Forbidden Organization',
+    organizationType: 'LLC',
+    status: 'pendingReview'
+  });
+
+  const listResponse = await server.inject({
+    method: 'GET',
+    url: '/api/v1/member-organizations',
+    headers: {
+      authorization: authHeader
+    }
+  });
+
+  assert.strictEqual(listResponse.statusCode, 403);
+  assert.strictEqual(listResponse.json().error.code, 'FORBIDDEN');
+
+  const statusResponse = await server.inject({
+    method: 'PATCH',
+    url: `/api/v1/member-organizations/${organization.id}/status`,
+    headers: {
+      authorization: authHeader
+    },
+    payload: {
+      status: 'suspended'
+    }
+  });
+
+  assert.strictEqual(statusResponse.statusCode, 403);
+  assert.strictEqual((await memberRepository.findById(organization.id))?.status, 'pendingReview');
+
+  const auditEvents = await accessAuditEventRepository.list();
+  assert.ok(auditEvents.some(event =>
+    event.action === 'listMemberOrganizations' &&
+    event.outcome === 'forbidden' &&
+    event.reason === 'administrator_required'
+  ));
+});
+
+test('member organization status route rejects invalid status values', async () => {
+  const { server, memberRepository, authHeader } =
+    await createMembershipAdminTestContext(['administrator']);
+
+  const organization = await memberRepository.saveDraft({
+    registrationNumber: 'ADMIN-INVALID-STATUS-001',
+    legalName: 'Invalid Status Organization',
+    organizationType: 'Corporation',
+    status: 'pendingReview'
+  });
+
+  const response = await server.inject({
+    method: 'PATCH',
+    url: `/api/v1/member-organizations/${organization.id}/status`,
+    headers: {
+      authorization: authHeader
+    },
+    payload: {
+      status: 'approved'
+    }
+  });
+
+  assert.strictEqual(response.statusCode, 400);
+  assert.strictEqual(response.json().error.code, 'VALIDATION_ERROR');
+  assert.strictEqual((await memberRepository.findById(organization.id))?.status, 'pendingReview');
+});
+
+test('member organization detail and status routes return not found for missing organization', async () => {
+  const { server, authHeader } = await createMembershipAdminTestContext(['administrator']);
+
+  const detailResponse = await server.inject({
+    method: 'GET',
+    url: '/api/v1/member-organizations/org_missing',
+    headers: {
+      authorization: authHeader
+    }
+  });
+
+  assert.strictEqual(detailResponse.statusCode, 404);
+  assert.strictEqual(detailResponse.json().error.code, 'NOT_FOUND');
+
+  const statusResponse = await server.inject({
+    method: 'PATCH',
+    url: '/api/v1/member-organizations/org_missing/status',
+    headers: {
+      authorization: authHeader
+    },
+    payload: {
+      status: 'inactive'
+    }
+  });
+
+  assert.strictEqual(statusResponse.statusCode, 404);
+  assert.strictEqual(statusResponse.json().error.code, 'NOT_FOUND');
+});
+
+test('member organization administration routes require an authenticated session', async () => {
+  const server = createTestableServer({ audit: mockAuditCallback });
+  await server.ready();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/member-organizations'
+  });
+
+  assert.strictEqual(response.statusCode, 401);
+  assert.strictEqual(response.json().error.code, 'UNAUTHORIZED');
 });

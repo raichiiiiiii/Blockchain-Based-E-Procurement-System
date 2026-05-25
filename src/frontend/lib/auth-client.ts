@@ -2,7 +2,16 @@ import { BackendApiError } from '../api/errors';
 import { requestJson } from '../api/http-client';
 import type { AuthenticatedFrontendSession, FrontendActorContext } from './session-state';
 
-export type DemoAccountId = 'buyer' | 'auditor';
+export type DemoAccountId =
+  | 'administrator'
+  | 'buyer'
+  | 'supplier'
+  | 'complianceReviewer'
+  | 'shariahReviewer'
+  | 'financier'
+  | 'auditor'
+  | 'regulator'
+  | 'securityOperator';
 
 export type DemoAccount = {
   id: DemoAccountId;
@@ -34,6 +43,20 @@ const createDemoToken = (accountId: DemoAccountId) => {
 
 export const demoAccounts: DemoAccount[] = [
   {
+    id: 'administrator',
+    label: 'Continue as Administrator',
+    roleLabel: 'Administrator',
+    username: 'admin.demo',
+    password: 'demo-password',
+    actor: {
+      actorUserId: 'demo-admin-user',
+      actorOrganizationId: 'demo-platform-org',
+      actorRoleCodes: ['administrator'],
+      authenticationSessionId: 'demo-administrator-session',
+      authenticationMethod: 'localPassword',
+    },
+  },
+  {
     id: 'buyer',
     label: 'Continue as Buyer',
     roleLabel: 'Buyer',
@@ -48,6 +71,62 @@ export const demoAccounts: DemoAccount[] = [
     },
   },
   {
+    id: 'supplier',
+    label: 'Continue as Supplier',
+    roleLabel: 'Supplier',
+    username: 'supplier.demo',
+    password: 'demo-password',
+    actor: {
+      actorUserId: 'demo-supplier-user',
+      actorOrganizationId: 'demo-supplier-org',
+      actorRoleCodes: ['supplier'],
+      authenticationSessionId: 'demo-supplier-session',
+      authenticationMethod: 'localPassword',
+    },
+  },
+  {
+    id: 'complianceReviewer',
+    label: 'Continue as Compliance Reviewer',
+    roleLabel: 'Compliance Reviewer',
+    username: 'compliance.demo',
+    password: 'demo-password',
+    actor: {
+      actorUserId: 'demo-compliance-user',
+      actorOrganizationId: 'demo-compliance-org',
+      actorRoleCodes: ['complianceReviewer'],
+      authenticationSessionId: 'demo-compliance-session',
+      authenticationMethod: 'localPassword',
+    },
+  },
+  {
+    id: 'shariahReviewer',
+    label: 'Continue as Shariah Reviewer',
+    roleLabel: 'Shariah Reviewer',
+    username: 'shariah.demo',
+    password: 'demo-password',
+    actor: {
+      actorUserId: 'demo-shariah-user',
+      actorOrganizationId: 'demo-shariah-org',
+      actorRoleCodes: ['shariahReviewer'],
+      authenticationSessionId: 'demo-shariah-session',
+      authenticationMethod: 'localPassword',
+    },
+  },
+  {
+    id: 'financier',
+    label: 'Continue as Financier',
+    roleLabel: 'Financier',
+    username: 'financier.demo',
+    password: 'demo-password',
+    actor: {
+      actorUserId: 'demo-financier-user',
+      actorOrganizationId: 'demo-financier-org',
+      actorRoleCodes: ['financier'],
+      authenticationSessionId: 'demo-financier-session',
+      authenticationMethod: 'localPassword',
+    },
+  },
+  {
     id: 'auditor',
     label: 'Continue as Auditor',
     roleLabel: 'Auditor',
@@ -58,6 +137,34 @@ export const demoAccounts: DemoAccount[] = [
       actorOrganizationId: 'demo-audit-org',
       actorRoleCodes: ['auditor'],
       authenticationSessionId: 'demo-auditor-session',
+      authenticationMethod: 'localPassword',
+    },
+  },
+  {
+    id: 'regulator',
+    label: 'Continue as Regulator',
+    roleLabel: 'Regulator',
+    username: 'regulator.demo',
+    password: 'demo-password',
+    actor: {
+      actorUserId: 'demo-regulator-user',
+      actorOrganizationId: 'demo-regulator-org',
+      actorRoleCodes: ['regulator'],
+      authenticationSessionId: 'demo-regulator-session',
+      authenticationMethod: 'localPassword',
+    },
+  },
+  {
+    id: 'securityOperator',
+    label: 'Continue as Security Operator',
+    roleLabel: 'Security Operator',
+    username: 'security.demo',
+    password: 'demo-password',
+    actor: {
+      actorUserId: 'demo-security-user',
+      actorOrganizationId: 'demo-security-org',
+      actorRoleCodes: ['securityOperator'],
+      authenticationSessionId: 'demo-security-session',
       authenticationMethod: 'localPassword',
     },
   },

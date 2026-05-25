@@ -76,8 +76,8 @@ export class LoginUserService {
       sessionId: `session_${randomBytes(16).toString('hex')}`,
       tokenHash,
       actorUserId: credential.userId,
-      actorOrganizationId: undefined, // Not available in current credential model
-      actorRoleCodes: [], // No roles in current model
+      actorOrganizationId: credential.actorOrganizationId,
+      actorRoleCodes: credential.actorRoleCodes ?? [],
       status: 'active',
       issuedAt: issuedAt.toISOString(),
       expiresAt: expiresAt.toISOString(),

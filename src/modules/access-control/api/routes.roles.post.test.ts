@@ -1,6 +1,8 @@
 import { test, describe } from 'node:test';
 import { strict as assert } from 'node:assert/strict';
 import { createTestableServer } from '../../../app/server.js';
+import { InMemoryAuthSessionRepository } from '../../auth/infrastructure/in-memory-auth-session-repository.js';
+import { hashToken } from '../../auth/application/session-token.js';
 
 describe('POST /api/v1/roles', () => {
   test('should create a role successfully', async () => {
@@ -39,6 +41,71 @@ describe('POST /api/v1/roles', () => {
     assert.strictEqual(responseBody.data.status, rolePayload.status);
     assert.strictEqual(responseBody.data.isSystemReserved, rolePayload.isSystemReserved);
     assert.strictEqual(responseBody.data.description, rolePayload.description);
+  });
+
+  test('should accept canonical administrator role for role creation', async () => {
+    const server = createTestableServer();
+
+    const rolePayload = {
+      roleCode: 'administrator-only-test',
+      displayName: 'Administrator Test Role',
+      scope: 'organization',
+      permissions: ['read'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        'x-actor-role': 'administrator',
+        'x-actor-id': 'demo-admin-user'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 201);
+    assert.strictEqual(response.json().data.roleCode, rolePayload.roleCode);
+  });
+
+  test('should accept backend administrator session for role creation', async () => {
+    const token = 'administrator-session-token';
+    const sessionRepository = new InMemoryAuthSessionRepository();
+    await sessionRepository.save({
+      sessionId: 'administrator-session',
+      tokenHash: hashToken(token),
+      actorUserId: 'demo-admin-user',
+      actorOrganizationId: 'demo-platform-org',
+      actorRoleCodes: ['administrator'],
+      status: 'active',
+      issuedAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      authenticationMethod: 'localPassword'
+    });
+
+    const server = createTestableServer({ sessionRepository });
+
+    const rolePayload = {
+      roleCode: 'administrator-session-test',
+      displayName: 'Administrator Session Role',
+      scope: 'organization',
+      permissions: ['read'],
+      status: 'active',
+      isSystemReserved: false
+    };
+
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/roles',
+      payload: rolePayload,
+      headers: {
+        authorization: `Bearer ${token}`
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 201);
+    assert.strictEqual(response.json().data.roleCode, rolePayload.roleCode);
   });
 
   test('should return conflict when creating duplicate role', async () => {

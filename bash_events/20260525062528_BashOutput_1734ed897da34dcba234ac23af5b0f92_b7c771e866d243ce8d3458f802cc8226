@@ -1,0 +1,10 @@
+{
+  "id": "b7c771e866d243ce8d3458f802cc8226",
+  "timestamp": "2026-05-25T06:25:28.733913Z",
+  "command_id": "1734ed897da34dcba234ac23af5b0f92",
+  "order": 0,
+  "exit_code": 128,
+  "stdout": null,
+  "stderr": "error: chmod on /workspace/project/.git/config.lock failed: Operation not permitted\nfatal: could not set 'core.filemode' to 'false'\n",
+  "kind": "BashOutput"
+}

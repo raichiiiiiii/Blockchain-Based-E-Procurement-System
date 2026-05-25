@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import { createRole } from '../application/create-role.js';
 import { updateRole } from '../application/update-role.js';
 import type { RoleRepository } from '../application/role-repository.js';
@@ -86,6 +86,10 @@ export type RoleAuditEvent =
   | RoleAssignmentRemoveAuditEvent
   | RoleAssignmentChangeAuditEvent;
 
+function hasAdministratorRole(actorRoles: readonly string[] | undefined): boolean {
+  return actorRoles?.some(role => role === 'admin' || role === 'administrator') ?? false;
+}
+
 // Define plugin options interface
 interface AccessControlRoutesOptions {
   repository: RoleRepository;
@@ -97,6 +101,7 @@ interface AccessControlRoutesOptions {
   userStatusLookup?: UserStatusLookup;
   memberStatusLookup?: MemberStatusLookup;
   accessAuditEventRepository?: AccessAuditEventRepository;
+  authenticatedPreHandler?: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
 }
 
 // Create the Fastify plugin for access-control routes
@@ -112,14 +117,27 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     memberStatusLookup
   } = options;
 
+  async function applySessionActorWhenPresent(request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+    if (!request.headers.authorization || !options.authenticatedPreHandler) {
+      return true;
+    }
+
+    await options.authenticatedPreHandler(request, reply);
+    return !reply.sent;
+  }
+
   // POST /api/v1/roles - Create a new role
   fastify.post<{ Body: Role }>(
     '/roles',
     {
       preHandler: async (request, reply) => {
+        if (!(await applySessionActorWhenPresent(request, reply))) {
+          return;
+        }
+
         // Check if the actor is an admin using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
-        if (!actorRoles || !actorRoles.includes('admin')) {
+        if (!hasAdministratorRole(actorRoles)) {
           // Emit audit event for forbidden access
           const actorContext = getRequestActorContext(request);
           const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
@@ -259,9 +277,13 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     '/roles/:roleId',
     {
       preHandler: async (request, reply) => {
+        if (!(await applySessionActorWhenPresent(request, reply))) {
+          return;
+        }
+
         // Check if the actor is an admin using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
-        if (!actorRoles || !actorRoles.includes('admin')) {
+        if (!hasAdministratorRole(actorRoles)) {
           // Emit audit event for forbidden access
           const actorContext = getRequestActorContext(request);
           const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
@@ -430,9 +452,13 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     '/role-assignments',
     {
       preHandler: async (request, reply) => {
+        if (!(await applySessionActorWhenPresent(request, reply))) {
+          return;
+        }
+
         // Check if the actor is an admin using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
-        if (!actorRoles || !actorRoles.includes('admin')) {
+        if (!hasAdministratorRole(actorRoles)) {
           // Emit audit event for forbidden access
           const actorContext = getRequestActorContext(request);
           const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
@@ -752,9 +778,13 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     '/role-assignments',
     {
       preHandler: async (request, reply) => {
+        if (!(await applySessionActorWhenPresent(request, reply))) {
+          return;
+        }
+
         // Check if the actor is an admin using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
-        if (!actorRoles || !actorRoles.includes('admin')) {
+        if (!hasAdministratorRole(actorRoles)) {
           // Emit audit event for forbidden access
           const actorContext = getRequestActorContext(request);
           const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
@@ -929,9 +959,13 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
     '/role-assignments/change',
     {
       preHandler: async (request, reply) => {
+        if (!(await applySessionActorWhenPresent(request, reply))) {
+          return;
+        }
+
         // Check if the actor is an admin using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
-        if (!actorRoles || !actorRoles.includes('admin')) {
+        if (!hasAdministratorRole(actorRoles)) {
           // Emit audit event for forbidden access
           const actorContext = getRequestActorContext(request);
           const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';

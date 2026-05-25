@@ -1,4 +1,4 @@
-import type { MemberOrganization } from '../domain/member-organization.js';
+import type { MemberOrganization, MemberOrganizationStatus } from '../domain/member-organization.js';
 
 export type PersistedMemberOrganizationDraft = MemberOrganization & {
   id: string;
@@ -8,6 +8,8 @@ export type PersistedMemberOrganizationDraft = MemberOrganization & {
 
 export interface MemberOrganizationRepository {
   saveDraft(organization: MemberOrganization): Promise<PersistedMemberOrganizationDraft>;
+  findAll(): Promise<PersistedMemberOrganizationDraft[]>;
   findById(id: string): Promise<PersistedMemberOrganizationDraft | null>;
   findByRegistrationNumber(registrationNumber: string): Promise<PersistedMemberOrganizationDraft | null>;
+  updateStatus(id: string, status: MemberOrganizationStatus): Promise<PersistedMemberOrganizationDraft | null>;
 }

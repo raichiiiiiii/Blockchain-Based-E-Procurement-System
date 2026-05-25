@@ -1,7 +1,8 @@
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import type { CreateMemberOrgInput } from '../application/create-member-organization.js';
 import { createMemberOrganization } from '../application/create-member-organization.js';
-import type { MemberOrganizationRepository } from '../application/member-organization-repository.js';
+import type { MemberOrganizationRepository, PersistedMemberOrganizationDraft } from '../application/member-organization-repository.js';
+import { isMemberOrganizationStatus } from '../domain/member-organization.js';
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
 import { recordAccessAuditEvent } from '../../shared/application/record-access-audit-event.js';
@@ -23,12 +24,254 @@ interface MembershipRoutesOptions {
   repository: MemberOrganizationRepository;
   audit: (event: MemberOrgCreateAuditEvent) => void;
   accessAuditEventRepository?: AccessAuditEventRepository;
+  authenticatedPreHandler?: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
+}
+
+function toMemberOrganizationResponse(organization: PersistedMemberOrganizationDraft) {
+  return {
+    id: organization.id,
+    registrationNumber: organization.registrationNumber,
+    legalName: organization.legalName,
+    displayName: organization.displayName,
+    organizationType: organization.organizationType,
+    businessType: organization.businessType,
+    status: organization.status,
+    createdAt: organization.createdAt,
+    updatedAt: organization.updatedAt
+  };
+}
+
+function hasAdministratorRole(actorRoles: readonly string[] | undefined): boolean {
+  return actorRoles?.some(role => role === 'administrator' || role === 'admin') ?? false;
+}
+
+async function recordMembershipAccessEvent(
+  repository: AccessAuditEventRepository | undefined,
+  request: FastifyRequest,
+  input: {
+    actorUserId: string;
+    action: string;
+    targetId: string;
+    outcome: 'success' | 'forbidden' | 'validationError' | 'notFound';
+    reason?: string;
+    route: string;
+    method: string;
+  }
+) {
+  await recordAccessAuditEvent(repository, {
+    requestId: request.id,
+    actorUserId: input.actorUserId,
+    action: input.action,
+    targetType: 'memberOrganization',
+    targetId: input.targetId,
+    outcome: input.outcome,
+    reason: input.reason,
+    module: 'membership',
+    route: input.route,
+    method: input.method
+  });
 }
 
 // Update the route plugin type/signature so it accepts the typed options
 const registerMembershipRoutes: FastifyPluginAsync<MembershipRoutesOptions> = async (fastify, options) => {
-  // Access the repository through options.repository (not used yet)
-  // Keeping the repository in options for future use
+  async function requireAdministrator(
+    request: FastifyRequest,
+    reply: FastifyReply,
+    auditContext: {
+      action: string;
+      targetId: string;
+      route: string;
+      method: string;
+    }
+  ): Promise<boolean> {
+    if (options.authenticatedPreHandler) {
+      await options.authenticatedPreHandler(request, reply);
+      if (reply.sent) {
+        return false;
+      }
+    }
+
+    const actorRoles = request.actorContext?.authorizationContext.roles;
+    if (hasAdministratorRole(actorRoles)) {
+      return true;
+    }
+
+    const actorContext = getRequestActorContext(request);
+    const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
+
+    await recordMembershipAccessEvent(options.accessAuditEventRepository, request, {
+      actorUserId: actorId,
+      action: auditContext.action,
+      targetId: auditContext.targetId,
+      outcome: 'forbidden',
+      reason: 'administrator_required',
+      route: auditContext.route,
+      method: auditContext.method
+    });
+
+    reply.code(403).send({
+      error: {
+        code: 'FORBIDDEN',
+        message: 'Administrator access required'
+      }
+    });
+
+    return false;
+  }
+
+  fastify.get(
+    '/member-organizations',
+    {
+      preHandler: async (request, reply) => {
+        await requireAdministrator(request, reply, {
+          action: 'listMemberOrganizations',
+          targetId: 'all',
+          route: '/api/v1/member-organizations',
+          method: 'GET'
+        });
+      }
+    },
+    async (_request, reply) => {
+      const organizations = await options.repository.findAll();
+
+      return reply.code(200).send({
+        data: {
+          items: organizations.map(toMemberOrganizationResponse)
+        }
+      });
+    }
+  );
+
+  fastify.get<{ Params: { organizationId: string } }>(
+    '/member-organizations/:organizationId',
+    {
+      preHandler: async (request, reply) => {
+        await requireAdministrator(request, reply, {
+          action: 'getMemberOrganization',
+          targetId: request.params.organizationId,
+          route: '/api/v1/member-organizations/:organizationId',
+          method: 'GET'
+        });
+      }
+    },
+    async (request, reply) => {
+      const organization = await options.repository.findById(request.params.organizationId);
+      const actorContext = getRequestActorContext(request);
+      const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
+
+      if (!organization) {
+        await recordMembershipAccessEvent(options.accessAuditEventRepository, request, {
+          actorUserId: actorId,
+          action: 'getMemberOrganization',
+          targetId: request.params.organizationId,
+          outcome: 'notFound',
+          reason: 'member_organization_not_found',
+          route: '/api/v1/member-organizations/:organizationId',
+          method: 'GET'
+        });
+
+        return reply.code(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Member organization not found'
+          }
+        });
+      }
+
+      await recordMembershipAccessEvent(options.accessAuditEventRepository, request, {
+        actorUserId: actorId,
+        action: 'getMemberOrganization',
+        targetId: organization.id,
+        outcome: 'success',
+        route: '/api/v1/member-organizations/:organizationId',
+        method: 'GET'
+      });
+
+      return reply.code(200).send({
+        data: toMemberOrganizationResponse(organization)
+      });
+    }
+  );
+
+  fastify.patch<{ Params: { organizationId: string }; Body: { status: string } }>(
+    '/member-organizations/:organizationId/status',
+    {
+      preHandler: async (request, reply) => {
+        await requireAdministrator(request, reply, {
+          action: 'updateMemberOrganizationStatus',
+          targetId: request.params.organizationId,
+          route: '/api/v1/member-organizations/:organizationId/status',
+          method: 'PATCH'
+        });
+      },
+      schema: {
+        body: {
+          type: 'object',
+          required: ['status'],
+          properties: {
+            status: { type: 'string' }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      const actorContext = getRequestActorContext(request);
+      const actorId = actorContext.actorUserId || request.actorContext?.userId || 'unknown';
+
+      if (!isMemberOrganizationStatus(request.body.status)) {
+        await recordMembershipAccessEvent(options.accessAuditEventRepository, request, {
+          actorUserId: actorId,
+          action: 'updateMemberOrganizationStatus',
+          targetId: request.params.organizationId,
+          outcome: 'validationError',
+          reason: 'invalid_status',
+          route: '/api/v1/member-organizations/:organizationId/status',
+          method: 'PATCH'
+        });
+
+        return reply.code(400).send(createApplicationValidationError('Invalid organization status', [
+          {
+            path: 'status',
+            message: 'Status must be one of: pendingReview, active, inactive, suspended, deleted'
+          }
+        ]));
+      }
+
+      const organization = await options.repository.updateStatus(request.params.organizationId, request.body.status);
+
+      if (!organization) {
+        await recordMembershipAccessEvent(options.accessAuditEventRepository, request, {
+          actorUserId: actorId,
+          action: 'updateMemberOrganizationStatus',
+          targetId: request.params.organizationId,
+          outcome: 'notFound',
+          reason: 'member_organization_not_found',
+          route: '/api/v1/member-organizations/:organizationId/status',
+          method: 'PATCH'
+        });
+
+        return reply.code(404).send({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Member organization not found'
+          }
+        });
+      }
+
+      await recordMembershipAccessEvent(options.accessAuditEventRepository, request, {
+        actorUserId: actorId,
+        action: 'updateMemberOrganizationStatus',
+        targetId: organization.id,
+        outcome: 'success',
+        route: '/api/v1/member-organizations/:organizationId/status',
+        method: 'PATCH'
+      });
+
+      return reply.code(200).send({
+        data: toMemberOrganizationResponse(organization)
+      });
+    }
+  );
 
   fastify.post<{ Body: CreateMemberOrgInput }>(
     '/member-organizations',

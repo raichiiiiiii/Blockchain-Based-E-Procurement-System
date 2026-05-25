@@ -10,7 +10,12 @@ export type CreateMemberOrganizationRequest = {
   notes?: string;
 };
 
-export type MemberOrganizationStatus = 'pendingReview' | string;
+export type MemberOrganizationStatus =
+  | 'pendingReview'
+  | 'active'
+  | 'inactive'
+  | 'suspended'
+  | 'deleted';
 
 export type MemberOrganizationResponse = {
   id: string;

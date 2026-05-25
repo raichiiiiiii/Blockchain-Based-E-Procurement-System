@@ -1,3 +1,22 @@
+export type MemberOrganizationStatus =
+  | 'pendingReview'
+  | 'active'
+  | 'inactive'
+  | 'suspended'
+  | 'deleted';
+
+export const memberOrganizationStatuses: readonly MemberOrganizationStatus[] = [
+  'pendingReview',
+  'active',
+  'inactive',
+  'suspended',
+  'deleted',
+];
+
+export function isMemberOrganizationStatus(value: string): value is MemberOrganizationStatus {
+  return memberOrganizationStatuses.includes(value as MemberOrganizationStatus);
+}
+
 export type MemberOrganization = {
   registrationNumber: string;
   legalName: string;
@@ -8,7 +27,7 @@ export type MemberOrganization = {
   contactPhone?: string;
   countryCode?: string;
   notes?: string;
-  status: 'pendingReview';
+  status: MemberOrganizationStatus;
 };
 
 export function createMemberOrganizationDraft(input: {
