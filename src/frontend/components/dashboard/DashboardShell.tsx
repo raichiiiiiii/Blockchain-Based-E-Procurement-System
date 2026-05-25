@@ -8,9 +8,10 @@ import DashboardStateMessage from './DashboardStateMessage';
 interface DashboardShellProps {
   dashboard: DashboardShellType;
   onPageChange: (pageKey: string) => void;
+  onSignOut?: () => void;
 }
 
-const DashboardShell: React.FC<DashboardShellProps> = ({ dashboard, onPageChange }) => {
+const DashboardShell: React.FC<DashboardShellProps> = ({ dashboard, onPageChange, onSignOut }) => {
   const { 
     shellState, 
     userContext, 
@@ -49,6 +50,11 @@ const DashboardShell: React.FC<DashboardShellProps> = ({ dashboard, onPageChange
             <span>Hello, {userContext.displayName || userContext.userId}</span>
             {activeRoleCode && (
               <span className="active-role">Role: {activeRoleCode}</span>
+            )}
+            {onSignOut && (
+              <button className="button button-link" type="button" onClick={onSignOut}>
+                Sign out
+              </button>
             )}
           </div>
         </div>

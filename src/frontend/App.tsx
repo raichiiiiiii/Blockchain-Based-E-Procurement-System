@@ -1,184 +1,268 @@
-import { useState } from 'react';
-import RunwayPage from './pages/RunwayPage';
-import MemberOnboardingPage from './pages/MemberOnboardingPage';
-import RoleManagementPage from './pages/RoleManagementPage';
-import RoleAssignmentPage from './pages/RoleAssignmentPage';
-import ShariahReviewSubmissionPage from './pages/ShariahReviewSubmissionPage';
-import ShariahReviewChecklistPage from './pages/ShariahReviewChecklistPage';
-import ShariahReviewDecisionPage from './pages/ShariahReviewDecisionPage';
-import ShariahReviewHistoryPage from './pages/ShariahReviewHistoryPage';
-import AccessHistorySearchPage from './pages/AccessHistorySearchPage';
-import AccessEventDetailPage from './pages/AccessEventDetailPage';
-import AccessEventSequencePage from './pages/AccessEventSequencePage';
-import SecurityInvestigationPlaceholderPage from './pages/SecurityInvestigationPlaceholderPage';
-import DashboardShell from './components/dashboard/DashboardShell';
-import { initializeDashboardShell } from './lib/dashboard-contract';
-import { resolveDashboardTargetAccess } from './lib/dashboard-contract';
-import { DashboardRoleCode } from './types/dashboard';
+import { useEffect, useMemo, useState } from 'react';
+import AppLayout from './components/layout/AppLayout';
+import DashboardStateView from './components/dashboard/DashboardStateView';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import BuyerDashboard from './pages/BuyerDashboard';
+import AuditorDashboard from './pages/AuditorDashboard';
+import { loginWithCredentials, loginWithDemoAccount, logoutSession, type DemoAccountId, type LoginCredentials } from './lib/auth-client';
+import {
+  clearStoredSession,
+  loadStoredSession,
+  storeSession,
+  type AuthenticatedFrontendSession,
+  type FrontendSessionState,
+} from './lib/session-state';
+import {
+  resolveDashboardState,
+  type DashboardStateCode,
+  type DashboardStateResult,
+  type SupportedDashboardRole,
+} from './lib/dashboard-state-resolver';
+import {
+  getRoleNavigation,
+  isNavigationTargetAllowed,
+  type DashboardNavigationTarget,
+} from './lib/role-navigation';
 
-type PageKey = 'dashboard' | 'runway' | 'member-onboarding' | 'role-management' | 'role-assignment' | 'shariah-review-submission' | 'shariah-review-checklist' | 'shariah-review-decision' | 'shariah-review-history' | 'access-history-search' | 'access-event-detail' | 'access-event-sequence' | 'security-investigation';
+type RouteKey = 'landing' | 'login' | 'dashboard';
 
-function App() {
-  const [currentPage, setCurrentPage] = useState<PageKey>('dashboard');
-  const [dashboardShellState, setDashboardShellState] = useState<'ready' | 'forbidden' | 'error'>('ready');
-
-  const demoUserContext = {
-    userId: 'user-123',
-    displayName: 'Admin User',
-    roleCodes: ['administrator', 'auditor', 'securityOperator'],
-  };
-
-  const dashboard = initializeDashboardShell(
-    demoUserContext.roleCodes,
-    demoUserContext.userId,
-    demoUserContext.displayName,
-  );
-
-  // Update dashboard shell state based on access resolution
-  if (dashboardShellState !== 'ready') {
-    dashboard.shellState = dashboardShellState;
+function routeFromLocation(): RouteKey {
+  if (typeof window === 'undefined') {
+    return 'landing';
   }
 
-  const handlePageChange = (target: string) => {
-    // Resolve access for the target
-    const access = resolveDashboardTargetAccess(target, dashboard.activeRoleCode);
-    
-    switch (access) {
-      case 'allowed':
-        // Check if the target has an implemented page
-        const targetInfo = Object.values(resolveDashboardTargetAccess as any).find(
-          (t: any) => t.target === target
-        );
-        
-        // We need to map targets to page keys
-        const targetToPageKey: Record<string, PageKey> = {
-          'member-onboarding': 'member-onboarding',
-          'role-management': 'role-management',
-          'role-assignment': 'role-assignment',
-          'shariah-reviews': 'shariah-review-submission',
-          'shariah-checklists': 'shariah-review-checklist',
-          'shariah-decisions': 'shariah-review-decision',
-          'shariah-history': 'shariah-review-history',
-          'runway': 'runway',
-          'access-history-search': 'access-history-search',
-          'access-event-detail': 'access-event-detail',
-          'access-event-sequence': 'access-event-sequence',
-          'security-investigation': 'security-investigation'
-        };
+  switch (window.location.pathname) {
+    case '/login':
+      return 'login';
+    case '/dashboard':
+      return 'dashboard';
+    case '/':
+      return 'landing';
+    default:
+      return 'landing';
+  }
+}
 
-        const pageKey = targetToPageKey[target];
-        if (pageKey) {
-          setCurrentPage(pageKey);
-          setDashboardShellState('ready');
-        } else {
-          // Target is allowed but page is not implemented
-          setDashboardShellState('error');
-        }
-        break;
-        
-      case 'forbidden':
-        setDashboardShellState('forbidden');
-        setCurrentPage('dashboard');
-        break;
-        
-      case 'unavailable':
-      case 'unknown':
-        setDashboardShellState('error');
-        setCurrentPage('dashboard');
-        break;
+function routePath(route: RouteKey): string {
+  switch (route) {
+    case 'login':
+      return '/login';
+    case 'dashboard':
+      return '/dashboard';
+    case 'landing':
+    default:
+      return '/';
+  }
+}
+
+function getAuthenticatedSession(session: FrontendSessionState): AuthenticatedFrontendSession | null {
+  return session.status === 'authenticated' ? session : null;
+}
+
+function createForcedDashboardState(
+  state: Exclude<DashboardStateCode, 'ready'>,
+  current: DashboardStateResult,
+): DashboardStateResult {
+  return {
+    state,
+    actor: current.actor,
+    role: current.role,
+  };
+}
+
+function renderRoleDashboard(role: SupportedDashboardRole, activeTarget: DashboardNavigationTarget) {
+  if (role === 'buyer') {
+    return <BuyerDashboard activeTarget={activeTarget} />;
+  }
+
+  return <AuditorDashboard activeTarget={activeTarget} />;
+}
+
+function App() {
+  const [route, setRoute] = useState<RouteKey>(() => routeFromLocation());
+  const [session, setSession] = useState<FrontendSessionState>(() => loadStoredSession());
+  const [loginError, setLoginError] = useState<string | undefined>();
+  const [activeDashboardTarget, setActiveDashboardTarget] = useState<DashboardNavigationTarget>('dashboard');
+  const [forcedDashboardState, setForcedDashboardState] = useState<Exclude<DashboardStateCode, 'ready'> | undefined>();
+
+  const authenticatedSession = getAuthenticatedSession(session);
+
+  const navigate = (nextRoute: RouteKey, replace = false) => {
+    const nextPath = routePath(nextRoute);
+    if (typeof window !== 'undefined' && window.location.pathname !== nextPath) {
+      const method = replace ? 'replaceState' : 'pushState';
+      window.history[method]({}, '', nextPath);
+    }
+
+    setRoute(nextRoute);
+  };
+
+  useEffect(() => {
+    const handlePopState = () => setRoute(routeFromLocation());
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (route === 'dashboard' && !authenticatedSession) {
+      navigate('login', true);
+    }
+  }, [authenticatedSession, route]);
+
+  const resolvedDashboardState = useMemo(() => resolveDashboardState({
+    actor: authenticatedSession?.actor,
+    userStatus: 'active',
+    organizationStatus: 'active',
+    roleAssignmentStatus: 'active',
+    backendAvailable: true,
+  }), [authenticatedSession]);
+
+  const dashboardState = forcedDashboardState
+    ? createForcedDashboardState(forcedDashboardState, resolvedDashboardState)
+    : resolvedDashboardState;
+
+  useEffect(() => {
+    if (dashboardState.state !== 'ready') {
+      return;
+    }
+
+    if (!isNavigationTargetAllowed(dashboardState.role, activeDashboardTarget)) {
+      setActiveDashboardTarget('dashboard');
+    }
+  }, [activeDashboardTarget, dashboardState]);
+
+  const finishAuthentication = (nextSession: AuthenticatedFrontendSession) => {
+    storeSession(nextSession);
+    setSession(nextSession);
+    setLoginError(undefined);
+    setActiveDashboardTarget('dashboard');
+    setForcedDashboardState(undefined);
+    navigate('dashboard');
+  };
+
+  const handleDemoSignIn = async (accountId: DemoAccountId) => {
+    setSession({ status: 'authenticating' });
+    setLoginError(undefined);
+
+    try {
+      finishAuthentication(await loginWithDemoAccount(accountId));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Sign in failed';
+      clearStoredSession();
+      setSession({ status: 'anonymous' });
+      setLoginError(message);
     }
   };
 
+  const handleCredentialsSignIn = async (credentials: LoginCredentials) => {
+    setSession({ status: 'authenticating' });
+    setLoginError(undefined);
+
+    try {
+      finishAuthentication(await loginWithCredentials(credentials));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Sign in failed';
+      clearStoredSession();
+      setSession({ status: 'anonymous' });
+      setLoginError(message);
+    }
+  };
+
+  const handleSignOut = async () => {
+    const sessionToLogout = authenticatedSession;
+    clearStoredSession();
+    setSession({ status: 'anonymous' });
+    setActiveDashboardTarget('dashboard');
+    setForcedDashboardState(undefined);
+    navigate('login');
+
+    if (!sessionToLogout) {
+      return;
+    }
+
+    try {
+      await logoutSession(sessionToLogout);
+    } catch {
+      // Local session is cleared even if backend logout is unavailable.
+    }
+  };
+
+  const handleDashboardNavigation = (target: DashboardNavigationTarget) => {
+    if (target === 'logout') {
+      void handleSignOut();
+      return;
+    }
+
+    if (dashboardState.state !== 'ready' || !isNavigationTargetAllowed(dashboardState.role, target)) {
+      setForcedDashboardState('forbidden');
+      setActiveDashboardTarget('dashboard');
+      return;
+    }
+
+    setForcedDashboardState(undefined);
+    setActiveDashboardTarget(target);
+  };
+
+  if (route === 'landing') {
+    return (
+      <div className="app">
+        <LandingPage
+          onSignIn={() => navigate('login')}
+          onViewDashboard={() => navigate(authenticatedSession ? 'dashboard' : 'login')}
+        />
+      </div>
+    );
+  }
+
+  if (route === 'login' || !authenticatedSession) {
+    const notice =
+      session.status === 'expired'
+        ? 'Your session expired. Sign in again to continue.'
+        : route === 'login'
+          ? undefined
+          : 'Sign in to view your dashboard.';
+
+    return (
+      <div className="app">
+        <LoginPage
+          notice={notice}
+          isAuthenticating={session.status === 'authenticating'}
+          errorMessage={loginError}
+          onBack={() => navigate('landing')}
+          onDemoSignIn={handleDemoSignIn}
+          onCredentialsSignIn={handleCredentialsSignIn}
+        />
+      </div>
+    );
+  }
+
+  if (dashboardState.state !== 'ready') {
+    return (
+      <div className="app">
+        <DashboardStateView
+          state={dashboardState.state}
+          onSignOut={() => void handleSignOut()}
+        />
+      </div>
+    );
+  }
+
+  const navigationItems = getRoleNavigation(dashboardState.role);
+
   return (
     <div className="app">
-      {currentPage === 'dashboard' ? (
-        <>
-          <nav style={{
-            padding: '1rem',
-            borderBottom: '1px solid #ccc',
-            backgroundColor: '#f5f5f5'
-          }}>
-            <button
-              onClick={() => {
-                setCurrentPage('runway');
-                setDashboardShellState('ready');
-              }}
-              style={{
-                marginRight: '1rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: '#fff',
-                color: '#000',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Frontend Runway
-            </button>
-          </nav>
-          <DashboardShell
-            dashboard={dashboard}
-            onPageChange={handlePageChange}
-          />
-        </>
-      ) : (
-        <>
-          <nav style={{
-            padding: '1rem',
-            borderBottom: '1px solid #ccc',
-            backgroundColor: '#f5f5f5'
-          }}>
-            <button
-              onClick={() => {
-                setCurrentPage('dashboard');
-                setDashboardShellState('ready');
-              }}
-              style={{
-                marginRight: '1rem',
-                padding: '0.5rem 1rem',
-                backgroundColor: '#007bff',
-                color: '#fff',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Dashboard
-            </button>
-            <button
-              onClick={() => {
-                setCurrentPage('runway');
-                setDashboardShellState('ready');
-              }}
-              style={{
-                padding: '0.5rem 1rem',
-                backgroundColor: currentPage === 'runway' ? '#007bff' : '#fff',
-                color: currentPage === 'runway' ? '#fff' : '#000',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Frontend Runway
-            </button>
-          </nav>
-
-          <div>
-            {currentPage === 'runway' && <RunwayPage />}
-            {currentPage === 'member-onboarding' && <MemberOnboardingPage />}
-            {currentPage === 'role-management' && <RoleManagementPage />}
-            {currentPage === 'role-assignment' && <RoleAssignmentPage />}
-            {currentPage === 'shariah-review-submission' && <ShariahReviewSubmissionPage />}
-            {currentPage === 'shariah-review-checklist' && <ShariahReviewChecklistPage />}
-            {currentPage === 'shariah-review-decision' && <ShariahReviewDecisionPage />}
-            {currentPage === 'shariah-review-history' && <ShariahReviewHistoryPage />}
-            {currentPage === 'access-history-search' && <AccessHistorySearchPage />}
-            {currentPage === 'access-event-detail' && <AccessEventDetailPage />}
-            {currentPage === 'access-event-sequence' && <AccessEventSequencePage />}
-            {currentPage === 'security-investigation' && <SecurityInvestigationPlaceholderPage />}
-          </div>
-        </>
-      )}
+      <AppLayout
+        role={dashboardState.role}
+        actorLabel={dashboardState.actor.actorUserId}
+        organizationLabel={dashboardState.actor.actorOrganizationId}
+        activeTarget={activeDashboardTarget}
+        navigationItems={navigationItems}
+        onNavigate={handleDashboardNavigation}
+      >
+        {renderRoleDashboard(dashboardState.role, activeDashboardTarget)}
+      </AppLayout>
     </div>
   );
 }

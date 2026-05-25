@@ -381,7 +381,7 @@ export const DASHBOARD_TARGETS: Record<string, {
   },
   'runway': {
     target: 'runway',
-    label: 'Frontend Runway',
+    label: 'Platform Readiness',
     allowedRoles: ['administrator'],
     pageKey: 'runway',
     availability: 'available'
@@ -815,6 +815,38 @@ function createSecurityOperatorWidgets(): DashboardWidget[] {
   ];
 }
 
+function createBuyerWidgets(): DashboardWidget[] {
+  return [
+    {
+      id: 'buyer-order-overview',
+      title: 'Orders',
+      zoneId: 'primary',
+      allowedRoles: ['buyer'],
+      status: 'placeholder',
+      downstreamPbi: 'PBI-263',
+      placeholder: true
+    },
+    {
+      id: 'buyer-escrow-overview',
+      title: 'Escrow',
+      zoneId: 'primary',
+      allowedRoles: ['buyer'],
+      status: 'placeholder',
+      downstreamPbi: 'PBI-263',
+      placeholder: true
+    },
+    {
+      id: 'buyer-proof-overview',
+      title: 'Blockchain Proof',
+      zoneId: 'summary',
+      allowedRoles: ['buyer'],
+      status: 'placeholder',
+      downstreamPbi: 'PBI-263',
+      placeholder: true
+    }
+  ];
+}
+
 // Create placeholder widgets for each role and zone
 export function createPlaceholderWidgets(role: DashboardRoleCode): DashboardWidget[] {
   // For administrator role, return specific widgets as per PBI-176
@@ -840,6 +872,10 @@ export function createPlaceholderWidgets(role: DashboardRoleCode): DashboardWidg
   // For security operator role, return specific widgets as per PBI-188
   if (role === 'securityOperator') {
     return createSecurityOperatorWidgets();
+  }
+
+  if (role === 'buyer') {
+    return createBuyerWidgets();
   }
 
   // For other roles, create generic placeholder widgets

@@ -51,8 +51,8 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                   </div>
                 ) : widget.status === 'placeholder' ? (
                   <div className="widget-placeholder">
-                    <p>This is a placeholder widget for {widget.title.toLowerCase()}.</p>
-                    <p>Functionality will be implemented in future stories.</p>
+                    <p>{widget.title} is not available in the demo yet.</p>
+                    <p>No synthetic activity is shown for unavailable areas.</p>
                   </div>
                 ) : null}
               </div>
@@ -118,8 +118,8 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                   </div>
                 ) : widget.status === 'placeholder' ? (
                   <div className="widget-placeholder">
-                    <p>This is a placeholder widget for {widget.title.toLowerCase()}.</p>
-                    <p>Functionality will be implemented in future stories.</p>
+                    <p>{widget.title} is not available in the demo yet.</p>
+                    <p>No synthetic activity is shown for unavailable areas.</p>
                     {widget.id === 'compliance-kyc-queue-overview' && (
                       <>
                         <p>KYC queue workflow is contract-pending. No queue count is available.</p>
@@ -260,8 +260,8 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                   </div>
                 ) : widget.status === 'placeholder' ? (
                   <div className="widget-placeholder">
-                    <p>This is a placeholder widget for {widget.title.toLowerCase()}.</p>
-                    <p>Functionality will be implemented in future stories.</p>
+                    <p>{widget.title} is not available in the demo yet.</p>
+                    <p>No synthetic activity is shown for unavailable areas.</p>
                     {widget.id === 'compliance-kyc-queue-overview' && (
                       <>
                         <p>KYC queue workflow is contract-pending. Missing data is unavailable, not zero.</p>
@@ -348,8 +348,8 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                   </div>
                 ) : widget.status === 'placeholder' ? (
                   <div className="widget-placeholder">
-                    <p>This is a placeholder widget for {widget.title.toLowerCase()}.</p>
-                    <p>Functionality will be implemented in future stories.</p>
+                    <p>{widget.title} is not available in the demo yet.</p>
+                    <p>No synthetic activity is shown for unavailable areas.</p>
                     {widget.id === 'compliance-onboarding-status-overview' && (
                       <>
                         <p>Onboarding eligibility checks are contract-pending. Missing blocked or flagged data is unavailable, not zero.</p>
@@ -414,8 +414,8 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                   </div>
                 ) : widget.status === 'placeholder' ? (
                   <div className="widget-placeholder">
-                    <p>This is a placeholder widget for {widget.title.toLowerCase()}.</p>
-                    <p>Functionality will be implemented in future stories.</p>
+                    <p>{widget.title} is not available in the demo yet.</p>
+                    <p>No synthetic activity is shown for unavailable areas.</p>
                   </div>
                 ) : null}
               </div>
@@ -457,8 +457,8 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
                   </div>
                 ) : widget.status === 'placeholder' ? (
                   <div className="widget-placeholder">
-                    <p>This is a placeholder widget for {widget.title.toLowerCase()}.</p>
-                    <p>Functionality will be implemented in future stories.</p>
+                    <p>{widget.title} is not available in the demo yet.</p>
+                    <p>No synthetic activity is shown for unavailable areas.</p>
                   </div>
                 ) : null}
               </div>
@@ -488,8 +488,8 @@ const DashboardWidgetZone: React.FC<DashboardWidgetZoneProps> = ({ zone, widgets
               <h3>{widget.title}</h3>
               {widget.status === 'placeholder' && (
                 <div className="widget-placeholder">
-                  <p>This is a placeholder widget for {widget.title.toLowerCase()}.</p>
-                  <p>Functionality will be implemented in future stories.</p>
+                  <p>{widget.title} is not available in the demo yet.</p>
+                  <p>No synthetic activity is shown for unavailable areas.</p>
                 </div>
               )}
             </div>
