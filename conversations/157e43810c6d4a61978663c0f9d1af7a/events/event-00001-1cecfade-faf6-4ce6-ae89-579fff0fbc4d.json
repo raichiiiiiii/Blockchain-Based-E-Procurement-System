@@ -1,1 +1,0 @@
-{"id":"1cecfade-faf6-4ce6-ae89-579fff0fbc4d","timestamp":"2026-05-25T06:28:29.277963","source":"user","llm_message":{"role":"user","content":[{"cache_prompt":false,"type":"text","text":"can you read local file?"}],"thinking_blocks":[]},"activated_skills":[],"extended_content":[],"kind":"MessageEvent"}

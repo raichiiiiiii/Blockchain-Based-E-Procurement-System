@@ -1,1 +1,0 @@
-{"id":"259ac1a1-c7b1-4ff9-8739-e29e58e21b2f","timestamp":"2026-05-25T06:29:17.197010","source":"user","llm_message":{"role":"user","content":[{"cache_prompt":false,"type":"text","text":"give the dir list for current workspace"}],"thinking_blocks":[]},"activated_skills":[],"extended_content":[],"kind":"MessageEvent"}
