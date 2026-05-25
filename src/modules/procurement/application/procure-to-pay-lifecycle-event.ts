@@ -1,4 +1,9 @@
-export type ProcureToPayLifecycleStage = 'purchaseOrder' | 'delivery' | 'invoice' | 'settlement';
+export type ProcureToPayLifecycleStage =
+  | 'purchaseOrder'
+  | 'delivery'
+  | 'invoice'
+  | 'settlement'
+  | 'escrow';
 
 export type ProcureToPayLifecycleOutcome = 'success' | 'rejected' | 'voided' | 'failed';
 

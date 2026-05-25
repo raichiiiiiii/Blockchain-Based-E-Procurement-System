@@ -54,6 +54,9 @@ const ALLOWED_EVENT_TYPES: Record<ProcureToPayLifecycleStage, string[]> = {
     'settlementCompleted',
     'settlementFailed',
     'settlementReversed'
+  ],
+  escrow: [
+    'escrowCreated'
   ]
 };
 

@@ -1,0 +1,26 @@
+{
+  "name": "audit-anchor-chaincode",
+  "version": "1.0.0",
+  "description": "Hyperledger Fabric AuditAnchorContract for proof-level event anchoring",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "test": "node --test -r ts-node/register test/*.test.ts",
+    "start": "fabric-chaincode-node start"
+  },
+  "dependencies": {
+    "fabric-contract-api": "^2.5.8",
+    "fabric-shim": "^2.5.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

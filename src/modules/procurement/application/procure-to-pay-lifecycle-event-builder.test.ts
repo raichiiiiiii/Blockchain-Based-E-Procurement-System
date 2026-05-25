@@ -97,6 +97,25 @@ describe('createProcureToPayLifecycleEvent', () => {
     assert.strictEqual(event.targetId, 'set-def');
   });
 
+  it('creates valid escrowCreated event for the escrow first slice', () => {
+    const event = createProcureToPayLifecycleEvent({
+      requestId: 'req-123',
+      correlationId: 'accepted-order-demo-123',
+      caseId: 'order-123',
+      lifecycleStage: 'escrow',
+      eventType: 'escrowCreated',
+      actorUserId: 'user-abc',
+      targetType: 'escrow',
+      targetId: 'escrow-def',
+      outcome: 'success'
+    });
+
+    assert.strictEqual(event.lifecycleStage, 'escrow');
+    assert.strictEqual(event.eventType, 'escrowCreated');
+    assert.strictEqual(event.targetType, 'escrow');
+    assert.strictEqual(event.targetId, 'escrow-def');
+  });
+
   it('requires all mandatory fields', () => {
     const event = createProcureToPayLifecycleEvent({
       requestId: 'req-123',

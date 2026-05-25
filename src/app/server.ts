@@ -30,6 +30,14 @@ import type { AuthSessionRepository } from '../modules/auth/application/auth-ses
 import { registerTransactionHistoryRoutes } from '../modules/procurement/api/transaction-history.routes.js';
 import type { ProcureToPayLifecycleEventRepository } from '../modules/procurement/application/procure-to-pay-lifecycle-event-repository.js';
 import { InMemoryProcureToPayLifecycleEventRepository } from '../modules/procurement/infrastructure/in-memory-procure-to-pay-lifecycle-event-repository.js';
+import { registerBlockchainAnchorRoutes } from '../modules/blockchain/api/blockchain-anchor.routes.js';
+import type { BlockchainAnchorGateway } from '../modules/blockchain/application/blockchain-anchor-gateway.js';
+import type { BlockchainAnchorMetadataRepository } from '../modules/blockchain/application/blockchain-anchor-metadata-repository.js';
+import { InMemoryBlockchainAnchorGateway } from '../modules/blockchain/infrastructure/in-memory-blockchain-anchor-gateway.js';
+import { InMemoryBlockchainAnchorMetadataRepository } from '../modules/blockchain/infrastructure/in-memory-blockchain-anchor-metadata-repository.js';
+import { registerEscrowRoutes } from '../modules/escrow/api/escrow.routes.js';
+import type { EscrowRepository } from '../modules/escrow/application/escrow-repository.js';
+import { InMemoryEscrowRepository } from '../modules/escrow/infrastructure/in-memory-escrow-repository.js';
 
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
@@ -48,6 +56,9 @@ export function createTestableServer(options?: {
   credentialRepository?: PlatformUserCredentialRepository;
   sessionRepository?: AuthSessionRepository;
   procureToPayLifecycleEventRepository?: ProcureToPayLifecycleEventRepository;
+  blockchainAnchorGateway?: BlockchainAnchorGateway;
+  blockchainAnchorMetadataRepository?: BlockchainAnchorMetadataRepository;
+  escrowRepository?: EscrowRepository;
 }) {
   const server = fastify();
 
@@ -93,6 +104,9 @@ export function createTestableServer(options?: {
   const credentialRepository = options?.credentialRepository ?? new InMemoryPlatformUserCredentialRepository();
   const sessionRepository = options?.sessionRepository ?? new InMemoryAuthSessionRepository();
   const procureToPayLifecycleEventRepository = options?.procureToPayLifecycleEventRepository ?? new InMemoryProcureToPayLifecycleEventRepository();
+  const blockchainAnchorGateway = options?.blockchainAnchorGateway ?? new InMemoryBlockchainAnchorGateway();
+  const blockchainAnchorMetadataRepository = options?.blockchainAnchorMetadataRepository ?? new InMemoryBlockchainAnchorMetadataRepository();
+  const escrowRepository = options?.escrowRepository ?? new InMemoryEscrowRepository();
 
   // Register auth routes
   server.register(authRoutes, {
@@ -143,6 +157,22 @@ export function createTestableServer(options?: {
   server.register(registerTransactionHistoryRoutes, {
     prefix: '/api/v1',
     repository: procureToPayLifecycleEventRepository
+  });
+
+  // Register blockchain proof routes
+  server.register(registerBlockchainAnchorRoutes, {
+    prefix: '/api/v1',
+    gateway: blockchainAnchorGateway,
+    metadataRepository: blockchainAnchorMetadataRepository
+  });
+
+  // Register escrow first-slice routes
+  server.register(registerEscrowRoutes, {
+    prefix: '/api/v1',
+    escrowRepository,
+    lifecycleEventRepository: procureToPayLifecycleEventRepository,
+    blockchainAnchorGateway,
+    blockchainAnchorMetadataRepository
   });
 
   return server;

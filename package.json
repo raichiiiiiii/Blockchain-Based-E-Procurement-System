@@ -11,13 +11,19 @@
     "dev": "node --loader ts-node/esm src/app/server.ts",
     "test": "node scripts/run-tests.mjs",
     "test:backend": "node scripts/run-tests.mjs",
+    "db:migrate": "node --loader ts-node/esm scripts/db/migrate.ts",
+    "db:seed": "node --loader ts-node/esm scripts/db/seed-demo-data.ts",
+    "chaincode:audit-anchor:build": "npm --prefix chaincode/audit-anchor run build",
+    "chaincode:audit-anchor:test": "npm --prefix chaincode/audit-anchor test",
     "frontend:dev": "vite --config vite.config.ts",
     "frontend:build": "tsc -p tsconfig.frontend.json && vite build --config vite.config.ts",
     "frontend:preview": "vite preview --config vite.config.ts"
   },
   "dependencies": {
+    "@types/pg": "^8.20.0",
     "fastify": "^4.26.0",
     "fastify-plugin": "^5.1.0",
+    "pg": "^8.21.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

@@ -1,11 +1,18 @@
+import { useState } from 'react';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
+import type { AuthenticatedFrontendSession } from '../lib/session-state';
+import { getLocalDemoEscrowRecord, type EscrowRecord } from '../lib/escrow-client';
 import EscrowDetailPage from './EscrowDetailPage';
+import EscrowOverviewPage from './EscrowOverviewPage';
 
 type BuyerDashboardProps = {
   activeTarget: DashboardNavigationTarget;
+  session: AuthenticatedFrontendSession;
 };
 
-function BuyerDashboard({ activeTarget }: BuyerDashboardProps) {
+function BuyerDashboard({ activeTarget, session }: BuyerDashboardProps) {
+  const [activeEscrow, setActiveEscrow] = useState<EscrowRecord | undefined>();
+
   if (activeTarget === 'orders') {
     return (
       <section className="workspace-panel">
@@ -17,12 +24,18 @@ function BuyerDashboard({ activeTarget }: BuyerDashboardProps) {
   }
 
   if (activeTarget === 'escrow') {
-    return <EscrowDetailPage />;
+    return (
+      <EscrowOverviewPage
+        session={session}
+        escrow={activeEscrow}
+        onEscrowChange={setActiveEscrow}
+      />
+    );
   }
 
   if (activeTarget === 'blockchain-proof') {
     return (
-      <EscrowDetailPage />
+      <EscrowDetailPage escrow={activeEscrow ?? getLocalDemoEscrowRecord(session)} />
     );
   }
 

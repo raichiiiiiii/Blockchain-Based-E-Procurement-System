@@ -88,6 +88,26 @@ describe('procure-to-pay-lifecycle-source-integration', () => {
     assert.strictEqual(result.targetId, 'set-def');
   });
 
+  it('escrow source emits escrow lifecycle event with targetType escrow', async () => {
+    const repository = new InMemoryProcureToPayLifecycleEventRepository();
+
+    const result = await recordProcureToPaySourceEvent(repository, {
+      requestId: 'req-123',
+      actorUserId: 'user-abc',
+      correlationId: 'accepted-order-demo-123',
+      caseId: 'order-123',
+      sourceId: 'escrow-def',
+      sourceAction: 'escrowCreated',
+      outcome: 'success'
+    });
+
+    assert.ok(result);
+    assert.strictEqual(result.lifecycleStage, 'escrow');
+    assert.strictEqual(result.eventType, 'escrowCreated');
+    assert.strictEqual(result.targetType, 'escrow');
+    assert.strictEqual(result.targetId, 'escrow-def');
+  });
+
   it('requestId, actorUserId, correlationId, caseId, lifecycleStage, eventType, targetType, targetId are mapped correctly', async () => {
     const repository = new InMemoryProcureToPayLifecycleEventRepository();
 

@@ -4,8 +4,9 @@ import type {
   ProcureToPayLifecycleStage, 
   ProcureToPayLifecycleOutcome 
 } from './procure-to-pay-lifecycle-event.js';
+import type { AnchorProcureToPayLifecycleEventDependencies } from '../../blockchain/application/anchor-procure-to-pay-lifecycle-event.js';
 
-export type ProcureToPaySource = 'purchaseOrder' | 'delivery' | 'invoice' | 'settlement';
+export type ProcureToPaySource = 'purchaseOrder' | 'delivery' | 'invoice' | 'settlement' | 'escrow';
 
 export type ProcureToPaySourceAction = 
   // Purchase Order actions
@@ -27,7 +28,9 @@ export type ProcureToPaySourceAction =
   | 'settlementInitiated'
   | 'settlementCompleted'
   | 'settlementFailed'
-  | 'settlementReversed';
+  | 'settlementReversed'
+  // Escrow actions
+  | 'escrowCreated';
 
 export type RecordProcureToPaySourceEventInput = {
   requestId: string;
@@ -76,12 +79,15 @@ const SOURCE_MAPPING: Record<ProcureToPaySourceAction, {
   'settlementInitiated': { source: 'settlement', stage: 'settlement' },
   'settlementCompleted': { source: 'settlement', stage: 'settlement' },
   'settlementFailed': { source: 'settlement', stage: 'settlement' },
-  'settlementReversed': { source: 'settlement', stage: 'settlement' }
+  'settlementReversed': { source: 'settlement', stage: 'settlement' },
+  // Escrow actions
+  'escrowCreated': { source: 'escrow', stage: 'escrow' }
 };
 
 export async function recordProcureToPaySourceEvent(
   repository: ProcureToPayLifecycleEventRepository | undefined,
-  input: RecordProcureToPaySourceEventInput
+  input: RecordProcureToPaySourceEventInput,
+  anchoring?: AnchorProcureToPayLifecycleEventDependencies,
 ): Promise<ReturnType<typeof recordProcureToPayLifecycleEvent>> {
   // Validate required fields
   if (!input.requestId || input.requestId.trim() === '') {
@@ -126,5 +132,5 @@ export async function recordProcureToPaySourceEvent(
   };
 
   // Delegate to the existing lifecycle event recording function
-  return recordProcureToPayLifecycleEvent(repository, mappedInput);
+  return recordProcureToPayLifecycleEvent(repository, mappedInput, anchoring);
 }

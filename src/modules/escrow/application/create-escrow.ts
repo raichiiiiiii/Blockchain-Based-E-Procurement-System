@@ -1,0 +1,219 @@
+import { randomUUID } from 'node:crypto';
+import type { BlockchainAnchorGateway } from '../../blockchain/application/blockchain-anchor-gateway.js';
+import {
+  anchorProcureToPayLifecycleEvent,
+  type AnchorProcureToPayLifecycleEventDependencies,
+} from '../../blockchain/application/anchor-procure-to-pay-lifecycle-event.js';
+import type {
+  BlockchainAnchorMetadata,
+  BlockchainAnchorMetadataRepository,
+} from '../../blockchain/application/blockchain-anchor-metadata-repository.js';
+import type { ProcureToPayLifecycleEventRepository } from '../../procurement/application/procure-to-pay-lifecycle-event-repository.js';
+import { recordProcureToPayLifecycleEvent } from '../../procurement/application/record-procure-to-pay-lifecycle-event.js';
+import type { EscrowBlockchainAnchor, EscrowRecord } from '../domain/escrow.js';
+import type { EscrowRepository } from './escrow-repository.js';
+
+export type CreateEscrowInput = {
+  orderId?: string;
+  buyerOrganizationId?: string;
+  supplierOrganizationId?: string;
+  financierOrganizationId?: string;
+  termsHash?: string;
+  acceptedOrderReference?: string;
+  actorUserId?: string;
+  actorRoleCodes?: string[];
+  requestId?: string;
+};
+
+export type EscrowValidationIssue = {
+  path: string;
+  message: string;
+};
+
+export type CreateEscrowResult =
+  | { status: 'created'; escrow: EscrowRecord }
+  | { status: 'invalidInput'; issues: EscrowValidationIssue[] }
+  | { status: 'unauthorized' }
+  | { status: 'forbidden' }
+  | { status: 'duplicateActiveEscrow'; existingEscrowId: string };
+
+export type CreateEscrowDependencies = {
+  escrowRepository: EscrowRepository;
+  lifecycleEventRepository?: ProcureToPayLifecycleEventRepository;
+  blockchainAnchorGateway?: BlockchainAnchorGateway;
+  blockchainAnchorMetadataRepository?: BlockchainAnchorMetadataRepository;
+  now?: () => string;
+  idGenerator?: () => string;
+};
+
+type NormalizedCreateEscrowInput = Required<
+  Pick<CreateEscrowInput,
+    | 'orderId'
+    | 'buyerOrganizationId'
+    | 'supplierOrganizationId'
+    | 'termsHash'
+    | 'actorUserId'
+    | 'requestId'
+  >
+> & Pick<CreateEscrowInput, 'financierOrganizationId' | 'acceptedOrderReference' | 'actorRoleCodes'>;
+
+function requiredString(value: string | undefined, path: string, label: string): EscrowValidationIssue | null {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return {
+      path,
+      message: `${label} is required and cannot be blank`,
+    };
+  }
+
+  return null;
+}
+
+function normalizeCreateEscrowInput(input: CreateEscrowInput): {
+  normalized?: NormalizedCreateEscrowInput;
+  issues: EscrowValidationIssue[];
+} {
+  const issues = [
+    requiredString(input.orderId, 'orderId', 'orderId'),
+    requiredString(input.buyerOrganizationId, 'buyerOrganizationId', 'buyerOrganizationId'),
+    requiredString(input.supplierOrganizationId, 'supplierOrganizationId', 'supplierOrganizationId'),
+    requiredString(input.termsHash, 'termsHash', 'termsHash'),
+    requiredString(input.actorUserId, 'actorUserId', 'actorUserId'),
+    requiredString(input.requestId, 'requestId', 'requestId'),
+  ].filter((issue): issue is EscrowValidationIssue => issue !== null);
+
+  if (issues.length > 0) {
+    return { issues };
+  }
+
+  return {
+    issues: [],
+    normalized: {
+      orderId: input.orderId!.trim(),
+      buyerOrganizationId: input.buyerOrganizationId!.trim(),
+      supplierOrganizationId: input.supplierOrganizationId!.trim(),
+      financierOrganizationId: input.financierOrganizationId?.trim() || undefined,
+      termsHash: input.termsHash!.trim(),
+      acceptedOrderReference: input.acceptedOrderReference?.trim() || undefined,
+      actorUserId: input.actorUserId!.trim(),
+      actorRoleCodes: input.actorRoleCodes ?? [],
+      requestId: input.requestId!.trim(),
+    },
+  };
+}
+
+function toEscrowBlockchainAnchor(
+  lifecycleEventId: string | undefined,
+  metadata: BlockchainAnchorMetadata | null,
+): EscrowBlockchainAnchor | undefined {
+  if (!metadata) {
+    return undefined;
+  }
+
+  return {
+    eventId: lifecycleEventId,
+    payloadHash: metadata.payloadHash,
+    anchorStatus: metadata.anchorStatus,
+    blockchainNetwork: metadata.blockchainNetwork,
+    transactionId: metadata.transactionId,
+    blockNumber: metadata.blockNumber,
+    channelName: metadata.channelName,
+    chaincodeName: metadata.chaincodeName,
+    anchoredAt: metadata.anchoredAt,
+    failureReason: metadata.failureReason,
+  };
+}
+
+function canCreateEscrow(actorRoleCodes: readonly string[]): boolean {
+  return actorRoleCodes.includes('buyer');
+}
+
+export async function createEscrow(
+  input: CreateEscrowInput,
+  dependencies: CreateEscrowDependencies,
+): Promise<CreateEscrowResult> {
+  if (!input.actorUserId || input.actorUserId.trim().length === 0) {
+    return { status: 'unauthorized' };
+  }
+
+  if (!canCreateEscrow(input.actorRoleCodes ?? [])) {
+    return { status: 'forbidden' };
+  }
+
+  const { normalized, issues } = normalizeCreateEscrowInput(input);
+  if (!normalized) {
+    return { status: 'invalidInput', issues };
+  }
+
+  const existingEscrow = await dependencies.escrowRepository.findActiveByOrderId(normalized.orderId);
+  if (existingEscrow) {
+    return {
+      status: 'duplicateActiveEscrow',
+      existingEscrowId: existingEscrow.escrowId,
+    };
+  }
+
+  const now = dependencies.now?.() ?? new Date().toISOString();
+  const escrowId = dependencies.idGenerator?.() ?? randomUUID();
+
+  const escrow: EscrowRecord = {
+    escrowId,
+    orderId: normalized.orderId,
+    buyerOrganizationId: normalized.buyerOrganizationId,
+    supplierOrganizationId: normalized.supplierOrganizationId,
+    financierOrganizationId: normalized.financierOrganizationId,
+    termsHash: normalized.termsHash,
+    status: 'escrowCreated',
+    acceptedOrderReference: normalized.acceptedOrderReference,
+    createdBy: normalized.actorUserId,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const createdEscrow = await dependencies.escrowRepository.create(escrow);
+  const lifecycleEvent = await recordProcureToPayLifecycleEvent(
+    dependencies.lifecycleEventRepository,
+    {
+      requestId: normalized.requestId,
+      correlationId: normalized.acceptedOrderReference ?? normalized.orderId,
+      caseId: normalized.orderId,
+      lifecycleStage: 'escrow',
+      eventType: 'escrowCreated',
+      actorUserId: normalized.actorUserId,
+      targetType: 'escrow',
+      targetId: escrowId,
+      outcome: 'success',
+      sourceRecordRef: escrowId,
+      metadata: {
+        orderId: normalized.orderId,
+        buyerOrganizationId: normalized.buyerOrganizationId,
+        supplierOrganizationId: normalized.supplierOrganizationId,
+        financierOrganizationId: normalized.financierOrganizationId,
+        acceptedOrderReference: normalized.acceptedOrderReference,
+        termsHash: normalized.termsHash,
+      },
+    },
+  );
+
+  let anchorMetadata: BlockchainAnchorMetadata | null = null;
+  if (lifecycleEvent) {
+    const anchorDependencies: AnchorProcureToPayLifecycleEventDependencies = {
+      gateway: dependencies.blockchainAnchorGateway,
+      metadataRepository: dependencies.blockchainAnchorMetadataRepository,
+      now: dependencies.now,
+    };
+    anchorMetadata = await anchorProcureToPayLifecycleEvent(lifecycleEvent, anchorDependencies);
+  }
+
+  const updatedEscrow: EscrowRecord = {
+    ...createdEscrow,
+    updatedAt: dependencies.now?.() ?? new Date().toISOString(),
+    lifecycleEventId: lifecycleEvent?.eventId,
+    lifecycleEventHash: lifecycleEvent?.immutableReference.payloadHash,
+    blockchainAnchor: toEscrowBlockchainAnchor(lifecycleEvent?.eventId, anchorMetadata),
+  };
+
+  return {
+    status: 'created',
+    escrow: await dependencies.escrowRepository.update(updatedEscrow),
+  };
+}

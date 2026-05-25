@@ -71,9 +71,13 @@ function createForcedDashboardState(
   };
 }
 
-function renderRoleDashboard(role: SupportedDashboardRole, activeTarget: DashboardNavigationTarget) {
+function renderRoleDashboard(
+  role: SupportedDashboardRole,
+  activeTarget: DashboardNavigationTarget,
+  session: AuthenticatedFrontendSession,
+) {
   if (role === 'buyer') {
-    return <BuyerDashboard activeTarget={activeTarget} />;
+    return <BuyerDashboard activeTarget={activeTarget} session={session} />;
   }
 
   return <AuditorDashboard activeTarget={activeTarget} />;
@@ -261,7 +265,7 @@ function App() {
         navigationItems={navigationItems}
         onNavigate={handleDashboardNavigation}
       >
-        {renderRoleDashboard(dashboardState.role, activeDashboardTarget)}
+        {renderRoleDashboard(dashboardState.role, activeDashboardTarget, authenticatedSession)}
       </AppLayout>
     </div>
   );
