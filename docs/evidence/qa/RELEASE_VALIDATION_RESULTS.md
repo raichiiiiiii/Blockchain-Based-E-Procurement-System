@@ -7,6 +7,13 @@ Status: Pass
 
 Release validation covers static builds, frontend build, backend tests, database dry-runs, Fabric chaincode checks, Docker Compose config, product UI label scan, and diff whitespace checks.
 
+## Handover Artifacts
+
+```text
+docs/sprint-planning/PHASE8_HANDOVER_VERIFICATION.md
+docs/evidence/qa/PHASE8_VERIFICATION_CHECKLIST.md
+```
+
 ## Commands
 
 | Command | Result | Notes |

@@ -417,6 +417,8 @@ Output:
 - verify all actor UAT scripts
 - supervisor sign-off
 - known limitations accepted
+- handover guide: docs/sprint-planning/PHASE8_HANDOVER_VERIFICATION.md
+- verifier checklist: docs/evidence/qa/PHASE8_VERIFICATION_CHECKLIST.md
 ```
 
 ## 7. Deployment readiness checklist
