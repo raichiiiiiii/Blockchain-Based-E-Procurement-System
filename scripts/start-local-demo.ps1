@@ -37,11 +37,25 @@ function Write-Warn {
   Write-Host "WARN: $Message" -ForegroundColor Yellow
 }
 
+function Resolve-CommandPath {
+  param([string]$CommandName)
+
+  $windowsCommand = Get-Command "$CommandName.cmd" -ErrorAction SilentlyContinue
+  if ($windowsCommand) {
+    return $windowsCommand.Source
+  }
+
+  $nativeCommand = Get-Command $CommandName -ErrorAction SilentlyContinue
+  if ($nativeCommand) {
+    return $nativeCommand.Source
+  }
+
+  throw "Required command '$CommandName' was not found on PATH."
+}
+
 function Assert-Command {
   param([string]$CommandName)
-  if (-not (Get-Command $CommandName -ErrorAction SilentlyContinue)) {
-    throw "Required command '$CommandName' was not found on PATH."
-  }
+  [void](Resolve-CommandPath -CommandName $CommandName)
 }
 
 function Quote-PowerShellString {
@@ -112,12 +126,12 @@ Write-Info "Backend API: $BackendUrl"
 Write-Info "Frontend: $FrontendUrl"
 Write-Info "Frontend /api/v1 proxy target: $ApiProxyTarget"
 
-Assert-Command -CommandName npm
+$NpmCommand = Resolve-CommandPath -CommandName npm
 
 if ($InstallDependencies) {
-  Invoke-RepoCommand -Description 'Installing root npm dependencies' -Command @('npm', 'install')
+  Invoke-RepoCommand -Description 'Installing root npm dependencies' -Command @($NpmCommand, 'install')
   if (Test-Path (Join-Path $RepoRoot 'chaincode/audit-anchor/package.json')) {
-    Invoke-RepoCommand -Description 'Installing AuditAnchor chaincode dependencies' -Command @('npm', '--prefix', 'chaincode/audit-anchor', 'install')
+    Invoke-RepoCommand -Description 'Installing AuditAnchor chaincode dependencies' -Command @($NpmCommand, '--prefix', 'chaincode/audit-anchor', 'install')
   }
 }
 
@@ -130,22 +144,22 @@ if (-not $SkipPostgres) {
     $env:DATABASE_URL = $DatabaseUrl
     $env:DATABASE_SSL_MODE = $DatabaseSslMode
     $env:DB_MIGRATIONS_ENABLED = 'true'
-    Invoke-RepoCommand -Description 'Applying PostgreSQL migrations' -Command @('npm', 'run', 'db:migrate')
+    Invoke-RepoCommand -Description 'Applying PostgreSQL migrations' -Command @($NpmCommand, 'run', 'db:migrate')
   }
 
   if (-not $SkipSeed) {
     $env:DATABASE_URL = $DatabaseUrl
     $env:DATABASE_SSL_MODE = $DatabaseSslMode
     $env:DEMO_SEED_ENABLED = 'true'
-    Invoke-RepoCommand -Description 'Seeding local demo data' -Command @('npm', 'run', 'db:seed')
+    Invoke-RepoCommand -Description 'Seeding local demo data' -Command @($NpmCommand, 'run', 'db:seed')
   }
 } else {
   Write-Warn 'Skipping PostgreSQL startup, migration, and seed.'
 }
 
 if ($WithFabric) {
-  Invoke-RepoCommand -Description 'Building AuditAnchor chaincode' -Command @('npm', 'run', 'chaincode:audit-anchor:build')
-  Invoke-RepoCommand -Description 'Testing AuditAnchor chaincode' -Command @('npm', 'run', 'chaincode:audit-anchor:test')
+  Invoke-RepoCommand -Description 'Building AuditAnchor chaincode' -Command @($NpmCommand, 'run', 'chaincode:audit-anchor:build')
+  Invoke-RepoCommand -Description 'Testing AuditAnchor chaincode' -Command @($NpmCommand, 'run', 'chaincode:audit-anchor:test')
 
   $deployScript = Join-Path $RepoRoot 'scripts/fabric/deploy-audit-anchor.ps1'
   if (-not (Test-Path $deployScript)) {
@@ -176,16 +190,17 @@ $databaseSslLiteral = Quote-PowerShellString -Value $DatabaseSslMode
 $backendPortLiteral = Quote-PowerShellString -Value ([string]$BackendPort)
 $frontendPortLiteral = Quote-PowerShellString -Value ([string]$FrontendPort)
 $apiProxyLiteral = Quote-PowerShellString -Value $ApiProxyTarget
+$npmCommandLiteral = Quote-PowerShellString -Value $NpmCommand
 
 if (-not $SkipBackend) {
-  $backendCommand = "`$env:PORT = $backendPortLiteral; `$env:DATABASE_URL = $databaseUrlLiteral; `$env:DATABASE_SSL_MODE = $databaseSslLiteral; `$env:DB_MIGRATIONS_ENABLED = 'true'; `$env:DEMO_SEED_ENABLED = 'true'; npm run dev"
+  $backendCommand = "`$env:PORT = $backendPortLiteral; `$env:DATABASE_URL = $databaseUrlLiteral; `$env:DATABASE_SSL_MODE = $databaseSslLiteral; `$env:DB_MIGRATIONS_ENABLED = 'true'; `$env:DEMO_SEED_ENABLED = 'true'; & $npmCommandLiteral run dev"
   Start-ServiceWindow -Title "PLS Backend API :$BackendPort" -CommandText $backendCommand
 } else {
   Write-Warn 'Skipping backend startup.'
 }
 
 if (-not $SkipFrontend) {
-  $frontendCommand = "Remove-Item Env:PORT -ErrorAction SilentlyContinue; `$env:VITE_FRONTEND_PORT = $frontendPortLiteral; `$env:VITE_API_PROXY_TARGET = $apiProxyLiteral; npm run frontend:dev"
+  $frontendCommand = "Remove-Item Env:PORT -ErrorAction SilentlyContinue; `$env:VITE_FRONTEND_PORT = $frontendPortLiteral; `$env:VITE_API_PROXY_TARGET = $apiProxyLiteral; & $npmCommandLiteral run frontend:dev"
   Start-ServiceWindow -Title "PLS Frontend :$FrontendPort" -CommandText $frontendCommand
 } else {
   Write-Warn 'Skipping frontend startup.'
