@@ -1,25 +1,50 @@
 gantt
-    title MVP Feature Build Plan (dependency-driven)
+    title Deployment-Ready MVP Feature Build Plan (actor-completion)
     dateFormat  YYYY-MM-DD
     axisFormat  %d %b
     excludes    weekends
 
-    section Foundations
-    PBI-003 Permissioned membership and role management :crit, pbi003, 2026-03-16, 5d
-    PBI-020 Shariah governance workflow for PLS approvals :pbi020, 2026-03-16, 5d
-    PBI-022 Access logging and cryptographic non-repudiation :crit, pbi022, after pbi003, 5d
+    section Foundations already completed
+    PBI-003 Permissioned membership and role management :done, crit, pbi003, 2026-03-16, 5d
+    PBI-020 Shariah governance workflow for PLS approvals :done, pbi020, 2026-03-16, 5d
+    PBI-022 Access logging and cryptographic non-repudiation :done, crit, pbi022, after pbi003, 5d
+    PBI-253 Authentication and session management :done, crit, pbi253, after pbi022, 4d
+    PBI-002 KYC and AML onboarding workflow :done, crit, pbi002, after pbi253, 8d
+    PBI-005 Immutable audit trail for procure-to-pay events :done, crit, pbi005, after pbi253, 8d
+    PBI-017 Role-based UI and operational dashboards baseline :done, pbi017, after pbi253, 5d
 
-    section Core compliance and platform controls
-    PBI-253 Authentication and session management :crit, pbi253, after pbi022, 4d
-    PBI-002 KYC and AML onboarding workflow :crit, pbi002, after pbi253, 8d
-    PBI-005 Immutable audit trail for procure-to-pay events :crit, pbi005, after pbi253, 8d
-    PBI-017 Role-based UI and operational dashboards :pbi017, after pbi253, 5d
-    PBI-015 Regulator audit reporting and signed export bundle :pbi015, after pbi005, 5d
+    section Sprint 6 recovery / blockchain demo baseline
+    PBI-263 Product entry login dashboard journey :done, pbi263, after pbi017, 3d
+    PBI-282 Dashboard UX and state-flow correction :done, pbi282, after pbi263, 3d
+    PBI-296 PostgreSQL persistence baseline :done, pbi296, after pbi282, 4d
+    PBI-309 Fabric sandbox and AuditAnchorContract baseline :done, pbi309, after pbi296, 4d
+    PBI-323 Backend blockchain gateway and proof API :done, pbi323, after pbi309, 3d
+    PBI-333 Blockchain proof viewer :done, pbi333, after pbi323, 2d
+    PBI-006 Escrow first slice :active, crit, pbi006, after pbi333, 4d
 
-    section Transaction and PLS workflows
-    PBI-006 Order acceptance and escrow contract workflow :crit, pbi006, after pbi005, 8d
-    PBI-007 PLS contract model and distribution workflow :crit, pbi007, after pbi006, 8d
-    MVP core ready :milestone, mvpready, after pbi007, 0d
+    section Wave 0 documentation and scope lock
+    PBI-361 Complete actor-ready deployment MVP :crit, pbi361, after pbi006, 1d
+    PBI-362 Lock MVP actor scope and source references :crit, pbi362, after pbi361, 1d
+    PBI-363 Reconcile Sprint 6 backlog and evidence status :crit, pbi363, after pbi362, 1d
 
-    section Deferred MVP scope
-    PBI-008 Tokenized receivables issuance and redemption :pbi008, after pbi007, 8d
+    section Wave 1 actor dashboard and RBAC completion
+    PBI-364 Administrator member and RBAC workflow :crit, pbi364, after pbi363, 5d
+    PBI-372 Buyer and supplier order workflow :crit, pbi372, after pbi364, 6d
+    PBI-383 Compliance KYC AML workflow UI :crit, pbi383, after pbi372, 5d
+
+    section Wave 2 Shariah PLS and regulator workflows
+    PBI-393 Shariah and PLS workflow :crit, pbi393, after pbi383, 6d
+    PBI-406 Regulator audit export workflow :crit, pbi406, after pbi393, 5d
+    PBI-413 Security operator workflow :pbi413, after pbi406, 3d
+
+    section Wave 3 deployment readiness and handover
+    PBI-418 Developer and operator readiness :pbi418, after pbi406, 3d
+    PBI-420 Runtime PostgreSQL composition switch :crit, pbi420, after pbi418, 3d
+    PBI-423 Final UAT and supervisor demo readiness :crit, pbi423, after pbi420, 4d
+    Deployment-ready MVP review :milestone, deploymentready, after pbi423, 0d
+
+    section Explicit post-MVP scope
+    PBI-001 DID VC identity registration :pbi001, after deploymentready, 5d
+    PBI-008 Tokenized receivables full lifecycle :pbi008, after deploymentready, 8d
+    PBI-011 ISO20022 payment API gateway :pbi011, after deploymentready, 5d
+    PBI-023 Legacy ERP interoperability adapter :pbi023, after deploymentready, 8d
