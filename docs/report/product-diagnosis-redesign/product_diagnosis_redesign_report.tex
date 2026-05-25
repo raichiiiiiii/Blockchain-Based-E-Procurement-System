@@ -1,0 +1,347 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{balance}
+\hypersetup{hidelinks}
+\setlist[itemize]{leftmargin=*, itemsep=1pt, topsep=2pt}
+\setlist[enumerate]{leftmargin=*, itemsep=1pt, topsep=2pt}
+\newcommand{\assumption}[1]{\textbf{Assumption:} #1}
+\newcommand{\risk}[1]{\textbf{Risk:} #1}
+\newcommand{\mvp}{Digital Procurement and PLS Seedbed MVP}
+
+\title{Research-Grade Product Diagnosis and Redesign Report for a Blockchain-Based E-Procurement and PLS Financing Seedbed}
+
+\author{\IEEEauthorblockN{Prepared for the Blockchain-Based E-Procurement System Project}
+\IEEEauthorblockA{Product, Architecture, UX, and Delivery Diagnosis\\
+Generated as a research-grade decision document for MVP redesign and commercial readiness planning}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This report diagnoses the commercial, product, user-experience, and technical readiness of a blockchain-based e-procurement and profit--loss sharing (PLS) financing seedbed. The product concept combines regulated SME onboarding, role-based procurement workflows, escrow tracking, tamper-evident audit records, Hyperledger Fabric proof anchoring, Shariah governance, and regulator-facing evidence export. The analysis finds that the concept addresses plausible market problems in procurement transparency, SME financing evidence, compliance traceability, and Shariah review governance. However, it is not yet commercially ready as a broad marketplace or production Islamic finance platform. The main readiness gap is not only technical implementation; it is actor workflow completeness, market-scope discipline, and credible product packaging. The recommended redesign narrows the market claim to a compliance-first procurement evidence platform with PLS seedbed support, centered on one canonical end-to-end procurement-financing case. The report provides behavioral and structural UML documentation, an architecture review, a UX redesign plan, success metrics, risk controls, and a phased roadmap for moving from technical prototype to demonstrable MVP.
+\end{abstract}
+
+\begin{IEEEkeywords}
+blockchain, e-procurement, Hyperledger Fabric, Islamic finance, profit--loss sharing, product-market fit, audit trail, compliance, Shariah governance, UML, MVP
+\end{IEEEkeywords}
+
+\section{Executive Summary}
+
+The project is best understood as a \textit{Digital Procurement and PLS Seedbed MVP}: a controlled procurement and financing workflow that demonstrates how regulated actors can authenticate, perform procurement actions, review compliance and Shariah decisions, generate audit evidence, anchor proof metadata to a permissioned blockchain, and export regulator-facing evidence.
+
+The central diagnosis is that the product has a defensible problem space but an over-broad initial product frame. It should not be sold or presented as a complete blockchain procurement marketplace, a full Islamic finance platform, or a production Hyperledger Fabric consortium. It should instead be positioned as a compliance-first procurement evidence workspace for regulated SME financing pilots.
+
+\assumption{The current repository contains working or partially working foundations for authentication, dashboard entry, audit history, PostgreSQL persistence, Fabric proof anchoring, proof UI, and an escrow first slice. This assumption is based on the project context provided rather than independent end-to-end runtime verification.}
+
+The recommended product spine is a single canonical case: Amanah Retail Sdn Bhd procures goods from Barakah Supplies Sdn Bhd, with Mabrur Finance Partner participating through a restricted PLS financing scenario. Compliance verifies onboarding, a buyer creates an order, a supplier acknowledges it, escrow is created, an event is anchored, an auditor verifies proof, a Shariah reviewer approves the financing structure, a financier inspects distribution records, and a regulator exports evidence.
+
+\section{Market Problem Validation}
+
+Digital procurement systems address recurring institutional problems: fragmented purchasing records, opaque approvals, delayed supplier onboarding, audit difficulty, and insufficient evidence for financing decisions. The market problem is credible when framed as evidence, compliance, and financing-readiness rather than as blockchain novelty.
+
+Public procurement represents a major share of economic activity, and international policy guidance repeatedly emphasizes transparency, competition, accountability, and integrity in procurement processes \cite{OECD2015Procurement}. SMEs also face persistent financing barriers. Trade finance and SME finance gap reporting indicates that smaller firms often struggle to provide the documentation and risk evidence demanded by financiers \cite{IFCSMEFinanceGap,ADBTradeFinanceGap}. These problems support the case for a digital platform that produces structured procurement records and verifiable audit evidence.
+
+Blockchain contributes only when it is used for a real trust problem. The relevant trust problem here is not data storage; it is tamper-evident proof that a selected event hash existed at a given time and matches later verification. NIST describes blockchain systems as append-only ledgers with cryptographic linking, while also cautioning that application design and governance determine suitability \cite{NISTBlockchain}. This supports the project's hybrid architecture: operational data off-chain, proof metadata on-chain.
+
+For Islamic finance, PLS workflows require explicit parameters, review trails, and governance. Islamic Financial Services Board materials emphasize governance and risk considerations in Islamic financial services \cite{IFSB}. Therefore, a Shariah-reviewed PLS seedbed is plausible as a controlled workflow. However, it is commercially risky to claim production Islamic finance readiness without formal legal, regulatory, and Shariah board validation.
+
+\section{Product-Market Fit Analysis}
+
+\subsection{Target Segment}
+The strongest initial segment is not the whole procurement market. It is a narrow pilot segment:
+
+\begin{itemize}
+    \item Islamic SME financing institutions;
+    \item development finance bodies;
+    \item procurement-heavy cooperatives;
+    \item regulated buyers needing audit-ready supplier procurement records;
+    \item university or regulator sandbox demonstrations.
+\end{itemize}
+
+\subsection{Jobs To Be Done}
+The product must satisfy the following jobs:
+
+\begin{enumerate}
+    \item Compliance reviewer: decide whether a supplier can transact.
+    \item Buyer: create a procurement order and track escrow state.
+    \item Supplier: acknowledge order and provide delivery evidence metadata.
+    \item Auditor: verify event integrity and inspect audit sequence.
+    \item Shariah reviewer: approve or reject PLS terms.
+    \item Financier: inspect financing terms and distribution records.
+    \item Regulator: export evidence with integrity metadata.
+    \item Administrator: manage organizations, roles, and access state.
+\end{enumerate}
+
+\subsection{Product-Market Fit Score}
+Table \ref{tab:pmf} gives a qualitative readiness estimate.
+
+\begin{table}[htbp]
+\caption{Product-Market Fit Diagnosis}
+\label{tab:pmf}
+\centering
+\small
+\begin{tabularx}{\columnwidth}{p{0.34\columnwidth}p{0.18\columnwidth}X}
+\toprule
+Dimension & Rating & Diagnosis \\
+\midrule
+Problem reality & High & Procurement audit, SME financing evidence, and compliance traceability are real issues. \\
+Differentiation & Medium & Blockchain proof plus Shariah/PLS governance is distinctive, but must avoid hype. \\
+User completeness & Low--Medium & Buyer/auditor slice is stronger than full actor coverage. \\
+Commercial clarity & Medium & Stronger if positioned as compliance-first evidence workspace. \\
+Deployment readiness & Medium & Local demo and proof foundation exist, but actor UAT must mature. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Proposed Product Solution}
+
+The redesigned product should be a role-based evidence workspace, not a generic marketplace. Its commercial promise is:
+
+\begin{quote}
+A governed procurement and financing evidence platform that helps regulated stakeholders onboard SMEs, record procurement events, manage escrow state, review Shariah/PLS approvals, verify blockchain-anchored audit proof, and export regulator-ready evidence.
+\end{quote}
+
+\subsection{Canonical Commercial Case}
+The MVP should revolve around one realistic transaction:
+
+\begin{enumerate}
+    \item Administrator activates buyer, supplier, financier, compliance, Shariah, auditor, and regulator roles.
+    \item Compliance reviewer approves supplier onboarding.
+    \item Buyer creates a procurement order.
+    \item Supplier acknowledges the order.
+    \item Buyer creates escrow from the accepted order.
+    \item Escrow event emits audit lifecycle record.
+    \item Blockchain gateway anchors proof metadata.
+    \item Auditor verifies event proof.
+    \item Shariah reviewer approves PLS contract.
+    \item Financier views PLS contract and distribution scenario.
+    \item Regulator exports evidence bundle.
+\end{enumerate}
+
+\section{Behavioral UML Diagrams}
+
+Figures \ref{fig:usecase}--\ref{fig:state} document expected behavior. These diagrams are intentionally MVP-level and separate mandatory actor flows from post-MVP integrations.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/use_case.pdf}
+\caption{Use case diagram for the actor-ready procurement and PLS seedbed MVP. The diagram shows mandatory actors and their primary interactions with onboarding, procurement, escrow, proof, Shariah review, financing, and export use cases.}
+\label{fig:usecase}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/activity.pdf}
+\caption{Activity diagram for the canonical commercial transaction case. The product should be demonstrated as one coherent workflow from onboarding through regulator export, not as disconnected dashboards.}
+\label{fig:activity}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/sequence.pdf}
+\caption{Sequence diagram for escrow creation and blockchain proof verification. Operational state remains in the backend/database while proof metadata is anchored through the blockchain gateway.}
+\label{fig:sequence}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/state.pdf}
+\caption{State diagram for a procurement-financing case. The key product risk is misrepresenting partial states as complete; therefore blocked, pending, failed, and verified states must be explicit.}
+\label{fig:state}
+\end{figure}
+
+\section{Structural UML Diagrams}
+
+Figures \ref{fig:class}--\ref{fig:package} document structural expectations for the MVP architecture.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/class.pdf}
+\caption{Class diagram of core domain objects. The model separates organizations, users, roles, onboarding cases, procurement orders, escrow records, audit events, proof anchors, Shariah reviews, PLS contracts, and export bundles.}
+\label{fig:class}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/object.pdf}
+\caption{Object diagram for the canonical demo case involving Amanah Retail, Barakah Supplies, and Mabrur Finance Partner. The object view helps designers and QA create realistic seed data.}
+\label{fig:object}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/component.pdf}
+\caption{Component diagram of the hybrid MVP. React presents product workflows, Fastify coordinates application services, PostgreSQL stores operational state, and Fabric provides proof anchoring.}
+\label{fig:component}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/deployment.pdf}
+\caption{Deployment diagram for local/demo deployment. Production consortium Fabric, external payment rails, ERP integration, and external identity federation are explicitly post-MVP.}
+\label{fig:deployment}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/package.pdf}
+\caption{Package diagram showing preferred source organization. Domain and application layers must not import database libraries or Fabric SDKs; infrastructure adapters contain PostgreSQL and Fabric dependencies.}
+\label{fig:package}
+\end{figure}
+
+\section{Technical Architecture Review}
+
+The architecture is directionally sound if it maintains strict boundaries. PostgreSQL should remain the operational store. Fabric should be used for proof-level data: event identifiers, case hash, payload hash, schema version, anchor status, timestamp, and transaction metadata. Raw KYC documents, payment credentials, personal data, commercial terms, and Shariah rationale text must remain off-chain.
+
+\subsection{Strengths}
+\begin{itemize}
+    \item Hybrid blockchain boundary avoids treating Fabric as a database.
+    \item Auth/session separation supports trusted actor context.
+    \item Proof UI states can distinguish verified, mismatch, unavailable, and not found.
+    \item PostgreSQL migrations and seeds support demo stability.
+    \item The escrow first slice creates a credible bridge between procurement and proof anchoring.
+\end{itemize}
+
+\subsection{Weaknesses}
+\begin{itemize}
+    \item Runtime PostgreSQL composition must be proven, not merely migrated.
+    \item Live Fabric test-network deployment is more complex than chaincode tests.
+    \item Parent features may remain broader than implemented first slices.
+    \item UI coverage is actor-incomplete.
+    \item PLS semantics must be locked before financial claims are made.
+\end{itemize}
+
+\subsection{Architecture Recommendations}
+\begin{enumerate}
+    \item Keep all Fabric SDK use inside infrastructure adapters.
+    \item Add a runtime persistence switch for in-memory versus PostgreSQL repositories.
+    \item Create an event catalog for procurement, access, Shariah, PLS, and export events.
+    \item Add actor authorization regression tests as release blockers.
+    \item Treat unavailable Fabric as a visible proof state, not a fatal business transaction failure.
+\end{enumerate}
+
+\section{UI/UX Review and Redesign Plan}
+
+The product must not behave like a generated requirements board. A user should see their job, not the backlog. The main UX weakness is missing actor-specific journeys.
+
+\subsection{Observed UX Risks}
+\begin{itemize}
+    \item Generic dashboards obscure role responsibilities.
+    \item Blockchain proof can appear as a technical artifact rather than business evidence.
+    \item Escrow appears disconnected if order and supplier flows are missing.
+    \item PLS is not commercially credible unless Shariah and financier workflows are visible.
+    \item Regulator value is weak without export bundle workflow.
+\end{itemize}
+
+\subsection{Redesign Principles}
+\begin{enumerate}
+    \item Start every role from a role-specific dashboard.
+    \item Use one canonical transaction case across all roles.
+    \item Represent blocked, pending, missing, mismatch, and unavailable states honestly.
+    \item Use domain language only: Orders, Escrow, Audit Trail, Blockchain Proof, Compliance, Shariah Review, Financing, Export Bundle.
+    \item Use proof panels only where proof is relevant: audit event, escrow detail, export bundle, and selected PLS distribution reference.
+\end{enumerate}
+
+\section{Implementation Roadmap}
+
+\subsection{Wave 0: Scope and Documentation Lock}
+Lock actor list, MVP boundaries, source references, and backlog status. Output: single source-of-truth backlog and roadmap evidence.
+
+\subsection{Wave 1: Dashboard and Role Coverage}
+Add demo roles and route guards for administrator, supplier, compliance reviewer, Shariah reviewer, financier, regulator, and security operator. Output: all roles can sign in and land correctly.
+
+\subsection{Wave 2: Administration and RBAC}
+Complete admin dashboard, member list, member detail, role assignment, organization status, and access history. Output: governed network management.
+
+\subsection{Wave 3: Procurement and Compliance}
+Complete buyer order, supplier acknowledgment, order-to-escrow linkage, compliance case review, and eligibility gate. Output: procurement workflow is no longer floating.
+
+\subsection{Wave 4: Audit, Proof, and Export}
+Complete regulator export request, bundle generation, bundle verification, and evidence viewing. Output: marketable audit/regulator story.
+
+\subsection{Wave 5: Shariah and PLS}
+Complete Shariah review UI, PLS contract model, activation gate, financier dashboard, distribution records, and scenario tests. Output: defensible PLS seedbed.
+
+\subsection{Wave 6: Deployment and UAT}
+Complete local-demo runbooks, PostgreSQL runtime switch, Fabric smoke path, actor UAT scripts, authorization matrix, final validation evidence, and supervisor demo script.
+
+\section{Risk Analysis}
+
+\begin{table}[htbp]
+\caption{Key Risks and Mitigations}
+\label{tab:risks}
+\centering
+\small
+\begin{tabularx}{\columnwidth}{p{0.30\columnwidth}X}
+\toprule
+Risk & Mitigation \\
+\midrule
+Overclaiming blockchain readiness & Present Fabric as local proof-anchoring baseline, not production consortium. \\
+PLS compliance overclaim & Use restricted seedbed language and require Shariah approval gate. \\
+Actor workflow incompleteness & Require one UAT script per mandatory actor. \\
+Frontend/backend contract drift & Use API contracts and typed clients; add regression tests. \\
+Sensitive data exposure & Keep raw KYC, payment, personal, and commercial data off-chain and out of dashboards. \\
+Demo instability & Maintain startup script, migrations, seed data, and smoke test evidence. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Success Metrics}
+
+\begin{itemize}
+    \item 100\% mandatory actors can sign in and reach correct dashboard.
+    \item 100\% mandatory actor UAT scripts pass or have accepted documented blocker.
+    \item Zero product UI occurrences of PBI, sprint, backlog, or task labels.
+    \item Zero fabricated blockchain proof states.
+    \item PostgreSQL migration and seed path runs from documentation.
+    \item Fabric chaincode build/test passes; live deployment path is documented.
+    \item KYC eligibility blocks protected transaction actions.
+    \item PLS activation cannot bypass Shariah approval.
+    \item Export bundle includes integrity metadata.
+\end{itemize}
+
+\section{Final Recommendation}
+
+The product should proceed as an actor-complete MVP, not as a broader infrastructure build. Its strongest commercial frame is a compliance-first procurement evidence platform with blockchain proof and Shariah/PLS seedbed support. The next development objective should be completing visible actor workflows around one canonical transaction case. Once each actor can complete their role in that case and the release evidence is repeatable, the project will be supervisor-ready and potentially pilot-ready.
+
+The final recommendation is: build one complete vertical business case rather than many disconnected modules. The commercially credible MVP is not the number of blockchain functions; it is the ability to demonstrate governed procurement, compliance eligibility, escrow tracking, audit proof, Shariah approval, PLS financing records, and regulator evidence export as one coherent workflow.
+
+\balance
+\begin{thebibliography}{00}
+
+\bibitem{OECD2015Procurement}
+OECD, \textit{OECD Recommendation of the Council on Public Procurement}. OECD, 2015.
+
+\bibitem{IFCSMEFinanceGap}
+International Finance Corporation, \textit{MSME Finance Gap: Assessment of the Shortfalls and Opportunities in Financing Micro, Small and Medium Enterprises in Emerging Markets}. IFC, 2017.
+
+\bibitem{ADBTradeFinanceGap}
+Asian Development Bank, \textit{Trade Finance Gaps, Growth, and Jobs Survey}. ADB, 2023.
+
+\bibitem{NISTBlockchain}
+D. Yaga, P. Mell, N. Roby, and K. Scarfone, \textit{Blockchain Technology Overview}, NIST Internal Report 8202, National Institute of Standards and Technology, 2018.
+
+\bibitem{HyperledgerFabricDocs}
+Hyperledger Foundation, \textit{Hyperledger Fabric Documentation}. Available: \url{https://hyperledger-fabric.readthedocs.io/}
+
+\bibitem{IFSB}
+Islamic Financial Services Board, \textit{Guiding Principles on Shariah Governance Systems for Institutions Offering Islamic Financial Services}. IFSB, 2009.
+
+\bibitem{IEEE830}
+IEEE, \textit{IEEE Recommended Practice for Software Requirements Specifications}, IEEE Std 830-1998.
+
+\bibitem{ISO25010}
+ISO/IEC, \textit{Systems and software engineering --- Systems and software Quality Requirements and Evaluation (SQuaRE) --- System and software quality models}, ISO/IEC 25010:2011.
+
+\end{thebibliography}
+
+\end{document}
