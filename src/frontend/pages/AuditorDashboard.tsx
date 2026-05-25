@@ -1,10 +1,13 @@
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
+import type { AuthenticatedFrontendSession } from '../lib/session-state';
+import ExportBundlePage from './ExportBundlePage';
 
 type AuditorDashboardProps = {
   activeTarget: DashboardNavigationTarget;
+  session: AuthenticatedFrontendSession;
 };
 
-function AuditorDashboard({ activeTarget }: AuditorDashboardProps) {
+function AuditorDashboard({ activeTarget, session }: AuditorDashboardProps) {
   if (activeTarget === 'audit-trail') {
     return (
       <section className="workspace-panel">
@@ -30,16 +33,7 @@ function AuditorDashboard({ activeTarget }: AuditorDashboardProps) {
   }
 
   if (activeTarget === 'export-bundle') {
-    return (
-      <section className="workspace-panel">
-        <h2>Export Bundle</h2>
-        <p>Evidence exports will include audit records and proof metadata when available.</p>
-        <div className="status-row">
-          <span className="status-dot status-dot-pending" />
-          <span>Choose audit records before preparing an export.</span>
-        </div>
-      </section>
-    );
+    return <ExportBundlePage session={session} />;
   }
 
   if (activeTarget === 'settings') {

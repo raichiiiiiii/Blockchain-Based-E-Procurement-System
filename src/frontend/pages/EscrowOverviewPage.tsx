@@ -1,32 +1,42 @@
 import { useMemo, useState } from 'react';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 import {
-  createDemoEscrowRequest,
+  createEscrowRequestFromOrder,
   createEscrow,
   type EscrowRecord,
 } from '../lib/escrow-client';
+import type { ProcurementOrderResponse } from '../types/procurement-order';
 import EscrowDetailPage from './EscrowDetailPage';
 
 type EscrowOverviewPageProps = {
   session: AuthenticatedFrontendSession;
+  acceptedOrder?: ProcurementOrderResponse;
   escrow?: EscrowRecord;
   onEscrowChange: (escrow: EscrowRecord) => void;
 };
 
-function EscrowOverviewPage({ session, escrow, onEscrowChange }: EscrowOverviewPageProps) {
+function EscrowOverviewPage({ session, acceptedOrder, escrow, onEscrowChange }: EscrowOverviewPageProps) {
   const [creationState, setCreationState] = useState<'idle' | 'creating' | 'created' | 'failed'>(
     escrow ? 'created' : 'idle',
   );
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
-  const demoRequest = useMemo(() => createDemoEscrowRequest(session), [session]);
+  const escrowRequest = useMemo(
+    () => acceptedOrder ? createEscrowRequestFromOrder(acceptedOrder, session) : undefined,
+    [acceptedOrder, session],
+  );
 
   const handleCreateEscrow = async () => {
+    if (!escrowRequest) {
+      setErrorMessage('An accepted order is required before escrow can be created.');
+      return;
+    }
+
     setCreationState('creating');
     setErrorMessage(undefined);
 
     try {
-      const createdEscrow = await createEscrow(demoRequest, session);
+      const createdEscrow = await createEscrow(escrowRequest, session);
       onEscrowChange(createdEscrow);
       setCreationState('created');
     } catch (error) {
@@ -46,23 +56,35 @@ function EscrowOverviewPage({ session, escrow, onEscrowChange }: EscrowOverviewP
         </p>
       </section>
 
-      <div className="escrow-action-grid">
+      {!escrowRequest ? (
+        <section className="empty-product-state">
+          Accept an order before creating escrow. Accepted orders from the Orders workspace appear here.
+        </section>
+      ) : null}
+
+      {escrowRequest ? <div className="escrow-action-grid">
         <section className="escrow-order-card" aria-label="Accepted order">
           <span>Order reference</span>
-          <strong>{demoRequest.orderId}</strong>
+          <strong>{escrowRequest.orderId}</strong>
           <dl>
+            {acceptedOrder ? (
+              <div>
+                <dt>Order</dt>
+                <dd>{acceptedOrder.title}</dd>
+              </div>
+            ) : null}
             <div>
               <dt>Buyer</dt>
-              <dd>{demoRequest.buyerOrganizationId}</dd>
+              <dd>{escrowRequest.buyerOrganizationId}</dd>
             </div>
             <div>
               <dt>Supplier</dt>
-              <dd>{demoRequest.supplierOrganizationId}</dd>
+              <dd>{escrowRequest.supplierOrganizationId}</dd>
             </div>
             <div>
               <dt>Terms hash</dt>
               <dd>
-                <code>{demoRequest.termsHash}</code>
+                <code>{escrowRequest.termsHash}</code>
               </dd>
             </div>
           </dl>
@@ -84,15 +106,15 @@ function EscrowOverviewPage({ session, escrow, onEscrowChange }: EscrowOverviewP
           </button>
           {errorMessage ? <p className="escrow-error">{errorMessage}</p> : null}
         </section>
-      </div>
+      </div> : null}
 
       {escrow ? (
         <EscrowDetailPage escrow={escrow} />
-      ) : (
+      ) : escrowRequest ? (
         <section className="empty-product-state">
           Escrow proof appears after the escrow record is created.
         </section>
-      )}
+      ) : null}
     </div>
   );
 }

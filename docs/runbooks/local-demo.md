@@ -88,9 +88,67 @@ Landing page
 -> Sign in
 -> Continue as Buyer
 -> Dashboard
+-> Orders
+-> Create order
 -> Escrow
--> Create escrow
+-> Create escrow from an accepted order
 -> Blockchain Proof panel
+```
+
+Supplier demonstrable path:
+
+```text
+Landing page
+-> Sign in
+-> Continue as Supplier
+-> Dashboard
+-> Received Orders
+-> Select assigned order
+-> Accept order
+-> Delivery Evidence
+-> Escrow
+```
+
+Compliance reviewer demonstrable path:
+
+```text
+Landing page
+-> Sign in
+-> Continue as Compliance Reviewer
+-> Dashboard
+-> Compliance
+-> Select pending case
+-> Record approve/reject/flag/block decision
+-> Eligibility Status
+```
+
+Shariah reviewer demonstrable path:
+
+```text
+Landing page
+-> Sign in
+-> Continue as Shariah Reviewer
+-> Dashboard
+-> Shariah Review
+-> Select a PLS review record
+-> Review profit ratio, loss allocation, and checklist metadata
+-> Record Approve, Conditional approval, or Reject
+-> Confirm financing activation readiness or blocked status changes visibly
+```
+
+Financier demonstrable path:
+
+```text
+Landing page
+-> Sign in
+-> Continue as Financier
+-> Dashboard
+-> Financing
+-> Select a PLS contract
+-> Inspect Shariah approval reference
+-> Activate an approved contract
+-> Record profit and loss distribution scenarios
+-> Confirm no external payment execution is implied
 ```
 
 Auditor demonstrable path:
@@ -101,6 +159,37 @@ Landing page
 -> Continue as Auditor
 -> Dashboard
 -> Audit Trail / Blockchain Proof
+-> Export Bundle
+-> Request export
+-> Verify bundle
+```
+
+Regulator demonstrable path:
+
+```text
+Landing page
+-> Sign in
+-> Continue as Regulator
+-> Dashboard
+-> Export Bundle
+-> Request export
+-> Inspect bundle detail and manifest hashes
+-> Verify bundle
+-> Blockchain Proof
+-> Verify proof
+```
+
+Security operator demonstrable path:
+
+```text
+Landing page
+-> Sign in
+-> Continue as Security Operator
+-> Dashboard
+-> Security Status
+-> Access Alerts
+-> Proof Failures
+-> Denied Actions
 ```
 
 Administrator demonstrable path:
@@ -118,7 +207,7 @@ Landing page
 -> Access History
 ```
 
-Role-specific dashboard entry is available for Administrator, Buyer, Supplier, Compliance Reviewer, Shariah Reviewer, Financier, Auditor, Regulator, and Security Operator. The administrator workflow now includes member governance, status actions, role assignment controls, and access-history inspection. Some non-administrator workflow surfaces remain status-only until their backend routes are completed.
+Role-specific dashboard entry is available for Administrator, Buyer, Supplier, Compliance Reviewer, Shariah Reviewer, Financier, Auditor, Regulator, and Security Operator. The administrator workflow includes member governance, status actions, role assignment controls, and access-history inspection. Buyer and supplier workflows include order creation, received-order acknowledgement, accepted-order escrow readiness, and metadata-only delivery evidence. Escrow creation requires an accepted order or explicit demo accepted-order reference, and buyer/supplier organizations must be eligible. Compliance reviewer workflow includes safe KYC/AML case metadata, decision actions, and downstream eligibility visibility. Shariah reviewer workflow includes PLS checklist metadata and decision controls. Financier workflow includes Shariah-gated PLS activation and profit/loss distribution scenarios. Regulator and auditor workflows include scoped export bundle generation and deterministic bundle-hash verification. Security operator workflow is read-only and shows access/proof anomaly metadata.
 
 ## Fabric Proof Path
 
@@ -172,8 +261,12 @@ Security Status
 
 ## Current Known Limitations
 
-- Mandatory actors can sign in and reach role-specific dashboard entry states, but supplier, compliance, Shariah, financier, and regulator workflows are not complete yet.
+- Mandatory actors can sign in and reach role-specific dashboard entry states. Shariah and financier workflows are demonstrable with restricted PLS seedbed data.
+- Delivery evidence is metadata-only; no raw commercial documents, IoT feeds, or QR signature capture are implemented.
+- Compliance dashboard uses a local demo case queue until a backend case-list endpoint is added.
+- Eligibility gating is implemented for order creation, escrow creation, and PLS activation.
 - Fabric live network deployment remains a local/manual path unless the Fabric samples are installed.
 - Escrow is an MVP hybrid slice, not production settlement or payment execution.
-- PLS workflow is not yet actor-complete.
-- Regulator export bundle workflow is not yet implemented.
+- PLS workflow is a restricted single-venture seedbed and does not provide production payment rails, guaranteed returns, or full Islamic finance product coverage.
+- Export signing is MVP-equivalent manifest and bundle hashing; production signing, key management, and external regulator portal integration are not implemented.
+- Security operator alerts use a frontend-local demo read model until a backend security alert query route is added.

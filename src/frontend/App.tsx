@@ -5,7 +5,13 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/AdminDashboard';
 import BuyerDashboard from './pages/BuyerDashboard';
+import SupplierDashboard from './pages/SupplierDashboard';
+import ComplianceDashboard from './pages/ComplianceDashboard';
 import AuditorDashboard from './pages/AuditorDashboard';
+import RegulatorDashboard from './pages/RegulatorDashboard';
+import SecurityDashboard from './pages/SecurityDashboard';
+import ShariahDashboard from './pages/ShariahDashboard';
+import FinancingDashboard from './pages/FinancingDashboard';
 import RoleDashboard from './pages/RoleDashboard';
 import { loginWithCredentials, loginWithDemoAccount, logoutSession, type DemoAccountId, type LoginCredentials } from './lib/auth-client';
 import {
@@ -86,8 +92,32 @@ function renderRoleDashboard(
     return <AdminDashboard activeTarget={activeTarget} session={session} />;
   }
 
+  if (role === 'supplier') {
+    return <SupplierDashboard activeTarget={activeTarget} session={session} />;
+  }
+
+  if (role === 'complianceReviewer') {
+    return <ComplianceDashboard activeTarget={activeTarget} session={session} />;
+  }
+
   if (role === 'auditor') {
-    return <AuditorDashboard activeTarget={activeTarget} />;
+    return <AuditorDashboard activeTarget={activeTarget} session={session} />;
+  }
+
+  if (role === 'regulator') {
+    return <RegulatorDashboard activeTarget={activeTarget} session={session} />;
+  }
+
+  if (role === 'securityOperator') {
+    return <SecurityDashboard activeTarget={activeTarget} session={session} />;
+  }
+
+  if (role === 'shariahReviewer') {
+    return <ShariahDashboard activeTarget={activeTarget} session={session} />;
+  }
+
+  if (role === 'financier') {
+    return <FinancingDashboard activeTarget={activeTarget} session={session} />;
   }
 
   return <RoleDashboard role={role} activeTarget={activeTarget} />;

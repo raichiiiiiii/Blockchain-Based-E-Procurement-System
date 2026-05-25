@@ -20,5 +20,6 @@ export type BlockchainAnchorMetadata = {
 export interface BlockchainAnchorMetadataRepository {
   save(metadata: BlockchainAnchorMetadata): Promise<BlockchainAnchorMetadata>;
   findByEventId(eventId: string): Promise<BlockchainAnchorMetadata | null>;
+  list(): Promise<BlockchainAnchorMetadata[]>;
   listByCaseIdHash(caseIdHash: string): Promise<BlockchainAnchorMetadata[]>;
 }

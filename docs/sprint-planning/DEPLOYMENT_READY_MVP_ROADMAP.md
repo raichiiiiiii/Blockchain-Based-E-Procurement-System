@@ -88,13 +88,7 @@ Current visible product gap:
 
 ```text
 Not yet actor-complete:
-- Administrator workflow
-- Supplier workflow
-- Compliance Reviewer workflow
-- Shariah Reviewer workflow
-- Bank / Financier workflow
-- Regulator export workflow
-- Security Operator workflow
+- Security Operator backend alert read model
 - Network / Platform Operator deployment workflow
 - Developer / Integrator quickstart workflow
 ```
@@ -140,6 +134,61 @@ Completed:
 
 Evidence:
 - docs/evidence/qa/PBI-364_ADMIN_RBAC_WORKFLOW_VALIDATION.md
+- docs/evidence/qa/PBI-424_ACTOR_UAT_SCRIPTS.md
+- docs/evidence/qa/PBI-425_AUTHORIZATION_REGRESSION_MATRIX.md
+```
+
+Wave 3 procurement and compliance workflow status:
+
+```text
+Completed:
+- buyer Orders workspace can create and inspect orders
+- protected order API uses authenticated buyer/supplier actor context
+- supplier Received Orders workspace can acknowledge assigned orders
+- accepted order references feed the buyer escrow overview
+- compliance reviewer dashboard shows safe KYC/AML case metadata
+- compliance decisions update visible eligibility states
+- order creation is blocked when organization eligibility is not eligible
+- buyer, supplier, and compliance UAT scripts added
+
+Evidence:
+- docs/evidence/qa/PBI-372_PROCUREMENT_WORKFLOW_VALIDATION.md
+- docs/evidence/qa/PBI-383_COMPLIANCE_WORKFLOW_VALIDATION.md
+- docs/evidence/qa/PBI-424_ACTOR_UAT_SCRIPTS.md
+- docs/evidence/qa/PBI-425_AUTHORIZATION_REGRESSION_MATRIX.md
+```
+
+Wave 4 audit export and security workflow status:
+
+```text
+Completed:
+- regulator and auditor Export Bundle page can request scoped evidence bundles
+- backend export bundle route creates manifest and integrity metadata
+- bundle verification endpoint returns verified, mismatch, and notFound states
+- regulator Blockchain Proof page verifies anchored event proof without fake transaction data
+- limited security operator dashboard shows access alerts, denied actions, and proof failures
+- regulator/security UAT scripts and authorization matrix updated
+
+Evidence:
+- docs/evidence/qa/PBI-406_EXPORT_WORKFLOW_VALIDATION.md
+- docs/evidence/qa/PBI-413_SECURITY_OPERATOR_VALIDATION.md
+- docs/evidence/qa/PBI-424_ACTOR_UAT_SCRIPTS.md
+- docs/evidence/qa/PBI-425_AUTHORIZATION_REGRESSION_MATRIX.md
+```
+
+Wave 6 PLS and Shariah workflow status:
+
+```text
+Completed:
+- Shariah reviewer dashboard exposes PLS review queue and decision controls
+- PLS contract detail shows procurement reference, parties, capital, profit ratio, loss allocation, and approval reference
+- PLS activation is blocked until an approved Shariah reference exists
+- PLS activation also checks party eligibility when the backend eligibility gateway is configured
+- financier dashboard exposes PLS contract activation and profit/loss distribution scenarios
+- scenario tests cover profit allocation, loss allocation, inactive contract denial, and activation denial
+
+Evidence:
+- docs/evidence/qa/PBI-393_PLS_SHARIAH_WORKFLOW_VALIDATION.md
 - docs/evidence/qa/PBI-424_ACTOR_UAT_SCRIPTS.md
 - docs/evidence/qa/PBI-425_AUTHORIZATION_REGRESSION_MATRIX.md
 ```
@@ -207,16 +256,16 @@ Evidence:
 | Actor | Objective | Entry point | Route / surface | Mandatory actions | Primary ReqIDs | Roadmap PBIs | Deployment status |
 |---|---|---|---|---|---|---|---|
 | Administrator | Govern members, roles, assignments, organization status | `/login` | `/dashboard`, `/members`, `/roles`, `/access-history` | Manage organizations, assign/revoke roles, inspect access history | R03, R17, R22 | PBI-364 to PBI-371 | Workflow ready |
-| SME / Supplier | Receive orders, acknowledge, provide delivery evidence placeholder, view escrow status | `/login` | `/orders`, `/delivery-evidence`, `/escrow-status` | Acknowledge order, submit evidence metadata, view escrow | R05, R06, R17, R18, R22 | PBI-372 to PBI-382 | Dashboard entry ready; workflow pending |
-| Buyer / Procurement Officer | Create orders, create escrow, view proof | `/login` | `/orders`, `/escrow`, `/blockchain-proof` | Create order, create escrow from accepted order, view proof | R05, R06, R17, R22 | PBI-372 to PBI-382 | Partially ready |
-| Compliance Reviewer | Review KYC/AML cases and eligibility | `/login` | `/compliance`, `/compliance/cases/:id` | Approve, reject, flag, block, inspect eligibility | R02, R17, R22 | PBI-383 to PBI-392 | Dashboard entry ready; workflow pending |
-| Shariah Reviewer | Review PLS contracts and decisions | `/login` | `/shariah/reviews`, `/shariah/reviews/:id` | Complete checklist, approve/reject/conditional approve | R07, R20, R22 | PBI-393 to PBI-405 | Dashboard entry ready; workflow pending |
-| Bank / Financier | Review PLS contract and distribution | `/login` | `/financing`, `/financing/contracts/:id` | View PLS contract, inspect distribution record | R07, R17, R20, R26 | PBI-393 to PBI-405 | Dashboard entry ready; workflow pending |
-| Auditor | Search audit trail and verify blockchain proof | `/login` | `/audit`, `/audit/events/:id`, `/blockchain-proof` | Search event, inspect proof, verify hash | R05, R15, R22 | PBI-406 to PBI-412 plus PBI-323/PBI-333 | Partially ready |
-| Security Operator | Inspect access alerts and proof anomalies | `/login` | `/security`, `/access-alerts` | View denied actions and proof failures | R22, R25, R28 | PBI-413 to PBI-417 | Dashboard entry ready; should-have workflow pending |
+| SME / Supplier | Receive orders, acknowledge, provide delivery evidence placeholder, view escrow status | `/login` | `/dashboard`, Received Orders, Delivery Evidence, Escrow | Acknowledge order, inspect evidence metadata, view escrow readiness | R05, R06, R17, R18, R22 | PBI-372 to PBI-382 | Workflow ready for mandatory order acknowledgement |
+| Buyer / Procurement Officer | Create orders, create escrow, view proof | `/login` | `/dashboard`, Orders, Escrow, Blockchain Proof | Create order, create escrow from accepted order, view proof | R05, R06, R17, R22 | PBI-372 to PBI-382 | Workflow ready for order-to-escrow path |
+| Compliance Reviewer | Review KYC/AML cases and eligibility | `/login` | `/dashboard`, Compliance, Eligibility Status | Approve, reject, flag, block, inspect eligibility | R02, R17, R22 | PBI-383 to PBI-392 | Workflow ready for review and eligibility visibility |
+| Shariah Reviewer | Review PLS contracts and decisions | `/login` | Shariah Review | Complete checklist, approve/reject/conditional approve | R07, R20, R22 | PBI-393 to PBI-405 | Workflow ready for restricted PLS seedbed |
+| Bank / Financier | Review PLS contract and distribution | `/login` | Financing | Activate approved PLS contract, inspect distribution record | R07, R17, R20, R26 | PBI-393 to PBI-405 | Workflow ready for restricted PLS seedbed |
+| Auditor | Search audit trail and verify blockchain proof | `/login` | `/audit`, `/audit/events/:id`, `/blockchain-proof` | Search event, inspect proof, verify hash, request export | R05, R15, R22 | PBI-406 to PBI-412 plus PBI-323/PBI-333 | Proof/export workflow ready |
+| Security Operator | Inspect access alerts and proof anomalies | `/login` | `/security`, `/access-alerts` | View denied actions and proof failures | R22, R25, R28 | PBI-413 to PBI-417 | Limited read-only workflow ready; backend alert route pending |
 | Network / Platform Operator | Start and validate local services | CLI/runbooks | runbooks and scripts | Start DB/API/frontend/Fabric smoke path | R25, R26 | PBI-418 to PBI-422 | Partially ready |
 | Developer / Integrator | Use local API and contracts | docs/API | quickstart/runbooks | Login, call escrow/proof/export APIs | R11, R12, R23, R26 | PBI-418 to PBI-422 | Should-have |
-| Regulator / Reporting User | Request and verify audit export | `/login` | `/exports`, `/exports/:bundleId` | Request bundle, verify integrity metadata | R15, R22, R28 | PBI-406 to PBI-412 | Dashboard entry ready; export workflow pending |
+| Regulator / Reporting User | Request and verify audit export | `/login` | `/exports`, `/exports/:bundleId` | Request bundle, verify integrity metadata | R15, R22, R28 | PBI-406 to PBI-412 | Export workflow ready |
 
 ## 6. Execution waves
 
@@ -280,6 +329,8 @@ Output:
 - supplier received order flow complete
 - KYC/AML compliance workflow visible
 - eligibility gate blocks non-eligible organizations
+- evidence: docs/evidence/qa/PBI-372_PROCUREMENT_WORKFLOW_VALIDATION.md
+- evidence: docs/evidence/qa/PBI-383_COMPLIANCE_WORKFLOW_VALIDATION.md
 ```
 
 ### Wave 4 — Audit trail and blockchain proof
@@ -293,7 +344,9 @@ Output:
 ```text
 - regulator export bundle flow complete
 - auditor proof verification remains visible
-- optional security operator workflow added when capacity allows
+- limited security operator workflow added
+- evidence: docs/evidence/qa/PBI-406_EXPORT_WORKFLOW_VALIDATION.md
+- evidence: docs/evidence/qa/PBI-413_SECURITY_OPERATOR_VALIDATION.md
 ```
 
 ### Wave 5 — Escrow first slice completion
@@ -308,6 +361,7 @@ Output:
 - escrow creation depends on accepted order or explicit demo reference
 - eligibility is enforced before transaction actions
 - escrow proof panel remains accurate and non-fabricated
+- evidence: docs/evidence/qa/PBI-006_ESCROW_FIRST_SLICE_VALIDATION.md
 ```
 
 ### Wave 6 — PLS and Shariah governance integration
@@ -323,6 +377,7 @@ Output:
 - PLS contract activation gate enforced
 - financier PLS contract and distribution view available
 - reproducible PLS scenario evidence exists
+- evidence: docs/evidence/qa/PBI-393_PLS_SHARIAH_WORKFLOW_VALIDATION.md
 ```
 
 ### Wave 7 — QA, UAT, evidence, and deployment
@@ -397,14 +452,14 @@ Security / authorization
 
 Actor UAT
 [ ] administrator flow passes
-[ ] buyer flow passes
-[ ] supplier flow passes
-[ ] compliance reviewer flow passes
-[ ] Shariah reviewer flow passes
-[ ] financier flow passes
-[ ] auditor flow passes
-[ ] regulator export flow passes
-[ ] security operator flow passes if included
+[x] buyer flow passes
+[x] supplier flow passes
+[x] compliance reviewer flow passes
+[x] Shariah reviewer flow passes
+[x] financier flow passes
+[x] auditor flow passes
+[x] regulator export flow passes
+[x] security operator flow passes if included
 ```
 
 ## 8. Main risks and controls

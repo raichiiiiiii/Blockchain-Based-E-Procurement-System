@@ -562,7 +562,7 @@ export function filterNavigationGroupsByRole(
     .filter(group => group.items.length > 0);
 }
 
-// Create administrator-specific widgets according to PBI-176 contract
+// Create administrator-specific widgets.
 function createAdministratorWidgets(): DashboardWidget[] {
   return [
     // Primary zone widgets
@@ -572,7 +572,6 @@ function createAdministratorWidgets(): DashboardWidget[] {
       zoneId: 'primary',
       allowedRoles: ['administrator'],
       status: 'active',
-      downstreamPbi: 'PBI-177',
       placeholder: false
     },
     {
@@ -581,7 +580,6 @@ function createAdministratorWidgets(): DashboardWidget[] {
       zoneId: 'primary',
       allowedRoles: ['administrator'],
       status: 'active',
-      downstreamPbi: 'PBI-177',
       placeholder: false
     },
     {
@@ -590,7 +588,6 @@ function createAdministratorWidgets(): DashboardWidget[] {
       zoneId: 'primary',
       allowedRoles: ['administrator'],
       status: 'active',
-      downstreamPbi: 'PBI-177',
       placeholder: false
     },
     // Actions zone widgets
@@ -600,7 +597,6 @@ function createAdministratorWidgets(): DashboardWidget[] {
       zoneId: 'actions',
       allowedRoles: ['administrator'],
       status: 'active',
-      downstreamPbi: 'PBI-177',
       placeholder: false
     },
     {
@@ -609,7 +605,6 @@ function createAdministratorWidgets(): DashboardWidget[] {
       zoneId: 'actions',
       allowedRoles: ['administrator'],
       status: 'active',
-      downstreamPbi: 'PBI-177',
       placeholder: false
     },
     {
@@ -618,7 +613,6 @@ function createAdministratorWidgets(): DashboardWidget[] {
       zoneId: 'actions',
       allowedRoles: ['administrator'],
       status: 'active',
-      downstreamPbi: 'PBI-177',
       placeholder: false
     },
     // Alerts zone widget
@@ -628,7 +622,6 @@ function createAdministratorWidgets(): DashboardWidget[] {
       zoneId: 'alerts',
       allowedRoles: ['administrator'],
       status: 'active',
-      downstreamPbi: 'PBI-177',
       placeholder: false
     },
     // Secondary zone placeholder widget
@@ -638,13 +631,12 @@ function createAdministratorWidgets(): DashboardWidget[] {
       zoneId: 'secondary',
       allowedRoles: ['administrator'],
       status: 'placeholder',
-      downstreamPbi: 'PBI-177',
       placeholder: true
     }
   ];
 }
 
-// Create compliance reviewer widgets according to PBI-180 contract
+// Create compliance reviewer widgets.
 function createComplianceReviewerWidgets(): DashboardWidget[] {
   return [
     // Primary zone widgets
@@ -654,7 +646,6 @@ function createComplianceReviewerWidgets(): DashboardWidget[] {
       zoneId: 'primary',
       allowedRoles: ['complianceReviewer'],
       status: 'placeholder',
-      downstreamPbi: 'PBI-181',
       placeholder: true
     },
     {
@@ -663,7 +654,6 @@ function createComplianceReviewerWidgets(): DashboardWidget[] {
       zoneId: 'primary',
       allowedRoles: ['complianceReviewer'],
       status: 'placeholder',
-      downstreamPbi: 'PBI-181',
       placeholder: true
     },
     // Summary zone widget
@@ -673,7 +663,6 @@ function createComplianceReviewerWidgets(): DashboardWidget[] {
       zoneId: 'summary',
       allowedRoles: ['complianceReviewer'],
       status: 'placeholder',
-      downstreamPbi: 'PBI-181',
       placeholder: true
     },
     // Alerts zone widget
@@ -683,13 +672,12 @@ function createComplianceReviewerWidgets(): DashboardWidget[] {
       zoneId: 'alerts',
       allowedRoles: ['complianceReviewer'],
       status: 'active',
-      downstreamPbi: 'PBI-181',
       placeholder: false
     }
   ];
 }
 
-// Create Shariah reviewer widgets according to PBI-180 contract
+// Create Shariah reviewer widgets.
 function createShariahReviewerWidgets(): DashboardWidget[] {
   return [
     // Primary zone widgets
@@ -699,7 +687,6 @@ function createShariahReviewerWidgets(): DashboardWidget[] {
       zoneId: 'primary',
       allowedRoles: ['shariahReviewer'],
       status: 'active',
-      downstreamPbi: 'PBI-181',
       placeholder: false
     },
     {
@@ -708,7 +695,6 @@ function createShariahReviewerWidgets(): DashboardWidget[] {
       zoneId: 'primary',
       allowedRoles: ['shariahReviewer'],
       status: 'active',
-      downstreamPbi: 'PBI-181',
       placeholder: false
     },
     // Actions zone widgets
@@ -718,7 +704,6 @@ function createShariahReviewerWidgets(): DashboardWidget[] {
       zoneId: 'actions',
       allowedRoles: ['shariahReviewer'],
       status: 'active',
-      downstreamPbi: 'PBI-181',
       placeholder: false
     },
     // Secondary zone widget (moved from actions)
@@ -728,7 +713,6 @@ function createShariahReviewerWidgets(): DashboardWidget[] {
       zoneId: 'secondary',
       allowedRoles: ['shariahReviewer'],
       status: 'active',
-      downstreamPbi: 'PBI-181',
       placeholder: false
     },
     // Alerts zone widget
@@ -738,13 +722,12 @@ function createShariahReviewerWidgets(): DashboardWidget[] {
       zoneId: 'alerts',
       allowedRoles: ['shariahReviewer'],
       status: 'active',
-      downstreamPbi: 'PBI-181',
       placeholder: false
     }
   ];
 }
 
-// Create auditor widgets according to PBI-188 contract
+// Create auditor widgets.
 function createAuditorWidgets(): DashboardWidget[] {
   return [
     // Primary zone widgets
@@ -754,7 +737,6 @@ function createAuditorWidgets(): DashboardWidget[] {
       zoneId: 'primary',
       allowedRoles: ['auditor'],
       status: 'active',
-      downstreamPbi: 'PBI-189',
       placeholder: false
     },
     {
@@ -763,7 +745,6 @@ function createAuditorWidgets(): DashboardWidget[] {
       zoneId: 'primary',
       allowedRoles: ['auditor'],
       status: 'active',
-      downstreamPbi: 'PBI-189',
       placeholder: false
     },
     // Investigation zone widgets
@@ -773,7 +754,6 @@ function createAuditorWidgets(): DashboardWidget[] {
       zoneId: 'investigation',
       allowedRoles: ['auditor'],
       status: 'active',
-      downstreamPbi: 'PBI-189',
       placeholder: false
     },
     // Alerts zone widget
@@ -783,13 +763,12 @@ function createAuditorWidgets(): DashboardWidget[] {
       zoneId: 'alerts',
       allowedRoles: ['auditor'],
       status: 'active',
-      downstreamPbi: 'PBI-189',
       placeholder: false
     }
   ];
 }
 
-// Create security operator widgets according to PBI-188 contract
+// Create security operator widgets.
 function createSecurityOperatorWidgets(): DashboardWidget[] {
   return [
     // Primary zone widget
@@ -799,7 +778,6 @@ function createSecurityOperatorWidgets(): DashboardWidget[] {
       zoneId: 'primary',
       allowedRoles: ['securityOperator'],
       status: 'placeholder',
-      downstreamPbi: 'PBI-189',
       placeholder: true
     },
     // Alerts zone widget
@@ -809,7 +787,6 @@ function createSecurityOperatorWidgets(): DashboardWidget[] {
       zoneId: 'alerts',
       allowedRoles: ['securityOperator'],
       status: 'active',
-      downstreamPbi: 'PBI-189',
       placeholder: false
     }
   ];
@@ -823,7 +800,6 @@ function createBuyerWidgets(): DashboardWidget[] {
       zoneId: 'primary',
       allowedRoles: ['buyer'],
       status: 'placeholder',
-      downstreamPbi: 'PBI-263',
       placeholder: true
     },
     {
@@ -832,7 +808,6 @@ function createBuyerWidgets(): DashboardWidget[] {
       zoneId: 'primary',
       allowedRoles: ['buyer'],
       status: 'placeholder',
-      downstreamPbi: 'PBI-263',
       placeholder: true
     },
     {
@@ -841,7 +816,6 @@ function createBuyerWidgets(): DashboardWidget[] {
       zoneId: 'summary',
       allowedRoles: ['buyer'],
       status: 'placeholder',
-      downstreamPbi: 'PBI-263',
       placeholder: true
     }
   ];
@@ -849,27 +823,27 @@ function createBuyerWidgets(): DashboardWidget[] {
 
 // Create placeholder widgets for each role and zone
 export function createPlaceholderWidgets(role: DashboardRoleCode): DashboardWidget[] {
-  // For administrator role, return specific widgets as per PBI-176
+  // Administrator role gets specific governance widgets.
   if (role === 'administrator') {
     return createAdministratorWidgets();
   }
   
-  // For compliance reviewer role, return specific widgets as per PBI-180
+  // Compliance reviewer role gets specific review widgets.
   if (role === 'complianceReviewer') {
     return createComplianceReviewerWidgets();
   }
   
-  // For shariah reviewer role, return specific widgets as per PBI-180
+  // Shariah reviewer role gets specific review widgets.
   if (role === 'shariahReviewer') {
     return createShariahReviewerWidgets();
   }
   
-  // For auditor role, return specific widgets as per PBI-188
+  // Auditor role gets specific investigation widgets.
   if (role === 'auditor') {
     return createAuditorWidgets();
   }
   
-  // For security operator role, return specific widgets as per PBI-188
+  // Security operator role gets specific investigation widgets.
   if (role === 'securityOperator') {
     return createSecurityOperatorWidgets();
   }
@@ -890,7 +864,6 @@ export function createPlaceholderWidgets(role: DashboardRoleCode): DashboardWidg
       zoneId,
       allowedRoles: [role],
       status: 'placeholder' as const,
-      downstreamPbi: 'PBI-173', // This PBI implements the base shell
       placeholder: true
     }));
   });

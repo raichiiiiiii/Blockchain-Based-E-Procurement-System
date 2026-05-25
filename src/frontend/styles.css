@@ -929,6 +929,10 @@ button {
   gap: 14px;
 }
 
+.form-field-wide {
+  grid-column: 1 / -1;
+}
+
 .admin-form label {
   display: grid;
   gap: 8px;
@@ -970,6 +974,116 @@ button {
   border: 1px solid #8bc0a8;
   background: #e2f5ee;
   color: #0c6b58;
+}
+
+.order-workspace,
+.case-workspace,
+.export-workspace {
+  display: grid;
+  gap: 20px;
+}
+
+.order-action-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.order-list,
+.workflow-meta-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.order-row,
+.workflow-meta-panel {
+  border: 1px solid #edf1ef;
+  border-radius: 8px;
+  background: #fbfcfb;
+}
+
+.order-row {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  padding: 14px 16px;
+  color: #16201d;
+  text-align: left;
+  cursor: pointer;
+}
+
+.order-row:hover,
+.order-row-active {
+  background: #eef6f2;
+  border-color: #bfd8cc;
+}
+
+.order-row span,
+.workflow-meta-panel span {
+  color: #0c6b58;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.order-row strong,
+.workflow-meta-panel strong {
+  color: #16201d;
+}
+
+.order-row small,
+.workflow-meta-panel p {
+  color: #52615d;
+}
+
+.order-row p {
+  margin: 0;
+  color: #52615d;
+  line-height: 1.55;
+}
+
+.order-row code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: #14211d;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.86rem;
+}
+
+.order-row .admin-status {
+  width: fit-content;
+  margin-top: 4px;
+  text-transform: none;
+}
+
+.order-row .admin-status-active {
+  color: #0c6b58;
+}
+
+.order-row .admin-status-pending {
+  color: #7a5300;
+}
+
+.order-row .admin-status-muted {
+  color: #4f5d66;
+}
+
+.order-row .admin-status-danger {
+  color: #9f2f2f;
+}
+
+.workflow-meta-panel {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.workflow-meta-panel p {
+  margin: 0;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .proof-workspace,
@@ -1339,7 +1453,8 @@ button {
 
   .proof-review-entry,
   .escrow-action-grid,
-  .escrow-status-grid {
+  .escrow-status-grid,
+  .order-action-grid {
     grid-template-columns: 1fr;
   }
 

@@ -1,0 +1,10 @@
+{
+  "id": "7252572dd792404d874c5f99d42db148",
+  "timestamp": "2026-05-25T11:32:38.971382Z",
+  "command_id": "6961e641ae5e4e2b91bc703675cc50b9",
+  "order": 0,
+  "exit_code": 128,
+  "stdout": null,
+  "stderr": "error: chmod on /workspace/project/.git/config.lock failed: Operation not permitted\nfatal: could not set 'core.repositoryformatversion' to '0'\n",
+  "kind": "BashOutput"
+}

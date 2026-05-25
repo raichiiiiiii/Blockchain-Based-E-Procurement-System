@@ -46,6 +46,12 @@ import { InMemoryBlockchainAnchorMetadataRepository } from '../modules/blockchai
 import { registerEscrowRoutes } from '../modules/escrow/api/escrow.routes.js';
 import type { EscrowRepository } from '../modules/escrow/application/escrow-repository.js';
 import { InMemoryEscrowRepository } from '../modules/escrow/infrastructure/in-memory-escrow-repository.js';
+import { registerExportBundleRoutes } from '../modules/reporting/api/export-bundle.routes.js';
+import type { ExportBundleRepository } from '../modules/reporting/application/export-bundle-repository.js';
+import { InMemoryExportBundleRepository } from '../modules/reporting/infrastructure/in-memory-export-bundle-repository.js';
+import { registerPlsRoutes } from '../modules/financing/api/pls.routes.js';
+import type { PlsContractRepository } from '../modules/financing/application/pls-contract-repository.js';
+import { InMemoryPlsContractRepository } from '../modules/financing/infrastructure/in-memory-pls-contract-repository.js';
 
 const DEFAULT_DEV_PORT = 3100;
 
@@ -71,6 +77,9 @@ export function createTestableServer(options?: {
   blockchainAnchorGateway?: BlockchainAnchorGateway;
   blockchainAnchorMetadataRepository?: BlockchainAnchorMetadataRepository;
   escrowRepository?: EscrowRepository;
+  exportBundleRepository?: ExportBundleRepository;
+  plsContractRepository?: PlsContractRepository;
+  registerKycAmlRoutes?: boolean;
 }) {
   const server = fastify();
 
@@ -121,6 +130,8 @@ export function createTestableServer(options?: {
   const blockchainAnchorGateway = options?.blockchainAnchorGateway ?? new InMemoryBlockchainAnchorGateway();
   const blockchainAnchorMetadataRepository = options?.blockchainAnchorMetadataRepository ?? new InMemoryBlockchainAnchorMetadataRepository();
   const escrowRepository = options?.escrowRepository ?? new InMemoryEscrowRepository();
+  const exportBundleRepository = options?.exportBundleRepository ?? new InMemoryExportBundleRepository();
+  const plsContractRepository = options?.plsContractRepository ?? new InMemoryPlsContractRepository();
   const authenticatedPreHandler = createAuthenticatedRequestPreHandler(sessionRepository);
 
   // Register auth routes
@@ -170,11 +181,14 @@ export function createTestableServer(options?: {
     accessAuditEventRepository
   });
 
-  server.register(registerKYCAMLRoutes, {
-    prefix: '/api/v1',
-    repository: onboardingCaseRepository,
-    accessAuditEventRepository
-  });
+  if (options?.registerKycAmlRoutes) {
+    server.register(registerKYCAMLRoutes, {
+      prefix: '/api/v1',
+      repository: onboardingCaseRepository,
+      accessAuditEventRepository,
+      authenticatedPreHandler
+    });
+  }
 
   // Register transaction-history routes
   server.register(registerTransactionHistoryRoutes, {
@@ -213,14 +227,54 @@ export function createTestableServer(options?: {
     escrowRepository,
     lifecycleEventRepository: procureToPayLifecycleEventRepository,
     blockchainAnchorGateway,
-    blockchainAnchorMetadataRepository
+    blockchainAnchorMetadataRepository,
+    orderRepository: procurementOrderRepository,
+    authenticatedPreHandler,
+    eligibilityGateway: {
+      async checkOrganizationEligibility(memberOrganizationId: string) {
+        const result = await getOnboardingEligibility(memberOrganizationId, onboardingCaseRepository);
+        return {
+          memberOrganizationId: result.memberOrganizationId,
+          eligibility: result.eligibility,
+          reasonCodes: result.reasonCodes,
+          rationale: result.rationale,
+        };
+      }
+    }
+  });
+
+  server.register(registerExportBundleRoutes, {
+    prefix: '/api/v1',
+    repository: exportBundleRepository,
+    accessAuditEventRepository,
+    lifecycleEventRepository: procureToPayLifecycleEventRepository,
+    blockchainAnchorMetadataRepository,
+    authenticatedPreHandler
+  });
+
+  server.register(registerPlsRoutes, {
+    prefix: '/api/v1',
+    contractRepository: plsContractRepository,
+    shariahReviewRepository,
+    authenticatedPreHandler,
+    eligibilityGateway: {
+      async checkOrganizationEligibility(memberOrganizationId: string) {
+        const result = await getOnboardingEligibility(memberOrganizationId, onboardingCaseRepository);
+        return {
+          memberOrganizationId: result.memberOrganizationId,
+          eligibility: result.eligibility,
+          reasonCodes: result.reasonCodes,
+          rationale: result.rationale,
+        };
+      }
+    }
   });
 
   return server;
 }
 
 // Existing singleton server for normal runtime
-const server = createTestableServer();
+const server = createTestableServer({ registerKycAmlRoutes: true });
 
 const PORT = Number(process.env.PORT ?? DEFAULT_DEV_PORT);
 

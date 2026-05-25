@@ -57,6 +57,5 @@ export interface DashboardWidget {
   allowedRoles: DashboardRoleCode[]; // roleCodes
   requiredPermissions?: string[]; // Optional specific permissions
   status: 'placeholder' | 'loading' | 'active' | 'unavailable' | 'error';
-  downstreamPbi: string; // Reference to the PBI that implements this widget
   placeholder?: boolean; // Whether this is a placeholder widget
 }

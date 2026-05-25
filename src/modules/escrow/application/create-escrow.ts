@@ -10,6 +10,13 @@ import type {
 } from '../../blockchain/application/blockchain-anchor-metadata-repository.js';
 import type { ProcureToPayLifecycleEventRepository } from '../../procurement/application/procure-to-pay-lifecycle-event-repository.js';
 import { recordProcureToPayLifecycleEvent } from '../../procurement/application/record-procure-to-pay-lifecycle-event.js';
+import {
+  canPerformProcurementAction,
+  type ProcurementEligibilityGateway,
+  type ProcurementEligibilityResult,
+} from '../../procurement/application/procurement-eligibility-gateway.js';
+import type { ProcurementOrderRepository } from '../../procurement/application/procurement-order-repository.js';
+import type { ProcurementOrderStatus } from '../../procurement/domain/procurement-order.js';
 import type { EscrowBlockchainAnchor, EscrowRecord } from '../domain/escrow.js';
 import type { EscrowRepository } from './escrow-repository.js';
 
@@ -21,6 +28,7 @@ export type CreateEscrowInput = {
   termsHash?: string;
   acceptedOrderReference?: string;
   actorUserId?: string;
+  actorOrganizationId?: string;
   actorRoleCodes?: string[];
   requestId?: string;
 };
@@ -34,7 +42,10 @@ export type CreateEscrowResult =
   | { status: 'created'; escrow: EscrowRecord }
   | { status: 'invalidInput'; issues: EscrowValidationIssue[] }
   | { status: 'unauthorized' }
-  | { status: 'forbidden' }
+  | { status: 'forbidden'; reason: 'buyerRoleRequired' | 'buyerOrganizationMismatch' | 'orderOrganizationMismatch' }
+  | { status: 'notEligible'; party: 'buyer' | 'supplier'; eligibility: ProcurementEligibilityResult }
+  | { status: 'orderNotFound'; orderId: string }
+  | { status: 'orderNotAccepted'; orderId: string; orderStatus: ProcurementOrderStatus }
   | { status: 'duplicateActiveEscrow'; existingEscrowId: string };
 
 export type CreateEscrowDependencies = {
@@ -42,6 +53,8 @@ export type CreateEscrowDependencies = {
   lifecycleEventRepository?: ProcureToPayLifecycleEventRepository;
   blockchainAnchorGateway?: BlockchainAnchorGateway;
   blockchainAnchorMetadataRepository?: BlockchainAnchorMetadataRepository;
+  orderRepository?: ProcurementOrderRepository;
+  eligibilityGateway?: ProcurementEligibilityGateway;
   now?: () => string;
   idGenerator?: () => string;
 };
@@ -55,7 +68,7 @@ type NormalizedCreateEscrowInput = Required<
     | 'actorUserId'
     | 'requestId'
   >
-> & Pick<CreateEscrowInput, 'financierOrganizationId' | 'acceptedOrderReference' | 'actorRoleCodes'>;
+> & Pick<CreateEscrowInput, 'financierOrganizationId' | 'acceptedOrderReference' | 'actorOrganizationId' | 'actorRoleCodes'>;
 
 function requiredString(value: string | undefined, path: string, label: string): EscrowValidationIssue | null {
   if (typeof value !== 'string' || value.trim().length === 0) {
@@ -95,6 +108,7 @@ function normalizeCreateEscrowInput(input: CreateEscrowInput): {
       termsHash: input.termsHash!.trim(),
       acceptedOrderReference: input.acceptedOrderReference?.trim() || undefined,
       actorUserId: input.actorUserId!.trim(),
+      actorOrganizationId: input.actorOrganizationId?.trim() || undefined,
       actorRoleCodes: input.actorRoleCodes ?? [],
       requestId: input.requestId!.trim(),
     },
@@ -127,6 +141,13 @@ function canCreateEscrow(actorRoleCodes: readonly string[]): boolean {
   return actorRoleCodes.includes('buyer');
 }
 
+function hasExplicitDemoAcceptedReference(input: NormalizedCreateEscrowInput): boolean {
+  return Boolean(
+    input.acceptedOrderReference?.startsWith('accepted-order-demo-') ||
+    input.orderId.startsWith('demo-order-'),
+  );
+}
+
 export async function createEscrow(
   input: CreateEscrowInput,
   dependencies: CreateEscrowDependencies,
@@ -136,12 +157,59 @@ export async function createEscrow(
   }
 
   if (!canCreateEscrow(input.actorRoleCodes ?? [])) {
-    return { status: 'forbidden' };
+    return { status: 'forbidden', reason: 'buyerRoleRequired' };
   }
 
   const { normalized, issues } = normalizeCreateEscrowInput(input);
   if (!normalized) {
     return { status: 'invalidInput', issues };
+  }
+
+  if (
+    normalized.actorOrganizationId &&
+    normalized.actorOrganizationId !== normalized.buyerOrganizationId
+  ) {
+    return { status: 'forbidden', reason: 'buyerOrganizationMismatch' };
+  }
+
+  if (dependencies.orderRepository) {
+    const acceptedOrder = await dependencies.orderRepository.findById(normalized.orderId);
+    if (!acceptedOrder) {
+      if (!hasExplicitDemoAcceptedReference(normalized)) {
+        return { status: 'orderNotFound', orderId: normalized.orderId };
+      }
+    } else {
+      if (acceptedOrder.status !== 'accepted') {
+        return {
+          status: 'orderNotAccepted',
+          orderId: acceptedOrder.orderId,
+          orderStatus: acceptedOrder.status,
+        };
+      }
+
+      if (
+        acceptedOrder.buyerOrganizationId !== normalized.buyerOrganizationId ||
+        acceptedOrder.supplierOrganizationId !== normalized.supplierOrganizationId
+      ) {
+        return { status: 'forbidden', reason: 'orderOrganizationMismatch' };
+      }
+    }
+  }
+
+  if (dependencies.eligibilityGateway) {
+    const buyerEligibility = await dependencies.eligibilityGateway.checkOrganizationEligibility(
+      normalized.buyerOrganizationId,
+    );
+    if (!canPerformProcurementAction(buyerEligibility)) {
+      return { status: 'notEligible', party: 'buyer', eligibility: buyerEligibility };
+    }
+
+    const supplierEligibility = await dependencies.eligibilityGateway.checkOrganizationEligibility(
+      normalized.supplierOrganizationId,
+    );
+    if (!canPerformProcurementAction(supplierEligibility)) {
+      return { status: 'notEligible', party: 'supplier', eligibility: supplierEligibility };
+    }
   }
 
   const existingEscrow = await dependencies.escrowRepository.findActiveByOrderId(normalized.orderId);

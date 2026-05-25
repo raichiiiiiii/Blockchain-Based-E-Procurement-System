@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import type { OnboardingCaseRepository } from '../application/create-onboarding-case.js';
 import { createOnboardingCase, type CreateOnboardingCaseInput } from '../application/create-onboarding-case.js';
 import { recordOnboardingReviewDecision, type RecordOnboardingReviewDecisionInput } from '../application/record-onboarding-review-decision.js';
@@ -99,6 +99,7 @@ interface KYCAMLRoutesOptions {
   authorizeDecision?: OnboardingDecisionAuthorization;
   authorizeStatusHistory?: OnboardingStatusHistoryAuthorization;
   authorizeEligibility?: OnboardingEligibilityAuthorization;
+  authenticatedPreHandler?: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
 }
 
 interface CreateOnboardingCaseRequest {
@@ -138,8 +139,13 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
     authorizeSubmission = allowAuthenticatedSubmission,
     authorizeDecision = allowAuthenticatedDecision,
     authorizeStatusHistory = allowAuthenticatedStatusHistory,
-    authorizeEligibility = allowAuthenticatedEligibility
+    authorizeEligibility = allowAuthenticatedEligibility,
+    authenticatedPreHandler
   } = options;
+
+  const authenticatedRouteOptions = authenticatedPreHandler
+    ? { preHandler: authenticatedPreHandler }
+    : {};
 
   // GET /api/v1/kyc-aml-onboarding/eligibility/{memberOrganizationId} - Get onboarding eligibility for an organization
   fastify.get<{ Params: { memberOrganizationId: string } }>(
@@ -153,7 +159,8 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
             memberOrganizationId: { type: 'string' }
           }
         }
-      }
+      },
+      ...authenticatedRouteOptions
     },
     async (request, reply) => {
       // Extract and validate actorId from trusted actor context
@@ -262,7 +269,8 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
             caseId: { type: 'string' }
           }
         }
-      }
+      },
+      ...authenticatedRouteOptions
     },
     async (request, reply) => {
       // Extract and validate actorId from trusted actor context
@@ -352,7 +360,8 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
             }
           }
         }
-      }
+      },
+      ...authenticatedRouteOptions
     },
     async (request, reply) => {
       // Extract and validate actorId from trusted actor context
@@ -551,7 +560,8 @@ const registerKYCAMLRoutes: FastifyPluginAsync<KYCAMLRoutesOptions> = async (fas
           },
           additionalProperties: true
         }
-      }
+      },
+      ...authenticatedRouteOptions
     },
     async (request, reply) => {
       // Extract and validate actorId from trusted actor context

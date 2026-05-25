@@ -1,5 +1,7 @@
 import { BackendApiError } from '../api/errors';
 import { requestJson } from '../api/http-client';
+import { getLocalOrganizationEligibility } from '../api/compliance-cases';
+import type { ProcurementOrderResponse } from '../types/procurement-order';
 import type { BlockchainAnchorStatus, BlockchainProofRecord } from './blockchain-proof-client';
 import type { AuthenticatedFrontendSession } from './session-state';
 
@@ -95,10 +97,57 @@ function createLocalDemoEscrow(
   };
 }
 
+function assertLocalEscrowCanBeCreated(request: CreateEscrowRequest) {
+  if (!request.acceptedOrderReference) {
+    throw new BackendApiError('VALIDATION_ERROR', 'An accepted order is required before escrow can be created');
+  }
+
+  const buyerEligibility = getLocalOrganizationEligibility(request.buyerOrganizationId);
+  if (buyerEligibility.eligibility !== 'eligible') {
+    throw new BackendApiError(
+      'FORBIDDEN',
+      `Buyer organization eligibility is ${buyerEligibility.eligibility}; escrow action is blocked`,
+    );
+  }
+
+  const supplierEligibility = getLocalOrganizationEligibility(request.supplierOrganizationId);
+  if (supplierEligibility.eligibility !== 'eligible') {
+    throw new BackendApiError(
+      'FORBIDDEN',
+      `Supplier organization eligibility is ${supplierEligibility.eligibility}; escrow action is blocked`,
+    );
+  }
+}
+
 export function createDemoEscrowRequest(session: AuthenticatedFrontendSession): CreateEscrowRequest {
   return {
     ...demoAcceptedOrder,
     buyerOrganizationId: session.actor.actorOrganizationId ?? 'demo-buyer-org',
+  };
+}
+
+function termsHashForOrder(order: ProcurementOrderResponse): string {
+  const seed = `${order.orderId}-${order.amount}-${order.currency}`;
+  const hex = Array.from(seed)
+    .map(character => character.charCodeAt(0).toString(16).padStart(2, '0'))
+    .join('')
+    .padEnd(64, '0')
+    .slice(0, 64);
+
+  return `sha256:${hex}`;
+}
+
+export function createEscrowRequestFromOrder(
+  order: ProcurementOrderResponse,
+  session: AuthenticatedFrontendSession,
+): CreateEscrowRequest {
+  return {
+    orderId: order.orderId,
+    buyerOrganizationId: order.buyerOrganizationId || session.actor.actorOrganizationId || 'demo-buyer-org',
+    supplierOrganizationId: order.supplierOrganizationId,
+    financierOrganizationId: demoAcceptedOrder.financierOrganizationId,
+    termsHash: termsHashForOrder(order),
+    acceptedOrderReference: order.orderId,
   };
 }
 
@@ -133,6 +182,7 @@ export async function createEscrow(
   session?: AuthenticatedFrontendSession,
 ): Promise<EscrowRecord> {
   if (session?.source !== 'backend') {
+    assertLocalEscrowCanBeCreated(request);
     return createLocalDemoEscrow(request, session);
   }
 
@@ -143,7 +193,8 @@ export async function createEscrow(
       body: JSON.stringify(request),
     }));
   } catch (error) {
-    if (error instanceof BackendApiError || error instanceof TypeError) {
+    if (error instanceof TypeError) {
+      assertLocalEscrowCanBeCreated(request);
       return createLocalDemoEscrow(request, session);
     }
 

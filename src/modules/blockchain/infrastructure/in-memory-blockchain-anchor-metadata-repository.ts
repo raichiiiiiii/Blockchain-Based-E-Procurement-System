@@ -31,6 +31,15 @@ export class InMemoryBlockchainAnchorMetadataRepository
     return record ? cloneMetadata(record) : null;
   }
 
+  async list(): Promise<BlockchainAnchorMetadata[]> {
+    return [...this.records.values()]
+      .sort((left, right) => (
+        left.createdAt.localeCompare(right.createdAt) ||
+        left.eventId.localeCompare(right.eventId)
+      ))
+      .map(record => cloneMetadata(record));
+  }
+
   async listByCaseIdHash(caseIdHash: string): Promise<BlockchainAnchorMetadata[]> {
     return [...this.records.values()]
       .filter(record => record.caseIdHash === caseIdHash)

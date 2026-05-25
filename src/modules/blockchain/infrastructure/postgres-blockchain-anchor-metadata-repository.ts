@@ -109,6 +109,14 @@ export class PostgresBlockchainAnchorMetadataRepository
     return result.rows[0] ? toAnchorMetadata(result.rows[0]) : null;
   }
 
+  async list(): Promise<BlockchainAnchorMetadata[]> {
+    const result = await this.db.query<BlockchainAnchorMetadataRow>(
+      'SELECT * FROM blockchain_anchor_metadata ORDER BY created_at, event_id',
+    );
+
+    return result.rows.map(row => toAnchorMetadata(row));
+  }
+
   async listByCaseIdHash(caseIdHash: string): Promise<BlockchainAnchorMetadata[]> {
     const result = await this.db.query<BlockchainAnchorMetadataRow>(
       'SELECT * FROM blockchain_anchor_metadata WHERE case_id_hash = $1 ORDER BY created_at, event_id',
