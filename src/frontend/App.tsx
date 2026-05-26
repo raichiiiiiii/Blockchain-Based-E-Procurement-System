@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import AppLayout from './components/layout/AppLayout';
 import DashboardStateView from './components/dashboard/DashboardStateView';
+import GuidedDemoPanel from './components/demo/GuidedDemoPanel';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/AdminDashboard';
@@ -34,6 +35,14 @@ import {
 } from './lib/role-navigation';
 
 type RouteKey = 'landing' | 'login' | 'dashboard';
+
+function isGuidedDemoModeFromLocation(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return new URLSearchParams(window.location.search).get('demo') === 'guided';
+}
 
 function routeFromLocation(): RouteKey {
   if (typeof window === 'undefined') {
@@ -123,8 +132,14 @@ function renderRoleDashboard(
   return <RoleDashboard role={role} activeTarget={activeTarget} />;
 }
 
+function routeUrl(route: RouteKey, guidedDemoMode: boolean): string {
+  const path = routePath(route);
+  return guidedDemoMode ? `${path}?demo=guided` : path;
+}
+
 function App() {
   const [route, setRoute] = useState<RouteKey>(() => routeFromLocation());
+  const [guidedDemoMode, setGuidedDemoMode] = useState(() => isGuidedDemoModeFromLocation());
   const [session, setSession] = useState<FrontendSessionState>(() => loadStoredSession());
   const [loginError, setLoginError] = useState<string | undefined>();
   const [activeDashboardTarget, setActiveDashboardTarget] = useState<DashboardNavigationTarget>('dashboard');
@@ -133,8 +148,9 @@ function App() {
   const authenticatedSession = getAuthenticatedSession(session);
 
   const navigate = (nextRoute: RouteKey, replace = false) => {
-    const nextPath = routePath(nextRoute);
-    if (typeof window !== 'undefined' && window.location.pathname !== nextPath) {
+    const nextPath = routeUrl(nextRoute, guidedDemoMode);
+    const currentPath = typeof window === 'undefined' ? '' : `${window.location.pathname}${window.location.search}`;
+    if (typeof window !== 'undefined' && currentPath !== nextPath) {
       const method = replace ? 'replaceState' : 'pushState';
       window.history[method]({}, '', nextPath);
     }
@@ -143,7 +159,10 @@ function App() {
   };
 
   useEffect(() => {
-    const handlePopState = () => setRoute(routeFromLocation());
+    const handlePopState = () => {
+      setRoute(routeFromLocation());
+      setGuidedDemoMode(isGuidedDemoModeFromLocation());
+    };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -249,6 +268,26 @@ function App() {
     setActiveDashboardTarget(target);
   };
 
+  const handleExitGuidedDemo = () => {
+    setGuidedDemoMode(false);
+
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', routePath(route));
+    }
+  };
+
+  const guidedDemoPanel = guidedDemoMode ? (
+    <GuidedDemoPanel
+      route={route}
+      isAuthenticated={Boolean(authenticatedSession)}
+      role={dashboardState.state === 'ready' ? dashboardState.role : undefined}
+      activeTarget={activeDashboardTarget}
+      onOpenSignIn={() => navigate('login')}
+      onOpenDashboardTarget={handleDashboardNavigation}
+      onExit={handleExitGuidedDemo}
+    />
+  ) : null;
+
   if (route === 'landing') {
     return (
       <div className="app">
@@ -256,6 +295,7 @@ function App() {
           onSignIn={() => navigate('login')}
           onViewDashboard={() => navigate(authenticatedSession ? 'dashboard' : 'login')}
         />
+        {guidedDemoPanel}
       </div>
     );
   }
@@ -278,6 +318,7 @@ function App() {
           onDemoSignIn={handleDemoSignIn}
           onCredentialsSignIn={handleCredentialsSignIn}
         />
+        {guidedDemoPanel}
       </div>
     );
   }
@@ -289,6 +330,7 @@ function App() {
           state={dashboardState.state}
           onSignOut={() => void handleSignOut()}
         />
+        {guidedDemoPanel}
       </div>
     );
   }
@@ -307,6 +349,7 @@ function App() {
       >
         {renderRoleDashboard(dashboardState.role, activeDashboardTarget, authenticatedSession)}
       </AppLayout>
+      {guidedDemoPanel}
     </div>
   );
 }

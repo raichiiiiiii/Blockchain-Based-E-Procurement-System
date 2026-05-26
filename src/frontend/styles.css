@@ -1351,6 +1351,115 @@ button {
   flex-wrap: wrap;
 }
 
+.guided-demo-panel {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 30;
+  display: grid;
+  gap: 14px;
+  width: min(380px, calc(100vw - 32px));
+  border: 1px solid #cbd7d1;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 20px 48px rgba(20, 42, 35, 0.18);
+  padding: 16px;
+}
+
+.guided-demo-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.guided-demo-header div {
+  display: grid;
+  gap: 4px;
+}
+
+.guided-demo-header span,
+.guided-demo-next span,
+.guided-demo-details dt {
+  color: #0c6b58;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.guided-demo-header strong {
+  color: #16201d;
+  font-size: 1.25rem;
+}
+
+.guided-demo-close {
+  min-height: 30px;
+  border-radius: 8px;
+  background: #eef1f3;
+  color: #263832;
+  padding: 0 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.guided-demo-close:hover {
+  background: #dfe7e3;
+}
+
+.guided-demo-progress {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.guided-demo-dot {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: #dfe7e3;
+}
+
+.guided-demo-dot-active {
+  background: #d39a1f;
+}
+
+.guided-demo-details {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.guided-demo-details div {
+  display: grid;
+  gap: 4px;
+}
+
+.guided-demo-details dd {
+  margin: 0;
+  color: #263832;
+  line-height: 1.5;
+}
+
+.guided-demo-next {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #edf1ef;
+  border-radius: 8px;
+  background: #fbfcfb;
+  padding: 12px;
+}
+
+.guided-demo-next strong {
+  color: #16201d;
+}
+
+.guided-demo-next p {
+  margin: 0;
+  color: #52615d;
+  line-height: 1.45;
+}
+
 .app-state-page {
   min-height: 100vh;
   display: grid;
@@ -1477,5 +1586,12 @@ button {
 
   .proof-panel-header {
     flex-direction: column;
+  }
+
+  .guided-demo-panel {
+    right: 12px;
+    bottom: 12px;
+    max-height: min(560px, calc(100vh - 24px));
+    overflow: auto;
   }
 }
