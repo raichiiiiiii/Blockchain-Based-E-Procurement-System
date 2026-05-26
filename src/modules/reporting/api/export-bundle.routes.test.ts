@@ -9,6 +9,8 @@ import { InMemoryProcureToPayLifecycleEventRepository } from '../../procurement/
 import { InMemoryBlockchainAnchorMetadataRepository } from '../../blockchain/infrastructure/in-memory-blockchain-anchor-metadata-repository.js';
 import { createAccessAuditEvent } from '../../shared/application/access-audit-event-builder.js';
 import type { ProcureToPayLifecycleEvent } from '../../procurement/application/procure-to-pay-lifecycle-event.js';
+import type { ExportSigningPort } from '../application/export-signing-port.js';
+import { LocalSoftwareKeyExportSigningAdapter } from '../infrastructure/local-software-key-export-signing-adapter.js';
 
 function authorizedHeaders(role = 'regulator'): Record<string, string> {
   return {
@@ -46,6 +48,7 @@ async function createApp(options: {
   lifecycleRepository?: InMemoryProcureToPayLifecycleEventRepository;
   anchorRepository?: InMemoryBlockchainAnchorMetadataRepository;
   exportRepository?: InMemoryExportBundleRepository;
+  signingPort?: ExportSigningPort;
 } = {}) {
   const app = fastify();
   app.register(actorContextPlugin);
@@ -54,6 +57,9 @@ async function createApp(options: {
     accessAuditEventRepository: options.accessRepository,
     lifecycleEventRepository: options.lifecycleRepository,
     blockchainAnchorMetadataRepository: options.anchorRepository,
+    signingPort: options.signingPort ?? new LocalSoftwareKeyExportSigningAdapter({
+      now: () => '2026-05-26T10:00:00.000Z',
+    }),
   });
   await app.ready();
   return app;
@@ -205,6 +211,129 @@ describe('Export bundle routes', () => {
     assert.strictEqual(verifyResponse.statusCode, 200);
     assert.strictEqual(verifyBody.data.verificationStatus, 'verified');
     assert.strictEqual(verifyBody.data.bundleHash, created.integrity.bundleHash);
+  });
+
+  it('signs a generated bundle and verifies the detached signature without leaking private key material', async () => {
+    const repositories = await createSeededRepositories();
+    const app = await createApp(repositories);
+
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: '/export-bundles',
+      headers: authorizedHeaders('regulator'),
+      payload: {
+        scope: 'combinedAudit',
+        purpose: 'signature review',
+      },
+    });
+    const created = JSON.parse(createResponse.body).data;
+
+    const signResponse = await app.inject({
+      method: 'POST',
+      url: `/export-bundles/${created.bundleId}/sign`,
+      headers: authorizedHeaders('regulator'),
+    });
+    const signatureBody = JSON.parse(signResponse.body);
+
+    assert.strictEqual(signResponse.statusCode, 200);
+    assert.strictEqual(signatureBody.data.bundleId, created.bundleId);
+    assert.strictEqual(signatureBody.data.algorithm, 'Ed25519');
+    assert.strictEqual(signatureBody.data.keyStatus, 'active');
+    assert.strictEqual(signatureBody.data.status, 'signed');
+    assert.strictEqual(signatureBody.data.manifestHash, created.integrity.manifestHash);
+    assert.strictEqual(signatureBody.data.claimBoundary, 'localSoftwareKeyOnly');
+    assert.match(signatureBody.data.publicKeyPem, /BEGIN PUBLIC KEY/);
+    assert.doesNotMatch(JSON.stringify(signatureBody.data), /PRIVATE KEY/);
+    assert.strictEqual(signatureBody.data.offlineVerificationPackage.manifestFileName, 'manifest.json');
+
+    const getSignatureResponse = await app.inject({
+      method: 'GET',
+      url: `/export-bundles/${created.bundleId}/signature`,
+      headers: authorizedHeaders('auditor'),
+    });
+    assert.strictEqual(getSignatureResponse.statusCode, 200);
+    assert.strictEqual(JSON.parse(getSignatureResponse.body).data.signatureId, signatureBody.data.signatureId);
+
+    const verifySignatureResponse = await app.inject({
+      method: 'POST',
+      url: `/export-bundles/${created.bundleId}/verify-signature`,
+      headers: authorizedHeaders('auditor'),
+      payload: {
+        manifestHash: created.integrity.manifestHash,
+      },
+    });
+    const verifySignatureBody = JSON.parse(verifySignatureResponse.body);
+    assert.strictEqual(verifySignatureResponse.statusCode, 200);
+    assert.strictEqual(verifySignatureBody.data.verificationStatus, 'verified');
+    assert.strictEqual(verifySignatureBody.data.keyId, signatureBody.data.keyId);
+  });
+
+  it('returns invalid signature verification for a tampered manifest hash', async () => {
+    const repositories = await createSeededRepositories();
+    const app = await createApp(repositories);
+
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: '/export-bundles',
+      headers: authorizedHeaders('regulator'),
+      payload: {
+        scope: 'combinedAudit',
+        purpose: 'tamper check',
+      },
+    });
+    const created = JSON.parse(createResponse.body).data;
+
+    await app.inject({
+      method: 'POST',
+      url: `/export-bundles/${created.bundleId}/sign`,
+      headers: authorizedHeaders('regulator'),
+    });
+
+    const verifySignatureResponse = await app.inject({
+      method: 'POST',
+      url: `/export-bundles/${created.bundleId}/verify-signature`,
+      headers: authorizedHeaders('regulator'),
+      payload: {
+        manifestHash: `sha256:${'0'.repeat(64)}`,
+      },
+    });
+    const body = JSON.parse(verifySignatureResponse.body);
+
+    assert.strictEqual(verifySignatureResponse.statusCode, 200);
+    assert.strictEqual(body.data.verificationStatus, 'invalid');
+    assert.strictEqual(body.data.reason, 'signatureMismatch');
+  });
+
+  it('rejects signing when the local signing profile is inactive', async () => {
+    const repositories = await createSeededRepositories();
+    const app = await createApp({
+      ...repositories,
+      signingPort: new LocalSoftwareKeyExportSigningAdapter({
+        now: () => '2026-05-26T10:00:00.000Z',
+        initialStatus: 'revoked',
+      }),
+    });
+
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: '/export-bundles',
+      headers: authorizedHeaders('regulator'),
+      payload: {
+        scope: 'combinedAudit',
+        purpose: 'inactive key check',
+      },
+    });
+    const created = JSON.parse(createResponse.body).data;
+
+    const signResponse = await app.inject({
+      method: 'POST',
+      url: `/export-bundles/${created.bundleId}/sign`,
+      headers: authorizedHeaders('regulator'),
+    });
+    const body = JSON.parse(signResponse.body);
+
+    assert.strictEqual(signResponse.statusCode, 409);
+    assert.strictEqual(body.error.details.reason, 'signingProfileInactive');
   });
 
   it('returns mismatch and notFound verification states distinctly', async () => {

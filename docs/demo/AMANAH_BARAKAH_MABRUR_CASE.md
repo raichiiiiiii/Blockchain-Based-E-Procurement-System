@@ -38,7 +38,7 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 | Compliance Reviewer | KYC/AML reviewer | Reviews safe onboarding metadata and records eligibility decisions. |
 | Shariah Reviewer | Shariah governance user | Reviews PLS terms and records approval, conditional approval, or rejection. |
 | Auditor | Audit user | Inspects audit trail and verifies blockchain proof states. |
-| Regulator | Reporting user | Requests and verifies export bundle integrity metadata. |
+| Regulator | Reporting user | Requests export bundle integrity metadata and reviews the detached local software-key signature package. |
 | Platform Operator | Local environment operator | Starts services and follows deployment/runbook evidence. |
 | Developer / Integrator | API consumer | Authenticates and calls proof, escrow, order, export, or PLS APIs. |
 | Security Operator | Should-have security user | Reviews denied actions, proof failures, and access alerts as safe metadata. |
@@ -62,7 +62,7 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 15. The Auditor opens Blockchain Proof or an event detail and verifies the proof without fabricated transaction data.
 16. The Shariah Reviewer opens Shariah Review, inspects PLS metadata, and approves the restricted seedbed terms.
 17. The Financier opens Financing, verifies the Shariah approval reference, and views profit/loss distribution scenarios.
-18. The Regulator opens Export Bundle, requests the scoped evidence bundle, and verifies manifest integrity metadata.
+18. The Regulator opens Export Bundle, requests the scoped evidence bundle, signs the manifest with the local software-key profile, and verifies the detached signature metadata for offline review.
 
 ## Expected Seed Data
 
@@ -89,7 +89,7 @@ The normal local demo path expects `npm run db:seed` to create backend/database 
 | Machine-readable contract | Contract number, buyer/supplier/financier parties, line item, delivery terms, acceptance criteria, escrow release conditions, PLS seedbed terms, linked document reference, UBL/OCDS mapping references, version, and terms hash |
 | Escrow record | Escrow-created state linked to the accepted order reference |
 | PLS contract | Restricted seedbed contract linked to the procurement case and Shariah approval reference |
-| Export bundle | Combined audit scope with manifest hash and verification metadata |
+| Export bundle | Combined audit scope with manifest hash, verification metadata, and detached local software-key signature package metadata |
 
 Seed data should avoid raw KYC documents, raw escrow terms, payment credentials, and private commercial documents in visible dashboard cards.
 
@@ -104,7 +104,7 @@ Seed data should avoid raw KYC documents, raw escrow terms, payment credentials,
 | Shariah Reviewer | Sign in | Dashboard, Shariah Review | Reviewer inspects checklist metadata and records a decision. |
 | Financier | Sign in | Dashboard, Financing | Financier inspects approved PLS contract and distribution scenarios. |
 | Auditor | Sign in | Dashboard, Audit Trail, Blockchain Proof, Export Bundle | Auditor verifies proof and inspects export evidence read-only. |
-| Regulator | Sign in | Dashboard, Export Bundle, Blockchain Proof | Regulator requests export and verifies integrity metadata. |
+| Regulator | Sign in | Dashboard, Export Bundle, Blockchain Proof | Regulator requests export, signs the manifest, and verifies integrity metadata. |
 | Platform Operator | Runbook | Local demo startup path | Services start or blockers are documented. |
 | Developer / Integrator | API quickstart | Local API base URL | Authenticated API calls return documented envelopes. |
 | Security Operator | Sign in | Dashboard, Security Status, Access Alerts, Proof Failures, Denied Actions | Security user reviews read-only anomaly metadata. |
@@ -120,7 +120,7 @@ Seed data should avoid raw KYC documents, raw escrow terms, payment credentials,
 | Shariah Reviewer | Auth session, PLS review and decision service, financing read model. |
 | Financier | Auth session, PLS activation gate, distribution scenario service, eligibility gate. |
 | Auditor | Auth session, audit trail, blockchain anchor lookup, verification endpoint, export bundle route. |
-| Regulator | Auth session, export bundle generation, bundle verification endpoint, proof read path. |
+| Regulator | Auth session, export bundle generation, bundle verification endpoint, export signing endpoint, proof read path. |
 | Platform Operator | Local demo script, PostgreSQL migration/seed path, Fabric chaincode build/test path. |
 | Developer / Integrator | Auth API, documented REST endpoints, shared error envelope. |
 | Security Operator | Auth session, read-only security status UI, proof failure and denied-action metadata. |
@@ -145,7 +145,7 @@ The demo should be able to explain or inspect these events as governed actions:
 | Proof verified | Auditor or regulator verifies proof | Verification status is recorded or visible as evidence metadata. |
 | Shariah decision recorded | Reviewer approves, conditionally approves, or rejects | Decision trail supports PLS activation gate. |
 | PLS activated or distribution scenario recorded | Financier acts on approved contract | Seedbed allocation event is recorded without implying payment execution. |
-| Export bundle requested or verified | Regulator or auditor requests/verifies bundle | Manifest hash and verification state are visible. |
+| Export bundle requested, signed, or verified | Regulator or auditor requests/verifies bundle | Manifest hash, detached signature state, and verification state are visible. |
 | Denied action | Unauthorized actor attempts protected action | Denial is captured for audit/security review where implemented. |
 
 ## Required Blockchain Proof Points
@@ -155,7 +155,7 @@ The demo should be able to explain or inspect these events as governed actions:
 | Procurement lifecycle event hash | May be anchored, pending, failed, or not anchored depending on gateway availability. |
 | Delivery evidence lifecycle event hash | May be anchored, pending, failed, or not anchored; failed proof must not appear verified. |
 | Escrow-created lifecycle event hash | Must be visible as proof metadata; anchoring failure must not delete the escrow event. |
-| Audit/export bundle integrity metadata | Bundle hash verification must distinguish verified, mismatch, and not found. |
+| Audit/export bundle integrity metadata | Bundle hash and detached signature verification must distinguish verified, mismatch/invalid, and not found. |
 | Blockchain proof panel | Must never fabricate transaction IDs, block numbers, verified states, or unavailable proof. |
 
 Proof metadata may show transaction ID, channel, chaincode, block number, and anchored timestamp only when an anchor actually exists.
@@ -179,7 +179,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 | Proof verification | Verified, mismatch, not found, pending, failed, and unavailable states are distinct where applicable. |
 | Shariah review | PLS activation depends on an approved Shariah reference. |
 | Financier PLS view | Profit/loss scenarios are visible as simulation-only seedbed records. |
-| Regulator export | Bundle manifest and integrity verification are visible. |
+| Regulator export | Bundle manifest, detached local software-key signature, and integrity verification are visible. |
 | Authorization negative cases | Unauthorized actors are hidden from or rejected by protected workflows. |
 
 ## Known MVP Limitations
@@ -193,7 +193,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 - Delivery evidence now includes signed external IoT/QR/EPCIS-compatible metadata intake, but not production device PKI, QR legal signature verification, full EPCIS capture/query services, external logistics network integration, or document rendering.
 - Document intake stores local files and extracts text/JSON only; PDF/DOCX extraction, OCR, malware scanning, and legal e-signature verification remain post-MVP.
 - Contract negotiation uses in-memory contract records in this slice; production redlining, legal signing, PostgreSQL persistence, ERP mapping exports, and automatic order/escrow creation remain future work.
-- Export bundle integrity is MVP metadata, not production signing/key-management infrastructure.
+- Export signing uses a local software-key detached manifest signature and offline package metadata; production KMS/HSM custody, legal attestation, certificate authority lifecycle, and external regulator portal integration remain future work.
 - Security operator workflow is read-only and does not replace SIEM or incident response operations.
 
 ## Post-MVP Exclusions

@@ -189,6 +189,7 @@ Landing page
 -> Audit Trail / Blockchain Proof
 -> Export Bundle
 -> Request export
+-> Sign manifest
 -> Verify bundle
 ```
 
@@ -202,6 +203,8 @@ Landing page
 -> Export Bundle
 -> Request export
 -> Inspect bundle detail and manifest hashes
+-> Sign manifest with the local software-key profile
+-> Verify detached signature metadata
 -> Verify bundle
 -> Blockchain Proof
 -> Verify proof
@@ -235,7 +238,7 @@ Landing page
 -> Access History
 ```
 
-Role-specific dashboard entry is available for Administrator, Buyer, Supplier, Compliance Reviewer, Shariah Reviewer, Financier, Auditor, Regulator, and Security Operator. The administrator workflow includes member governance, status actions, role assignment controls, and access-history inspection. Buyer and supplier workflows include order creation, received-order acknowledgement, accepted-order escrow readiness, contract document intake, contract negotiation, and metadata-only delivery evidence. Escrow creation requires an accepted order or explicit demo accepted-order reference, and buyer/supplier organizations must be eligible. Compliance reviewer workflow includes safe KYC/AML case metadata, decision actions, and downstream eligibility visibility. Shariah reviewer workflow includes PLS checklist metadata and decision controls. Financier workflow includes Shariah-gated PLS activation and profit/loss distribution scenarios. Regulator and auditor workflows include scoped export bundle generation and deterministic bundle-hash verification. Security operator workflow is read-only and shows backend-backed access/proof anomaly metadata when a backend session is active.
+Role-specific dashboard entry is available for Administrator, Buyer, Supplier, Compliance Reviewer, Shariah Reviewer, Financier, Auditor, Regulator, and Security Operator. The administrator workflow includes member governance, status actions, role assignment controls, and access-history inspection. Buyer and supplier workflows include order creation, received-order acknowledgement, accepted-order escrow readiness, contract document intake, contract negotiation, and metadata-only delivery evidence. Escrow creation requires an accepted order or explicit demo accepted-order reference, and buyer/supplier organizations must be eligible. Compliance reviewer workflow includes safe KYC/AML case metadata, decision actions, and downstream eligibility visibility. Shariah reviewer workflow includes PLS checklist metadata and decision controls. Financier workflow includes Shariah-gated PLS activation and profit/loss distribution scenarios. Regulator and auditor workflows include scoped export bundle generation, deterministic bundle-hash verification, and local software-key detached manifest signature review. Security operator workflow is read-only and shows backend-backed access/proof anomaly metadata when a backend session is active.
 
 The Contract Documents panel lets authorized actors upload text/JSON document content for metadata, checksum, local storage reference, extraction output, and local detached-signature metadata state. PDF and DOCX bytes can be stored, but extraction is explicitly unsupported until a production extractor adapter is connected. The UI must not claim malware scanning, OCR, legal signature validation, or production document management.
 
@@ -304,5 +307,5 @@ Contract Negotiation
 - Fabric live network deployment remains a local/manual path unless the Fabric samples are installed.
 - Escrow is an MVP hybrid slice with release/dispute workflow, sandbox/manual payment instruction evidence, and ISO 20022-like JSON mapping; it is not production settlement, bank payment execution, or ISO 20022 certification.
 - PLS workflow is a restricted single-venture seedbed and does not provide production payment rails, guaranteed returns, or full Islamic finance product coverage.
-- Export signing is MVP-equivalent manifest and bundle hashing; production signing, key management, and external regulator portal integration are not implemented.
+- Export signing includes a local software-key detached manifest signature and offline verification package metadata; production KMS/HSM custody, legal attestation, certificate authority lifecycle, and external regulator portal integration are not implemented.
 - KYC cases, export bundles, Shariah reviews, and PLS contracts still use in-memory runtime repositories in PostgreSQL mode until dedicated adapters are added.

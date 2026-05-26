@@ -2,9 +2,13 @@ import { useMemo, useState } from 'react';
 import { BackendApiError } from '../api/errors';
 import {
   createExportBundle,
+  signExportBundle,
   verifyExportBundle,
+  verifyExportBundleSignature,
   type CreateExportBundleRequest,
   type ExportBundleRecord,
+  type ExportBundleSignature,
+  type ExportBundleSignatureVerificationResult,
   type ExportBundleScope,
   type ExportBundleVerificationResult,
 } from '../api/export-bundles';
@@ -26,7 +30,7 @@ function statusTone(status: string): StatusTone {
     return 'success';
   }
 
-  if (status === 'failed' || status === 'mismatch') {
+  if (status === 'failed' || status === 'mismatch' || status === 'invalid' || status === 'keyInactive' || status === 'rejected' || status === 'revoked') {
     return 'danger';
   }
 
@@ -104,8 +108,11 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
   });
   const [bundle, setBundle] = useState<ExportBundleRecord>();
   const [verification, setVerification] = useState<ExportBundleVerificationResult>();
+  const [signature, setSignature] = useState<ExportBundleSignature>();
+  const [signatureVerification, setSignatureVerification] = useState<ExportBundleSignatureVerificationResult>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isSigning, setIsSigning] = useState(false);
   const [message, setMessage] = useState<string>();
   const [error, setError] = useState<string>();
 
@@ -129,6 +136,8 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
     try {
       const created = await createExportBundle(request, session);
       setBundle(created);
+      setSignature(created.signature);
+      setSignatureVerification(undefined);
       setMessage('Export bundle is ready for review.');
     } catch (caught) {
       const nextError = caught instanceof BackendApiError || caught instanceof Error
@@ -157,6 +166,54 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
       setError(nextError);
     } finally {
       setIsVerifying(false);
+    }
+  };
+
+  const handleSign = async () => {
+    if (!bundle) {
+      return;
+    }
+
+    setIsSigning(true);
+    setError(undefined);
+    setSignatureVerification(undefined);
+
+    try {
+      const signed = await signExportBundle(bundle.bundleId, session);
+      setSignature(signed);
+      setBundle(current => current ? { ...current, signature: signed } : current);
+      setMessage('Export manifest signature is ready for offline review.');
+    } catch (caught) {
+      const nextError = caught instanceof BackendApiError || caught instanceof Error
+        ? caught.message
+        : 'Export signing failed';
+      setError(nextError);
+    } finally {
+      setIsSigning(false);
+    }
+  };
+
+  const handleVerifySignature = async () => {
+    if (!bundle) {
+      return;
+    }
+
+    setIsSigning(true);
+    setError(undefined);
+
+    try {
+      setSignatureVerification(await verifyExportBundleSignature(
+        bundle.bundleId,
+        session,
+        bundle.integrity.manifestHash,
+      ));
+    } catch (caught) {
+      const nextError = caught instanceof BackendApiError || caught instanceof Error
+        ? caught.message
+        : 'Signature verification failed';
+      setError(nextError);
+    } finally {
+      setIsSigning(false);
     }
   };
 
@@ -333,6 +390,72 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
                 <p>Bundle hash verification completed against the stored manifest metadata.</p>
               </div>
             ) : null}
+          </section>
+
+          <section className="workspace-panel">
+            <div className="admin-section-header">
+              <div>
+                <h3>Signature Package</h3>
+                <p>Sign the manifest for offline review with the local software-key profile.</p>
+              </div>
+              {signature ? (
+                <StatusIndicator
+                  label={signatureVerification ? statusLabel(signatureVerification.verificationStatus) : statusLabel(signature.status)}
+                  tone={statusTone(signatureVerification?.verificationStatus ?? signature.status)}
+                />
+              ) : null}
+            </div>
+
+            {signature ? (
+              <dl className="proof-field-grid">
+                <div className="proof-field">
+                  <dt>Algorithm</dt>
+                  <dd>{signature.algorithm}</dd>
+                </div>
+                <div className="proof-field">
+                  <dt>Key profile</dt>
+                  <dd><code>{signature.keyId}</code></dd>
+                </div>
+                <div className="proof-field">
+                  <dt>Manifest hash</dt>
+                  <dd><code>{signature.manifestHash}</code></dd>
+                </div>
+                <div className="proof-field">
+                  <dt>Signature</dt>
+                  <dd><code>{signature.signature}</code></dd>
+                </div>
+                <div className="proof-field">
+                  <dt>Package files</dt>
+                  <dd>
+                    <code>{signature.offlineVerificationPackage.manifestFileName}</code>
+                    {' '}
+                    <code>{signature.offlineVerificationPackage.signatureFileName}</code>
+                    {' '}
+                    <code>{signature.offlineVerificationPackage.publicKeyFileName}</code>
+                  </dd>
+                </div>
+                <div className="proof-field">
+                  <dt>Claim boundary</dt>
+                  <dd>Local software key only</dd>
+                </div>
+              </dl>
+            ) : (
+              <p className="panel-footnote">No detached signature has been generated for this bundle.</p>
+            )}
+
+            <div className="admin-action-row">
+              <button className="button button-secondary" type="button" onClick={() => void handleSign()} disabled={isSigning}>
+                {isSigning ? 'Signing' : signature ? 'Refresh signature' : 'Sign manifest'}
+              </button>
+              {signature ? (
+                <button className="button button-secondary" type="button" onClick={() => void handleVerifySignature()} disabled={isSigning}>
+                  Verify signature
+                </button>
+              ) : null}
+            </div>
+            <p className="panel-footnote">
+              Signature metadata supports offline integrity review. It is not a production KMS, HSM, or regulator portal integration.
+            </p>
           </section>
 
           <section className="workspace-panel">

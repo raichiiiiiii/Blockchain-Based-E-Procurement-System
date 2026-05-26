@@ -52,6 +52,7 @@ import { InMemoryEscrowRepository } from '../modules/escrow/infrastructure/in-me
 import { registerExportBundleRoutes } from '../modules/reporting/api/export-bundle.routes.js';
 import type { ExportBundleRepository } from '../modules/reporting/application/export-bundle-repository.js';
 import { InMemoryExportBundleRepository } from '../modules/reporting/infrastructure/in-memory-export-bundle-repository.js';
+import { LocalSoftwareKeyExportSigningAdapter } from '../modules/reporting/infrastructure/local-software-key-export-signing-adapter.js';
 import { registerPlsRoutes } from '../modules/financing/api/pls.routes.js';
 import type { PlsContractRepository } from '../modules/financing/application/pls-contract-repository.js';
 import { InMemoryPlsContractRepository } from '../modules/financing/infrastructure/in-memory-pls-contract-repository.js';
@@ -360,6 +361,7 @@ export function createTestableServer(options?: {
     accessAuditEventRepository,
     lifecycleEventRepository: procureToPayLifecycleEventRepository,
     blockchainAnchorMetadataRepository,
+    signingPort: new LocalSoftwareKeyExportSigningAdapter(),
     authenticatedPreHandler
   });
 

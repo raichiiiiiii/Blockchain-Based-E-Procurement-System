@@ -7,6 +7,12 @@ import type { AuthenticatedFrontendSession } from '../lib/session-state';
 export type ExportBundleScope = 'accessHistory' | 'procureToPay' | 'combinedAudit';
 export type ExportBundleStatus = 'generated' | 'partial' | 'failed';
 export type ExportBundleVerificationStatus = 'verified' | 'mismatch' | 'notFound' | 'unavailable';
+export type ExportBundleSignatureVerificationStatus =
+  | 'verified'
+  | 'invalid'
+  | 'notFound'
+  | 'unavailable'
+  | 'keyInactive';
 
 export type ExportBundleRecordReference = {
   recordType: 'accessAuditEvent' | 'procureToPayLifecycleEvent' | 'blockchainAnchorMetadata';
@@ -47,11 +53,36 @@ export type ExportBundleRecord = {
     manifestHash: string;
     bundleHash: string;
   };
+  signature?: ExportBundleSignature;
   download: {
     available: boolean;
     reference: string;
     contentType: 'application/json';
   };
+};
+
+export type ExportBundleSignature = {
+  signatureId: string;
+  bundleId: string;
+  signingProfileId: string;
+  algorithm: 'Ed25519';
+  keyId: string;
+  keyStatus: 'active' | 'rotated' | 'revoked';
+  status: 'signed' | 'invalid' | 'rejected';
+  manifestHash: string;
+  bundleHash: string;
+  signedPayloadHash: string;
+  signature: string;
+  signedAt: string;
+  publicKeyPem: string;
+  verificationInstructions: string;
+  offlineVerificationPackage: {
+    manifestFileName: 'manifest.json';
+    signatureFileName: string;
+    publicKeyFileName: string;
+    instructionsFileName: 'VERIFY_SIGNATURE.txt';
+  };
+  claimBoundary: 'localSoftwareKeyOnly';
 };
 
 export type CreateExportBundleRequest = {
@@ -68,6 +99,18 @@ export type ExportBundleVerificationResult = {
   bundleHash?: string;
   manifestHash?: string;
   verifiedAt?: string;
+};
+
+export type ExportBundleSignatureVerificationResult = {
+  bundleId: string;
+  signatureId?: string;
+  verificationStatus: ExportBundleSignatureVerificationStatus;
+  manifestHash?: string;
+  submittedManifestHash?: string;
+  keyId?: string;
+  algorithm?: 'Ed25519';
+  verifiedAt?: string;
+  reason?: string;
 };
 
 const LOCAL_EXPORT_BUNDLE_KEY = 'eprocurement.export.bundles.v1';
@@ -368,4 +411,60 @@ export async function verifyExportBundle(
     manifestHash: bundle.integrity.manifestHash,
     verifiedAt: new Date().toISOString(),
   };
+}
+
+function signingRequiresBackend(): never {
+  throw new BackendApiError(
+    'UNAVAILABLE',
+    'Export signing requires the backend local software-key adapter; local fallback does not fabricate signatures',
+  );
+}
+
+export async function signExportBundle(
+  bundleId: string,
+  session: AuthenticatedFrontendSession,
+): Promise<ExportBundleSignature> {
+  if (session.source !== 'backend') {
+    signingRequiresBackend();
+  }
+
+  return requestJson<ExportBundleSignature>(`/api/v1/export-bundles/${encodeURIComponent(bundleId)}/sign`, {
+    method: 'POST',
+    headers: createSessionHeaders(session),
+  });
+}
+
+export async function getExportBundleSignature(
+  bundleId: string,
+  session: AuthenticatedFrontendSession,
+): Promise<ExportBundleSignature> {
+  if (session.source !== 'backend') {
+    signingRequiresBackend();
+  }
+
+  return requestJson<ExportBundleSignature>(`/api/v1/export-bundles/${encodeURIComponent(bundleId)}/signature`, {
+    headers: createSessionHeaders(session),
+  });
+}
+
+export async function verifyExportBundleSignature(
+  bundleId: string,
+  session: AuthenticatedFrontendSession,
+  manifestHash?: string,
+): Promise<ExportBundleSignatureVerificationResult> {
+  if (session.source !== 'backend') {
+    signingRequiresBackend();
+  }
+
+  return requestJson<ExportBundleSignatureVerificationResult>(
+    `/api/v1/export-bundles/${encodeURIComponent(bundleId)}/verify-signature`,
+    {
+      method: 'POST',
+      headers: {
+        ...createSessionHeaders(session),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ manifestHash }),
+    },
+  );
 }

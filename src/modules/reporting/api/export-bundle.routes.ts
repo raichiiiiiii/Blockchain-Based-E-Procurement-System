@@ -3,11 +3,17 @@ import type { AccessAuditEventRepository } from '../../shared/application/access
 import type { ProcureToPayLifecycleEventRepository } from '../../procurement/application/procure-to-pay-lifecycle-event-repository.js';
 import type { BlockchainAnchorMetadataRepository } from '../../blockchain/application/blockchain-anchor-metadata-repository.js';
 import type { ExportBundleRepository } from '../application/export-bundle-repository.js';
+import type { ExportSigningPort } from '../application/export-signing-port.js';
 import {
   allowedExportBundleScopes,
   createExportBundle,
   verifyExportBundle,
 } from '../application/export-bundle-service.js';
+import {
+  getExportBundleSignature,
+  signExportBundleManifest,
+  verifyExportBundleSignature,
+} from '../application/export-signing-service.js';
 import type { ExportBundleScope } from '../domain/export-bundle.js';
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
 
@@ -16,6 +22,7 @@ export type ExportBundleRoutesOptions = {
   accessAuditEventRepository?: AccessAuditEventRepository;
   lifecycleEventRepository?: ProcureToPayLifecycleEventRepository;
   blockchainAnchorMetadataRepository?: BlockchainAnchorMetadataRepository;
+  signingPort?: ExportSigningPort;
   authenticatedPreHandler?: (request: FastifyRequest, reply: FastifyReply) => Promise<void | FastifyReply>;
 };
 
@@ -28,6 +35,10 @@ type CreateExportBundleBody = {
 
 type VerifyExportBundleBody = {
   bundleHash?: string;
+};
+
+type VerifyExportBundleSignatureBody = {
+  manifestHash?: string;
 };
 
 type ValidationIssue = {
@@ -136,6 +147,48 @@ function validateVerifyBody(body: VerifyExportBundleBody | undefined): Validatio
   return [];
 }
 
+function validateVerifySignatureBody(body: VerifyExportBundleSignatureBody | undefined): ValidationIssue[] {
+  if (body?.manifestHash !== undefined && body.manifestHash.trim().length === 0) {
+    return [{
+      path: 'manifestHash',
+      message: 'manifestHash cannot be blank when provided',
+    }];
+  }
+
+  return [];
+}
+
+function sendSignatureResult(reply: FastifyReply, result: Awaited<ReturnType<typeof signExportBundleManifest>>) {
+  switch (result.status) {
+    case 'signed':
+      return reply.code(200).send({ data: result.signature });
+    case 'verified':
+      return reply.code(200).send({ data: result.verification });
+    case 'notFound':
+      return reply.code(404).send({
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Export bundle not found',
+        },
+      });
+    case 'signatureNotFound':
+      return reply.code(404).send({
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Export bundle signature not found',
+        },
+      });
+    case 'rejected':
+      return reply.code(409).send({
+        error: {
+          code: 'CONFLICT',
+          message: 'Export bundle signature request conflicts with signing profile state',
+          details: { reason: result.reason },
+        },
+      });
+  }
+}
+
 export const registerExportBundleRoutes: FastifyPluginAsync<ExportBundleRoutesOptions> = async (
   fastify,
   options,
@@ -242,5 +295,91 @@ export const registerExportBundleRoutes: FastifyPluginAsync<ExportBundleRoutesOp
     return reply.code(200).send({
       data: verification,
     });
+  });
+
+  fastify.post<{
+    Params: {
+      bundleId: string;
+    };
+  }>('/export-bundles/:bundleId/sign', async (request, reply) => {
+    const bundleId = request.params.bundleId.trim();
+    const issues = validateBundleId(bundleId);
+    if (issues.length > 0) {
+      return reply.code(400).send(createApplicationValidationError('Invalid export bundle signing request', issues));
+    }
+
+    if (!options.signingPort) {
+      return reply.code(503).send({
+        error: {
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Export signing service is unavailable',
+        },
+      });
+    }
+
+    return sendSignatureResult(
+      reply,
+      await signExportBundleManifest(bundleId, {
+        repository: options.repository,
+        signingPort: options.signingPort,
+      }),
+    );
+  });
+
+  fastify.get<{
+    Params: {
+      bundleId: string;
+    };
+  }>('/export-bundles/:bundleId/signature', async (request, reply) => {
+    const bundleId = request.params.bundleId.trim();
+    const issues = validateBundleId(bundleId);
+    if (issues.length > 0) {
+      return reply.code(400).send(createApplicationValidationError('Invalid export bundle signature request', issues));
+    }
+
+    return sendSignatureResult(
+      reply,
+      await getExportBundleSignature(bundleId, {
+        repository: options.repository,
+      }),
+    );
+  });
+
+  fastify.post<{
+    Params: {
+      bundleId: string;
+    };
+    Body: VerifyExportBundleSignatureBody;
+  }>('/export-bundles/:bundleId/verify-signature', async (request, reply) => {
+    const bundleId = request.params.bundleId.trim();
+    const issues = [
+      ...validateBundleId(bundleId),
+      ...validateVerifySignatureBody(request.body),
+    ];
+
+    if (issues.length > 0) {
+      return reply.code(400).send(createApplicationValidationError('Invalid export bundle signature verification request', issues));
+    }
+
+    if (!options.signingPort) {
+      return reply.code(503).send({
+        error: {
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Export signing service is unavailable',
+        },
+      });
+    }
+
+    return sendSignatureResult(
+      reply,
+      await verifyExportBundleSignature(
+        bundleId,
+        request.body?.manifestHash,
+        {
+          repository: options.repository,
+          signingPort: options.signingPort,
+        },
+      ),
+    );
   });
 };

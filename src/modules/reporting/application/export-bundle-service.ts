@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
 import type { AccessAuditEvent } from '../../shared/application/access-audit-event.js';
 import type { ProcureToPayLifecycleEventRepository } from '../../procurement/application/procure-to-pay-lifecycle-event-repository.js';
@@ -15,6 +15,7 @@ import type {
   ExportBundleScope,
   ExportBundleVerificationResult,
 } from '../domain/export-bundle.js';
+import { hashExportValue } from './export-canonicalization.js';
 
 export const allowedExportBundleScopes: readonly ExportBundleScope[] = [
   'accessHistory',
@@ -37,27 +38,6 @@ export type CreateExportBundleDependencies = {
   blockchainAnchorMetadataRepository?: BlockchainAnchorMetadataRepository;
   now?: () => string;
 };
-
-function canonicalizeValue(value: unknown): string {
-  if (value === null || typeof value !== 'object') {
-    return JSON.stringify(value);
-  }
-
-  if (Array.isArray(value)) {
-    return `[${value.map(item => canonicalizeValue(item)).join(',')}]`;
-  }
-
-  const obj = value as Record<string, unknown>;
-  return `{${Object.keys(obj)
-    .sort()
-    .filter(key => obj[key] !== undefined)
-    .map(key => `${JSON.stringify(key)}:${canonicalizeValue(obj[key])}`)
-    .join(',')}}`;
-}
-
-function hashValue(value: unknown): string {
-  return `sha256:${createHash('sha256').update(canonicalizeValue(value)).digest('hex')}`;
-}
 
 function isWithinDateRange(
   occurredAt: string | undefined,
@@ -259,8 +239,8 @@ export async function createExportBundle(
     records,
   };
 
-  const manifestHash = hashValue(manifest);
-  const bundleHash = hashValue({
+  const manifestHash = hashExportValue(manifest);
+  const bundleHash = hashExportValue({
     bundleId,
     status,
     scope: input.scope,

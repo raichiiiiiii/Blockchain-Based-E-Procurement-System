@@ -92,7 +92,7 @@ Chaincode build/test is automated. Live Fabric local-network deployment depends 
 | 14:45-15:30 | Auditor verification | Verify proof or inspect audit/export evidence read-only. |
 | 15:00-16:00 | Shariah review | Show checklist metadata and approval gate. |
 | 16:00-17:15 | Financier PLS seedbed | Show approved PLS contract and distribution scenario. |
-| 17:15-18:30 | Regulator export | Request export bundle and verify manifest integrity. |
+| 17:15-18:30 | Regulator export | Request export bundle, sign the manifest with the local software-key profile, and verify integrity. |
 | 18:00-19:00 | Evidence and validation | Point to UAT, authorization matrix, and release validation evidence. |
 | 19:00-20:00 | Limitations | State what is deliberately post-MVP. |
 
@@ -384,11 +384,13 @@ Show:
 - request export
 - bundle detail
 - manifest hash verification
+- detached signature package
+- signature verification result
 
 What to say:
 
 ```text
-The regulator flow packages reviewable evidence with integrity metadata. Production signing and external regulator portal integration remain post-MVP.
+The regulator flow packages reviewable evidence with manifest integrity metadata and a detached local software-key signature for offline review. This is not production KMS, HSM custody, legal attestation, or external regulator portal integration.
 ```
 
 ### 16. Evidence, Runbook, and Validation
@@ -480,5 +482,5 @@ Do not claim:
 - [ ] Auditor can verify proof or inspect evidence read-only.
 - [ ] Shariah reviewer can record decision.
 - [ ] Financier can inspect approved PLS contract and distribution scenario.
-- [ ] Regulator can request and verify export bundle metadata.
+- [ ] Regulator can request export bundle metadata, sign the manifest, and verify the detached signature without production KMS or portal claims.
 - [ ] Known limitations are stated before closing the demo.
