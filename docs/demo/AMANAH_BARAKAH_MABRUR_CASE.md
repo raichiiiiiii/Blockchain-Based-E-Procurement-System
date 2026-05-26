@@ -32,7 +32,7 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 | Actor or organization | Demo role | Product responsibility |
 |---|---|---|
 | Amanah Retail Sdn Bhd | Buyer organization | Creates the procurement order and initiates escrow from an accepted order. |
-| Barakah Supplies Sdn Bhd | Supplier organization | Receives the order, acknowledges acceptance, and exposes delivery evidence metadata. |
+| Barakah Supplies Sdn Bhd | Supplier organization | Receives the order, acknowledges acceptance, and submits safe delivery evidence metadata. |
 | Mabrur Finance Partner | Financier organization | Reviews PLS contract status and distribution scenarios after Shariah approval. |
 | Administrator | Platform governance user | Activates organizations, manages role assignments, and inspects access history. |
 | Compliance Reviewer | KYC/AML reviewer | Reviews safe onboarding metadata and records eligibility decisions. |
@@ -49,13 +49,15 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 2. The Compliance Reviewer opens the compliance queue and approves Barakah Supplies after reviewing safe KYC/AML metadata.
 3. The Buyer for Amanah Retail creates an order for Barakah Supplies.
 4. The Supplier for Barakah Supplies opens received orders and acknowledges the order.
-5. The Buyer opens Escrow and creates escrow from the accepted order reference.
-6. Escrow creation emits a lifecycle audit event for the escrow-created state.
-7. The lifecycle event is anchored when the proof gateway is available, or remains proof-ready/pending/failed with an honest proof state.
-8. The Auditor opens Blockchain Proof or an event detail and verifies the proof without fabricated transaction data.
-9. The Shariah Reviewer opens Shariah Review, inspects PLS metadata, and approves the restricted seedbed terms.
-10. The Financier opens Financing, verifies the Shariah approval reference, and views profit/loss distribution scenarios.
-11. The Regulator opens Export Bundle, requests the scoped evidence bundle, and verifies manifest integrity metadata.
+5. The Supplier records delivery evidence metadata for the accepted order using a safe reference, description, and hash.
+6. The Buyer opens the order detail and reviews delivery evidence metadata, lifecycle hash, and proof state without seeing raw commercial documents.
+7. The Buyer opens Escrow and creates escrow from the accepted order reference.
+8. Escrow creation emits a lifecycle audit event for the escrow-created state.
+9. Delivery evidence and escrow lifecycle events are anchored when the proof gateway is available, or remain proof-ready/pending/failed with honest proof states.
+10. The Auditor opens Blockchain Proof or an event detail and verifies the proof without fabricated transaction data.
+11. The Shariah Reviewer opens Shariah Review, inspects PLS metadata, and approves the restricted seedbed terms.
+12. The Financier opens Financing, verifies the Shariah approval reference, and views profit/loss distribution scenarios.
+13. The Regulator opens Export Bundle, requests the scoped evidence bundle, and verifies manifest integrity metadata.
 
 ## Expected Seed Data
 
@@ -75,6 +77,7 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 | Regulator account | `regulator.demo` |
 | Security account | `security.demo` |
 | Procurement order | Metadata-safe order from Amanah Retail to Barakah Supplies |
+| Delivery evidence | Safe delivery reference, supplier note, evidence hash, lifecycle event, and proof state for the accepted order |
 | Escrow record | Escrow-created state linked to the accepted order reference |
 | PLS contract | Restricted seedbed contract linked to the procurement case and Shariah approval reference |
 | Export bundle | Combined audit scope with manifest hash and verification metadata |
@@ -86,8 +89,8 @@ Seed data should avoid raw KYC documents, raw escrow terms, payment credentials,
 | Actor | Entry | Expected screen or route | Expected result |
 |---|---|---|---|
 | Administrator | Sign in | Dashboard, Members, Roles, Access History | Organizations and role controls are visible; non-admin workflow controls are not shown. |
-| Buyer | Sign in | Dashboard, Orders, Escrow, Blockchain Proof | Buyer creates order, creates escrow from accepted order, and sees proof metadata. |
-| Supplier | Sign in | Dashboard, Received Orders, Delivery Evidence, Escrow | Supplier acknowledges assigned order and sees metadata-only delivery readiness. |
+| Buyer | Sign in | Dashboard, Orders, Escrow, Blockchain Proof | Buyer creates order, reviews delivery evidence metadata, creates escrow from accepted order, and sees proof metadata. |
+| Supplier | Sign in | Dashboard, Received Orders, Delivery Evidence, Escrow | Supplier acknowledges assigned order and submits safe delivery evidence metadata. |
 | Compliance Reviewer | Sign in | Dashboard, Compliance, Eligibility Status | Reviewer records decision and eligibility state is visible downstream. |
 | Shariah Reviewer | Sign in | Dashboard, Shariah Review | Reviewer inspects checklist metadata and records a decision. |
 | Financier | Sign in | Dashboard, Financing | Financier inspects approved PLS contract and distribution scenarios. |
@@ -102,8 +105,8 @@ Seed data should avoid raw KYC documents, raw escrow terms, payment credentials,
 | Actor | Backend or API dependency |
 |---|---|
 | Administrator | Auth session, membership routes, role routes, access history query. |
-| Buyer | Auth session, procurement order routes, eligibility gate, escrow routes, blockchain proof endpoint. |
-| Supplier | Auth session, procurement order list/detail, acknowledgement route, ownership authorization. |
+| Buyer | Auth session, procurement order routes, delivery evidence read route, eligibility gate, escrow routes, blockchain proof endpoint. |
+| Supplier | Auth session, procurement order list/detail, acknowledgement route, delivery evidence submit/read routes, ownership authorization. |
 | Compliance Reviewer | Auth session, KYC/AML case routes, eligibility/status history route, redaction policy. |
 | Shariah Reviewer | Auth session, PLS review and decision service, financing read model. |
 | Financier | Auth session, PLS activation gate, distribution scenario service, eligibility gate. |
@@ -124,6 +127,7 @@ The demo should be able to explain or inspect these events as governed actions:
 | Compliance decision recorded | Reviewer approves, rejects, flags, or blocks case | Eligibility state changes without exposing raw KYC/AML payloads. |
 | Order created | Buyer creates order | Procurement lifecycle event and payload hash metadata exist. |
 | Order acknowledged | Supplier accepts assigned order | Lifecycle event shows supplier action and order status. |
+| Delivery evidence submitted | Supplier records safe delivery evidence for an accepted order | `deliveryEvidenceSubmitted` lifecycle event, evidence hash, and proof state exist without raw document payloads. |
 | Escrow created | Buyer creates escrow from accepted order | Escrow-created lifecycle event exists. |
 | Proof verified | Auditor or regulator verifies proof | Verification status is recorded or visible as evidence metadata. |
 | Shariah decision recorded | Reviewer approves, conditionally approves, or rejects | Decision trail supports PLS activation gate. |
@@ -136,6 +140,7 @@ The demo should be able to explain or inspect these events as governed actions:
 | Proof point | Expected state handling |
 |---|---|
 | Procurement lifecycle event hash | May be anchored, pending, failed, or not anchored depending on gateway availability. |
+| Delivery evidence lifecycle event hash | May be anchored, pending, failed, or not anchored; failed proof must not appear verified. |
 | Escrow-created lifecycle event hash | Must be visible as proof metadata; anchoring failure must not delete the escrow event. |
 | Audit/export bundle integrity metadata | Bundle hash verification must distinguish verified, mismatch, and not found. |
 | Blockchain proof panel | Must never fabricate transaction IDs, block numbers, verified states, or unavailable proof. |
@@ -152,6 +157,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 | Compliance decision | Eligibility changes are visible and raw KYC/AML documents are not exposed. |
 | Buyer order | Buyer creates or inspects order and sees lifecycle metadata. |
 | Supplier acknowledgement | Supplier accepts only assigned order. |
+| Delivery evidence | Supplier records safe evidence metadata for an accepted order; buyer sees evidence hash, lifecycle event, and honest proof state. |
 | Escrow creation | Buyer creates escrow from accepted order; non-eligible organizations are blocked. |
 | Proof verification | Verified, mismatch, not found, pending, failed, and unavailable states are distinct where applicable. |
 | Shariah review | PLS activation depends on an approved Shariah reference. |
@@ -165,7 +171,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 - Escrow is a first-slice workflow and does not automate settlement, release, dispute, or banking rails.
 - Fabric proof is local/demo-oriented; a production consortium rollout is post-MVP.
 - PostgreSQL runtime persistence is partial and explicitly scoped by runbooks.
-- Delivery evidence is metadata-only and does not include upload, IoT, QR, or document rendering.
+- Delivery evidence is an MVP metadata/hash workflow and does not include upload storage, IoT, QR, EPCIS, external logistics APIs, or document rendering.
 - Export bundle integrity is MVP metadata, not production signing/key-management infrastructure.
 - Security operator workflow is read-only and does not replace SIEM or incident response operations.
 

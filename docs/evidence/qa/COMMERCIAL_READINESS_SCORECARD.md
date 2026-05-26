@@ -57,7 +57,7 @@ Pilot-readiness blockers:
 - live environment-specific PostgreSQL and Fabric runbook execution
 - production signing/key-management decision for export bundles
 - formal Shariah/legal review before any external Islamic finance claim
-- clearer handling of delivery evidence beyond metadata-only placeholder
+- delivery evidence remains MVP metadata/hash scope; signed IoT/QR/upload/logistics proof remains post-MVP
 
 ## Non-Blocking Improvements
 

@@ -30,10 +30,13 @@ import type { PlatformUserCredentialRepository } from '../modules/auth/applicati
 import type { AuthSessionRepository } from '../modules/auth/application/auth-session-repository.js';
 import { registerTransactionHistoryRoutes } from '../modules/procurement/api/transaction-history.routes.js';
 import { registerProcurementOrderRoutes } from '../modules/procurement/api/procurement-order.routes.js';
+import { registerDeliveryEvidenceRoutes } from '../modules/procurement/api/delivery-evidence.routes.js';
 import type { ProcureToPayLifecycleEventRepository } from '../modules/procurement/application/procure-to-pay-lifecycle-event-repository.js';
 import { InMemoryProcureToPayLifecycleEventRepository } from '../modules/procurement/infrastructure/in-memory-procure-to-pay-lifecycle-event-repository.js';
 import type { ProcurementOrderRepository } from '../modules/procurement/application/procurement-order-repository.js';
 import { InMemoryProcurementOrderRepository } from '../modules/procurement/infrastructure/in-memory-procurement-order-repository.js';
+import type { DeliveryEvidenceRepository } from '../modules/procurement/application/delivery-evidence-repository.js';
+import { InMemoryDeliveryEvidenceRepository } from '../modules/procurement/infrastructure/in-memory-delivery-evidence-repository.js';
 import { registerKYCAMLRoutes } from '../modules/kyc-aml-onboarding/api/routes.js';
 import { getOnboardingEligibility } from '../modules/kyc-aml-onboarding/application/get-onboarding-eligibility.js';
 import type { OnboardingCaseRepository } from '../modules/kyc-aml-onboarding/infrastructure/in-memory-onboarding-case-repository.js';
@@ -89,6 +92,7 @@ export function createTestableServer(options?: {
   sessionRepository?: AuthSessionRepository;
   procureToPayLifecycleEventRepository?: ProcureToPayLifecycleEventRepository;
   procurementOrderRepository?: ProcurementOrderRepository;
+  deliveryEvidenceRepository?: DeliveryEvidenceRepository;
   onboardingCaseRepository?: OnboardingCaseRepository;
   blockchainAnchorGateway?: BlockchainAnchorGateway;
   blockchainAnchorMetadataRepository?: BlockchainAnchorMetadataRepository;
@@ -142,6 +146,7 @@ export function createTestableServer(options?: {
   const sessionRepository = options?.sessionRepository ?? new InMemoryAuthSessionRepository();
   const procureToPayLifecycleEventRepository = options?.procureToPayLifecycleEventRepository ?? new InMemoryProcureToPayLifecycleEventRepository();
   const procurementOrderRepository = options?.procurementOrderRepository ?? new InMemoryProcurementOrderRepository();
+  const deliveryEvidenceRepository = options?.deliveryEvidenceRepository ?? new InMemoryDeliveryEvidenceRepository();
   const onboardingCaseRepository = options?.onboardingCaseRepository ?? new InMemoryOnboardingCaseRepository();
   const blockchainAnchorGateway = options?.blockchainAnchorGateway ?? new InMemoryBlockchainAnchorGateway();
   const blockchainAnchorMetadataRepository = options?.blockchainAnchorMetadataRepository ?? new InMemoryBlockchainAnchorMetadataRepository();
@@ -228,6 +233,16 @@ export function createTestableServer(options?: {
         };
       }
     }
+  });
+
+  server.register(registerDeliveryEvidenceRoutes, {
+    prefix: '/api/v1',
+    orderRepository: procurementOrderRepository,
+    evidenceRepository: deliveryEvidenceRepository,
+    lifecycleEventRepository: procureToPayLifecycleEventRepository,
+    blockchainAnchorGateway,
+    blockchainAnchorMetadataRepository,
+    authenticatedPreHandler,
   });
 
   // Register blockchain proof routes

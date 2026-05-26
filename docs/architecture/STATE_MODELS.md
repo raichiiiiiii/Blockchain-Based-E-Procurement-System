@@ -441,7 +441,24 @@ Protected functions draft:
 [FLAG-PROTECTED-FUNCTIONS]
 This list must be formally approved before deactivation enforcement is treated as fully final.
 
-## 17. Open state-model decisions
+## 17. Delivery evidence MVP state model
+
+### delivery evidence verification status
+- `metadataRecorded`
+
+### status meaning
+- `metadataRecorded`: the supplier has submitted safe delivery evidence metadata, a reference, and a hash for an accepted order. This does not claim signed IoT, QR, external logistics, or production document verification.
+
+### MVP transition
+- new delivery evidence records start and remain `metadataRecorded`
+
+### deferred behavior
+- signed IoT/QR verification
+- external logistics or EPCIS verification
+- buyer acceptance/rejection workflow for delivery
+- automatic escrow release based on delivery evidence
+
+## 18. Open state-model decisions
 
 [FLAG-MEMBERSHIP-INITIAL-STATE]
 Current working assumption: `pendingReview`

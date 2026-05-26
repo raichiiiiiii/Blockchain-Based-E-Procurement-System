@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
+import { listDeliveryEvidenceForOrder } from '../api/delivery-evidence';
 import { createProcurementOrder, listProcurementOrders } from '../api/procurement-orders';
+import DeliveryEvidenceList from '../components/procurement/DeliveryEvidenceList';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 import { getLocalDemoEscrowRecord, type EscrowRecord } from '../lib/escrow-client';
+import type { DeliveryEvidenceRecord } from '../types/delivery-evidence';
 import type { ProcurementOrderResponse } from '../types/procurement-order';
 import EscrowDetailPage from './EscrowDetailPage';
 import EscrowOverviewPage from './EscrowOverviewPage';
@@ -52,6 +55,8 @@ function BuyerDashboard({ activeTarget, session }: BuyerDashboardProps) {
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [ordersError, setOrdersError] = useState<string | undefined>();
   const [ordersMessage, setOrdersMessage] = useState<string | undefined>();
+  const [deliveryEvidenceByOrder, setDeliveryEvidenceByOrder] = useState<Record<string, DeliveryEvidenceRecord[]>>({});
+  const [deliveryEvidenceError, setDeliveryEvidenceError] = useState<string | undefined>();
 
   const acceptedOrders = useMemo(
     () => orders.filter(order => order.status === 'accepted'),
@@ -68,6 +73,25 @@ function BuyerDashboard({ activeTarget, session }: BuyerDashboardProps) {
     [acceptedOrders, selectedOrderId],
   );
 
+  const selectedDeliveryEvidence = selectedOrder
+    ? deliveryEvidenceByOrder[selectedOrder.orderId] ?? []
+    : [];
+
+  const loadDeliveryEvidence = async (candidateOrders: ProcurementOrderResponse[]) => {
+    setDeliveryEvidenceError(undefined);
+
+    try {
+      const entries = await Promise.all(candidateOrders.map(async order => {
+        const evidence = await listDeliveryEvidenceForOrder(order.orderId, session);
+        return [order.orderId, evidence] as const;
+      }));
+
+      setDeliveryEvidenceByOrder(Object.fromEntries(entries));
+    } catch (error) {
+      setDeliveryEvidenceError(normalizeErrorMessage(error));
+    }
+  };
+
   const loadOrders = async () => {
     setIsLoadingOrders(true);
     setOrdersError(undefined);
@@ -75,6 +99,7 @@ function BuyerDashboard({ activeTarget, session }: BuyerDashboardProps) {
     try {
       const nextOrders = await listProcurementOrders(session);
       setOrders(nextOrders);
+      await loadDeliveryEvidence(nextOrders);
       setSelectedOrderId(current => {
         if (current && nextOrders.some(order => order.orderId === current)) {
           return current;
@@ -110,6 +135,7 @@ function BuyerDashboard({ activeTarget, session }: BuyerDashboardProps) {
       const nextOrders = [createdOrder, ...orders];
       setOrders(nextOrders);
       setSelectedOrderId(createdOrder.orderId);
+      await loadDeliveryEvidence(nextOrders);
       setOrdersMessage('Order created and sent to the supplier workspace.');
     } catch (error) {
       setOrdersError(normalizeErrorMessage(error));
@@ -256,9 +282,16 @@ function BuyerDashboard({ activeTarget, session }: BuyerDashboardProps) {
             </dl>
             <div className="workflow-meta-panel">
               <span>Delivery evidence</span>
-              <strong>{selectedOrder.status === 'accepted' ? 'Ready for metadata' : 'Waiting for acceptance'}</strong>
-              <p>Delivery proof will be shown as safe metadata and hashes. Raw commercial documents are not displayed here.</p>
+              <strong>{selectedDeliveryEvidence.length > 0 ? 'Evidence recorded' : selectedOrder.status === 'accepted' ? 'Awaiting supplier evidence' : 'Waiting for acceptance'}</strong>
+              <p>Delivery proof is shown as safe metadata, hashes, lifecycle event state, and proof status. Raw commercial documents are not displayed here.</p>
             </div>
+            {deliveryEvidenceError ? <p className="admin-alert admin-alert-error" role="alert">{deliveryEvidenceError}</p> : null}
+            <DeliveryEvidenceList
+              records={selectedDeliveryEvidence}
+              emptyMessage={selectedOrder.status === 'accepted'
+                ? 'No delivery evidence has been submitted by the supplier for this order.'
+                : 'Supplier delivery evidence appears after the order is accepted.'}
+            />
           </section>
         ) : null}
       </div>

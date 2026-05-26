@@ -80,15 +80,16 @@ Chaincode build/test is automated. Live Fabric local-network deployment depends 
 | 2:30-4:00 | Administrator governance | Show Members, Roles, organization status, and Access History. |
 | 4:00-5:30 | Compliance review | Show safe KYC/AML metadata and eligibility decision. |
 | 5:30-7:00 | Buyer order | Create or inspect procurement order for supplier. |
-| 7:00-8:00 | Supplier acknowledgement | Accept assigned order and show supplier-only controls. |
-| 8:00-9:30 | Escrow creation | Create escrow from accepted order and show escrow-created state. |
-| 9:30-11:00 | Blockchain proof | Show proof panel and honest verification states. |
-| 11:00-12:30 | Auditor verification | Verify proof or inspect audit/export evidence read-only. |
-| 12:30-14:00 | Shariah review | Show checklist metadata and approval gate. |
-| 14:00-15:30 | Financier PLS seedbed | Show approved PLS contract and distribution scenario. |
-| 15:30-17:00 | Regulator export | Request export bundle and verify manifest integrity. |
-| 17:00-18:30 | Evidence and validation | Point to UAT, authorization matrix, and release validation evidence. |
-| 18:30-20:00 | Limitations | State what is deliberately post-MVP. |
+| 7:00-8:30 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata. |
+| 8:30-9:30 | Buyer delivery review | Show evidence hash, lifecycle event, and proof state on the order detail. |
+| 9:30-11:00 | Escrow creation | Create escrow from accepted order and show escrow-created state. |
+| 11:00-12:00 | Blockchain proof | Show proof panel and honest verification states. |
+| 12:00-13:30 | Auditor verification | Verify proof or inspect audit/export evidence read-only. |
+| 13:30-15:00 | Shariah review | Show checklist metadata and approval gate. |
+| 15:00-16:30 | Financier PLS seedbed | Show approved PLS contract and distribution scenario. |
+| 16:30-18:00 | Regulator export | Request export bundle and verify manifest integrity. |
+| 18:00-19:00 | Evidence and validation | Point to UAT, authorization matrix, and release validation evidence. |
+| 19:00-20:00 | Limitations | State what is deliberately post-MVP. |
 
 ## Step-by-Step Walkthrough
 
@@ -193,15 +194,37 @@ Show:
 - Received Orders
 - assigned order detail
 - accept/acknowledge action
-- delivery evidence metadata placeholder
+- Delivery Evidence
+- accepted order selection
+- safe delivery evidence metadata form
+- submitted evidence hash and lifecycle proof state
 
 What to say:
 
 ```text
-The supplier can act only on assigned orders. Delivery evidence is metadata-only in this MVP and does not render private documents.
+The supplier can act only on assigned accepted orders. Delivery evidence records a safe reference, notes, hash, and lifecycle event; it does not upload or render private documents.
 ```
 
-### 7. Escrow Creation
+### 7. Buyer Delivery Review
+
+Return as `buyer.demo`.
+
+Show:
+
+- Orders
+- selected order detail
+- Delivery evidence panel
+- evidence hash
+- lifecycle event ID and hash
+- proof panel with pending, failed, not anchored, or anchored state
+
+What to say:
+
+```text
+The buyer can review delivery evidence metadata and proof state. A failed or unavailable proof is visible and is not treated as verified.
+```
+
+### 8. Escrow Creation
 
 Return as `buyer.demo`.
 
@@ -219,7 +242,7 @@ What to say:
 Escrow is currently a first slice. It records escrow-created state and evidence; it does not execute payment settlement.
 ```
 
-### 8. Blockchain Proof Panel
+### 9. Blockchain Proof Panel
 
 Show proof from escrow, audit event detail, or Blockchain Proof.
 
@@ -235,7 +258,7 @@ What to say:
 The blockchain layer is proof infrastructure. Operational data stays off-chain, while selected event hashes can be anchored and verified.
 ```
 
-### 9. Auditor Verification
+### 10. Auditor Verification
 
 Sign in as `auditor.demo`.
 
@@ -251,7 +274,7 @@ What to say:
 The auditor has read-only evidence tools. Verification states are explicit: verified, mismatch, not found, and unavailable are different outcomes.
 ```
 
-### 10. Shariah Review
+### 11. Shariah Review
 
 Sign in as `shariah.demo`.
 
@@ -268,7 +291,7 @@ What to say:
 The PLS seedbed is controlled by Shariah governance. Activation requires an approved reference and does not imply production Islamic finance certification.
 ```
 
-### 11. Financier PLS Contract and Distribution
+### 12. Financier PLS Contract and Distribution
 
 Sign in as `financier.demo`.
 
@@ -285,7 +308,7 @@ What to say:
 The financier can inspect and simulate allocation scenarios. No external payments are executed and no profit or principal is guaranteed.
 ```
 
-### 12. Regulator Export Bundle
+### 13. Regulator Export Bundle
 
 Sign in as `regulator.demo`.
 
@@ -302,7 +325,7 @@ What to say:
 The regulator flow packages reviewable evidence with integrity metadata. Production signing and external regulator portal integration remain post-MVP.
 ```
 
-### 13. Evidence, Runbook, and Validation
+### 14. Evidence, Runbook, and Validation
 
 Show:
 
@@ -320,7 +343,7 @@ What to say:
 The demo is backed by documented UAT scripts, authorization checks, and validation evidence rather than a one-off walkthrough.
 ```
 
-### 14. Known Limitations
+### 15. Known Limitations
 
 Close by naming limits directly:
 
@@ -363,6 +386,7 @@ Do not claim:
 | Login fails | Seed data not loaded or memory demo reset | Restart local demo and confirm demo credentials. |
 | PostgreSQL fails | Docker not running or port conflict | Use memory-only demo path or follow `docs/runbooks/postgres-local-dev.md`. |
 | Fabric proof unavailable | Local Fabric network not running | Use chaincode build/test evidence and show unavailable state honestly. |
+| Delivery evidence submit fails | Order is not accepted or wrong supplier session is active | Accept the assigned order first, then retry from the supplier account. |
 | Export verification mismatch | Wrong bundle hash submitted | Re-copy bundle hash from bundle detail and verify again. |
 | Actor sees unexpected route | Wrong account session active | Sign out and sign in as the intended demo actor. |
 
@@ -375,6 +399,8 @@ Do not claim:
 - [ ] Compliance reviewer can record eligibility decision with safe metadata only.
 - [ ] Buyer can create or inspect order.
 - [ ] Supplier can acknowledge assigned order.
+- [ ] Supplier can submit delivery evidence metadata for an accepted order.
+- [ ] Buyer can review delivery evidence hash, lifecycle event, and proof state.
 - [ ] Buyer can create escrow from accepted order.
 - [ ] Proof panel shows honest states and does not fabricate transaction IDs.
 - [ ] Auditor can verify proof or inspect evidence read-only.
