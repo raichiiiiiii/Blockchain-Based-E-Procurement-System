@@ -36,6 +36,10 @@ No new backlog IDs beyond PBI-435 are assigned in this document.
 | Feasibility | Medium; mostly frontend orchestration and seeded state awareness. |
 | Risks | Could hide real workflow complexity or become stale if routes change. |
 | Dependencies | Stable actor routes, canonical demo case, acceptance matrix. |
+| Implementation size | M. |
+| Rough story-point range | 5 to 8 points. |
+| Dependency level | Medium; depends on stable route names and seeded demo data. |
+| Recommended timing | After timed supervisor rehearsal and rehearsal fixes. |
 | Recommendation | Stretch after supervisor script rehearsal. |
 | Proposed PBI placeholder | Future spike: Guided Supervisor Demo Mode. |
 
@@ -50,6 +54,10 @@ No new backlog IDs beyond PBI-435 are assigned in this document.
 | Feasibility | Medium; requires event ordering and proof state aggregation. |
 | Risks | Must not imply unanchored events are verified; must avoid fake chain data. |
 | Dependencies | Audit events, blockchain proof API, export bundle metadata. |
+| Implementation size | M. |
+| Rough story-point range | 5 to 8 points. |
+| Dependency level | Medium; depends on stable transaction history and proof API responses. |
+| Recommended timing | After proof route validation and auditor/regulator walkthrough. |
 | Recommendation | Stretch, high value after mandatory proof path is stable. |
 | Proposed PBI placeholder | Future spike: Blockchain Proof Timeline Visualization. |
 
@@ -64,6 +72,10 @@ No new backlog IDs beyond PBI-435 are assigned in this document.
 | Feasibility | Medium; needs redacted metadata and eligibility rules display. |
 | Risks | Must not expose raw KYC/AML documents or confidential rationale to unauthorized users. |
 | Dependencies | Eligibility contract, compliance workflow, redaction policy. |
+| Implementation size | M. |
+| Rough story-point range | 5 to 8 points. |
+| Dependency level | Medium; depends on finalized safe metadata and eligibility states. |
+| Recommended timing | After compliance UAT confirms redaction and eligibility wording. |
 | Recommendation | Stretch for supervisor demo polish; pilot candidate after privacy review. |
 | Proposed PBI placeholder | Future spike: Smart Onboarding Checklist. |
 
@@ -78,6 +90,10 @@ No new backlog IDs beyond PBI-435 are assigned in this document.
 | Feasibility | Medium; uses existing export bundle and verification metadata. |
 | Risks | Must not leak restricted data or imply external regulator portal integration. |
 | Dependencies | Export bundle service, verification endpoint, authorization matrix. |
+| Implementation size | S to M. |
+| Rough story-point range | 3 to 5 points. |
+| Dependency level | Medium; depends on stable export bundle metadata and verification endpoint. |
+| Recommended timing | After regulator export workflow passes UAT. |
 | Recommendation | Stretch, strong pilot-readiness candidate. |
 | Proposed PBI placeholder | Future spike: Regulator Evidence Viewer. |
 
@@ -92,6 +108,10 @@ No new backlog IDs beyond PBI-435 are assigned in this document.
 | Feasibility | Medium; builds on existing scenario tests and distribution model. |
 | Risks | Must not imply guaranteed profit, guaranteed principal, or payment execution. |
 | Dependencies | PLS contract model, Shariah approval gate, distribution scenario service. |
+| Implementation size | M. |
+| Rough story-point range | 5 to 8 points. |
+| Dependency level | Medium; depends on accepted PLS language and scenario rules. |
+| Recommended timing | After Shariah and financier UAT confirms seedbed scope. |
 | Recommendation | Stretch after claim-safety review. |
 | Proposed PBI placeholder | Future spike: PLS Scenario Simulator. |
 
@@ -106,6 +126,10 @@ No new backlog IDs beyond PBI-435 are assigned in this document.
 | Feasibility | Low to medium; requires careful rule design and explainability. |
 | Risks | Risk scores can become misleading, biased, or overclaimed without validated data. |
 | Dependencies | Supplier eligibility, order history, audit events, policy definitions. |
+| Implementation size | L. |
+| Rough story-point range | 8 to 13 points. |
+| Dependency level | High; depends on data governance, explainability policy, and stakeholder validation. |
+| Recommended timing | Post-MVP, after compliance data model and policy rules are validated. |
 | Recommendation | Post-MVP spike after data governance review. |
 | Proposed PBI placeholder | Future spike: Procurement Risk Score. |
 
@@ -120,6 +144,10 @@ No new backlog IDs beyond PBI-435 are assigned in this document.
 | Feasibility | Medium; can begin as rule-based metadata. |
 | Risks | Must avoid exposing sensitive KYC details or creating unfair automated decisions. |
 | Dependencies | Onboarding eligibility, safe metadata model, compliance decision history. |
+| Implementation size | M to L. |
+| Rough story-point range | 8 to 13 points. |
+| Dependency level | High; depends on redaction policy, safe metadata, and stakeholder validation. |
+| Recommended timing | Post-MVP unless customer discovery prioritizes supplier self-service. |
 | Recommendation | Post-MVP unless stakeholder interviews rank it highly. |
 | Proposed PBI placeholder | Future spike: Supplier Readiness Score. |
 
@@ -134,6 +162,10 @@ No new backlog IDs beyond PBI-435 are assigned in this document.
 | Feasibility | Medium; can start as rules/checklist UI without AI automation. |
 | Risks | Must not replace qualified Shariah judgment or imply certification. |
 | Dependencies | PLS review detail, decision trail, restricted seedbed policy. |
+| Implementation size | M. |
+| Rough story-point range | 5 to 8 points. |
+| Dependency level | Medium; depends on Shariah reviewer feedback and accepted checklist language. |
+| Recommended timing | Stretch or post-MVP after Shariah reviewer rehearsal. |
 | Recommendation | Stretch or post-MVP depending on Shariah reviewer feedback. |
 | Proposed PBI placeholder | Future spike: Shariah Review Assistant Checklist. |
 
