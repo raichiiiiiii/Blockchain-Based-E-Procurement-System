@@ -393,6 +393,11 @@ export function createTestableServer(options?: {
     clientRepository: externalClientCredentialRepository,
     idempotencyRepository: externalIdempotencyRepository,
     auditRepository: externalApiAuditRepository,
+    orderRepository: procurementOrderRepository,
+    evidenceRepository: deliveryEvidenceRepository,
+    lifecycleEventRepository: procureToPayLifecycleEventRepository,
+    blockchainAnchorGateway,
+    blockchainAnchorMetadataRepository,
     sharedSecret: options?.externalApiSharedSecret ?? process.env.EXTERNAL_API_SHARED_SECRET,
   });
 

@@ -17,6 +17,8 @@ export type ProcureToPaySourceAction =
   // Delivery actions
   | 'deliveryRecorded'
   | 'deliveryEvidenceSubmitted'
+  | 'deliveryProofSubmitted'
+  | 'logisticsEventRecorded'
   | 'deliveryAccepted'
   | 'deliveryRejected'
   | 'deliveryModified'
@@ -69,6 +71,8 @@ const SOURCE_MAPPING: Record<ProcureToPaySourceAction, {
   // Delivery actions
   'deliveryRecorded': { source: 'delivery', stage: 'delivery' },
   'deliveryEvidenceSubmitted': { source: 'delivery', stage: 'delivery' },
+  'deliveryProofSubmitted': { source: 'delivery', stage: 'delivery' },
+  'logisticsEventRecorded': { source: 'delivery', stage: 'delivery' },
   'deliveryAccepted': { source: 'delivery', stage: 'delivery' },
   'deliveryRejected': { source: 'delivery', stage: 'delivery' },
   'deliveryModified': { source: 'delivery', stage: 'delivery' },

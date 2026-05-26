@@ -40,6 +40,8 @@ const ALLOWED_EVENT_TYPES: Record<ProcureToPayLifecycleStage, string[]> = {
   delivery: [
     'deliveryRecorded',
     'deliveryEvidenceSubmitted',
+    'deliveryProofSubmitted',
+    'logisticsEventRecorded',
     'deliveryAccepted',
     'deliveryRejected',
     'deliveryModified'

@@ -177,6 +177,8 @@ Example event types by lifecycle stage:
 - **delivery**:
   - deliveryRecorded
   - deliveryEvidenceSubmitted
+  - deliveryProofSubmitted
+  - logisticsEventRecorded
   - deliveryAccepted
   - deliveryRejected
   - deliveryModified

@@ -51,7 +51,7 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 4. The Supplier for Barakah Supplies opens received orders and acknowledges the order.
 5. The Buyer or Supplier opens Contract Documents and uploads the Amanah-Barakah contract text for checksum, safe metadata extraction, and local signature-state recording.
 6. The Buyer or Supplier opens Contract Negotiation, creates machine-readable terms linked to the document reference, records any revised offer, and accepts the current terms hash.
-7. The Supplier records delivery evidence metadata for the accepted order using a safe reference, description, and hash.
+7. The Supplier records delivery evidence metadata for the accepted order using a safe reference, description, and hash; an external client may also submit signed IoT, QR, or EPCIS-compatible proof metadata through the external API gateway.
 8. The Buyer opens the order detail and reviews delivery evidence metadata, lifecycle hash, and proof state without seeing raw commercial documents.
 9. The Buyer opens Escrow and creates escrow from the accepted order reference.
 10. Escrow creation emits a lifecycle audit event for the escrow-created state.
@@ -134,6 +134,8 @@ The demo should be able to explain or inspect these events as governed actions:
 | Order created | Buyer creates order | Procurement lifecycle event and payload hash metadata exist. |
 | Order acknowledged | Supplier accepts assigned order | Lifecycle event shows supplier action and order status. |
 | Delivery evidence submitted | Supplier records safe delivery evidence for an accepted order | `deliveryEvidenceSubmitted` lifecycle event, evidence hash, and proof state exist without raw document payloads. |
+| External delivery proof submitted | Signed IoT or QR external client records proof metadata for an accepted order | `deliveryProofSubmitted` lifecycle event, evidence hash, and proof state exist without storing raw external payloads. |
+| Logistics visibility event recorded | Signed EPCIS-compatible external client records visibility metadata | `logisticsEventRecorded` lifecycle event, evidence hash, and proof state exist without claiming a full EPCIS repository. |
 | Contract document recorded | Buyer or Supplier uploads contract text for extraction | Document checksum, storage reference, extraction status, and signature status are recorded without raw document exposure in dashboard proof surfaces. |
 | Contract terms created or accepted | Buyer or Supplier versions terms and records acceptance | Terms hash, offer record, acceptance party, actor, timestamp, and lifecycle event are recorded without implying legal signing or payment execution. |
 | Escrow created | Buyer creates escrow from accepted order | Escrow-created lifecycle event exists. |
@@ -181,7 +183,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 - Escrow is a first-slice workflow and does not automate settlement, release, dispute, or banking rails.
 - Fabric proof is local/demo-oriented; a production consortium rollout is post-MVP.
 - PostgreSQL runtime persistence is partial and explicitly scoped by runbooks.
-- Delivery evidence is an MVP metadata/hash workflow and does not include IoT, QR, EPCIS, external logistics APIs, or document rendering.
+- Delivery evidence now includes signed external IoT/QR/EPCIS-compatible metadata intake, but not production device PKI, QR legal signature verification, full EPCIS capture/query services, external logistics network integration, or document rendering.
 - Document intake stores local files and extracts text/JSON only; PDF/DOCX extraction, OCR, malware scanning, and legal e-signature verification remain post-MVP.
 - Contract negotiation uses in-memory contract records in this slice; production redlining, legal signing, PostgreSQL persistence, ERP mapping exports, and automatic order/escrow creation remain future work.
 - Export bundle integrity is MVP metadata, not production signing/key-management infrastructure.

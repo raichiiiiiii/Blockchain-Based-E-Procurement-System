@@ -16,7 +16,10 @@ import type {
 import { isDeliveryEvidenceType } from '../domain/delivery-evidence.js';
 import type { DeliveryEvidenceRepository } from './delivery-evidence-repository.js';
 import type { ProcureToPayLifecycleEventRepository } from './procure-to-pay-lifecycle-event-repository.js';
-import { recordProcureToPaySourceEvent } from './procure-to-pay-lifecycle-source-integration.js';
+import {
+  recordProcureToPaySourceEvent,
+  type ProcureToPaySourceAction,
+} from './procure-to-pay-lifecycle-source-integration.js';
 import type { ProcurementOrderRepository } from './procurement-order-repository.js';
 
 export type SubmitDeliveryEvidenceInput = {
@@ -28,6 +31,7 @@ export type SubmitDeliveryEvidenceInput = {
   actorUserId?: string;
   actorOrganizationId?: string;
   actorRoleCodes?: string[];
+  lifecycleSourceAction?: ProcureToPaySourceAction;
   requestId: string;
 };
 
@@ -63,6 +67,7 @@ type NormalizedSubmitDeliveryEvidenceInput = {
   actorUserId: string;
   actorOrganizationId: string;
   actorRoleCodes: string[];
+  lifecycleSourceAction: ProcureToPaySourceAction;
   requestId: string;
 };
 
@@ -155,6 +160,7 @@ function normalizeInput(input: SubmitDeliveryEvidenceInput): {
       actorUserId: input.actorUserId as string,
       actorOrganizationId: input.actorOrganizationId as string,
       actorRoleCodes: input.actorRoleCodes ?? [],
+      lifecycleSourceAction: input.lifecycleSourceAction ?? 'deliveryEvidenceSubmitted',
       requestId: input.requestId.trim(),
     },
   };
@@ -296,7 +302,7 @@ export async function submitDeliveryEvidence(
     correlationId: order.orderId,
     caseId: order.orderId,
     sourceId: evidenceId,
-    sourceAction: 'deliveryEvidenceSubmitted',
+    sourceAction: normalized.lifecycleSourceAction,
     outcome: 'success',
     previousEventHash,
     sourcePayloadRef: normalized.evidenceReference,

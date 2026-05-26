@@ -83,7 +83,7 @@ Chaincode build/test is automated. Live Fabric local-network deployment depends 
 | 5:30-7:00 | Buyer order | Create or inspect procurement order for supplier. |
 | 7:00-8:00 | Contract documents | Upload contract text and show checksum, extraction fields, and local signature state. |
 | 8:00-9:00 | Contract negotiation | Version machine-readable terms, show hash, submit an offer, and record acceptance. |
-| 9:00-10:15 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata. |
+| 9:00-10:15 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata; mention signed external IoT, QR, and EPCIS-compatible proof intake as an API-backed pilot-hardening path. |
 | 10:15-11:15 | Buyer delivery review | Show evidence hash, lifecycle event, and proof state on the order detail. |
 | 11:15-12:15 | Escrow creation | Create escrow from accepted order and show escrow-created state. |
 | 12:15-13:00 | Blockchain proof | Show proof panel and honest verification states. |
@@ -207,6 +207,8 @@ What to say:
 ```text
 The supplier can act only on assigned accepted orders. Delivery evidence records a safe reference, notes, hash, and lifecycle event; it does not upload or render private documents.
 ```
+
+For a technical supervisor walkthrough, explain that external proof clients use signed `/api/v1/external/iot/events`, `/api/v1/external/qr/proofs`, and `/api/v1/external/epcis/events` requests. These create evidence hashes and lifecycle events without storing raw logistics payloads or claiming production IoT/EPCIS infrastructure.
 
 ### 7. Contract Documents
 
