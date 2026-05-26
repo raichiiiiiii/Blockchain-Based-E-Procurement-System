@@ -74,14 +74,16 @@ Use `-SkipPostgres` to run a memory-only backend, or `-WithFabric` to add chainc
 In a second terminal:
 
 ```powershell
+$env:VITE_ENABLE_LOCAL_DEMO_FALLBACK="false"
+$env:VITE_ENABLE_GUIDED_DEMO="false"
 npm run frontend:dev
 ```
 
-Open the displayed frontend URL. The root route should show the landing page, not an authenticated dashboard.
+Open the displayed frontend URL. The root route should show the landing page, not an authenticated dashboard. The normal demo path uses backend/database-seeded records. `VITE_ENABLE_LOCAL_DEMO_FALLBACK` is disabled by default and should only be set to `true` for an explicit offline walkthrough when backend services are intentionally unavailable.
 
 ## Demo Account Path
 
-Sign-in supports these demo users with password `demo-password`:
+After `npm run db:seed`, sign-in supports these database-seeded demo users with password `demo-password`:
 
 ```text
 admin.demo

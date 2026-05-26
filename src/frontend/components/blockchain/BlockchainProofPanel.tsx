@@ -4,6 +4,7 @@ import type {
   BlockchainVerificationResult,
   BlockchainVerificationStatus,
 } from '../../lib/blockchain-proof-client';
+import BlockchainStatusIndicator from '../status/BlockchainStatusIndicator';
 
 export type BlockchainProofPanelProps = BlockchainProofRecord & {
   verification?: BlockchainVerificationResult;
@@ -135,7 +136,7 @@ function BlockchainProofPanel({
           <p className="proof-eyebrow">Blockchain Proof</p>
           <h2>{status.label}</h2>
         </div>
-        <span className={`proof-status-badge proof-status-${status.tone}`}>{status.label}</span>
+        <BlockchainStatusIndicator status={displayStatus} />
       </header>
 
       <p className="proof-message">{status.message}</p>

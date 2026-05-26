@@ -3,6 +3,7 @@ import type {
   BlockchainProofRecord,
   BlockchainVerificationStatus,
 } from '../../lib/blockchain-proof-client';
+import BlockchainStatusIndicator from '../status/BlockchainStatusIndicator';
 
 export type BlockchainProofTimelineItem = {
   label: string;
@@ -86,7 +87,7 @@ function BlockchainProofTimeline({ items }: { items: BlockchainProofTimelineItem
                     <strong>{item.label}</strong>
                     <span>{item.occurredAt}</span>
                   </div>
-                  <span className={`proof-status-badge proof-status-${status.tone}`}>{status.label}</span>
+                  <BlockchainStatusIndicator status={resolveTimelineStatus(item)} compact />
                 </div>
                 <p>{item.description}</p>
                 <dl className="proof-timeline-meta">

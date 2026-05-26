@@ -8,6 +8,7 @@ import {
 import SmartOnboardingChecklist, {
   smartOnboardingChecklistFromCase,
 } from '../components/compliance/SmartOnboardingChecklist';
+import StatusIndicator, { type StatusTone } from '../components/status/StatusIndicator';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 
@@ -70,6 +71,21 @@ function statusClass(status: ComplianceCaseResponse['status']): string {
   }
 
   return 'admin-status-pending';
+}
+
+function eligibilityTone(eligibility: ComplianceCaseResponse['eligibility']): StatusTone {
+  switch (eligibility) {
+    case 'eligible':
+      return 'success';
+    case 'flagged':
+    case 'pendingReview':
+      return 'warning';
+    case 'blocked':
+    case 'notEligible':
+      return 'danger';
+    case 'unknown':
+      return 'neutral';
+  }
 }
 
 function normalizeErrorMessage(error: unknown): string {
@@ -199,7 +215,13 @@ function ComplianceDashboard({ activeTarget, session }: ComplianceDashboardProps
                 </div>
                 <div>
                   <dt>Eligibility</dt>
-                  <dd>{formatEligibility(selectedCase.eligibility)}</dd>
+                  <dd>
+                    <StatusIndicator
+                      label={formatEligibility(selectedCase.eligibility)}
+                      tone={eligibilityTone(selectedCase.eligibility)}
+                      compact
+                    />
+                  </dd>
                 </div>
                 <div>
                   <dt>Monthly value</dt>
@@ -287,7 +309,13 @@ function ComplianceDashboard({ activeTarget, session }: ComplianceDashboardProps
           {cases.map(item => (
             <div className="workflow-meta-panel" key={item.caseId}>
               <span>{item.memberOrganizationId}</span>
-              <strong>{formatEligibility(item.eligibility)}</strong>
+              <strong>
+                <StatusIndicator
+                  label={formatEligibility(item.eligibility)}
+                  tone={eligibilityTone(item.eligibility)}
+                  compact
+                />
+              </strong>
               <p>{item.eligibility === 'eligible'
                 ? 'Procurement actions may proceed subject to workflow checks.'
                 : 'Procurement, escrow, and financing actions must pause or be blocked.'}</p>

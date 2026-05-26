@@ -1,5 +1,8 @@
 import { BackendApiError } from '../api/errors';
+import { createSessionHeaders } from '../api/auth-headers';
 import { requestJson } from '../api/http-client';
+import { isLocalDemoFallbackEnabled } from './runtime-config';
+import type { AuthenticatedFrontendSession } from './session-state';
 
 export type BlockchainAnchorStatus = 'notAnchored' | 'pending' | 'anchored' | 'failed';
 export type BlockchainVerificationStatus = 'verified' | 'mismatch' | 'notFound' | 'unavailable';
@@ -149,7 +152,16 @@ function createUnavailableVerification(input: VerifyBlockchainProofInput): Block
     eventId: input.eventId,
     verificationStatus: 'unavailable',
     submittedPayloadHash: input.payloadHash ?? '',
-    source: 'localDemoAdapter',
+    source: isLocalDemoFallbackEnabled() ? 'localDemoAdapter' : 'backend',
+  };
+}
+
+function createUnavailableProofRecord(eventId: string, error: BackendApiError | TypeError): BlockchainProofRecord {
+  return {
+    eventId,
+    anchorStatus: 'failed',
+    failureReason: error.message || 'Proof metadata could not be retrieved from the backend.',
+    source: 'backend',
   };
 }
 
@@ -165,13 +177,23 @@ export function getLocalDemoProofRecords(eventIds: string[]): BlockchainProofRec
   return eventIds.map(eventId => getLocalDemoProofRecord(eventId));
 }
 
-export async function getBlockchainProof(eventId: string): Promise<BlockchainProofRecord> {
+export async function getBlockchainProof(
+  eventId: string,
+  session?: AuthenticatedFrontendSession,
+): Promise<BlockchainProofRecord> {
   try {
     return withBackendSource(await requestJson<BlockchainProofRecord>(
       `/api/v1/blockchain/anchors/${encodeURIComponent(eventId)}`,
+      {
+        headers: createSessionHeaders(session),
+      },
     ));
   } catch (error) {
     if (error instanceof BackendApiError || error instanceof TypeError) {
+      if (!isLocalDemoFallbackEnabled()) {
+        return createUnavailableProofRecord(eventId, error);
+      }
+
       return getLocalDemoProofRecord(eventId);
     }
 
@@ -181,6 +203,7 @@ export async function getBlockchainProof(eventId: string): Promise<BlockchainPro
 
 export async function verifyBlockchainProof(
   input: VerifyBlockchainProofInput,
+  session?: AuthenticatedFrontendSession,
 ): Promise<BlockchainVerificationResult> {
   try {
     return withBackendVerificationSource(await requestJson<BlockchainVerificationResult>(
@@ -189,12 +212,17 @@ export async function verifyBlockchainProof(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...createSessionHeaders(session),
         },
         body: JSON.stringify({ payloadHash: input.payloadHash ?? '' }),
       },
     ));
   } catch (error) {
     if (error instanceof BackendApiError || error instanceof TypeError) {
+      if (!isLocalDemoFallbackEnabled()) {
+        return createUnavailableVerification(input);
+      }
+
       return localVerificationResults[input.eventId] ?? createUnavailableVerification(input);
     }
 

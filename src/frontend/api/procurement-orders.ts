@@ -2,6 +2,7 @@ import { createSessionHeaders } from './auth-headers';
 import { getLocalOrganizationEligibility } from './compliance-cases';
 import { BackendApiError } from './errors';
 import { requestJson } from './http-client';
+import { createLocalDemoFallbackDisabledError, isLocalDemoFallbackEnabled } from '../lib/runtime-config';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 import type {
   AcknowledgeProcurementOrderRequest,
@@ -48,6 +49,12 @@ const seedOrders: ProcurementOrderResponse[] = [
 
 function isLocalSession(session?: AuthenticatedFrontendSession): boolean {
   return session?.source !== 'backend';
+}
+
+function assertLocalFallbackEnabled(feature: string): void {
+  if (!isLocalDemoFallbackEnabled()) {
+    throw createLocalDemoFallbackDisabledError(feature);
+  }
 }
 
 function actorRoles(session?: AuthenticatedFrontendSession): string[] {
@@ -223,6 +230,7 @@ export async function listProcurementOrders(
   session?: AuthenticatedFrontendSession
 ): Promise<ProcurementOrderResponse[]> {
   if (isLocalSession(session)) {
+    assertLocalFallbackEnabled('Order workspace');
     return listLocalProcurementOrders(session);
   }
 
@@ -238,6 +246,7 @@ export async function createProcurementOrder(
   session?: AuthenticatedFrontendSession
 ): Promise<ProcurementOrderResponse> {
   if (isLocalSession(session)) {
+    assertLocalFallbackEnabled('Order creation');
     return createLocalProcurementOrder(payload, session);
   }
 
@@ -257,6 +266,7 @@ export async function acknowledgeProcurementOrder(
   session?: AuthenticatedFrontendSession
 ): Promise<ProcurementOrderResponse> {
   if (isLocalSession(session)) {
+    assertLocalFallbackEnabled('Order acknowledgement');
     return acknowledgeLocalProcurementOrder(orderId, payload, session);
   }
 

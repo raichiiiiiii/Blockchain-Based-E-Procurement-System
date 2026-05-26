@@ -61,6 +61,8 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 
 ## Expected Seed Data
 
+The normal local demo path expects `npm run db:seed` to create backend/database records for the actors, credentials, organizations, procurement case, delivery evidence, escrow, lifecycle events, and proof metadata. Browser-local fallback data is disabled by default and is only an explicit offline walkthrough aid.
+
 | Data area | Expected seed value |
 |---|---|
 | Buyer organization | `demo-buyer-org`, display name Amanah Retail Sdn Bhd, status active, eligibility eligible |

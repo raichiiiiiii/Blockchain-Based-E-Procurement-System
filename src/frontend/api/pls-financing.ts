@@ -2,6 +2,7 @@ import { createSessionHeaders } from './auth-headers';
 import { getLocalOrganizationEligibility } from './compliance-cases';
 import { BackendApiError } from './errors';
 import { requestJson } from './http-client';
+import { createLocalDemoFallbackDisabledError, isLocalDemoFallbackEnabled } from '../lib/runtime-config';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 
 export type PlsContractStatus =
@@ -183,6 +184,12 @@ function isBackendSession(session?: AuthenticatedFrontendSession): boolean {
   return session?.source === 'backend';
 }
 
+function assertLocalFallbackEnabled(feature: string): void {
+  if (!isLocalDemoFallbackEnabled()) {
+    throw createLocalDemoFallbackDisabledError(feature);
+  }
+}
+
 function readContracts(): PlsContract[] {
   if (typeof window === 'undefined') {
     return seedContracts.map(contract => ({ ...contract }));
@@ -301,6 +308,7 @@ function nextDistributionId(): string {
 
 export async function listPlsContracts(session?: AuthenticatedFrontendSession): Promise<PlsContract[]> {
   if (!isBackendSession(session)) {
+    assertLocalFallbackEnabled('Financing contracts');
     if (!canReadFinancing(session)) {
       throw new BackendApiError('FORBIDDEN', 'User is not allowed to view PLS contracts');
     }
@@ -320,6 +328,7 @@ export async function listPlsDistributions(
   session?: AuthenticatedFrontendSession,
 ): Promise<PlsDistributionRecord[]> {
   if (!isBackendSession(session)) {
+    assertLocalFallbackEnabled('Financing distributions');
     if (!canReadFinancing(session)) {
       throw new BackendApiError('FORBIDDEN', 'User is not allowed to view PLS distributions');
     }
@@ -348,6 +357,7 @@ export async function recordShariahDecisionForContract(
     throw new BackendApiError('VALIDATION_ERROR', 'Use the Shariah review decision endpoint for backend sessions');
   }
 
+  assertLocalFallbackEnabled('Shariah review decision');
   requireLocalRole(session, 'shariahReviewer', 'Shariah review');
 
   const contracts = readContracts();
@@ -379,6 +389,7 @@ export async function activatePlsContract(
   shariahReviewId?: string,
 ): Promise<PlsContract> {
   if (!isBackendSession(session)) {
+    assertLocalFallbackEnabled('PLS activation');
     requireLocalRole(session, 'financier', 'financing');
 
     const contracts = readContracts();
@@ -427,6 +438,7 @@ export async function recordPlsDistributionScenario(
   session?: AuthenticatedFrontendSession,
 ): Promise<PlsDistributionRecord> {
   if (!isBackendSession(session)) {
+    assertLocalFallbackEnabled('PLS distribution scenario');
     requireLocalRole(session, 'financier', 'financing');
 
     const contract = readContracts().find(candidate => candidate.contractId === contractId);

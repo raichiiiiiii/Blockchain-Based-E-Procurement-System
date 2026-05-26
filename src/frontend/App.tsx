@@ -33,6 +33,7 @@ import {
   isNavigationTargetAllowed,
   type DashboardNavigationTarget,
 } from './lib/role-navigation';
+import { isGuidedDemoEnabled } from './lib/runtime-config';
 
 type RouteKey = 'landing' | 'login' | 'dashboard';
 
@@ -41,7 +42,7 @@ function isGuidedDemoModeFromLocation(): boolean {
     return false;
   }
 
-  return new URLSearchParams(window.location.search).get('demo') === 'guided';
+  return isGuidedDemoEnabled() && new URLSearchParams(window.location.search).get('demo') === 'guided';
 }
 
 function routeFromLocation(): RouteKey {

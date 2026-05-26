@@ -30,7 +30,7 @@ function AuditorDashboard({ activeTarget, session }: AuditorDashboardProps) {
 
   const handleVerifyProof = async (eventId: string, payloadHash?: string) => {
     setVerificationState({ verificationStatus: 'verifying' });
-    setVerificationState(await verifyBlockchainProof({ eventId, payloadHash }));
+    setVerificationState(await verifyBlockchainProof({ eventId, payloadHash }, session));
   };
 
   if (activeTarget === 'audit-trail') {

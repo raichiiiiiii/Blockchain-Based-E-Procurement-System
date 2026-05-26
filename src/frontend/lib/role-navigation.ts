@@ -35,7 +35,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'roles', label: 'Roles' },
     { id: 'access-history', label: 'Access History' },
     { id: 'settings', label: 'Settings' },
-    { id: 'logout', label: 'Logout' },
+    { id: 'logout', label: 'Sign out' },
   ],
   buyer: [
     { id: 'dashboard', label: 'Dashboard' },
@@ -43,7 +43,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'escrow', label: 'Escrow' },
     { id: 'blockchain-proof', label: 'Blockchain Proof' },
     { id: 'settings', label: 'Settings' },
-    { id: 'logout', label: 'Logout' },
+    { id: 'logout', label: 'Sign out' },
   ],
   supplier: [
     { id: 'dashboard', label: 'Dashboard' },
@@ -51,27 +51,27 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'delivery-evidence', label: 'Delivery Evidence' },
     { id: 'escrow', label: 'Escrow' },
     { id: 'settings', label: 'Settings' },
-    { id: 'logout', label: 'Logout' },
+    { id: 'logout', label: 'Sign out' },
   ],
   complianceReviewer: [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'compliance', label: 'Compliance' },
     { id: 'eligibility-status', label: 'Eligibility Status' },
     { id: 'settings', label: 'Settings' },
-    { id: 'logout', label: 'Logout' },
+    { id: 'logout', label: 'Sign out' },
   ],
   shariahReviewer: [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'shariah-review', label: 'Shariah Review' },
     { id: 'settings', label: 'Settings' },
-    { id: 'logout', label: 'Logout' },
+    { id: 'logout', label: 'Sign out' },
   ],
   financier: [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'financing', label: 'Financing' },
     { id: 'shariah-review', label: 'Shariah Review' },
     { id: 'settings', label: 'Settings' },
-    { id: 'logout', label: 'Logout' },
+    { id: 'logout', label: 'Sign out' },
   ],
   auditor: [
     { id: 'dashboard', label: 'Dashboard' },
@@ -79,14 +79,14 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'blockchain-proof', label: 'Blockchain Proof' },
     { id: 'export-bundle', label: 'Export Bundle' },
     { id: 'settings', label: 'Settings' },
-    { id: 'logout', label: 'Logout' },
+    { id: 'logout', label: 'Sign out' },
   ],
   regulator: [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'export-bundle', label: 'Export Bundle' },
     { id: 'blockchain-proof', label: 'Blockchain Proof' },
     { id: 'settings', label: 'Settings' },
-    { id: 'logout', label: 'Logout' },
+    { id: 'logout', label: 'Sign out' },
   ],
   securityOperator: [
     { id: 'dashboard', label: 'Dashboard' },
@@ -95,7 +95,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'proof-failures', label: 'Proof Failures' },
     { id: 'denied-actions', label: 'Denied Actions' },
     { id: 'settings', label: 'Settings' },
-    { id: 'logout', label: 'Logout' },
+    { id: 'logout', label: 'Sign out' },
   ],
 };
 

@@ -1,0 +1,60 @@
+:root {
+  --color-ink: #111612;
+  --color-ink-soft: #2b332e;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f7f2;
+  --color-border: #d9dfd6;
+  --color-border-strong: #b9c4b7;
+  --color-sidebar: #101511;
+  --color-sidebar-raised: #171d18;
+  --color-accent: #f6c343;
+  --color-accent-strong: #d99f18;
+  --color-success: #198754;
+  --color-warning: #b7791f;
+  --color-danger: #c0362c;
+  --color-info: #147ba6;
+  --color-neutral: #6b7280;
+  --shadow-soft: 0 18px 44px rgba(16, 21, 17, 0.12);
+  --radius-card: 8px;
+}
+
+body {
+  background: var(--color-surface-muted);
+  color: var(--color-ink);
+}
+
+button,
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.button-primary {
+  background: var(--color-ink);
+  color: #ffffff;
+}
+
+.button-primary:hover:not(:disabled) {
+  background: #000000;
+}
+
+.button-secondary {
+  background: #fff7dd;
+  color: #3b2a05;
+  border-color: #e6c361;
+}
+
+.button-link {
+  color: var(--color-ink);
+}
+
+.brand-mark {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}

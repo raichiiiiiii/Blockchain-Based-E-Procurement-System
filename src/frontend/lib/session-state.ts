@@ -1,3 +1,5 @@
+import { isLocalDemoFallbackEnabled } from './runtime-config';
+
 export type FrontendActorContext = {
   actorUserId: string;
   actorOrganizationId?: string;
@@ -53,7 +55,7 @@ function isAuthenticatedSession(value: unknown): value is AuthenticatedFrontendS
     typeof value.sessionId === 'string' &&
     typeof value.expiresAt === 'string' &&
     isFrontendActorContext(value.actor) &&
-    (value.source === 'backend' || value.source === 'localDemo')
+    (value.source === 'backend' || (value.source === 'localDemo' && isLocalDemoFallbackEnabled()))
   );
 }
 

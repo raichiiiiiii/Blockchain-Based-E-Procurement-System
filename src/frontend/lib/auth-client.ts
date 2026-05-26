@@ -1,5 +1,6 @@
 import { BackendApiError } from '../api/errors';
 import { requestJson } from '../api/http-client';
+import { createLocalDemoFallbackDisabledError, isLocalDemoFallbackEnabled } from './runtime-config';
 import type { AuthenticatedFrontendSession, FrontendActorContext } from './session-state';
 
 export type DemoAccountId =
@@ -227,10 +228,29 @@ export async function loginWithDemoAccount(accountId: DemoAccountId): Promise<Au
     if (backendSession.actor.actorRoleCodes.length > 0) {
       return backendSession;
     }
+
+    if (!isLocalDemoFallbackEnabled()) {
+      throw new BackendApiError(
+        'INVALID_RESPONSE',
+        'The backend demo account signed in without an assigned role. Re-run the demo seed before continuing.',
+      );
+    }
   } catch (error) {
-    if (!(error instanceof BackendApiError)) {
+    if (!isLocalDemoFallbackEnabled()) {
+      if (error instanceof BackendApiError) {
+        throw error;
+      }
+
+      throw createLocalDemoFallbackDisabledError('Demo account sign in');
+    }
+
+    if (!(error instanceof BackendApiError || error instanceof TypeError)) {
       throw error;
     }
+  }
+
+  if (!isLocalDemoFallbackEnabled()) {
+    throw createLocalDemoFallbackDisabledError('Demo account sign in');
   }
 
   return createLocalDemoSession(account);

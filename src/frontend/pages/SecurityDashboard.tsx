@@ -2,22 +2,23 @@ import { useEffect, useMemo, useState } from 'react';
 import { getSecurityAlerts, type SecurityAlert, type SecurityAlertsSummary } from '../api/security-alerts';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
+import StatusIndicator, { type StatusTone } from '../components/status/StatusIndicator';
 
 type SecurityDashboardProps = {
   activeTarget: DashboardNavigationTarget;
   session: AuthenticatedFrontendSession;
 };
 
-function severityClass(severity: SecurityAlert['severity']): string {
+function severityTone(severity: SecurityAlert['severity']): StatusTone {
   if (severity === 'critical') {
-    return 'admin-status admin-status-danger';
+    return 'danger';
   }
 
   if (severity === 'warning') {
-    return 'admin-status admin-status-pending';
+    return 'warning';
   }
 
-  return 'admin-status admin-status-muted';
+  return 'info';
 }
 
 function alertTypeLabel(type: SecurityAlert['alertType']): string {
@@ -40,8 +41,10 @@ function AlertList({ alerts }: { alerts: SecurityAlert[] }) {
           <small>{alert.occurredAt}</small>
           <p>{alert.message}</p>
           {alert.relatedEventId ? <code>{alert.relatedEventId}</code> : null}
-          {alert.relatedProofStatus ? <span className="admin-status admin-status-pending">{alert.relatedProofStatus}</span> : null}
-          <span className={severityClass(alert.severity)}>{alert.severity}</span>
+          {alert.relatedProofStatus ? (
+            <StatusIndicator label={alert.relatedProofStatus} tone="warning" compact />
+          ) : null}
+          <StatusIndicator label={alert.severity} tone={severityTone(alert.severity)} compact />
         </div>
       ))}
     </div>

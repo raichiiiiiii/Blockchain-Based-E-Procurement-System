@@ -1,0 +1,169 @@
+.app-layout {
+  grid-template-columns: var(--sidebar-width, 272px) minmax(0, 1fr);
+  background: var(--color-surface-muted);
+}
+
+.app-sidebar {
+  position: sticky;
+  top: 0;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-sidebar);
+  color: #f8faf6;
+  padding: 18px 14px;
+}
+
+.app-sidebar-brand {
+  min-width: 0;
+  color: #ffffff;
+  padding: 0 8px;
+}
+
+.app-sidebar-brand-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-sidebar-nav {
+  min-width: 0;
+}
+
+.nav-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: #eef2ea;
+  border: 1px solid transparent;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-item-active,
+.nav-item-active:hover {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+.nav-item-icon {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.nav-item-active .nav-item-icon {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.nav-item-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-sidebar-collapse {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  margin: 10px 0 0 8px;
+  border-radius: 8px;
+  background: var(--color-sidebar-raised);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.app-sidebar-collapse:hover {
+  background: #222a24;
+}
+
+.app-sidebar-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 100%;
+  border-radius: 0;
+  background: transparent;
+  cursor: ew-resize;
+}
+
+.app-sidebar-resize:hover,
+.app-sidebar-resize:focus-visible {
+  background: rgba(246, 195, 67, 0.28);
+  outline: none;
+}
+
+.app-layout-nav-collapsed .app-sidebar {
+  padding-inline: 12px;
+}
+
+.app-layout-nav-collapsed .app-sidebar-brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.app-layout-nav-collapsed .app-sidebar-brand-text,
+.app-layout-nav-collapsed .nav-item-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.app-layout-nav-collapsed .app-sidebar-nav {
+  justify-items: center;
+}
+
+.app-layout-nav-collapsed .nav-item {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding-inline: 6px;
+}
+
+.app-layout-nav-collapsed .app-sidebar-collapse {
+  margin-inline: auto;
+}
+
+.app-layout-main {
+  min-width: 0;
+  background: var(--color-surface-muted);
+}
+
+.app-dashboard-header {
+  min-width: 0;
+  border-bottom-color: var(--color-border);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.app-dashboard-header > div {
+  min-width: 0;
+}
+
+.app-dashboard-header h1 {
+  overflow-wrap: anywhere;
+}
+
+.app-dashboard-content {
+  min-width: 0;
+}
+
+.dashboard-actor-card {
+  min-width: min(220px, 100%);
+  overflow-wrap: anywhere;
+}

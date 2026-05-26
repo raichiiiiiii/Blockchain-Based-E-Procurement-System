@@ -1,6 +1,7 @@
 import { BackendApiError } from '../api/errors';
 import { requestJson } from '../api/http-client';
 import { getLocalOrganizationEligibility } from '../api/compliance-cases';
+import { createLocalDemoFallbackDisabledError, isLocalDemoFallbackEnabled } from './runtime-config';
 import type { ProcurementOrderResponse } from '../types/procurement-order';
 import type { BlockchainAnchorStatus, BlockchainProofRecord } from './blockchain-proof-client';
 import type { AuthenticatedFrontendSession } from './session-state';
@@ -170,6 +171,12 @@ function backendHeaders(session?: AuthenticatedFrontendSession): HeadersInit {
   return headers;
 }
 
+function assertLocalFallbackEnabled(feature: string): void {
+  if (!isLocalDemoFallbackEnabled()) {
+    throw createLocalDemoFallbackDisabledError(feature);
+  }
+}
+
 function withBackendSource(record: EscrowRecord): EscrowRecord {
   return {
     ...record,
@@ -182,6 +189,7 @@ export async function createEscrow(
   session?: AuthenticatedFrontendSession,
 ): Promise<EscrowRecord> {
   if (session?.source !== 'backend') {
+    assertLocalFallbackEnabled('Escrow creation');
     assertLocalEscrowCanBeCreated(request);
     return createLocalDemoEscrow(request, session);
   }
@@ -193,7 +201,7 @@ export async function createEscrow(
       body: JSON.stringify(request),
     }));
   } catch (error) {
-    if (error instanceof TypeError) {
+    if (error instanceof TypeError && isLocalDemoFallbackEnabled()) {
       assertLocalEscrowCanBeCreated(request);
       return createLocalDemoEscrow(request, session);
     }
@@ -207,6 +215,7 @@ export async function getEscrow(
   session?: AuthenticatedFrontendSession,
 ): Promise<EscrowRecord> {
   if (session?.source !== 'backend') {
+    assertLocalFallbackEnabled('Escrow detail');
     return getLocalDemoEscrowRecord(session);
   }
 
@@ -218,7 +227,7 @@ export async function getEscrow(
       },
     ));
   } catch (error) {
-    if (error instanceof BackendApiError || error instanceof TypeError) {
+    if ((error instanceof BackendApiError || error instanceof TypeError) && isLocalDemoFallbackEnabled()) {
       return getLocalDemoEscrowRecord(session);
     }
 

@@ -1,0 +1,91 @@
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 30px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0 12px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.status-indicator-icon {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.72);
+}
+
+.status-indicator-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-indicator-compact {
+  padding-inline: 10px;
+}
+
+.status-indicator-success {
+  background: #e7f6ee;
+  border-color: #b9e2cc;
+  color: var(--color-success);
+}
+
+.status-indicator-warning,
+.status-indicator-pending {
+  background: #fff6d8;
+  border-color: #efd37d;
+  color: var(--color-warning);
+}
+
+.status-indicator-danger {
+  background: #fff0ec;
+  border-color: #e9b4ab;
+  color: var(--color-danger);
+}
+
+.status-indicator-info {
+  background: #e7f4fa;
+  border-color: #b7dced;
+  color: var(--color-info);
+}
+
+.status-indicator-neutral {
+  background: #f0f2f1;
+  border-color: #d9dfd6;
+  color: var(--color-neutral);
+}
+
+.proof-status-badge {
+  gap: 8px;
+}
+
+.proof-timeline-marker-success {
+  background: var(--color-success);
+}
+
+.proof-timeline-marker-pending {
+  background: var(--color-accent);
+}
+
+.proof-timeline-marker-warning {
+  background: var(--color-warning);
+}
+
+.proof-timeline-marker-danger {
+  background: var(--color-danger);
+}
+
+.proof-timeline-marker-unavailable {
+  background: var(--color-info);
+}
+
+.status-dot-pending {
+  background: var(--color-accent);
+}

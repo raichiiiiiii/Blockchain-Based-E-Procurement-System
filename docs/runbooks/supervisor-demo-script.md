@@ -23,6 +23,7 @@ This MVP helps regulated procurement and financing stakeholders control supplier
 - Optional PostgreSQL service is available through Docker Desktop.
 - Optional Fabric live network prerequisites are available if demonstrating beyond chaincode build/test.
 - Demo account password is `demo-password`.
+- The normal demo path uses database-seeded backend accounts. Local in-browser fallback and guided demo mode are disabled unless the operator explicitly enables `VITE_ENABLE_LOCAL_DEMO_FALLBACK=true` or `VITE_ENABLE_GUIDED_DEMO=true`.
 
 Demo accounts:
 
@@ -62,7 +63,7 @@ Backend API: http://localhost:3100/api/v1
 PostgreSQL note:
 
 ```text
-The local runbook documents PostgreSQL migration and seed. If PostgreSQL is not running, use the memory-only demo path or record the blocker.
+The local runbook documents PostgreSQL migration and seed. For the production-extension hardening path, use the seeded backend account path. If PostgreSQL is not running, record the blocker instead of silently presenting local browser-only data as backend data.
 ```
 
 Fabric note:

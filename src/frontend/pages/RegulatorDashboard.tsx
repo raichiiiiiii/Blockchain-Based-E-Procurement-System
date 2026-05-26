@@ -30,7 +30,7 @@ function RegulatorDashboard({ activeTarget, session }: RegulatorDashboardProps) 
 
   const handleVerifyProof = async (eventId: string, payloadHash?: string) => {
     setVerificationState({ verificationStatus: 'verifying' });
-    setVerificationState(await verifyBlockchainProof({ eventId, payloadHash }));
+    setVerificationState(await verifyBlockchainProof({ eventId, payloadHash }, session));
   };
 
   if (activeTarget === 'export-bundle') {

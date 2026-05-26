@@ -9,6 +9,7 @@ import {
   type ExportBundleVerificationResult,
 } from '../api/export-bundles';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
+import StatusIndicator, { type StatusTone } from '../components/status/StatusIndicator';
 
 type ExportBundlePageProps = {
   session: AuthenticatedFrontendSession;
@@ -20,16 +21,20 @@ const scopeOptions: Array<{ value: ExportBundleScope; label: string }> = [
   { value: 'accessHistory', label: 'Access history' },
 ];
 
-function statusClass(status: string): string {
+function statusTone(status: string): StatusTone {
   if (status === 'generated' || status === 'verified') {
-    return 'admin-status admin-status-active';
+    return 'success';
   }
 
   if (status === 'failed' || status === 'mismatch') {
-    return 'admin-status admin-status-danger';
+    return 'danger';
   }
 
-  return 'admin-status admin-status-pending';
+  if (status === 'unavailable' || status === 'notFound') {
+    return 'info';
+  }
+
+  return 'pending';
 }
 
 function statusLabel(status: string): string {
@@ -163,7 +168,7 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
             <h2>Export Bundle</h2>
             <p>Request a bounded audit package and inspect its manifest, integrity metadata, and verification result.</p>
           </div>
-          {bundle ? <span className={statusClass(bundle.status)}>{statusLabel(bundle.status)}</span> : null}
+          {bundle ? <StatusIndicator label={statusLabel(bundle.status)} tone={statusTone(bundle.status)} /> : null}
         </div>
 
         <div className="order-action-grid">
@@ -229,9 +234,10 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
                 <h3>Manifest Summary</h3>
                 <p>Review the integrity boundary before relying on the bundle.</p>
               </div>
-              <span className={statusClass(verification?.verificationStatus ?? 'pending')}>
-                {verificationStatus}
-              </span>
+              <StatusIndicator
+                label={verificationStatus}
+                tone={statusTone(verification?.verificationStatus ?? 'pending')}
+              />
             </div>
 
             <dl className="export-summary-grid">

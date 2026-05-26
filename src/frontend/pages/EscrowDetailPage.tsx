@@ -1,7 +1,7 @@
 import BlockchainProofPanel from '../components/blockchain/BlockchainProofPanel';
+import StatusIndicator, { type StatusTone } from '../components/status/StatusIndicator';
 import {
   escrowToProofRecord,
-  getLocalDemoEscrowRecord,
   type EscrowRecord,
 } from '../lib/escrow-client';
 
@@ -22,7 +22,32 @@ function formatStatus(status: EscrowRecord['status']): string {
   }
 }
 
-function EscrowDetailPage({ escrow = getLocalDemoEscrowRecord() }: EscrowDetailPageProps) {
+function statusTone(status: EscrowRecord['status']): StatusTone {
+  switch (status) {
+    case 'escrowCreated':
+    case 'releaseReady':
+    case 'released':
+      return 'success';
+    case 'releasePending':
+    case 'accepted':
+      return 'pending';
+    case 'disputed':
+      return 'warning';
+    case 'cancelled':
+      return 'danger';
+  }
+}
+
+function EscrowDetailPage({ escrow }: EscrowDetailPageProps) {
+  if (!escrow) {
+    return (
+      <section className="workspace-panel">
+        <h2>Blockchain Proof</h2>
+        <p>Escrow proof appears after an escrow record has been created for an accepted order.</p>
+      </section>
+    );
+  }
+
   const proofRecord = escrowToProofRecord(escrow);
 
   return (
@@ -38,7 +63,9 @@ function EscrowDetailPage({ escrow = getLocalDemoEscrowRecord() }: EscrowDetailP
       <div className="escrow-status-grid">
         <div className="escrow-status-band">
           <span>Escrow status</span>
-          <strong>{formatStatus(escrow.status)}</strong>
+          <strong>
+            <StatusIndicator label={formatStatus(escrow.status)} tone={statusTone(escrow.status)} compact />
+          </strong>
           <p>Created from order {escrow.orderId} for buyer {escrow.buyerOrganizationId}.</p>
         </div>
         <div className="escrow-status-band">

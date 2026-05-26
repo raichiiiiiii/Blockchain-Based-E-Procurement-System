@@ -4,7 +4,7 @@ import { createProcurementOrder, listProcurementOrders } from '../api/procuremen
 import DeliveryEvidenceList from '../components/procurement/DeliveryEvidenceList';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
-import { getLocalDemoEscrowRecord, type EscrowRecord } from '../lib/escrow-client';
+import type { EscrowRecord } from '../lib/escrow-client';
 import type { DeliveryEvidenceRecord } from '../types/delivery-evidence';
 import type { ProcurementOrderResponse } from '../types/procurement-order';
 import EscrowDetailPage from './EscrowDetailPage';
@@ -311,7 +311,7 @@ function BuyerDashboard({ activeTarget, session }: BuyerDashboardProps) {
 
   if (activeTarget === 'blockchain-proof') {
     return (
-      <EscrowDetailPage escrow={activeEscrow ?? getLocalDemoEscrowRecord(session)} />
+      <EscrowDetailPage escrow={activeEscrow} />
     );
   }
 

@@ -1,6 +1,7 @@
 import { createSessionHeaders } from './auth-headers';
 import { BackendApiError } from './errors';
 import { requestJson } from './http-client';
+import { createLocalDemoFallbackDisabledError, isLocalDemoFallbackEnabled } from '../lib/runtime-config';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 import { listProcurementOrders } from './procurement-orders';
 import type {
@@ -37,6 +38,12 @@ const seedDeliveryEvidence: DeliveryEvidenceRecord[] = [
 
 function isLocalSession(session?: AuthenticatedFrontendSession): boolean {
   return session?.source !== 'backend';
+}
+
+function assertLocalFallbackEnabled(feature: string): void {
+  if (!isLocalDemoFallbackEnabled()) {
+    throw createLocalDemoFallbackDisabledError(feature);
+  }
 }
 
 function actorRoles(session?: AuthenticatedFrontendSession): string[] {
@@ -184,6 +191,7 @@ export async function listDeliveryEvidenceForOrder(
   session?: AuthenticatedFrontendSession,
 ): Promise<DeliveryEvidenceRecord[]> {
   if (isLocalSession(session)) {
+    assertLocalFallbackEnabled('Delivery evidence');
     return listLocalDeliveryEvidenceForOrder(orderId, session);
   }
 
@@ -203,6 +211,7 @@ export async function submitDeliveryEvidenceForOrder(
   session?: AuthenticatedFrontendSession,
 ): Promise<DeliveryEvidenceRecord> {
   if (isLocalSession(session)) {
+    assertLocalFallbackEnabled('Delivery evidence submission');
     return submitLocalDeliveryEvidence(orderId, payload, session);
   }
 

@@ -1,0 +1,151 @@
+.workspace-panel,
+.metric-panel,
+.workflow-meta-panel,
+.proof-panel,
+.proof-timeline,
+.order-row,
+.admin-list,
+.admin-detail-panel,
+.admin-role-row,
+.admin-event-row,
+.delivery-evidence-card,
+.export-summary-panel,
+.empty-product-state {
+  min-width: 0;
+  border-color: var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+
+.workspace-panel,
+.metric-panel,
+.proof-panel,
+.proof-timeline,
+.login-panel,
+.ledger-preview {
+  box-shadow: var(--shadow-soft);
+}
+
+.workspace-panel-hero {
+  background:
+    linear-gradient(135deg, rgba(246, 195, 67, 0.2), rgba(20, 123, 166, 0.08)),
+    #ffffff;
+}
+
+.dashboard-role-label,
+.state-kicker,
+.proof-eyebrow,
+.order-row span,
+.workflow-meta-panel span,
+.proof-event-context span,
+.escrow-order-card span,
+.escrow-create-panel span,
+.escrow-status-band span,
+.onboarding-checklist-header span,
+.onboarding-checklist-item span,
+.pls-simulator-summary span,
+.metric-panel span {
+  color: #7a5700;
+}
+
+.admin-status-active,
+.admin-alert-success {
+  color: var(--color-success);
+}
+
+.admin-status-pending {
+  color: var(--color-warning);
+}
+
+.admin-status-danger,
+.admin-alert-error,
+.escrow-error {
+  color: var(--color-danger);
+}
+
+.admin-definition-grid,
+.export-summary-grid,
+.proof-field-grid,
+.proof-timeline-meta,
+.escrow-status-grid,
+.dashboard-grid,
+.order-action-grid,
+.escrow-action-grid,
+.admin-member-layout,
+.onboarding-checklist-grid,
+.pls-simulator-summary,
+.pls-simulator-grid {
+  min-width: 0;
+}
+
+.admin-definition-grid > div,
+.export-summary-grid > div,
+.proof-field,
+.proof-timeline-meta > div,
+.dashboard-grid > *,
+.order-action-grid > *,
+.escrow-action-grid > *,
+.escrow-status-grid > *,
+.admin-member-layout > *,
+.onboarding-checklist-grid > *,
+.pls-simulator-summary > *,
+.pls-simulator-grid > * {
+  min-width: 0;
+}
+
+.proof-field dd,
+.proof-timeline-meta dd,
+.export-summary-grid dd,
+.admin-definition-grid dd,
+.workflow-meta-panel p,
+.order-row p,
+.order-row small,
+.admin-event-row small,
+.guided-demo-details dd,
+.guided-demo-next p {
+  overflow-wrap: anywhere;
+}
+
+.hash-value,
+.proof-field code,
+.proof-timeline-meta code,
+.export-summary-grid code,
+.order-row code,
+.admin-event-row code,
+.escrow-order-card code,
+.escrow-status-band code,
+.ledger-hash {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.admin-form input,
+.admin-form select,
+.admin-form textarea,
+.login-form input {
+  max-width: 100%;
+}
+
+.admin-form input:focus,
+.admin-form select:focus,
+.admin-form textarea:focus,
+.login-form input:focus {
+  outline-color: rgba(246, 195, 67, 0.34);
+  border-color: var(--color-accent-strong);
+}
+
+.proof-panel-header,
+.proof-timeline-title-row,
+.admin-section-header,
+.onboarding-checklist-header {
+  min-width: 0;
+}
+
+.proof-panel-header > *,
+.proof-timeline-title-row > *,
+.admin-section-header > *,
+.onboarding-checklist-header > * {
+  min-width: 0;
+}

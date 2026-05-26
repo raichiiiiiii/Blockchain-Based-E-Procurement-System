@@ -1,6 +1,7 @@
 import { BackendApiError } from './errors';
 import { createSessionHeaders } from './auth-headers';
 import { requestJson } from './http-client';
+import { createLocalDemoFallbackDisabledError, isLocalDemoFallbackEnabled } from '../lib/runtime-config';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 
 export type ExportBundleScope = 'accessHistory' | 'procureToPay' | 'combinedAudit';
@@ -200,6 +201,12 @@ function ensureExporter(session: AuthenticatedFrontendSession): void {
   }
 }
 
+function assertLocalFallbackEnabled(feature: string): void {
+  if (!isLocalDemoFallbackEnabled()) {
+    throw createLocalDemoFallbackDisabledError(feature);
+  }
+}
+
 async function createLocalExportBundle(
   request: CreateExportBundleRequest,
   session: AuthenticatedFrontendSession,
@@ -267,6 +274,7 @@ export async function createExportBundle(
   session: AuthenticatedFrontendSession,
 ): Promise<ExportBundleRecord> {
   if (session.source !== 'backend') {
+    assertLocalFallbackEnabled('Export bundle creation');
     return createLocalExportBundle(request, session);
   }
 
@@ -280,7 +288,7 @@ export async function createExportBundle(
       body: JSON.stringify(request),
     });
   } catch (error) {
-    if (error instanceof BackendApiError || error instanceof TypeError) {
+    if ((error instanceof BackendApiError || error instanceof TypeError) && isLocalDemoFallbackEnabled()) {
       return createLocalExportBundle(request, session);
     }
 
@@ -301,7 +309,13 @@ export async function getExportBundle(
       if (!(error instanceof BackendApiError || error instanceof TypeError)) {
         throw error;
       }
+
+      if (!isLocalDemoFallbackEnabled()) {
+        throw error;
+      }
     }
+  } else {
+    assertLocalFallbackEnabled('Export bundle detail');
   }
 
   const bundle = readLocalBundles().find(candidate => candidate.bundleId === bundleId);
@@ -334,7 +348,13 @@ export async function verifyExportBundle(
       if (!(error instanceof BackendApiError || error instanceof TypeError)) {
         throw error;
       }
+
+      if (!isLocalDemoFallbackEnabled()) {
+        throw error;
+      }
     }
+  } else {
+    assertLocalFallbackEnabled('Export bundle verification');
   }
 
   const bundle = await getExportBundle(bundleId, session);
