@@ -107,7 +107,7 @@ To remove the app database volume:
 docker compose -f docker-compose.app.yml down -v
 ```
 
-Use volume removal only for local reset. It destroys local demo database state.
+Use volume removal only for local reset. It destroys local demo database state. For backup and restore procedure, see `docs/runbooks/backup-restore-rollback.md`.
 
 ## What This Proves
 
