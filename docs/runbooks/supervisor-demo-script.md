@@ -350,11 +350,12 @@ Show:
 - PLS review detail
 - checklist metadata
 - approve, conditional approve, or reject
+- certificate artifact coverage
 
 What to say:
 
 ```text
-The PLS seedbed is controlled by Shariah governance. Activation requires an approved reference and does not imply production Islamic finance certification.
+The PLS seedbed is controlled by Shariah governance. Activation requires an approved review and active certificate artifact coverage for the template. This is internal artifact tracking, not external Islamic finance certification.
 ```
 
 ### 14. Financier PLS Contract and Distribution
@@ -366,6 +367,7 @@ Show:
 - Financing
 - PLS contract detail
 - Shariah approval reference
+- active certificate artifact reference
 - profit and loss distribution scenario
 
 What to say:
@@ -419,6 +421,7 @@ Close by naming limits directly:
 - not a production payment rail
 - not full ERP or ISO20022 integration
 - not production Islamic finance compliance
+- not external Shariah certification issuance
 - not production document management, OCR, malware scanning, or legal signature validation
 - not full DID/VC federation
 - not external arbitration integration

@@ -9,6 +9,7 @@ import {
   type PlsDistributionRecord,
 } from '../api/pls-financing';
 import PlsScenarioSimulator from '../components/financing/PlsScenarioSimulator';
+import { listShariahCertificates, type ShariahCertificate } from '../api/shariah-certificates';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 
@@ -53,6 +54,7 @@ function formatParty(role: PlsDistributionRecord['allocations'][number]['partyRo
 function FinancingDashboard({ activeTarget, session }: FinancingDashboardProps) {
   const [contracts, setContracts] = useState<PlsContract[]>([]);
   const [distributions, setDistributions] = useState<PlsDistributionRecord[]>([]);
+  const [certificates, setCertificates] = useState<ShariahCertificate[]>([]);
   const [selectedContractId, setSelectedContractId] = useState<string | undefined>();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [message, setMessage] = useState<string | undefined>();
@@ -67,6 +69,14 @@ function FinancingDashboard({ activeTarget, session }: FinancingDashboardProps) 
   const activeCount = contracts.filter(contract => contract.status === 'active').length;
   const approvedCount = contracts.filter(contract => contract.status === 'approvedForActivation').length;
   const blockedCount = contracts.filter(contract => contract.status === 'activationBlocked' || contract.status === 'pendingShariahReview').length;
+  const matchingCertificate = useMemo(
+    () => selectedContract
+      ? certificates.find(certificate =>
+        certificate.status === 'active'
+        && certificate.contractTemplateVersion === selectedContract.contractTemplateVersion)
+      : undefined,
+    [certificates, selectedContract],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -77,11 +87,13 @@ function FinancingDashboard({ activeTarget, session }: FinancingDashboardProps) 
 
       try {
         const nextContracts = await listPlsContracts(session);
+        const nextCertificates = await listShariahCertificates(session).catch(() => []);
         if (cancelled) {
           return;
         }
 
         setContracts(nextContracts);
+        setCertificates(nextCertificates);
         setSelectedContractId(current => current && nextContracts.some(contract => contract.contractId === current)
           ? current
           : nextContracts[0]?.contractId);
@@ -141,7 +153,12 @@ function FinancingDashboard({ activeTarget, session }: FinancingDashboardProps) 
     setError(undefined);
 
     try {
-      const updated = await activatePlsContract(selectedContract.contractId, session, selectedContract.shariahApproval?.reviewId);
+      const updated = await activatePlsContract(
+        selectedContract.contractId,
+        session,
+        selectedContract.shariahApproval?.reviewId,
+        selectedContract.shariahCertificate?.certificateId ?? matchingCertificate?.certificateId,
+      );
       setContracts(current => current.map(contract => contract.contractId === updated.contractId ? updated : contract));
       setSelectedContractId(updated.contractId);
       setMessage('PLS contract activated from the approved Shariah reference.');
@@ -288,6 +305,14 @@ function FinancingDashboard({ activeTarget, session }: FinancingDashboardProps) 
                     <dt>Reference</dt>
                     <dd>{selectedContract.shariahApproval?.reviewId ?? 'Approval required'}</dd>
                   </div>
+                  <div>
+                    <dt>Certificate</dt>
+                    <dd>{selectedContract.shariahCertificate?.certificateId ?? matchingCertificate?.certificateId ?? 'Certificate required'}</dd>
+                  </div>
+                  <div>
+                    <dt>Template</dt>
+                    <dd>{selectedContract.contractTemplateVersion}</dd>
+                  </div>
                 </dl>
 
                 <PlsScenarioSimulator contract={selectedContract} />
@@ -295,7 +320,7 @@ function FinancingDashboard({ activeTarget, session }: FinancingDashboardProps) 
                 <div className="admin-action-row" aria-label="Financing actions">
                   <button
                     className="button button-primary"
-                    disabled={busyAction === 'activate' || selectedContract.status === 'active'}
+                    disabled={busyAction === 'activate' || selectedContract.status === 'active' || !matchingCertificate}
                     type="button"
                     onClick={() => void handleActivation()}
                   >
@@ -322,6 +347,11 @@ function FinancingDashboard({ activeTarget, session }: FinancingDashboardProps) 
                 {selectedContract.shariahApproval?.status !== 'approved' ? (
                   <div className="admin-alert admin-alert-error" role="alert">
                     Activation is blocked until Shariah approval is complete.
+                  </div>
+                ) : null}
+                {!matchingCertificate && selectedContract.status !== 'active' ? (
+                  <div className="admin-alert admin-alert-error" role="alert">
+                    Activation is blocked until an active Shariah certificate covers this template.
                   </div>
                 ) : null}
 

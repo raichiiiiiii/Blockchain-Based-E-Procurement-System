@@ -26,9 +26,18 @@ export interface ShariahApprovalReference {
   decidedAt?: string;
 }
 
+export interface ShariahCertificateReference {
+  certificateId: string;
+  status: 'active' | 'expired' | 'revoked';
+  certificateHash: string;
+  issuedAt: string;
+  expiresAt?: string;
+}
+
 export interface PlsContract {
   contractId: string;
   procurementReference: string;
+  contractTemplateVersion: string;
   buyerOrganizationId: string;
   supplierOrganizationId: string;
   financierOrganizationId: string;
@@ -38,6 +47,7 @@ export interface PlsContract {
   lossAllocation: 'capitalProviderBearsFinancialLossExceptMisconduct';
   status: PlsContractStatus;
   shariahApproval?: ShariahApprovalReference;
+  shariahCertificate?: ShariahCertificateReference;
   activatedAt?: string;
   createdAt: string;
   updatedAt: string;

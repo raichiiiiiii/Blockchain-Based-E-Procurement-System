@@ -13,6 +13,9 @@ import type { RoleAssignmentRepository } from '../modules/access-control/applica
 import { registerShariahReviewRoutes } from '../modules/shariah-review/api/routes.js';
 import { InMemoryShariahReviewRepository } from '../modules/shariah-review/infrastructure/in-memory-shariah-review-repository.js';
 import type { ShariahReviewRepository } from '../modules/shariah-review/application/shariah-review-repository.js';
+import { registerShariahCertificateRoutes } from '../modules/shariah-certification/api/shariah-certificate.routes.js';
+import type { ShariahCertificateRepository } from '../modules/shariah-certification/application/shariah-certificate-repository.js';
+import { InMemoryShariahCertificateRepository } from '../modules/shariah-certification/infrastructure/in-memory-shariah-certificate-repository.js';
 import type { ShariahReviewSubmitAuditEvent, ShariahReviewChecklistAuditEvent, ShariahReviewDecisionAuditEvent, ShariahReviewHistoryAuditEvent } from '../modules/shariah-review/api/routes.js';
 import type { UserExistenceLookup } from '../modules/shared/application/user-existence-lookup.js';
 import type { OrganizationMembershipLookup } from '../modules/shared/application/organization-membership-lookup.js';
@@ -55,6 +58,7 @@ import { InMemoryExportBundleRepository } from '../modules/reporting/infrastruct
 import { LocalSoftwareKeyExportSigningAdapter } from '../modules/reporting/infrastructure/local-software-key-export-signing-adapter.js';
 import { registerPlsRoutes } from '../modules/financing/api/pls.routes.js';
 import type { PlsContractRepository } from '../modules/financing/application/pls-contract-repository.js';
+import type { PlsContract } from '../modules/financing/domain/pls-contract.js';
 import { InMemoryPlsContractRepository } from '../modules/financing/infrastructure/in-memory-pls-contract-repository.js';
 import { registerSecurityAlertRoutes } from '../modules/security/api/security-alert.routes.js';
 import { registerOpsStatusRoutes } from '../modules/ops/api/ops-status.routes.js';
@@ -114,6 +118,7 @@ export function createTestableServer(options?: {
   roleAudit?: (event: RoleAuditEvent) => void;
   roleAssignmentRepository?: RoleAssignmentRepository;
   shariahReviewRepository?: ShariahReviewRepository;
+  shariahCertificateRepository?: ShariahCertificateRepository;
   shariahReviewAudit?: (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent | ShariahReviewHistoryAuditEvent) => void;
   userExistenceLookup?: UserExistenceLookup;
   organizationMembershipLookup?: OrganizationMembershipLookup;
@@ -190,7 +195,40 @@ export function createTestableServer(options?: {
   const memberOrganizationRepository = options?.memberRepository ?? new InMemoryMemberOrganizationRepository();
   const roleRepository = options?.roleRepository ?? new InMemoryRoleRepository();
   const roleAssignmentRepository = options?.roleAssignmentRepository ?? new InMemoryRoleAssignmentRepository();
-  const shariahReviewRepository = options?.shariahReviewRepository ?? new InMemoryShariahReviewRepository();
+  const shariahReviewRepository = options?.shariahReviewRepository ?? new InMemoryShariahReviewRepository([
+    {
+      id: 'review-demo-approved',
+      organizationId: 'demo-supplier-org',
+      title: 'Restricted PLS seedbed review',
+      summary: 'Review of the Amanah-Barakah procurement-linked PLS seedbed contract.',
+      status: 'approved',
+      submittedByUserId: 'demo-shariah-user',
+      createdAt: '2026-05-20T10:00:00.000Z',
+      decidedAt: '2026-05-21T10:00:00.000Z',
+    },
+  ]);
+  const shariahCertificateRepository = options?.shariahCertificateRepository ?? new InMemoryShariahCertificateRepository([
+    {
+      certificateId: 'shariah-certificate-mudarabah-v1',
+      issuedBy: 'MVP Shariah Governance Board',
+      reviewerBoard: 'Restricted PLS Seedbed Review Panel',
+      fatwaReference: 'FATWA-MVP-PLS-001',
+      scope: 'restricted-pls-seedbed',
+      contractTemplateVersion: 'mudarabah-procurement-v1',
+      conditions: [
+        'Simulation-only PLS distribution records',
+        'No guaranteed profit or principal',
+        'No external payment execution',
+      ],
+      issuedAt: '2026-05-20T00:00:00.000Z',
+      expiresAt: '2027-05-20T00:00:00.000Z',
+      status: 'active',
+      certificateDocumentId: 'doc-shariah-certificate-demo',
+      certificateHash: 'sha256:demo-shariah-certificate-hash',
+      createdByUserId: 'demo-shariah-user',
+      createdAt: '2026-05-20T00:00:00.000Z',
+    },
+  ]);
   const auditCallback = options?.audit ?? ((event: MemberOrgCreateAuditEvent) => {
     console.info('AUDIT EVENT:', JSON.stringify(event));
   });
@@ -215,7 +253,31 @@ export function createTestableServer(options?: {
   const blockchainAnchorMetadataRepository = options?.blockchainAnchorMetadataRepository ?? new InMemoryBlockchainAnchorMetadataRepository();
   const escrowRepository = options?.escrowRepository ?? new InMemoryEscrowRepository();
   const exportBundleRepository = options?.exportBundleRepository ?? new InMemoryExportBundleRepository();
-  const plsContractRepository = options?.plsContractRepository ?? new InMemoryPlsContractRepository();
+  const plsContractRepository = options?.plsContractRepository ?? new InMemoryPlsContractRepository([
+    {
+      contractId: 'pls-demo-halal-packaging',
+      procurementReference: 'demo-order-001',
+      contractTemplateVersion: 'mudarabah-procurement-v1',
+      buyerOrganizationId: 'demo-buyer-org',
+      supplierOrganizationId: 'demo-supplier-org',
+      financierOrganizationId: 'demo-financier-org',
+      capitalAmount: '68000.00',
+      currency: 'MYR',
+      profitShare: {
+        financierPercent: 60,
+        ventureOperatorPercent: 40,
+      },
+      lossAllocation: 'capitalProviderBearsFinancialLossExceptMisconduct',
+      status: 'approvedForActivation',
+      shariahApproval: {
+        reviewId: 'review-demo-approved',
+        status: 'approved',
+        decidedAt: '2026-05-21T10:00:00.000Z',
+      },
+      createdAt: '2026-05-20T09:00:00.000Z',
+      updatedAt: '2026-05-21T10:00:00.000Z',
+    } satisfies PlsContract,
+  ]);
   const externalClientCredentialRepository = options?.externalClientCredentialRepository ?? new InMemoryExternalClientCredentialRepository();
   const externalIdempotencyRepository = options?.externalIdempotencyRepository ?? new InMemoryExternalIdempotencyRepository();
   const externalApiAuditRepository = options?.externalApiAuditRepository ?? new InMemoryExternalApiAuditRepository();
@@ -365,10 +427,17 @@ export function createTestableServer(options?: {
     authenticatedPreHandler
   });
 
+  server.register(registerShariahCertificateRoutes, {
+    prefix: '/api/v1',
+    repository: shariahCertificateRepository,
+    authenticatedPreHandler,
+  });
+
   server.register(registerPlsRoutes, {
     prefix: '/api/v1',
     contractRepository: plsContractRepository,
     shariahReviewRepository,
+    shariahCertificateRepository,
     authenticatedPreHandler,
     eligibilityGateway: {
       async checkOrganizationEligibility(memberOrganizationId: string) {

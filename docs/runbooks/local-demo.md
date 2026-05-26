@@ -161,6 +161,7 @@ Landing page
 -> Select a PLS review record
 -> Review profit ratio, loss allocation, and checklist metadata
 -> Record Approve, Conditional approval, or Reject
+-> Register or inspect certificate artifact coverage for the template
 -> Confirm financing activation readiness or blocked status changes visibly
 ```
 
@@ -174,6 +175,7 @@ Landing page
 -> Financing
 -> Select a PLS contract
 -> Inspect Shariah approval reference
+-> Inspect active certificate artifact coverage
 -> Activate an approved contract
 -> Record profit and loss distribution scenarios
 -> Confirm no external payment execution is implied
@@ -306,6 +308,6 @@ Contract Negotiation
 - Eligibility gating is implemented for order creation, escrow creation, and PLS activation.
 - Fabric live network deployment remains a local/manual path unless the Fabric samples are installed.
 - Escrow is an MVP hybrid slice with release/dispute workflow, sandbox/manual payment instruction evidence, and ISO 20022-like JSON mapping; it is not production settlement, bank payment execution, or ISO 20022 certification.
-- PLS workflow is a restricted single-venture seedbed and does not provide production payment rails, guaranteed returns, or full Islamic finance product coverage.
+- PLS workflow is a restricted single-venture seedbed with internal Shariah certificate artifact tracking; it does not provide external certification, production payment rails, guaranteed returns, or full Islamic finance product coverage.
 - Export signing includes a local software-key detached manifest signature and offline verification package metadata; production KMS/HSM custody, legal attestation, certificate authority lifecycle, and external regulator portal integration are not implemented.
 - KYC cases, export bundles, Shariah reviews, and PLS contracts still use in-memory runtime repositories in PostgreSQL mode until dedicated adapters are added.

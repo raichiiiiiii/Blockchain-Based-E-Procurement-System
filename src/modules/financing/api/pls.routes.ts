@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import type { ProcurementEligibilityGateway } from '../../procurement/application/procurement-eligibility-gateway.js';
+import type { ShariahCertificateRepository } from '../../shariah-certification/application/shariah-certificate-repository.js';
 import type { ShariahReviewRepository } from '../../shariah-review/application/shariah-review-repository.js';
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
 import type { PlsContractRepository } from '../application/pls-contract-repository.js';
@@ -12,12 +13,14 @@ import {
 export type PlsRoutesOptions = {
   contractRepository: PlsContractRepository;
   shariahReviewRepository: ShariahReviewRepository;
+  shariahCertificateRepository?: ShariahCertificateRepository;
   eligibilityGateway?: ProcurementEligibilityGateway;
   authenticatedPreHandler?: (request: FastifyRequest, reply: FastifyReply) => Promise<void | FastifyReply | unknown>;
 };
 
 type ActivateBody = {
   shariahReviewId?: string;
+  shariahCertificateId?: string;
 };
 
 type DistributionBody = {
@@ -150,9 +153,11 @@ export const registerPlsRoutes: FastifyPluginAsync<PlsRoutesOptions> = async (
     const result = await activatePlsContract({
       contractId: request.params.contractId,
       shariahReviewId: request.body?.shariahReviewId,
+      shariahCertificateId: request.body?.shariahCertificateId,
     }, {
       contractRepository: options.contractRepository,
       shariahReviewRepository: options.shariahReviewRepository,
+      shariahCertificateRepository: options.shariahCertificateRepository,
       eligibilityGateway: options.eligibilityGateway,
     });
 
@@ -177,6 +182,16 @@ export const registerPlsRoutes: FastifyPluginAsync<PlsRoutesOptions> = async (
             message: 'PLS activation is blocked until Shariah review is approved',
             details: {
               approvalStatus: result.approvalStatus,
+            },
+          },
+        });
+      case 'certificateBlocked':
+        return reply.code(409).send({
+          error: {
+            code: 'CONFLICT',
+            message: 'PLS activation is blocked until an active Shariah certificate covers the template',
+            details: {
+              reason: result.reason,
             },
           },
         });

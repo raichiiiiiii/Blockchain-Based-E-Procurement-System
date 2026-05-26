@@ -2,7 +2,11 @@ import type { ShariahReview } from '../domain/shariah-review.js';
 import type { ShariahReviewRepository } from '../application/shariah-review-repository.js';
 
 export class InMemoryShariahReviewRepository implements ShariahReviewRepository {
-  private readonly reviews: ShariahReview[] = [];
+  private readonly reviews: ShariahReview[];
+
+  constructor(seedReviews: ShariahReview[] = []) {
+    this.reviews = seedReviews.map(review => ({ ...review }));
+  }
 
   async save(review: ShariahReview): Promise<ShariahReview> {
     // Check if review already exists, if so update it

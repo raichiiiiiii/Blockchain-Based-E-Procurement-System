@@ -2,6 +2,8 @@ import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { InMemoryShariahReviewRepository } from '../../shariah-review/infrastructure/in-memory-shariah-review-repository.js';
 import type { ShariahReview } from '../../shariah-review/domain/shariah-review.js';
+import type { ShariahCertificate } from '../../shariah-certification/domain/shariah-certificate.js';
+import { InMemoryShariahCertificateRepository } from '../../shariah-certification/infrastructure/in-memory-shariah-certificate-repository.js';
 import type { PlsContract } from '../domain/pls-contract.js';
 import { InMemoryPlsContractRepository } from '../infrastructure/in-memory-pls-contract-repository.js';
 import { activatePlsContract, createPlsDistribution } from './pls-contract-service.js';
@@ -10,6 +12,7 @@ function contract(overrides: Partial<PlsContract> = {}): PlsContract {
   return {
     contractId: 'pls-contract-1',
     procurementReference: 'po-local-1002',
+    contractTemplateVersion: 'mudarabah-procurement-v1',
     buyerOrganizationId: 'demo-buyer-org',
     supplierOrganizationId: 'demo-supplier-org',
     financierOrganizationId: 'demo-financier-org',
@@ -41,6 +44,25 @@ function review(status: ShariahReview['status'], overrides: Partial<ShariahRevie
   };
 }
 
+function certificate(overrides: Partial<ShariahCertificate> = {}): ShariahCertificate {
+  return {
+    certificateId: 'certificate-1',
+    issuedBy: 'MVP Shariah Governance Board',
+    reviewerBoard: 'Restricted PLS Review Panel',
+    fatwaReference: 'FATWA-MVP-001',
+    scope: 'restricted-pls-seedbed',
+    contractTemplateVersion: 'mudarabah-procurement-v1',
+    conditions: ['No guaranteed profit or principal'],
+    issuedAt: '2026-05-20T00:00:00.000Z',
+    expiresAt: '2027-05-20T00:00:00.000Z',
+    status: 'active',
+    certificateHash: 'sha256:test-certificate-hash',
+    createdByUserId: 'demo-shariah-user',
+    createdAt: '2026-05-20T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
 describe('PLS contract service', () => {
   it('activates a contract only when an approved Shariah review reference exists', async () => {
     const contractRepository = new InMemoryPlsContractRepository([contract()]);
@@ -65,6 +87,70 @@ describe('PLS contract service', () => {
     assert.strictEqual(result.contract.shariahApproval?.reviewId, 'review-1');
     assert.strictEqual(result.contract.shariahApproval?.status, 'approved');
     assert.strictEqual(result.contract.activatedAt, '2026-05-22T08:00:00.000Z');
+  });
+
+  it('requires an active Shariah certificate when certificate repository is wired', async () => {
+    const contractRepository = new InMemoryPlsContractRepository([contract()]);
+    const shariahReviewRepository = new InMemoryShariahReviewRepository([review('approved')]);
+    const shariahCertificateRepository = new InMemoryShariahCertificateRepository([certificate()]);
+
+    const missingCertificateResult = await activatePlsContract({
+      contractId: 'pls-contract-1',
+      shariahReviewId: 'review-1',
+    }, {
+      contractRepository,
+      shariahReviewRepository,
+      shariahCertificateRepository,
+      now: () => '2026-05-22T08:00:00.000Z',
+    });
+
+    assert.strictEqual(missingCertificateResult.status, 'certificateBlocked');
+
+    const activatedResult = await activatePlsContract({
+      contractId: 'pls-contract-1',
+      shariahReviewId: 'review-1',
+      shariahCertificateId: 'certificate-1',
+    }, {
+      contractRepository,
+      shariahReviewRepository,
+      shariahCertificateRepository,
+      now: () => '2026-05-22T08:00:00.000Z',
+    });
+
+    assert.strictEqual(activatedResult.status, 'activated');
+    if (activatedResult.status !== 'activated') {
+      assert.fail('Expected activation with certificate artifact');
+    }
+
+    assert.strictEqual(activatedResult.contract.shariahCertificate?.certificateId, 'certificate-1');
+    assert.strictEqual(activatedResult.contract.shariahCertificate?.certificateHash, 'sha256:test-certificate-hash');
+  });
+
+  it('blocks activation when Shariah certificate is revoked, expired, or for another template', async () => {
+    const shariahReviewRepository = new InMemoryShariahReviewRepository([review('approved')]);
+
+    for (const [scenario, blockedCertificate, expectedReason] of [
+      ['revoked', certificate({ status: 'revoked' }), 'inactive'],
+      ['expired', certificate({ expiresAt: '2026-01-01T00:00:00.000Z' }), 'expired'],
+      ['template mismatch', certificate({ contractTemplateVersion: 'another-template-v1' }), 'templateMismatch'],
+    ] as const) {
+      const result = await activatePlsContract({
+        contractId: 'pls-contract-1',
+        shariahReviewId: 'review-1',
+        shariahCertificateId: 'certificate-1',
+      }, {
+        contractRepository: new InMemoryPlsContractRepository([contract()]),
+        shariahReviewRepository,
+        shariahCertificateRepository: new InMemoryShariahCertificateRepository([blockedCertificate]),
+        now: () => '2026-05-22T08:00:00.000Z',
+      });
+
+      assert.strictEqual(result.status, 'certificateBlocked', scenario);
+      if (result.status !== 'certificateBlocked') {
+        assert.fail(`Expected certificate block for ${scenario}`);
+      }
+      assert.strictEqual(result.reason, expectedReason);
+    }
   });
 
   it('blocks activation for rejected or conditional Shariah review decisions', async () => {

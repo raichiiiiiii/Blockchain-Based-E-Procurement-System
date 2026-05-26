@@ -1,4 +1,6 @@
 import type { ShariahReviewRepository } from '../../shariah-review/application/shariah-review-repository.js';
+import type { ShariahCertificateRepository } from '../../shariah-certification/application/shariah-certificate-repository.js';
+import { validateShariahCertificateCoverage } from '../../shariah-certification/application/shariah-certificate-service.js';
 import { canPerformProcurementAction, type ProcurementEligibilityGateway, type ProcurementEligibilityResult } from '../../procurement/application/procurement-eligibility-gateway.js';
 import type { PlsContract, PlsDistributionEventType, PlsDistributionRecord, ShariahApprovalStatus } from '../domain/pls-contract.js';
 import type { PlsContractRepository } from './pls-contract-repository.js';
@@ -6,6 +8,7 @@ import type { PlsContractRepository } from './pls-contract-repository.js';
 export type ActivatePlsContractInput = {
   contractId?: string;
   shariahReviewId?: string;
+  shariahCertificateId?: string;
 };
 
 export type ValidationIssue = {
@@ -19,6 +22,10 @@ export type ActivatePlsContractResult =
   | { status: 'notFound' }
   | { status: 'approvalMissing' }
   | { status: 'activationBlocked'; approvalStatus: ShariahApprovalStatus }
+  | {
+      status: 'certificateBlocked';
+      reason: 'missing' | 'notFound' | 'inactive' | 'expired' | 'templateMismatch';
+    }
   | { status: 'notEligible'; party: 'buyer' | 'supplier' | 'financier'; eligibility: ProcurementEligibilityResult };
 
 export type CreatePlsDistributionInput = {
@@ -38,6 +45,7 @@ export type CreatePlsDistributionResult =
 type ActivatePlsContractDependencies = {
   contractRepository: PlsContractRepository;
   shariahReviewRepository: ShariahReviewRepository;
+  shariahCertificateRepository?: ShariahCertificateRepository;
   eligibilityGateway?: ProcurementEligibilityGateway;
   now?: () => string;
 };
@@ -173,6 +181,22 @@ export async function activatePlsContract(
   }
 
   const now = dependencies.now?.() ?? new Date().toISOString();
+  const certificateCoverage = dependencies.shariahCertificateRepository
+    ? await validateShariahCertificateCoverage(
+      input.shariahCertificateId,
+      contract,
+      dependencies.shariahCertificateRepository,
+      now,
+    )
+    : undefined;
+
+  if (certificateCoverage && certificateCoverage.status !== 'covered') {
+    return {
+      status: 'certificateBlocked',
+      reason: certificateCoverage.status,
+    };
+  }
+
   const activated: PlsContract = {
     ...contract,
     status: 'active',
@@ -181,6 +205,15 @@ export async function activatePlsContract(
       status: 'approved',
       decidedAt: review.decidedAt,
     },
+    shariahCertificate: certificateCoverage?.status === 'covered'
+      ? {
+          certificateId: certificateCoverage.certificate.certificateId,
+          status: certificateCoverage.certificate.status,
+          certificateHash: certificateCoverage.certificate.certificateHash,
+          issuedAt: certificateCoverage.certificate.issuedAt,
+          expiresAt: certificateCoverage.certificate.expiresAt,
+        }
+      : contract.shariahCertificate,
     activatedAt: now,
     updatedAt: now,
   };

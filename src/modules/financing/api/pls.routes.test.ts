@@ -5,6 +5,8 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import actorContextPlugin from '../../../app/plugins/actor-context-plugin.js';
 import type { ShariahReview } from '../../shariah-review/domain/shariah-review.js';
 import { InMemoryShariahReviewRepository } from '../../shariah-review/infrastructure/in-memory-shariah-review-repository.js';
+import type { ShariahCertificate } from '../../shariah-certification/domain/shariah-certificate.js';
+import { InMemoryShariahCertificateRepository } from '../../shariah-certification/infrastructure/in-memory-shariah-certificate-repository.js';
 import type { PlsContract } from '../domain/pls-contract.js';
 import { InMemoryPlsContractRepository } from '../infrastructure/in-memory-pls-contract-repository.js';
 import { registerPlsRoutes } from './pls.routes.js';
@@ -13,6 +15,7 @@ function contract(overrides: Partial<PlsContract> = {}): PlsContract {
   return {
     contractId: 'pls-contract-route-1',
     procurementReference: 'po-local-1002',
+    contractTemplateVersion: 'mudarabah-procurement-v1',
     buyerOrganizationId: 'demo-buyer-org',
     supplierOrganizationId: 'demo-supplier-org',
     financierOrganizationId: 'demo-financier-org',
@@ -43,6 +46,25 @@ function approvedReview(): ShariahReview {
   };
 }
 
+function certificate(overrides: Partial<ShariahCertificate> = {}): ShariahCertificate {
+  return {
+    certificateId: 'certificate-route-active',
+    issuedBy: 'MVP Shariah Governance Board',
+    reviewerBoard: 'Restricted PLS Review Panel',
+    fatwaReference: 'FATWA-MVP-001',
+    scope: 'restricted-pls-seedbed',
+    contractTemplateVersion: 'mudarabah-procurement-v1',
+    conditions: ['No guaranteed profit or principal'],
+    issuedAt: '2026-05-20T00:00:00.000Z',
+    expiresAt: '2027-05-20T00:00:00.000Z',
+    status: 'active',
+    certificateHash: 'sha256:route-certificate-hash',
+    createdByUserId: 'demo-shariah-user',
+    createdAt: '2026-05-20T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
 function authenticatedPreHandler(roles: string[]): (request: FastifyRequest, reply: FastifyReply) => Promise<unknown> {
   return async (request) => {
     request.actorContext = {
@@ -60,7 +82,7 @@ function authenticatedPreHandler(roles: string[]): (request: FastifyRequest, rep
   };
 }
 
-async function createApp(roles: string[]) {
+async function createApp(roles: string[], options: { withCertificateGate?: boolean; certificate?: ShariahCertificate } = {}) {
   const contractRepository = new InMemoryPlsContractRepository([
     contract(),
     contract({
@@ -81,6 +103,9 @@ async function createApp(roles: string[]) {
   app.register(registerPlsRoutes, {
     contractRepository,
     shariahReviewRepository,
+    shariahCertificateRepository: options.withCertificateGate
+      ? new InMemoryShariahCertificateRepository([options.certificate ?? certificate()])
+      : undefined,
     authenticatedPreHandler: authenticatedPreHandler(roles),
   });
   await app.ready();
@@ -104,6 +129,35 @@ describe('PLS routes', () => {
     const body = JSON.parse(response.body);
     assert.strictEqual(body.data.status, 'active');
     assert.strictEqual(body.data.shariahApproval.status, 'approved');
+  });
+
+  it('requires covered Shariah certificate artifact when certificate gate is wired', async () => {
+    const app = await createApp(['financier'], { withCertificateGate: true });
+
+    const blocked = await app.inject({
+      method: 'POST',
+      url: '/financing/pls-contracts/pls-contract-route-1/activate',
+      payload: {
+        shariahReviewId: 'review-route-approved',
+      },
+    });
+
+    assert.strictEqual(blocked.statusCode, 409);
+    assert.match(blocked.body, /certificate/i);
+
+    const activated = await app.inject({
+      method: 'POST',
+      url: '/financing/pls-contracts/pls-contract-route-1/activate',
+      payload: {
+        shariahReviewId: 'review-route-approved',
+        shariahCertificateId: 'certificate-route-active',
+      },
+    });
+
+    assert.strictEqual(activated.statusCode, 200);
+    const body = JSON.parse(activated.body);
+    assert.strictEqual(body.data.status, 'active');
+    assert.strictEqual(body.data.shariahCertificate.certificateId, 'certificate-route-active');
   });
 
   it('denies activation to non-financier roles', async () => {

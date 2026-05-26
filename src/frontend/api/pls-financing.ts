@@ -18,6 +18,7 @@ export type PlsDistributionEventType = 'profit' | 'loss';
 export type PlsContract = {
   contractId: string;
   procurementReference: string;
+  contractTemplateVersion: string;
   buyerOrganizationId: string;
   supplierOrganizationId: string;
   financierOrganizationId: string;
@@ -33,6 +34,13 @@ export type PlsContract = {
     reviewId: string;
     status: ShariahApprovalStatus;
     decidedAt?: string;
+  };
+  shariahCertificate?: {
+    certificateId: string;
+    status: 'active' | 'expired' | 'revoked';
+    certificateHash: string;
+    issuedAt: string;
+    expiresAt?: string;
   };
   activatedAt?: string;
   createdAt: string;
@@ -65,6 +73,7 @@ const seedContracts: PlsContract[] = [
   {
     contractId: 'pls-local-halal-packaging',
     procurementReference: 'po-local-1002',
+    contractTemplateVersion: 'mudarabah-procurement-v1',
     buyerOrganizationId: 'demo-buyer-org',
     supplierOrganizationId: 'demo-supplier-org',
     financierOrganizationId: 'demo-financier-org',
@@ -87,6 +96,7 @@ const seedContracts: PlsContract[] = [
   {
     contractId: 'pls-local-cold-chain',
     procurementReference: 'po-local-1001',
+    contractTemplateVersion: 'mudarabah-procurement-v1',
     buyerOrganizationId: 'demo-buyer-org',
     supplierOrganizationId: 'demo-supplier-org',
     financierOrganizationId: 'demo-financier-org',
@@ -104,6 +114,7 @@ const seedContracts: PlsContract[] = [
   {
     contractId: 'pls-local-conditional',
     procurementReference: 'po-local-1003',
+    contractTemplateVersion: 'mudarabah-procurement-v1',
     buyerOrganizationId: 'demo-buyer-org',
     supplierOrganizationId: 'demo-supplier-org',
     financierOrganizationId: 'demo-financier-org',
@@ -387,6 +398,7 @@ export async function activatePlsContract(
   contractId: string,
   session?: AuthenticatedFrontendSession,
   shariahReviewId?: string,
+  shariahCertificateId?: string,
 ): Promise<PlsContract> {
   if (!isBackendSession(session)) {
     assertLocalFallbackEnabled('PLS activation');
@@ -405,10 +417,20 @@ export async function activatePlsContract(
       throw new BackendApiError('CONFLICT', 'PLS activation is blocked until Shariah review is approved');
     }
 
+    if (!shariahCertificateId) {
+      throw new BackendApiError('CONFLICT', 'PLS activation is blocked until an active Shariah certificate covers the template');
+    }
+
     const now = new Date().toISOString();
     const updated: PlsContract = {
       ...contract,
       status: 'active',
+      shariahCertificate: {
+        certificateId: shariahCertificateId,
+        status: 'active',
+        certificateHash: 'sha256:local-shariah-certificate-hash',
+        issuedAt: now,
+      },
       activatedAt: now,
       updatedAt: now,
     };
@@ -426,6 +448,7 @@ export async function activatePlsContract(
     },
     body: JSON.stringify({
       shariahReviewId,
+      shariahCertificateId,
     }),
   });
 }

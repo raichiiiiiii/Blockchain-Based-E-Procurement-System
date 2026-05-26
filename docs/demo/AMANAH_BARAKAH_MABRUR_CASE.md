@@ -36,7 +36,7 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 | Mabrur Finance Partner | Financier organization | Reviews PLS contract status and distribution scenarios after Shariah approval. |
 | Administrator | Platform governance user | Activates organizations, manages role assignments, and inspects access history. |
 | Compliance Reviewer | KYC/AML reviewer | Reviews safe onboarding metadata and records eligibility decisions. |
-| Shariah Reviewer | Shariah governance user | Reviews PLS terms and records approval, conditional approval, or rejection. |
+| Shariah Reviewer | Shariah governance user | Reviews PLS terms, records approval, and maintains certificate artifact coverage for the restricted template. |
 | Auditor | Audit user | Inspects audit trail and verifies blockchain proof states. |
 | Regulator | Reporting user | Requests export bundle integrity metadata and reviews the detached local software-key signature package. |
 | Platform Operator | Local environment operator | Starts services and follows deployment/runbook evidence. |
@@ -60,8 +60,8 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 13. If evidence is contested, the Buyer or Supplier can open a dispute and an authorized reviewer can record an arbitration outcome to prepare release, refund, or cancellation.
 14. Delivery evidence, escrow lifecycle, and settlement lifecycle events are anchored when the proof gateway is available, or remain proof-ready/pending/failed with honest proof states.
 15. The Auditor opens Blockchain Proof or an event detail and verifies the proof without fabricated transaction data.
-16. The Shariah Reviewer opens Shariah Review, inspects PLS metadata, and approves the restricted seedbed terms.
-17. The Financier opens Financing, verifies the Shariah approval reference, and views profit/loss distribution scenarios.
+16. The Shariah Reviewer opens Shariah Review, inspects PLS metadata, approves the restricted seedbed terms, and confirms active certificate artifact coverage for the template.
+17. The Financier opens Financing, verifies the Shariah approval and certificate artifact references, and views profit/loss distribution scenarios.
 18. The Regulator opens Export Bundle, requests the scoped evidence bundle, signs the manifest with the local software-key profile, and verifies the detached signature metadata for offline review.
 
 ## Expected Seed Data
@@ -88,7 +88,7 @@ The normal local demo path expects `npm run db:seed` to create backend/database 
 | Contract document | Amanah-Barakah contract text with checksum, extracted parties/terms, explicit malware scan state, and local signature metadata state |
 | Machine-readable contract | Contract number, buyer/supplier/financier parties, line item, delivery terms, acceptance criteria, escrow release conditions, PLS seedbed terms, linked document reference, UBL/OCDS mapping references, version, and terms hash |
 | Escrow record | Escrow-created state linked to the accepted order reference |
-| PLS contract | Restricted seedbed contract linked to the procurement case and Shariah approval reference |
+| PLS contract | Restricted seedbed contract linked to the procurement case, Shariah approval reference, certificate artifact reference, and distribution examples |
 | Export bundle | Combined audit scope with manifest hash, verification metadata, and detached local software-key signature package metadata |
 
 Seed data should avoid raw KYC documents, raw escrow terms, payment credentials, and private commercial documents in visible dashboard cards.
@@ -101,8 +101,8 @@ Seed data should avoid raw KYC documents, raw escrow terms, payment credentials,
 | Buyer | Sign in | Dashboard, Orders, Contract Documents, Contract Negotiation, Escrow, Blockchain Proof | Buyer creates order, records or reviews contract metadata, accepts current terms, reviews delivery evidence metadata, creates escrow from accepted order, and sees proof metadata. |
 | Supplier | Sign in | Dashboard, Received Orders, Delivery Evidence, Contract Documents, Contract Negotiation, Escrow | Supplier acknowledges assigned order, submits or accepts negotiated terms, and submits safe delivery evidence metadata. |
 | Compliance Reviewer | Sign in | Dashboard, Compliance, Eligibility Status | Reviewer records decision and eligibility state is visible downstream. |
-| Shariah Reviewer | Sign in | Dashboard, Shariah Review | Reviewer inspects checklist metadata and records a decision. |
-| Financier | Sign in | Dashboard, Financing | Financier inspects approved PLS contract and distribution scenarios. |
+| Shariah Reviewer | Sign in | Dashboard, Shariah Review | Reviewer inspects checklist metadata, records a decision, and registers certificate artifact coverage. |
+| Financier | Sign in | Dashboard, Financing | Financier inspects approved PLS contract, certificate coverage, and distribution scenarios. |
 | Auditor | Sign in | Dashboard, Audit Trail, Blockchain Proof, Export Bundle | Auditor verifies proof and inspects export evidence read-only. |
 | Regulator | Sign in | Dashboard, Export Bundle, Blockchain Proof | Regulator requests export, signs the manifest, and verifies integrity metadata. |
 | Platform Operator | Runbook | Local demo startup path | Services start or blockers are documented. |
@@ -117,8 +117,8 @@ Seed data should avoid raw KYC documents, raw escrow terms, payment credentials,
 | Buyer | Auth session, procurement order routes, delivery evidence read route, eligibility gate, escrow routes, blockchain proof endpoint. |
 | Supplier | Auth session, procurement order list/detail, acknowledgement route, delivery evidence submit/read routes, document metadata route, contract negotiation route, ownership authorization. |
 | Compliance Reviewer | Auth session, KYC/AML case routes, eligibility/status history route, redaction policy. |
-| Shariah Reviewer | Auth session, PLS review and decision service, financing read model. |
-| Financier | Auth session, PLS activation gate, distribution scenario service, eligibility gate. |
+| Shariah Reviewer | Auth session, PLS review and decision service, certificate artifact registry, financing read model. |
+| Financier | Auth session, PLS activation gate, certificate coverage check, distribution scenario service, eligibility gate. |
 | Auditor | Auth session, audit trail, blockchain anchor lookup, verification endpoint, export bundle route. |
 | Regulator | Auth session, export bundle generation, bundle verification endpoint, export signing endpoint, proof read path. |
 | Platform Operator | Local demo script, PostgreSQL migration/seed path, Fabric chaincode build/test path. |
@@ -144,6 +144,7 @@ The demo should be able to explain or inspect these events as governed actions:
 | Escrow created | Buyer creates escrow from accepted order | Escrow-created lifecycle event exists. |
 | Proof verified | Auditor or regulator verifies proof | Verification status is recorded or visible as evidence metadata. |
 | Shariah decision recorded | Reviewer approves, conditionally approves, or rejects | Decision trail supports PLS activation gate. |
+| Shariah certificate artifact registered | Reviewer registers active template coverage | Certificate hash and conditions support activation gate without claiming external certification. |
 | PLS activated or distribution scenario recorded | Financier acts on approved contract | Seedbed allocation event is recorded without implying payment execution. |
 | Export bundle requested, signed, or verified | Regulator or auditor requests/verifies bundle | Manifest hash, detached signature state, and verification state are visible. |
 | Denied action | Unauthorized actor attempts protected action | Denial is captured for audit/security review where implemented. |
@@ -177,7 +178,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 | Payment instruction | Buyer or financier creates sandbox/manual settlement instruction; reconciliation status is auditable and does not imply bank execution. |
 | ISO 20022 mapping | Authorized reviewer exports payment initiation/status JSON for mapping review only; no bank execution or certification is claimed. |
 | Proof verification | Verified, mismatch, not found, pending, failed, and unavailable states are distinct where applicable. |
-| Shariah review | PLS activation depends on an approved Shariah reference. |
+| Shariah review | PLS activation depends on an approved Shariah reference and active certificate artifact coverage. |
 | Financier PLS view | Profit/loss scenarios are visible as simulation-only seedbed records. |
 | Regulator export | Bundle manifest, detached local software-key signature, and integrity verification are visible. |
 | Authorization negative cases | Unauthorized actors are hidden from or rejected by protected workflows. |
@@ -185,6 +186,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 ## Known MVP Limitations
 
 - PLS distribution is a simulation-only seedbed and does not execute payments.
+- Shariah certificate artifacts are internal governance records only; external certification issuance, legal attestation, and production Islamic finance compliance remain post-MVP.
 - Escrow now includes an MVP release/dispute workflow, but it only prepares settlement instruction state and does not execute real payment, bank settlement, or external arbitration integration.
 - Payment adapter support is sandbox/manual only and records auditable status evidence; it does not connect to banks or execute ISO 20022 payment rails.
 - ISO 20022 support is mapping-only JSON for integration review; it does not submit bank messages or provide certification.

@@ -5,6 +5,11 @@ import {
   type PlsContract,
   type ShariahDecisionOutcome,
 } from '../api/pls-financing';
+import {
+  listShariahCertificates,
+  registerShariahCertificate,
+  type ShariahCertificate,
+} from '../api/shariah-certificates';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 
@@ -57,6 +62,7 @@ function statusClass(status: PlsContract['status']): string {
 
 function ShariahDashboard({ activeTarget, session }: ShariahDashboardProps) {
   const [contracts, setContracts] = useState<PlsContract[]>([]);
+  const [certificates, setCertificates] = useState<ShariahCertificate[]>([]);
   const [selectedContractId, setSelectedContractId] = useState<string | undefined>();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [message, setMessage] = useState<string | undefined>();
@@ -71,6 +77,14 @@ function ShariahDashboard({ activeTarget, session }: ShariahDashboardProps) {
   const pendingCount = contracts.filter(contract => contract.status === 'pendingShariahReview').length;
   const approvedCount = contracts.filter(contract => contract.shariahApproval?.status === 'approved').length;
   const blockedCount = contracts.filter(contract => contract.status === 'activationBlocked').length;
+  const selectedCertificate = useMemo(
+    () => selectedContract
+      ? certificates.find(certificate =>
+        certificate.status === 'active'
+        && certificate.contractTemplateVersion === selectedContract.contractTemplateVersion)
+      : undefined,
+    [certificates, selectedContract],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -81,11 +95,13 @@ function ShariahDashboard({ activeTarget, session }: ShariahDashboardProps) {
 
       try {
         const nextContracts = await listPlsContracts(session);
+        const nextCertificates = await listShariahCertificates(session).catch(() => []);
         if (cancelled) {
           return;
         }
 
         setContracts(nextContracts);
+        setCertificates(nextCertificates);
         setSelectedContractId(current => current && nextContracts.some(contract => contract.contractId === current)
           ? current
           : nextContracts[0]?.contractId);
@@ -125,6 +141,38 @@ function ShariahDashboard({ activeTarget, session }: ShariahDashboardProps) {
         : 'Shariah decision recorded. Activation remains blocked until approval is complete.');
     } catch (decisionError) {
       setError(decisionError instanceof Error ? decisionError.message : 'Decision could not be recorded');
+    } finally {
+      setDecisionBusy(undefined);
+    }
+  };
+
+  const handleCertificateRegistration = async () => {
+    if (!selectedContract) {
+      return;
+    }
+
+    setDecisionBusy('approved');
+    setMessage(undefined);
+    setError(undefined);
+
+    try {
+      const certificate = await registerShariahCertificate({
+        issuedBy: 'MVP Shariah Governance Board',
+        reviewerBoard: 'Restricted PLS Seedbed Review Panel',
+        fatwaReference: `FATWA-${selectedContract.contractTemplateVersion.toUpperCase()}`,
+        scope: 'restricted-pls-seedbed',
+        contractTemplateVersion: selectedContract.contractTemplateVersion,
+        conditions: [
+          'Simulation-only PLS distribution records',
+          'No guaranteed profit or principal',
+          'No external payment execution',
+        ],
+        certificateDocumentId: `certificate-${selectedContract.contractTemplateVersion}`,
+      }, session);
+      setCertificates(current => [certificate, ...current.filter(item => item.certificateId !== certificate.certificateId)]);
+      setMessage('Shariah certificate artifact registered for this template. This records governance evidence only.');
+    } catch (certificateError) {
+      setError(certificateError instanceof Error ? certificateError.message : 'Certificate artifact could not be registered');
     } finally {
       setDecisionBusy(undefined);
     }
@@ -213,6 +261,14 @@ function ShariahDashboard({ activeTarget, session }: ShariahDashboardProps) {
                     <dt>Review Reference</dt>
                     <dd>{selectedContract.shariahApproval?.reviewId ?? 'No final decision'}</dd>
                   </div>
+                  <div>
+                    <dt>Template</dt>
+                    <dd>{selectedContract.contractTemplateVersion}</dd>
+                  </div>
+                  <div>
+                    <dt>Certificate</dt>
+                    <dd>{selectedCertificate?.certificateId ?? 'Certificate artifact required'}</dd>
+                  </div>
                 </dl>
 
                 <div className="workflow-meta-grid">
@@ -230,6 +286,13 @@ function ShariahDashboard({ activeTarget, session }: ShariahDashboardProps) {
                     <span>Checklist</span>
                     <strong>Payment execution excluded</strong>
                     <p>The financing record is a governed seedbed calculation, not an external payment instruction.</p>
+                  </div>
+                  <div className="workflow-meta-panel">
+                    <span>Certificate artifact</span>
+                    <strong>{selectedCertificate ? selectedCertificate.status : 'Not registered'}</strong>
+                    <p>{selectedCertificate
+                      ? `${selectedCertificate.fatwaReference} covers ${selectedCertificate.contractTemplateVersion}.`
+                      : 'Activation must remain blocked until an active certificate artifact covers the template.'}</p>
                   </div>
                 </div>
 
@@ -257,6 +320,14 @@ function ShariahDashboard({ activeTarget, session }: ShariahDashboardProps) {
                     onClick={() => void handleDecision('rejected')}
                   >
                     {decisionBusy === 'rejected' ? 'Recording' : 'Reject'}
+                  </button>
+                  <button
+                    className="button button-secondary"
+                    disabled={Boolean(decisionBusy) || Boolean(selectedCertificate)}
+                    type="button"
+                    onClick={() => void handleCertificateRegistration()}
+                  >
+                    {decisionBusy === 'approved' && !selectedCertificate ? 'Registering' : selectedCertificate ? 'Certificate registered' : 'Register certificate'}
                   </button>
                 </div>
               </>
