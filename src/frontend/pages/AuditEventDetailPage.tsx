@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import BlockchainProofPanel from '../components/blockchain/BlockchainProofPanel';
+import BlockchainProofTimeline from '../components/blockchain/BlockchainProofTimeline';
 import {
   getLocalDemoProofRecords,
   verifyBlockchainProof,
@@ -83,6 +84,25 @@ function isVerificationResult(value: VerificationState | undefined): value is Bl
   return Boolean(value && value.verificationStatus !== 'verifying');
 }
 
+function formatTimelineEventLabel(eventType: string): string {
+  switch (eventType) {
+    case 'purchaseOrderAccepted':
+      return 'Order accepted';
+    case 'invoiceApproved':
+      return 'Invoice approved';
+    case 'deliveryRecorded':
+      return 'Delivery recorded';
+    case 'settlementInitiated':
+      return 'Settlement initiated';
+    case 'roleAssignmentUpdated':
+      return 'Role assignment updated';
+    case 'memberProfileViewed':
+      return 'Member profile viewed';
+    default:
+      return eventType;
+  }
+}
+
 function AuditEventDetailPage() {
   const [verificationByEventId, setVerificationByEventId] = useState<Record<string, VerificationState>>({});
 
@@ -108,6 +128,16 @@ function AuditEventDetailPage() {
           Review event hashes, anchor status, and verification results without exposing private event payloads.
         </p>
       </section>
+
+      <BlockchainProofTimeline
+        items={auditProofReviewItems.map(item => ({
+          label: formatTimelineEventLabel(item.eventType),
+          occurredAt: item.occurredAt,
+          proof: item.proof,
+          description: item.description,
+          verificationStatus: verificationByEventId[item.proof.eventId]?.verificationStatus,
+        }))}
+      />
 
       <div className="proof-review-grid">
         {auditProofReviewItems.map(item => {

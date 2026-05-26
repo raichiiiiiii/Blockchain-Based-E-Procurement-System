@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import BlockchainProofPanel from '../components/blockchain/BlockchainProofPanel';
+import BlockchainProofTimeline from '../components/blockchain/BlockchainProofTimeline';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 import {
@@ -7,6 +8,7 @@ import {
   verifyBlockchainProof,
   type BlockchainVerificationResult,
 } from '../lib/blockchain-proof-client';
+import { getDemoProofTimelineItems } from '../lib/demo-proof-timeline';
 import ExportBundlePage from './ExportBundlePage';
 
 type AuditorDashboardProps = {
@@ -17,6 +19,7 @@ type AuditorDashboardProps = {
 type VerificationState = BlockchainVerificationResult | { verificationStatus: 'verifying' };
 
 const auditorProof = getLocalDemoProofRecord('audit-event-anchored');
+const auditorProofTimelineItems = getDemoProofTimelineItems();
 
 function isVerificationResult(value: VerificationState | undefined): value is BlockchainVerificationResult {
   return Boolean(value && value.verificationStatus !== 'verifying');
@@ -46,6 +49,11 @@ function AuditorDashboard({ activeTarget, session }: AuditorDashboardProps) {
 
   if (activeTarget === 'blockchain-proof') {
     const verification = isVerificationResult(verificationState) ? verificationState : undefined;
+    const timelineItems = auditorProofTimelineItems.map(item => (
+      item.proof.eventId === auditorProof.eventId
+        ? { ...item, verificationStatus: verificationState?.verificationStatus }
+        : item
+    ));
 
     return (
       <div className="proof-workspace">
@@ -54,6 +62,7 @@ function AuditorDashboard({ activeTarget, session }: AuditorDashboardProps) {
           <h2>Audit proof verification</h2>
           <p>Verify anchored event proof metadata without exposing restricted records or private payloads.</p>
         </section>
+        <BlockchainProofTimeline items={timelineItems} />
         <BlockchainProofPanel
           {...auditorProof}
           verification={verification}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import BlockchainProofPanel from '../components/blockchain/BlockchainProofPanel';
+import BlockchainProofTimeline from '../components/blockchain/BlockchainProofTimeline';
 import ExportBundlePage from './ExportBundlePage';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
@@ -8,6 +9,7 @@ import {
   verifyBlockchainProof,
   type BlockchainVerificationResult,
 } from '../lib/blockchain-proof-client';
+import { getDemoProofTimelineItems } from '../lib/demo-proof-timeline';
 
 type RegulatorDashboardProps = {
   activeTarget: DashboardNavigationTarget;
@@ -17,6 +19,7 @@ type RegulatorDashboardProps = {
 type VerificationState = BlockchainVerificationResult | { verificationStatus: 'verifying' };
 
 const regulatorProof = getLocalDemoProofRecord('audit-event-anchored');
+const regulatorProofTimelineItems = getDemoProofTimelineItems();
 
 function isVerificationResult(value: VerificationState | undefined): value is BlockchainVerificationResult {
   return Boolean(value && value.verificationStatus !== 'verifying');
@@ -36,6 +39,11 @@ function RegulatorDashboard({ activeTarget, session }: RegulatorDashboardProps) 
 
   if (activeTarget === 'blockchain-proof') {
     const verification = isVerificationResult(verificationState) ? verificationState : undefined;
+    const timelineItems = regulatorProofTimelineItems.map(item => (
+      item.proof.eventId === regulatorProof.eventId
+        ? { ...item, verificationStatus: verificationState?.verificationStatus }
+        : item
+    ));
 
     return (
       <div className="proof-workspace">
@@ -44,6 +52,7 @@ function RegulatorDashboard({ activeTarget, session }: RegulatorDashboardProps) 
           <h2>Proof verification</h2>
           <p>Inspect anchored event proof metadata without exposing restricted records or private payloads.</p>
         </section>
+        <BlockchainProofTimeline items={timelineItems} />
         <BlockchainProofPanel
           {...regulatorProof}
           verification={verification}

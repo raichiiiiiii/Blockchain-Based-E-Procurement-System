@@ -1258,6 +1258,181 @@ button {
   padding: 20px;
 }
 
+.proof-timeline {
+  display: grid;
+  gap: 16px;
+  border: 1px solid #d8e2dd;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 20px;
+}
+
+.proof-timeline-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.proof-timeline-header h3 {
+  margin: 4px 0 0;
+  color: #16201d;
+  font-size: 1.35rem;
+}
+
+.proof-timeline-header > span {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  border-radius: 999px;
+  background: #eef6f2;
+  color: #0c6b58;
+  padding: 0 12px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.proof-timeline-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.proof-timeline-item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 14px;
+  position: relative;
+  padding-bottom: 16px;
+}
+
+.proof-timeline-item::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  bottom: 0;
+  left: 8px;
+  width: 2px;
+  background: #dfe7e3;
+}
+
+.proof-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.proof-timeline-item:last-child::before {
+  display: none;
+}
+
+.proof-timeline-marker {
+  position: relative;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  background: #edf1ef;
+  box-shadow: 0 0 0 1px #cbd7d1;
+}
+
+.proof-timeline-marker-neutral {
+  background: #edf1ef;
+}
+
+.proof-timeline-marker-pending {
+  background: #d39a1f;
+}
+
+.proof-timeline-marker-success {
+  background: #0c6b58;
+}
+
+.proof-timeline-marker-warning,
+.proof-timeline-marker-danger {
+  background: #9f2f2f;
+}
+
+.proof-timeline-marker-unavailable {
+  background: #8b98a0;
+}
+
+.proof-timeline-body {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid #edf1ef;
+  border-radius: 8px;
+  background: #fbfcfb;
+  padding: 14px;
+}
+
+.proof-timeline-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.proof-timeline-title-row div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.proof-timeline-title-row strong {
+  color: #16201d;
+}
+
+.proof-timeline-title-row div > span {
+  color: #52615d;
+  font-size: 0.88rem;
+}
+
+.proof-timeline-body p {
+  margin: 0;
+  color: #52615d;
+  line-height: 1.55;
+}
+
+.proof-timeline-meta {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.3fr) minmax(0, 1fr);
+  gap: 10px;
+  margin: 0;
+}
+
+.proof-timeline-meta div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.proof-timeline-meta dt {
+  color: #52615d;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.proof-timeline-meta dd {
+  margin: 0;
+  min-width: 0;
+  color: #16201d;
+  overflow-wrap: anywhere;
+}
+
+.proof-timeline-meta code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: #14211d;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.82rem;
+}
+
 .proof-panel-neutral {
   border-color: #d8e2dd;
 }
@@ -1586,6 +1761,16 @@ button {
 
   .proof-panel-header {
     flex-direction: column;
+  }
+
+  .proof-timeline-header,
+  .proof-timeline-title-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .proof-timeline-meta {
+    grid-template-columns: 1fr;
   }
 
   .guided-demo-panel {
