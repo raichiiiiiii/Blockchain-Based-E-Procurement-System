@@ -8,6 +8,12 @@ import {
   type EscrowRecord,
   type EscrowTransitionRequest,
 } from '../lib/escrow-client';
+import {
+  createPaymentInstruction,
+  reconcilePaymentInstruction,
+  type PaymentInstruction,
+  type PaymentInstructionStatus,
+} from '../lib/payment-client';
 
 type EscrowDetailPageProps = {
   escrow?: EscrowRecord;
@@ -75,6 +81,19 @@ function roleCodes(session?: AuthenticatedFrontendSession): string[] {
   return session?.actor.actorRoleCodes ?? [];
 }
 
+function paymentTone(status: PaymentInstructionStatus): StatusTone {
+  switch (status) {
+    case 'accepted':
+    case 'settled':
+      return 'success';
+    case 'pending':
+      return 'pending';
+    case 'failed':
+    case 'cancelled':
+      return 'danger';
+  }
+}
+
 function canShowAction(
   action: EscrowTransitionRequest['action'],
   escrow: EscrowRecord,
@@ -107,6 +126,9 @@ function EscrowDetailPage({ escrow, session, onEscrowChange }: EscrowDetailPageP
   const [transitionState, setTransitionState] = useState<'idle' | 'submitting'>('idle');
   const [transitionError, setTransitionError] = useState<string | undefined>();
   const [transitionNote, setTransitionNote] = useState<string | undefined>();
+  const [paymentInstruction, setPaymentInstruction] = useState<PaymentInstruction | undefined>();
+  const [paymentState, setPaymentState] = useState<'idle' | 'submitting'>('idle');
+  const [paymentError, setPaymentError] = useState<string | undefined>();
 
   if (!escrow) {
     return (
@@ -118,6 +140,7 @@ function EscrowDetailPage({ escrow, session, onEscrowChange }: EscrowDetailPageP
   }
 
   const proofRecord = escrowToProofRecord(escrow);
+  const canManagePayment = roleCodes(session).some(role => ['buyer', 'financier', 'administrator'].includes(role));
   const runTransition = async (request: EscrowTransitionRequest) => {
     setTransitionState('submitting');
     setTransitionError(undefined);
@@ -132,6 +155,37 @@ function EscrowDetailPage({ escrow, session, onEscrowChange }: EscrowDetailPageP
       setTransitionError(message);
     } finally {
       setTransitionState('idle');
+    }
+  };
+
+  const runCreatePaymentInstruction = async () => {
+    setPaymentState('submitting');
+    setPaymentError(undefined);
+    try {
+      const instruction = await createPaymentInstruction(escrow.escrowId, '68000.00', 'MYR', session);
+      setPaymentInstruction(instruction);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Payment instruction could not be created';
+      setPaymentError(message);
+    } finally {
+      setPaymentState('idle');
+    }
+  };
+
+  const runReconcilePaymentInstruction = async (status: PaymentInstructionStatus) => {
+    if (!paymentInstruction) {
+      return;
+    }
+
+    setPaymentState('submitting');
+    setPaymentError(undefined);
+    try {
+      setPaymentInstruction(await reconcilePaymentInstruction(paymentInstruction.paymentInstructionId, status, session));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Payment instruction could not be reconciled';
+      setPaymentError(message);
+    } finally {
+      setPaymentState('idle');
     }
   };
 
@@ -228,6 +282,62 @@ function EscrowDetailPage({ escrow, session, onEscrowChange }: EscrowDetailPageP
           {transitionError ? <p className="admin-alert admin-alert-error" role="alert">{transitionError}</p> : null}
           {transitionNote ? <p className="admin-alert admin-alert-success">{transitionNote}</p> : null}
           <p className="panel-footnote">Release approval prepares a settlement instruction only. No payment is executed in this workspace.</p>
+        </section>
+      ) : null}
+
+      {session && escrow.status === 'settlementInstructionReady' ? (
+        <section className="workspace-panel" aria-label="Payment instruction">
+          <h3>Payment Instruction</h3>
+          <p>
+            Create a sandbox or manual settlement instruction from the approved escrow state. This records payment
+            status evidence only; no bank rail or external payment is executed.
+          </p>
+          {paymentInstruction ? (
+            <div className="escrow-status-grid">
+              <div className="escrow-status-band">
+                <span>Status</span>
+                <strong>
+                  <StatusIndicator
+                    label={paymentInstruction.status.charAt(0).toUpperCase() + paymentInstruction.status.slice(1)}
+                    tone={paymentTone(paymentInstruction.status)}
+                    compact
+                  />
+                </strong>
+              </div>
+              <div className="escrow-status-band">
+                <span>Amount</span>
+                <strong>{paymentInstruction.amount} {paymentInstruction.currency}</strong>
+              </div>
+              <div className="escrow-status-band">
+                <span>Reference</span>
+                <strong>{paymentInstruction.paymentReference}</strong>
+                {paymentInstruction.adapterReference ? <code>{paymentInstruction.adapterReference}</code> : null}
+              </div>
+            </div>
+          ) : (
+            <p className="panel-footnote">No payment instruction has been created in this browser session.</p>
+          )}
+          {canManagePayment ? (
+            <div className="admin-action-row">
+              {!paymentInstruction ? (
+                <button className="button button-primary" type="button" disabled={paymentState === 'submitting'} onClick={() => void runCreatePaymentInstruction()}>
+                  Create instruction
+                </button>
+              ) : null}
+              {paymentInstruction ? (
+                <>
+                  <button className="button button-secondary" type="button" disabled={paymentState === 'submitting'} onClick={() => void runReconcilePaymentInstruction('settled')}>
+                    Mark settled
+                  </button>
+                  <button className="button button-secondary" type="button" disabled={paymentState === 'submitting'} onClick={() => void runReconcilePaymentInstruction('failed')}>
+                    Mark failed
+                  </button>
+                </>
+              ) : null}
+            </div>
+          ) : null}
+          {paymentError ? <p className="admin-alert admin-alert-error" role="alert">{paymentError}</p> : null}
+          <p className="panel-footnote">Sandbox settlement states are auditable status records. They are not payment confirmation from a bank.</p>
         </section>
       ) : null}
 

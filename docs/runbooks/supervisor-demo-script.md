@@ -86,9 +86,10 @@ Chaincode build/test is automated. Live Fabric local-network deployment depends 
 | 9:00-10:15 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata; mention signed external IoT, QR, and EPCIS-compatible proof intake as an API-backed pilot-hardening path. |
 | 10:15-11:15 | Buyer delivery review | Show evidence hash, lifecycle event, and proof state on the order detail. |
 | 11:15-12:45 | Escrow lifecycle | Create escrow, mark funded, request release, and show settlement-instruction-ready state without payment execution. |
-| 12:45-13:15 | Dispute path | Show hold/dispute/arbitration controls as auditable lifecycle transitions, not external arbitration integration. |
-| 13:15-14:00 | Blockchain proof | Show proof panel and honest verification states. |
-| 14:00-15:00 | Auditor verification | Verify proof or inspect audit/export evidence read-only. |
+| 12:45-13:30 | Payment instruction | Create a sandbox/manual payment instruction and reconcile status without claiming bank execution. |
+| 13:30-14:00 | Dispute path | Show hold/dispute/arbitration controls as auditable lifecycle transitions, not external arbitration integration. |
+| 14:00-14:45 | Blockchain proof | Show proof panel and honest verification states. |
+| 14:45-15:30 | Auditor verification | Verify proof or inspect audit/export evidence read-only. |
 | 15:00-16:00 | Shariah review | Show checklist metadata and approval gate. |
 | 16:00-17:15 | Financier PLS seedbed | Show approved PLS contract and distribution scenario. |
 | 17:15-18:30 | Regulator export | Request export bundle and verify manifest integrity. |
@@ -290,6 +291,23 @@ Escrow now evaluates release conditions and records auditable release, hold, dis
 
 If demonstrating a dispute path, open a dispute and record an arbitration outcome from an authorized reviewer account. Keep the wording clear that this is platform evidence and workflow control, not integration with an external arbitration provider.
 
+### 10A. Payment Instruction
+
+Remain on the escrow detail view after release approval.
+
+Show:
+
+- Payment Instruction
+- create instruction
+- sandbox/manual adapter status
+- reconciliation controls
+
+What to say:
+
+```text
+This is a payment adapter boundary. It records sandbox or manual settlement status as audit evidence, but it does not execute bank payment, ISO 20022 messages, or production settlement.
+```
+
 ### 11. Blockchain Proof Panel
 
 Show proof from escrow, audit event detail, or Blockchain Proof.
@@ -410,6 +428,7 @@ Close by naming limits directly:
 - "The strongest value is traceability: who acted, what changed, what evidence exists, and how proof can be verified."
 - "Blockchain is used for proof anchoring, not as the application database."
 - "PLS is shown as a restricted seedbed with Shariah approval gates, not as production financing automation."
+- "Payment instruction status is sandbox/manual evidence. It is not bank confirmation."
 - "Known limitations are deliberately visible so the release does not overclaim."
 
 ## What Not to Claim
@@ -417,6 +436,7 @@ Close by naming limits directly:
 Do not claim:
 
 - production payment execution
+- bank payment confirmation
 - guaranteed profit or guaranteed principal
 - production Islamic finance certification
 - production Hyperledger Fabric consortium readiness
@@ -454,6 +474,7 @@ Do not claim:
 - [ ] Buyer can review delivery evidence hash, lifecycle event, and proof state.
 - [ ] Buyer can create escrow from accepted order.
 - [ ] Buyer can mark escrow funded, request release, and approve release into settlement instruction state when conditions are satisfied.
+- [ ] Buyer or financier can create a sandbox/manual payment instruction and reconcile status without claiming bank execution.
 - [ ] Dispute/arbitration controls record an auditable outcome without claiming external arbitration integration.
 - [ ] Proof panel shows honest states and does not fabricate transaction IDs.
 - [ ] Auditor can verify proof or inspect evidence read-only.

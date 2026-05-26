@@ -80,6 +80,11 @@ import { LocalSignatureMetadataAdapter } from '../modules/documents/infrastructu
 import { registerContractRoutes } from '../modules/contracts/api/contract.routes.js';
 import type { ProcurementContractRepository } from '../modules/contracts/application/contract-repository.js';
 import { InMemoryProcurementContractRepository } from '../modules/contracts/infrastructure/in-memory-procurement-contract-repository.js';
+import { registerPaymentRoutes } from '../modules/payments/api/payment.routes.js';
+import type { PaymentInstructionRepository } from '../modules/payments/application/payment-instruction-repository.js';
+import { InMemoryPaymentInstructionRepository } from '../modules/payments/infrastructure/in-memory-payment-instruction-repository.js';
+import { LocalSandboxPaymentAdapter } from '../modules/payments/infrastructure/local-sandbox-payment-adapter.js';
+import { ManualSettlementAdapter } from '../modules/payments/infrastructure/manual-settlement-adapter.js';
 import { createPostgresPool, type PostgresExecutor } from '../infrastructure/database/postgres-client.js';
 import { PostgresMemberOrganizationRepository } from '../modules/membership/infrastructure/postgres-member-organization-repository.js';
 import { PostgresRoleRepository } from '../modules/access-control/infrastructure/postgres-role-repository.js';
@@ -135,6 +140,7 @@ export function createTestableServer(options?: {
   documentTextExtractor?: DocumentTextExtractionPort;
   signatureVerifier?: SignatureVerificationPort;
   procurementContractRepository?: ProcurementContractRepository;
+  paymentInstructionRepository?: PaymentInstructionRepository;
   registerKycAmlRoutes?: boolean;
   enforceBearerAuthForLegacyActorRoutes?: boolean;
   readiness?: () => Promise<RuntimeReadiness>;
@@ -217,6 +223,7 @@ export function createTestableServer(options?: {
   const documentTextExtractor = options?.documentTextExtractor ?? new LocalDocumentTextExtractionAdapter();
   const signatureVerifier = options?.signatureVerifier ?? new LocalSignatureMetadataAdapter();
   const procurementContractRepository = options?.procurementContractRepository ?? new InMemoryProcurementContractRepository();
+  const paymentInstructionRepository = options?.paymentInstructionRepository ?? new InMemoryPaymentInstructionRepository();
   const authenticatedPreHandler = createAuthenticatedRequestPreHandler(sessionRepository);
   const legacyActorRouteAuthenticatedPreHandler = options?.enforceBearerAuthForLegacyActorRoutes
     ? authenticatedPreHandler
@@ -414,6 +421,18 @@ export function createTestableServer(options?: {
   server.register(registerContractRoutes, {
     prefix: '/api/v1',
     repository: procurementContractRepository,
+    authenticatedPreHandler,
+  });
+
+  server.register(registerPaymentRoutes, {
+    prefix: '/api/v1',
+    repository: paymentInstructionRepository,
+    escrowRepository,
+    adapters: {
+      localSandbox: new LocalSandboxPaymentAdapter(),
+      manualSettlement: new ManualSettlementAdapter(),
+    },
+    lifecycleEventRepository: procureToPayLifecycleEventRepository,
     authenticatedPreHandler,
   });
 

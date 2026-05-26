@@ -114,6 +114,8 @@ Landing page
 -> Save machine-readable terms and inspect terms hash
 -> Escrow
 -> Create escrow from an accepted order
+-> Mark escrow funded, request release, and approve release to settlement instruction state
+-> Create sandbox/manual payment instruction and reconcile status without claiming bank execution
 -> Blockchain Proof panel
 ```
 
@@ -293,13 +295,13 @@ Contract Negotiation
 ## Current Known Limitations
 
 - Mandatory actors can sign in and reach role-specific dashboard entry states. Shariah and financier workflows are demonstrable with restricted PLS seedbed data.
-- Delivery evidence is metadata-only; no IoT feeds or QR signature capture are implemented.
+- Delivery evidence includes MVP metadata/hash records and signed external IoT, QR, and EPCIS-compatible intake seams; production device PKI, legal QR signatures, and full logistics network integration are not implemented.
 - Document intake is local-storage MVP scope only; no production object storage, OCR, PDF/DOCX extraction, malware scanning, or legal e-signature verification is implemented.
 - Contract negotiation uses an in-memory repository in this slice; production redline editing, PostgreSQL persistence, legal signing, ERP export, and automatic order/escrow creation are not implemented.
 - Compliance dashboard uses a local demo case queue until a backend case-list endpoint is added.
 - Eligibility gating is implemented for order creation, escrow creation, and PLS activation.
 - Fabric live network deployment remains a local/manual path unless the Fabric samples are installed.
-- Escrow is an MVP hybrid slice, not production settlement or payment execution.
+- Escrow is an MVP hybrid slice with release/dispute workflow and sandbox/manual payment instruction evidence; it is not production settlement or bank payment execution.
 - PLS workflow is a restricted single-venture seedbed and does not provide production payment rails, guaranteed returns, or full Islamic finance product coverage.
 - Export signing is MVP-equivalent manifest and bundle hashing; production signing, key management, and external regulator portal integration are not implemented.
 - KYC cases, export bundles, Shariah reviews, and PLS contracts still use in-memory runtime repositories in PostgreSQL mode until dedicated adapters are added.
