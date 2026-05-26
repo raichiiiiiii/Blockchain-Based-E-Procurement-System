@@ -14,7 +14,7 @@ import SecurityDashboard from './pages/SecurityDashboard';
 import ShariahDashboard from './pages/ShariahDashboard';
 import FinancingDashboard from './pages/FinancingDashboard';
 import RoleDashboard from './pages/RoleDashboard';
-import { loginWithCredentials, loginWithDemoAccount, logoutSession, type DemoAccountId, type LoginCredentials } from './lib/auth-client';
+import { loginWithCredentials, logoutSession, type LoginCredentials } from './lib/auth-client';
 import {
   clearStoredSession,
   loadStoredSession,
@@ -206,20 +206,6 @@ function App() {
     navigate('dashboard');
   };
 
-  const handleDemoSignIn = async (accountId: DemoAccountId) => {
-    setSession({ status: 'authenticating' });
-    setLoginError(undefined);
-
-    try {
-      finishAuthentication(await loginWithDemoAccount(accountId));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Sign in failed';
-      clearStoredSession();
-      setSession({ status: 'anonymous' });
-      setLoginError(message);
-    }
-  };
-
   const handleCredentialsSignIn = async (credentials: LoginCredentials) => {
     setSession({ status: 'authenticating' });
     setLoginError(undefined);
@@ -316,7 +302,6 @@ function App() {
           isAuthenticating={session.status === 'authenticating'}
           errorMessage={loginError}
           onBack={() => navigate('landing')}
-          onDemoSignIn={handleDemoSignIn}
           onCredentialsSignIn={handleCredentialsSignIn}
         />
         {guidedDemoPanel}

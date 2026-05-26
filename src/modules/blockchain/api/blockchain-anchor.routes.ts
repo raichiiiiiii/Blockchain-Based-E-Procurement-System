@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import type { BlockchainAnchorGateway } from '../application/blockchain-anchor-gateway.js';
 import type { BlockchainAnchorMetadataRepository } from '../application/blockchain-anchor-metadata-repository.js';
 import {
@@ -10,6 +10,7 @@ import { createApplicationValidationError } from '../../shared/api/validation-er
 type BlockchainAnchorRoutesOptions = {
   gateway?: BlockchainAnchorGateway;
   metadataRepository?: BlockchainAnchorMetadataRepository;
+  authenticatedPreHandler?: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
 };
 
 type VerifyProofBody = {
@@ -62,6 +63,13 @@ export const registerBlockchainAnchorRoutes: FastifyPluginAsync<BlockchainAnchor
   options,
 ) => {
   fastify.addHook('preHandler', async (request, reply) => {
+    if (options.authenticatedPreHandler) {
+      await options.authenticatedPreHandler(request, reply);
+      if (reply.sent) {
+        return;
+      }
+    }
+
     if (!hasProofAccess(request)) {
       return reply.code(403).send({
         error: {

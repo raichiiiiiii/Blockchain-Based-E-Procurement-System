@@ -103,6 +103,7 @@ export function createTestableServer(options?: {
   exportBundleRepository?: ExportBundleRepository;
   plsContractRepository?: PlsContractRepository;
   registerKycAmlRoutes?: boolean;
+  enforceBearerAuthForLegacyActorRoutes?: boolean;
 }) {
   const server = fastify();
 
@@ -157,6 +158,9 @@ export function createTestableServer(options?: {
   const exportBundleRepository = options?.exportBundleRepository ?? new InMemoryExportBundleRepository();
   const plsContractRepository = options?.plsContractRepository ?? new InMemoryPlsContractRepository();
   const authenticatedPreHandler = createAuthenticatedRequestPreHandler(sessionRepository);
+  const legacyActorRouteAuthenticatedPreHandler = options?.enforceBearerAuthForLegacyActorRoutes
+    ? authenticatedPreHandler
+    : undefined;
 
   // Register auth routes
   server.register(authRoutes, {
@@ -186,7 +190,8 @@ export function createTestableServer(options?: {
     userStatusLookup,
     memberStatusLookup,
     accessAuditEventRepository,
-    authenticatedPreHandler
+    authenticatedPreHandler,
+    requireAuthenticatedSession: options?.enforceBearerAuthForLegacyActorRoutes ?? false
   });
 
   // Register shariah-review routes with authentication for protected endpoints
@@ -196,13 +201,15 @@ export function createTestableServer(options?: {
     roleAssignmentRepository: roleAssignmentRepository,
     roleRepository: roleRepository,
     audit: shariahReviewAuditCallback,
-    accessAuditEventRepository
+    accessAuditEventRepository,
+    authenticatedPreHandler: legacyActorRouteAuthenticatedPreHandler
   });
 
   // Register access-history routes with authentication for protected endpoints
   server.register(registerAccessHistoryRoutes, {
     prefix: '/api/v1',
-    accessAuditEventRepository
+    accessAuditEventRepository,
+    authenticatedPreHandler: legacyActorRouteAuthenticatedPreHandler
   });
 
   if (options?.registerKycAmlRoutes) {
@@ -217,7 +224,8 @@ export function createTestableServer(options?: {
   // Register transaction-history routes
   server.register(registerTransactionHistoryRoutes, {
     prefix: '/api/v1',
-    repository: procureToPayLifecycleEventRepository
+    repository: procureToPayLifecycleEventRepository,
+    authenticatedPreHandler: legacyActorRouteAuthenticatedPreHandler
   });
 
   server.register(registerProcurementOrderRoutes, {
@@ -252,7 +260,8 @@ export function createTestableServer(options?: {
   server.register(registerBlockchainAnchorRoutes, {
     prefix: '/api/v1',
     gateway: blockchainAnchorGateway,
-    metadataRepository: blockchainAnchorMetadataRepository
+    metadataRepository: blockchainAnchorMetadataRepository,
+    authenticatedPreHandler: legacyActorRouteAuthenticatedPreHandler
   });
 
   // Register escrow first-slice routes
@@ -326,6 +335,7 @@ function createRuntimeServerDependencies(
     return {
       serverOptions: {
         registerKycAmlRoutes: true,
+        enforceBearerAuthForLegacyActorRoutes: true,
       },
     };
   }
@@ -336,6 +346,7 @@ function createRuntimeServerDependencies(
     postgresPool,
     serverOptions: {
       registerKycAmlRoutes: true,
+      enforceBearerAuthForLegacyActorRoutes: true,
       memberRepository: new PostgresMemberOrganizationRepository(postgresPool),
       roleRepository: new PostgresRoleRepository(postgresPool),
       roleAssignmentRepository: new PostgresRoleAssignmentRepository(postgresPool),

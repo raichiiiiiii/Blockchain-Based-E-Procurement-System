@@ -102,7 +102,7 @@ Buyer demonstrable path:
 ```text
 Landing page
 -> Sign in
--> Continue as Buyer
+-> Enter buyer.demo / demo-password
 -> Dashboard
 -> Orders
 -> Create order
@@ -116,7 +116,7 @@ Supplier demonstrable path:
 ```text
 Landing page
 -> Sign in
--> Continue as Supplier
+-> Enter supplier.demo / demo-password
 -> Dashboard
 -> Received Orders
 -> Select assigned order
@@ -130,7 +130,7 @@ Compliance reviewer demonstrable path:
 ```text
 Landing page
 -> Sign in
--> Continue as Compliance Reviewer
+-> Enter compliance.demo / demo-password
 -> Dashboard
 -> Compliance
 -> Select pending case
@@ -143,7 +143,7 @@ Shariah reviewer demonstrable path:
 ```text
 Landing page
 -> Sign in
--> Continue as Shariah Reviewer
+-> Enter shariah.demo / demo-password
 -> Dashboard
 -> Shariah Review
 -> Select a PLS review record
@@ -157,7 +157,7 @@ Financier demonstrable path:
 ```text
 Landing page
 -> Sign in
--> Continue as Financier
+-> Enter financier.demo / demo-password
 -> Dashboard
 -> Financing
 -> Select a PLS contract
@@ -172,7 +172,7 @@ Auditor demonstrable path:
 ```text
 Landing page
 -> Sign in
--> Continue as Auditor
+-> Enter auditor.demo / demo-password
 -> Dashboard
 -> Audit Trail / Blockchain Proof
 -> Export Bundle
@@ -185,7 +185,7 @@ Regulator demonstrable path:
 ```text
 Landing page
 -> Sign in
--> Continue as Regulator
+-> Enter regulator.demo / demo-password
 -> Dashboard
 -> Export Bundle
 -> Request export
@@ -200,7 +200,7 @@ Security operator demonstrable path:
 ```text
 Landing page
 -> Sign in
--> Continue as Security Operator
+-> Enter security.demo / demo-password
 -> Dashboard
 -> Security Status
 -> Access Alerts
@@ -213,7 +213,7 @@ Administrator demonstrable path:
 ```text
 Landing page
 -> Sign in
--> Continue as Administrator
+-> Enter admin.demo / demo-password
 -> Dashboard
 -> Members
 -> Select organization

@@ -14,14 +14,14 @@ Preconditions:
 - Demo account `admin.demo` exists.
 - Password is `demo-password`.
 - Frontend opens on the landing page.
-- Backend bearer session is used when the backend is available; local demo mode may use safe preview data.
+- Backend bearer session is used for protected product workflows. Demo actor credentials are entered through the credential form.
 
 Script:
 
 ```text
 1. Open landing page.
 2. Select Sign in.
-3. Continue as Administrator.
+3. Enter `admin.demo` and `demo-password`.
 4. Confirm Dashboard loads with administrator navigation only.
 5. Open Members.
 6. Select a member organization.
@@ -63,7 +63,7 @@ Script:
 ```text
 1. Open landing page.
 2. Select Sign in.
-3. Continue as Buyer.
+3. Enter `buyer.demo` and `demo-password`.
 4. Confirm Dashboard loads with buyer navigation only.
 5. Open Orders.
 6. Create an order assigned to the supplier organization.
@@ -103,7 +103,7 @@ Script:
 ```text
 1. Open landing page.
 2. Select Sign in.
-3. Continue as Supplier.
+3. Enter `supplier.demo` and `demo-password`.
 4. Confirm Dashboard loads with supplier navigation only.
 5. Open Received Orders.
 6. Select an assigned order.
@@ -141,7 +141,7 @@ Script:
 ```text
 1. Open landing page.
 2. Select Sign in.
-3. Continue as Compliance Reviewer.
+3. Enter `compliance.demo` and `demo-password`.
 4. Confirm Dashboard loads with compliance navigation only.
 5. Open Compliance.
 6. Select a pending case.
@@ -178,7 +178,7 @@ Script:
 ```text
 1. Open landing page.
 2. Select Sign in.
-3. Continue as Shariah Reviewer.
+3. Enter `shariah.demo` and `demo-password`.
 4. Confirm Dashboard loads with Shariah Review navigation only.
 5. Open Shariah Review.
 6. Select a PLS review record.
@@ -215,7 +215,7 @@ Script:
 ```text
 1. Open landing page.
 2. Select Sign in.
-3. Continue as Financier.
+3. Enter `financier.demo` and `demo-password`.
 4. Confirm Dashboard loads with Financing navigation only.
 5. Open Financing.
 6. Select a PLS contract.
@@ -254,7 +254,7 @@ Script:
 ```text
 1. Open landing page.
 2. Select Sign in.
-3. Continue as Auditor.
+3. Enter `auditor.demo` and `demo-password`.
 4. Confirm Dashboard loads with auditor navigation only.
 5. Open Export Bundle.
 6. Request an export bundle.
@@ -289,7 +289,7 @@ Script:
 ```text
 1. Open landing page.
 2. Select Sign in.
-3. Continue as Regulator.
+3. Enter `regulator.demo` and `demo-password`.
 4. Confirm Dashboard loads with regulator navigation only.
 5. Open Export Bundle.
 6. Request a combined audit export for the default date range.
@@ -326,7 +326,7 @@ Script:
 ```text
 1. Open landing page.
 2. Select Sign in.
-3. Continue as Security Operator.
+3. Enter `security.demo` and `demo-password`.
 4. Confirm Dashboard loads with security navigation only.
 5. Open Access Alerts.
 6. Confirm denied-action alert metadata is visible.

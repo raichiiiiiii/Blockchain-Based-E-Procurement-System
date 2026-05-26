@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import type { ShariahReviewRepository } from '../application/shariah-review-repository.js';
 import { submitShariahReview, type SubmitShariahReviewInput } from '../application/submit-shariah-review.js';
 import type { ShariahReview, ChecklistItemDefinition } from '../domain/shariah-review.js';
@@ -67,6 +67,7 @@ interface ShariahReviewRoutesOptions {
   roleRepository: RoleRepository;
   audit: (event: ShariahReviewSubmitAuditEvent | ShariahReviewChecklistAuditEvent | ShariahReviewDecisionAuditEvent | ShariahReviewHistoryAuditEvent) => void;
   accessAuditEventRepository?: AccessAuditEventRepository;
+  authenticatedPreHandler?: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
 }
 
 // Seeded checklist item definitions
@@ -93,8 +94,13 @@ const registerShariahReviewRoutes: FastifyPluginAsync<ShariahReviewRoutesOptions
     roleAssignmentRepository,
     roleRepository,
     audit,
-    accessAuditEventRepository
+    accessAuditEventRepository,
+    authenticatedPreHandler
   } = options;
+
+  if (authenticatedPreHandler) {
+    fastify.addHook('preHandler', authenticatedPreHandler);
+  }
 
   // GET /api/v1/shariah-reviews/:reviewId/history - Get review history
   fastify.get<{ Params: { reviewId: string } }>(

@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import { getProcureToPayTransactionHistory } from '../application/procure-to-pay-transaction-history-read-model.js';
 import type { ProcureToPayLifecycleEventRepository } from '../application/procure-to-pay-lifecycle-event-repository.js';
 import { createApplicationValidationError } from '../../shared/api/validation-error-helper.js';
@@ -13,6 +13,7 @@ type TransactionHistoryQuerystring = {
 // Define plugin options interface
 interface TransactionHistoryRoutesOptions {
   repository?: ProcureToPayLifecycleEventRepository;
+  authenticatedPreHandler?: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
 }
 
 // Helper function to validate transaction history query parameters
@@ -45,6 +46,15 @@ function validateTransactionHistoryQuery(query: TransactionHistoryQuerystring): 
 const registerTransactionHistoryRoutes: FastifyPluginAsync<TransactionHistoryRoutesOptions> = async (fastify, options) => {
   const { repository } = options;
 
+  async function requireAuthenticatedSession(request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+    if (!options.authenticatedPreHandler) {
+      return true;
+    }
+
+    await options.authenticatedPreHandler(request, reply);
+    return !reply.sent;
+  }
+
   // GET /api/v1/procurement/transactions/:caseId/history - Get transaction history
   fastify.get<{
     Params: {
@@ -55,6 +65,10 @@ const registerTransactionHistoryRoutes: FastifyPluginAsync<TransactionHistoryRou
     '/procurement/transactions/:caseId/history',
     {
       preHandler: async (request, reply) => {
+        if (!(await requireAuthenticatedSession(request, reply))) {
+          return;
+        }
+
         // Check if the actor has auditor role using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!request.actorContext || !request.actorContext.isAuthenticated || !actorRoles || !actorRoles.includes('auditor')) {

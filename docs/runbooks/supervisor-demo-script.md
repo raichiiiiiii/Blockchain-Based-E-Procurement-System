@@ -77,7 +77,7 @@ Chaincode build/test is automated. Live Fabric local-network deployment depends 
 | Time | Segment | Outcome |
 |---:|---|---|
 | 0:00-1:30 | Product frame | Explain the compliance-first procurement evidence platform and seedbed boundary. |
-| 1:30-2:30 | Landing and sign in | Show root page, sign-in requirement, and demo account catalogue. |
+| 1:30-2:30 | Landing and sign in | Show root page, sign-in requirement, and credential-only login. |
 | 2:30-4:00 | Administrator governance | Show Members, Roles, organization status, and Access History. |
 | 4:00-5:30 | Compliance review | Show safe KYC/AML metadata and eligibility decision. |
 | 5:30-7:00 | Buyer order | Create or inspect procurement order for supplier. |
@@ -120,7 +120,7 @@ The product starts as an evidence workspace, not a developer dashboard. The root
 Action:
 
 ```text
-Open Sign in and choose the relevant demo actor.
+Open Sign in and enter the issued demo username and password for the relevant actor.
 ```
 
 Show:
@@ -132,7 +132,7 @@ Show:
 What to say:
 
 ```text
-The role selector is a demo convenience. Protected actions depend on authenticated session context and backend authorization.
+The product login path uses issued credentials only. Demo accounts are seeded in the database and documented in the runbook; protected actions depend on authenticated session context and backend authorization.
 ```
 
 ### 3. Administrator Governance

@@ -1,4 +1,4 @@
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import { queryAccessHistory } from '../../shared/application/access-history-query.js';
 import { getAccessAuditEventDetail } from '../../shared/application/access-audit-event-detail.js';
 import { getAccessAuditEventSequence, type AccessAuditEventSequenceScope } from '../../shared/application/access-audit-event-sequence.js';
@@ -47,6 +47,7 @@ type AccessHistorySequenceQuerystring = {
 // Define plugin options interface
 interface AccessHistoryRoutesOptions {
   accessAuditEventRepository?: AccessAuditEventRepository;
+  authenticatedPreHandler?: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
 }
 
 // Validation issue type
@@ -271,6 +272,15 @@ function validateAccessHistorySequenceQuery(query: AccessHistorySequenceQuerystr
 const registerAccessHistoryRoutes: FastifyPluginAsync<AccessHistoryRoutesOptions> = async (fastify, options) => {
   const { accessAuditEventRepository } = options;
 
+  async function requireAuthenticatedSession(request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+    if (!options.authenticatedPreHandler) {
+      return true;
+    }
+
+    await options.authenticatedPreHandler(request, reply);
+    return !reply.sent;
+  }
+
   // GET /api/v1/access-history - Query access history
   fastify.get<{
     Querystring: AccessHistoryQuerystring;
@@ -278,6 +288,10 @@ const registerAccessHistoryRoutes: FastifyPluginAsync<AccessHistoryRoutesOptions
     '/access-history',
     {
       preHandler: async (request, reply) => {
+        if (!(await requireAuthenticatedSession(request, reply))) {
+          return;
+        }
+
         // Check if the actor has auditor role using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!canReadAccessHistory(actorRoles)) {
@@ -339,6 +353,10 @@ const registerAccessHistoryRoutes: FastifyPluginAsync<AccessHistoryRoutesOptions
     '/access-history/sequences',
     {
       preHandler: async (request, reply) => {
+        if (!(await requireAuthenticatedSession(request, reply))) {
+          return;
+        }
+
         // Check if the actor has auditor role using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!canReadAccessHistory(actorRoles)) {
@@ -419,6 +437,10 @@ const registerAccessHistoryRoutes: FastifyPluginAsync<AccessHistoryRoutesOptions
     '/access-history/events/:eventId',
     {
       preHandler: async (request, reply) => {
+        if (!(await requireAuthenticatedSession(request, reply))) {
+          return;
+        }
+
         // Check if the actor has auditor role using actorContext
         const actorRoles = request.actorContext?.authorizationContext.roles;
         if (!canReadAccessHistory(actorRoles)) {

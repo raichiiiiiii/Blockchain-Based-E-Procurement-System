@@ -307,39 +307,6 @@ button {
   padding: 24px;
 }
 
-.demo-account-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 22px;
-}
-
-.demo-account-button {
-  display: grid;
-  gap: 8px;
-  min-height: 96px;
-  border: 1px solid #d8e2dd;
-  border-radius: 8px;
-  background: #f8faf8;
-  color: #1f2d29;
-  padding: 16px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.demo-account-button:hover:not(:disabled) {
-  border-color: #0c6b58;
-}
-
-.demo-account-button span {
-  color: #52615d;
-  font-size: 0.92rem;
-}
-
-.demo-account-button strong {
-  font-size: 1.1rem;
-}
-
 .login-form {
   display: grid;
   gap: 16px;
@@ -1927,8 +1894,7 @@ button {
     padding-top: 34px;
   }
 
-  .workflow-strip,
-  .demo-account-grid {
+  .workflow-strip {
     grid-template-columns: 1fr;
   }
 

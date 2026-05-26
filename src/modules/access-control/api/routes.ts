@@ -102,6 +102,7 @@ interface AccessControlRoutesOptions {
   memberStatusLookup?: MemberStatusLookup;
   accessAuditEventRepository?: AccessAuditEventRepository;
   authenticatedPreHandler?: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
+  requireAuthenticatedSession?: boolean;
 }
 
 // Create the Fastify plugin for access-control routes
@@ -118,7 +119,11 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
   } = options;
 
   async function applySessionActorWhenPresent(request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
-    if (!request.headers.authorization || !options.authenticatedPreHandler) {
+    if (!options.authenticatedPreHandler) {
+      return true;
+    }
+
+    if (!options.requireAuthenticatedSession && !request.headers.authorization) {
       return true;
     }
 
@@ -439,6 +444,27 @@ const registerAccessControlRoutes: FastifyPluginAsync<AccessControlRoutesOptions
   // GET /api/v1/roles - List all roles
   fastify.get(
     '/roles',
+    {
+      preHandler: async (request, reply) => {
+        if (!options.requireAuthenticatedSession) {
+          return;
+        }
+
+        if (!(await applySessionActorWhenPresent(request, reply))) {
+          return;
+        }
+
+        const actorRoles = request.actorContext?.authorizationContext.roles;
+        if (!hasAdministratorRole(actorRoles)) {
+          return reply.code(403).send({
+            error: {
+              code: 'FORBIDDEN',
+              message: 'Admin access required'
+            }
+          });
+        }
+      }
+    },
     async (_request, reply) => {
       const roles = await repository.findAll();
       return reply.code(200).send({
