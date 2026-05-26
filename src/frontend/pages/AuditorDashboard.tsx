@@ -1,5 +1,12 @@
+import { useState } from 'react';
+import BlockchainProofPanel from '../components/blockchain/BlockchainProofPanel';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
+import {
+  getLocalDemoProofRecord,
+  verifyBlockchainProof,
+  type BlockchainVerificationResult,
+} from '../lib/blockchain-proof-client';
 import ExportBundlePage from './ExportBundlePage';
 
 type AuditorDashboardProps = {
@@ -7,7 +14,22 @@ type AuditorDashboardProps = {
   session: AuthenticatedFrontendSession;
 };
 
+type VerificationState = BlockchainVerificationResult | { verificationStatus: 'verifying' };
+
+const auditorProof = getLocalDemoProofRecord('audit-event-anchored');
+
+function isVerificationResult(value: VerificationState | undefined): value is BlockchainVerificationResult {
+  return Boolean(value && value.verificationStatus !== 'verifying');
+}
+
 function AuditorDashboard({ activeTarget, session }: AuditorDashboardProps) {
+  const [verificationState, setVerificationState] = useState<VerificationState>();
+
+  const handleVerifyProof = async (eventId: string, payloadHash?: string) => {
+    setVerificationState({ verificationStatus: 'verifying' });
+    setVerificationState(await verifyBlockchainProof({ eventId, payloadHash }));
+  };
+
   if (activeTarget === 'audit-trail') {
     return (
       <section className="workspace-panel">
@@ -23,12 +45,22 @@ function AuditorDashboard({ activeTarget, session }: AuditorDashboardProps) {
   }
 
   if (activeTarget === 'blockchain-proof') {
+    const verification = isVerificationResult(verificationState) ? verificationState : undefined;
+
     return (
-      <section className="workspace-panel">
-        <h2>Blockchain Proof</h2>
-        <p>Verification results appear only when an anchored event is selected.</p>
-        <div className="empty-product-state">No event proof is selected.</div>
-      </section>
+      <div className="proof-workspace">
+        <section className="proof-surface-header">
+          <p className="dashboard-role-label">Blockchain Proof</p>
+          <h2>Audit proof verification</h2>
+          <p>Verify anchored event proof metadata without exposing restricted records or private payloads.</p>
+        </section>
+        <BlockchainProofPanel
+          {...auditorProof}
+          verification={verification}
+          verificationStatus={verificationState?.verificationStatus}
+          onVerify={handleVerifyProof}
+        />
+      </div>
     );
   }
 
