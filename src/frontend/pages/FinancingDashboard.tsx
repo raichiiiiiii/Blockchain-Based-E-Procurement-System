@@ -8,6 +8,7 @@ import {
   type PlsDistributionEventType,
   type PlsDistributionRecord,
 } from '../api/pls-financing';
+import PlsScenarioSimulator from '../components/financing/PlsScenarioSimulator';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 
@@ -288,6 +289,8 @@ function FinancingDashboard({ activeTarget, session }: FinancingDashboardProps) 
                     <dd>{selectedContract.shariahApproval?.reviewId ?? 'Approval required'}</dd>
                   </div>
                 </dl>
+
+                <PlsScenarioSimulator contract={selectedContract} />
 
                 <div className="admin-action-row" aria-label="Financing actions">
                   <button
