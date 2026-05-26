@@ -68,6 +68,15 @@ import type { ExternalApiAuditRepository } from '../modules/integration/applicat
 import { InMemoryExternalClientCredentialRepository } from '../modules/integration/infrastructure/in-memory-external-client-credential-repository.js';
 import { InMemoryExternalIdempotencyRepository } from '../modules/integration/infrastructure/in-memory-external-idempotency-repository.js';
 import { InMemoryExternalApiAuditRepository } from '../modules/integration/infrastructure/in-memory-external-api-audit-repository.js';
+import { registerDocumentRoutes } from '../modules/documents/api/document.routes.js';
+import type { DocumentRepository } from '../modules/documents/application/document-repository.js';
+import type { DocumentStoragePort } from '../modules/documents/application/document-storage-port.js';
+import type { DocumentTextExtractionPort } from '../modules/documents/application/document-text-extraction-port.js';
+import type { SignatureVerificationPort } from '../modules/documents/application/signature-verification-port.js';
+import { InMemoryDocumentRepository } from '../modules/documents/infrastructure/in-memory-document-repository.js';
+import { LocalDocumentStorageAdapter } from '../modules/documents/infrastructure/local-document-storage-adapter.js';
+import { LocalDocumentTextExtractionAdapter } from '../modules/documents/infrastructure/local-document-text-extraction-adapter.js';
+import { LocalSignatureMetadataAdapter } from '../modules/documents/infrastructure/local-signature-metadata-adapter.js';
 import { createPostgresPool, type PostgresExecutor } from '../infrastructure/database/postgres-client.js';
 import { PostgresMemberOrganizationRepository } from '../modules/membership/infrastructure/postgres-member-organization-repository.js';
 import { PostgresRoleRepository } from '../modules/access-control/infrastructure/postgres-role-repository.js';
@@ -118,6 +127,10 @@ export function createTestableServer(options?: {
   externalIdempotencyRepository?: ExternalIdempotencyRepository;
   externalApiAuditRepository?: ExternalApiAuditRepository;
   externalApiSharedSecret?: string;
+  documentRepository?: DocumentRepository;
+  documentStorage?: DocumentStoragePort;
+  documentTextExtractor?: DocumentTextExtractionPort;
+  signatureVerifier?: SignatureVerificationPort;
   registerKycAmlRoutes?: boolean;
   enforceBearerAuthForLegacyActorRoutes?: boolean;
   readiness?: () => Promise<RuntimeReadiness>;
@@ -195,6 +208,10 @@ export function createTestableServer(options?: {
   const externalClientCredentialRepository = options?.externalClientCredentialRepository ?? new InMemoryExternalClientCredentialRepository();
   const externalIdempotencyRepository = options?.externalIdempotencyRepository ?? new InMemoryExternalIdempotencyRepository();
   const externalApiAuditRepository = options?.externalApiAuditRepository ?? new InMemoryExternalApiAuditRepository();
+  const documentRepository = options?.documentRepository ?? new InMemoryDocumentRepository();
+  const documentStorage = options?.documentStorage ?? new LocalDocumentStorageAdapter();
+  const documentTextExtractor = options?.documentTextExtractor ?? new LocalDocumentTextExtractionAdapter();
+  const signatureVerifier = options?.signatureVerifier ?? new LocalSignatureMetadataAdapter();
   const authenticatedPreHandler = createAuthenticatedRequestPreHandler(sessionRepository);
   const legacyActorRouteAuthenticatedPreHandler = options?.enforceBearerAuthForLegacyActorRoutes
     ? authenticatedPreHandler
@@ -372,6 +389,15 @@ export function createTestableServer(options?: {
     idempotencyRepository: externalIdempotencyRepository,
     auditRepository: externalApiAuditRepository,
     sharedSecret: options?.externalApiSharedSecret ?? process.env.EXTERNAL_API_SHARED_SECRET,
+  });
+
+  server.register(registerDocumentRoutes, {
+    prefix: '/api/v1',
+    repository: documentRepository,
+    storage: documentStorage,
+    extractor: documentTextExtractor,
+    signatureVerifier,
+    authenticatedPreHandler,
   });
 
   return server;

@@ -14,6 +14,7 @@ import SecurityDashboard from './pages/SecurityDashboard';
 import ShariahDashboard from './pages/ShariahDashboard';
 import FinancingDashboard from './pages/FinancingDashboard';
 import RoleDashboard from './pages/RoleDashboard';
+import DocumentWorkspacePage from './pages/DocumentWorkspacePage';
 import { loginWithCredentials, logoutSession, type LoginCredentials } from './lib/auth-client';
 import {
   clearStoredSession,
@@ -94,6 +95,10 @@ function renderRoleDashboard(
   activeTarget: DashboardNavigationTarget,
   session: AuthenticatedFrontendSession,
 ) {
+  if (activeTarget === 'documents') {
+    return <DocumentWorkspacePage session={session} />;
+  }
+
   if (role === 'buyer') {
     return <BuyerDashboard activeTarget={activeTarget} session={session} />;
   }

@@ -81,9 +81,10 @@ Chaincode build/test is automated. Live Fabric local-network deployment depends 
 | 2:30-4:00 | Administrator governance | Show Members, Roles, organization status, and Access History. |
 | 4:00-5:30 | Compliance review | Show safe KYC/AML metadata and eligibility decision. |
 | 5:30-7:00 | Buyer order | Create or inspect procurement order for supplier. |
-| 7:00-8:30 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata. |
-| 8:30-9:30 | Buyer delivery review | Show evidence hash, lifecycle event, and proof state on the order detail. |
-| 9:30-11:00 | Escrow creation | Create escrow from accepted order and show escrow-created state. |
+| 7:00-8:00 | Contract documents | Upload contract text and show checksum, extraction fields, and local signature state. |
+| 8:00-9:30 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata. |
+| 9:30-10:30 | Buyer delivery review | Show evidence hash, lifecycle event, and proof state on the order detail. |
+| 10:30-12:00 | Escrow creation | Create escrow from accepted order and show escrow-created state. |
 | 11:00-12:00 | Blockchain proof | Show proof panel and honest verification states. |
 | 12:00-13:30 | Auditor verification | Verify proof or inspect audit/export evidence read-only. |
 | 13:30-15:00 | Shariah review | Show checklist metadata and approval gate. |
@@ -206,7 +207,25 @@ What to say:
 The supplier can act only on assigned accepted orders. Delivery evidence records a safe reference, notes, hash, and lifecycle event; it does not upload or render private documents.
 ```
 
-### 7. Buyer Delivery Review
+### 7. Contract Documents
+
+Sign in as `buyer.demo` or `supplier.demo`.
+
+Show:
+
+- Contract Documents
+- Amanah-Barakah contract text upload
+- checksum and storage reference
+- extraction status and extracted parties/terms
+- signature status with local metadata-only trust boundary
+
+What to say:
+
+```text
+Document intake records metadata, checksum, extraction output, and signature state. It does not claim legal e-signature validation, OCR, malware scanning, or production document management.
+```
+
+### 8. Buyer Delivery Review
 
 Return as `buyer.demo`.
 
@@ -225,7 +244,7 @@ What to say:
 The buyer can review delivery evidence metadata and proof state. A failed or unavailable proof is visible and is not treated as verified.
 ```
 
-### 8. Escrow Creation
+### 9. Escrow Creation
 
 Return as `buyer.demo`.
 
@@ -243,7 +262,7 @@ What to say:
 Escrow is currently a first slice. It records escrow-created state and evidence; it does not execute payment settlement.
 ```
 
-### 9. Blockchain Proof Panel
+### 10. Blockchain Proof Panel
 
 Show proof from escrow, audit event detail, or Blockchain Proof.
 
@@ -259,7 +278,7 @@ What to say:
 The blockchain layer is proof infrastructure. Operational data stays off-chain, while selected event hashes can be anchored and verified.
 ```
 
-### 10. Auditor Verification
+### 11. Auditor Verification
 
 Sign in as `auditor.demo`.
 
@@ -275,7 +294,7 @@ What to say:
 The auditor has read-only evidence tools. Verification states are explicit: verified, mismatch, not found, and unavailable are different outcomes.
 ```
 
-### 11. Shariah Review
+### 12. Shariah Review
 
 Sign in as `shariah.demo`.
 
@@ -292,7 +311,7 @@ What to say:
 The PLS seedbed is controlled by Shariah governance. Activation requires an approved reference and does not imply production Islamic finance certification.
 ```
 
-### 12. Financier PLS Contract and Distribution
+### 13. Financier PLS Contract and Distribution
 
 Sign in as `financier.demo`.
 
@@ -309,7 +328,7 @@ What to say:
 The financier can inspect and simulate allocation scenarios. No external payments are executed and no profit or principal is guaranteed.
 ```
 
-### 13. Regulator Export Bundle
+### 14. Regulator Export Bundle
 
 Sign in as `regulator.demo`.
 
@@ -326,7 +345,7 @@ What to say:
 The regulator flow packages reviewable evidence with integrity metadata. Production signing and external regulator portal integration remain post-MVP.
 ```
 
-### 14. Evidence, Runbook, and Validation
+### 15. Evidence, Runbook, and Validation
 
 Show:
 
@@ -344,7 +363,7 @@ What to say:
 The demo is backed by documented UAT scripts, authorization checks, and validation evidence rather than a one-off walkthrough.
 ```
 
-### 15. Known Limitations
+### 16. Known Limitations
 
 Close by naming limits directly:
 
@@ -352,6 +371,7 @@ Close by naming limits directly:
 - not a production payment rail
 - not full ERP or ISO20022 integration
 - not production Islamic finance compliance
+- not production document management, OCR, malware scanning, or legal signature validation
 - not full DID/VC federation
 - not a full arbitration module
 - not a full tokenized receivables lifecycle
@@ -388,6 +408,7 @@ Do not claim:
 | PostgreSQL fails | Docker not running or port conflict | Use memory-only demo path or follow `docs/runbooks/postgres-local-dev.md`. |
 | Fabric proof unavailable | Local Fabric network not running | Use chaincode build/test evidence and show unavailable state honestly. |
 | Delivery evidence submit fails | Order is not accepted or wrong supplier session is active | Accept the assigned order first, then retry from the supplier account. |
+| Contract document extraction is unsupported | Binary PDF/DOCX extraction adapter is not connected | Use text/plain demo content or explain the explicit unsupported state. |
 | Export verification mismatch | Wrong bundle hash submitted | Re-copy bundle hash from bundle detail and verify again. |
 | Actor sees unexpected route | Wrong account session active | Sign out and sign in as the intended demo actor. |
 
@@ -401,6 +422,7 @@ Do not claim:
 - [ ] Buyer can create or inspect order.
 - [ ] Supplier can acknowledge assigned order.
 - [ ] Supplier can submit delivery evidence metadata for an accepted order.
+- [ ] Contract document upload shows checksum, extraction, and local signature state without raw content or legal signature overclaiming.
 - [ ] Buyer can review delivery evidence hash, lifecycle event, and proof state.
 - [ ] Buyer can create escrow from accepted order.
 - [ ] Proof panel shows honest states and does not fabricate transaction IDs.

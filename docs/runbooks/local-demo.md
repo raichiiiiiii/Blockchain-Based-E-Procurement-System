@@ -59,6 +59,8 @@ npm run dev
 
 The backend exposes REST routes under `/api/v1`. Use `PERSISTENCE_ADAPTER=memory` for a fully in-memory fast demo. Use `PERSISTENCE_ADAPTER=postgres` after migrations and seed have been applied to persist auth/session, membership/RBAC, access audit, procurement lifecycle events, procurement orders, delivery evidence metadata, blockchain anchor metadata, and escrow records. KYC cases, export bundles, Shariah reviews, and PLS contracts currently use in-memory repositories unless their API route is supplied a dedicated adapter.
 
+Document intake stores local files through `DocumentStoragePort`. The default local adapter writes under `.local-documents/` unless `DOCUMENT_STORAGE_DIR` is set. This folder is ignored by git and should not be used as production object storage.
+
 ## One-Command Local Startup
 
 On Windows PowerShell, the helper script can start PostgreSQL, apply migrations and seed data, then launch the backend and frontend:
@@ -106,6 +108,8 @@ Landing page
 -> Dashboard
 -> Orders
 -> Create order
+-> Contract Documents
+-> Upload contract text and inspect checksum/extraction/signature state
 -> Escrow
 -> Create escrow from an accepted order
 -> Blockchain Proof panel
@@ -122,6 +126,7 @@ Landing page
 -> Select assigned order
 -> Accept order
 -> Delivery Evidence
+-> Contract Documents
 -> Escrow
 ```
 
@@ -225,6 +230,8 @@ Landing page
 
 Role-specific dashboard entry is available for Administrator, Buyer, Supplier, Compliance Reviewer, Shariah Reviewer, Financier, Auditor, Regulator, and Security Operator. The administrator workflow includes member governance, status actions, role assignment controls, and access-history inspection. Buyer and supplier workflows include order creation, received-order acknowledgement, accepted-order escrow readiness, and metadata-only delivery evidence. Escrow creation requires an accepted order or explicit demo accepted-order reference, and buyer/supplier organizations must be eligible. Compliance reviewer workflow includes safe KYC/AML case metadata, decision actions, and downstream eligibility visibility. Shariah reviewer workflow includes PLS checklist metadata and decision controls. Financier workflow includes Shariah-gated PLS activation and profit/loss distribution scenarios. Regulator and auditor workflows include scoped export bundle generation and deterministic bundle-hash verification. Security operator workflow is read-only and shows backend-backed access/proof anomaly metadata when a backend session is active.
 
+The Contract Documents panel lets authorized actors upload text/JSON document content for metadata, checksum, local storage reference, extraction output, and local detached-signature metadata state. PDF and DOCX bytes can be stored, but extraction is explicitly unsupported until a production extractor adapter is connected. The UI must not claim malware scanning, OCR, legal signature validation, or production document management.
+
 ## Fabric Proof Path
 
 For chaincode build/test:
@@ -273,12 +280,14 @@ Shariah Review
 Financing
 Export Bundle
 Security Status
+Contract Documents
 ```
 
 ## Current Known Limitations
 
 - Mandatory actors can sign in and reach role-specific dashboard entry states. Shariah and financier workflows are demonstrable with restricted PLS seedbed data.
-- Delivery evidence is metadata-only; no raw commercial documents, IoT feeds, or QR signature capture are implemented.
+- Delivery evidence is metadata-only; no IoT feeds or QR signature capture are implemented.
+- Document intake is local-storage MVP scope only; no production object storage, OCR, PDF/DOCX extraction, malware scanning, or legal e-signature verification is implemented.
 - Compliance dashboard uses a local demo case queue until a backend case-list endpoint is added.
 - Eligibility gating is implemented for order creation, escrow creation, and PLS activation.
 - Fabric live network deployment remains a local/manual path unless the Fabric samples are installed.

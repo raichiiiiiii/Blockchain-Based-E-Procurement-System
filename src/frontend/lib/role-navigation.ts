@@ -8,6 +8,7 @@ export type DashboardNavigationTarget =
   | 'orders'
   | 'received-orders'
   | 'delivery-evidence'
+  | 'documents'
   | 'escrow'
   | 'blockchain-proof'
   | 'compliance'
@@ -34,12 +35,14 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'members', label: 'Members' },
     { id: 'roles', label: 'Roles' },
     { id: 'access-history', label: 'Access History' },
+    { id: 'documents', label: 'Contract Documents' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
   ],
   buyer: [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'orders', label: 'Orders' },
+    { id: 'documents', label: 'Contract Documents' },
     { id: 'escrow', label: 'Escrow' },
     { id: 'blockchain-proof', label: 'Blockchain Proof' },
     { id: 'settings', label: 'Settings' },
@@ -49,6 +52,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'received-orders', label: 'Received Orders' },
     { id: 'delivery-evidence', label: 'Delivery Evidence' },
+    { id: 'documents', label: 'Contract Documents' },
     { id: 'escrow', label: 'Escrow' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
@@ -56,6 +60,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
   complianceReviewer: [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'compliance', label: 'Compliance' },
+    { id: 'documents', label: 'Contract Documents' },
     { id: 'eligibility-status', label: 'Eligibility Status' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
@@ -63,12 +68,14 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
   shariahReviewer: [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'shariah-review', label: 'Shariah Review' },
+    { id: 'documents', label: 'Contract Documents' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
   ],
   financier: [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'financing', label: 'Financing' },
+    { id: 'documents', label: 'Contract Documents' },
     { id: 'shariah-review', label: 'Shariah Review' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },

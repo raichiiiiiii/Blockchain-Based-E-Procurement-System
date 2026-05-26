@@ -32,6 +32,7 @@ const navigationIconLabels: Record<DashboardNavigationTarget, string> = {
   orders: 'O',
   'received-orders': 'O',
   'delivery-evidence': 'E',
+  documents: 'C',
   escrow: 'E',
   'blockchain-proof': 'P',
   compliance: 'C',
