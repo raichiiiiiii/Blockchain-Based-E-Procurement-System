@@ -1,0 +1,135 @@
+name: pls-procurement-production-consortium-template
+version: 1.0.0
+client:
+  organization: PlatformOperatorMSP
+  connection:
+    timeout:
+      peer:
+        endorser: '300'
+      orderer: '300'
+organizations:
+  PlatformOperatorMSP:
+    mspid: PlatformOperatorMSP
+    peers:
+      - peer0.platform.example.test
+    certificateAuthorities:
+      - ca.platform.example.test
+  BuyerMSP:
+    mspid: BuyerMSP
+    peers:
+      - peer0.buyer.example.test
+    certificateAuthorities:
+      - ca.buyer.example.test
+  SupplierMSP:
+    mspid: SupplierMSP
+    peers:
+      - peer0.supplier.example.test
+    certificateAuthorities:
+      - ca.supplier.example.test
+  FinancierMSP:
+    mspid: FinancierMSP
+    peers:
+      - peer0.financier.example.test
+    certificateAuthorities:
+      - ca.financier.example.test
+  RegulatorAuditorMSP:
+    mspid: RegulatorAuditorMSP
+    peers:
+      - peer0.regulator-auditor.example.test
+    certificateAuthorities:
+      - ca.regulator-auditor.example.test
+orderers:
+  orderer0.consortium.example.test:
+    url: grpcs://orderer0.consortium.example.test:7050
+    grpcOptions:
+      ssl-target-name-override: orderer0.consortium.example.test
+    tlsCACerts:
+      path: /opt/fabric/crypto/ordererOrganizations/consortium.example.test/orderers/orderer0.consortium.example.test/tls/ca.crt
+peers:
+  peer0.platform.example.test:
+    url: grpcs://peer0.platform.example.test:7051
+    grpcOptions:
+      ssl-target-name-override: peer0.platform.example.test
+    tlsCACerts:
+      path: /opt/fabric/crypto/peerOrganizations/platform.example.test/peers/peer0.platform.example.test/tls/ca.crt
+  peer0.buyer.example.test:
+    url: grpcs://peer0.buyer.example.test:8051
+    grpcOptions:
+      ssl-target-name-override: peer0.buyer.example.test
+    tlsCACerts:
+      path: /opt/fabric/crypto/peerOrganizations/buyer.example.test/peers/peer0.buyer.example.test/tls/ca.crt
+  peer0.supplier.example.test:
+    url: grpcs://peer0.supplier.example.test:9051
+    grpcOptions:
+      ssl-target-name-override: peer0.supplier.example.test
+    tlsCACerts:
+      path: /opt/fabric/crypto/peerOrganizations/supplier.example.test/peers/peer0.supplier.example.test/tls/ca.crt
+  peer0.financier.example.test:
+    url: grpcs://peer0.financier.example.test:10051
+    grpcOptions:
+      ssl-target-name-override: peer0.financier.example.test
+    tlsCACerts:
+      path: /opt/fabric/crypto/peerOrganizations/financier.example.test/peers/peer0.financier.example.test/tls/ca.crt
+  peer0.regulator-auditor.example.test:
+    url: grpcs://peer0.regulator-auditor.example.test:11051
+    grpcOptions:
+      ssl-target-name-override: peer0.regulator-auditor.example.test
+    tlsCACerts:
+      path: /opt/fabric/crypto/peerOrganizations/regulator-auditor.example.test/peers/peer0.regulator-auditor.example.test/tls/ca.crt
+certificateAuthorities:
+  ca.platform.example.test:
+    url: https://ca.platform.example.test:7054
+    caName: ca-platform
+    tlsCACerts:
+      path: /opt/fabric/crypto/peerOrganizations/platform.example.test/ca/ca.platform.example.test-cert.pem
+  ca.buyer.example.test:
+    url: https://ca.buyer.example.test:8054
+    caName: ca-buyer
+    tlsCACerts:
+      path: /opt/fabric/crypto/peerOrganizations/buyer.example.test/ca/ca.buyer.example.test-cert.pem
+  ca.supplier.example.test:
+    url: https://ca.supplier.example.test:9054
+    caName: ca-supplier
+    tlsCACerts:
+      path: /opt/fabric/crypto/peerOrganizations/supplier.example.test/ca/ca.supplier.example.test-cert.pem
+  ca.financier.example.test:
+    url: https://ca.financier.example.test:10054
+    caName: ca-financier
+    tlsCACerts:
+      path: /opt/fabric/crypto/peerOrganizations/financier.example.test/ca/ca.financier.example.test-cert.pem
+  ca.regulator-auditor.example.test:
+    url: https://ca.regulator-auditor.example.test:11054
+    caName: ca-regulator-auditor
+    tlsCACerts:
+      path: /opt/fabric/crypto/peerOrganizations/regulator-auditor.example.test/ca/ca.regulator-auditor.example.test-cert.pem
+channels:
+  procurement-proof-channel:
+    orderers:
+      - orderer0.consortium.example.test
+    peers:
+      peer0.platform.example.test:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      peer0.buyer.example.test:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      peer0.supplier.example.test:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      peer0.financier.example.test:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      peer0.regulator-auditor.example.test:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+

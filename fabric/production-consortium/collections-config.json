@@ -1,0 +1,51 @@
+[
+  {
+    "name": "collectionEscrowTermsProof",
+    "policy": "OR('PlatformOperatorMSP.member', 'BuyerMSP.member', 'SupplierMSP.member', 'FinancierMSP.member', 'RegulatorAuditorMSP.member')",
+    "requiredPeerCount": 2,
+    "maxPeerCount": 5,
+    "blockToLive": 0,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true,
+    "endorsementPolicy": {
+      "signaturePolicy": "AND('PlatformOperatorMSP.member', OR('BuyerMSP.member', 'SupplierMSP.member', 'FinancierMSP.member'))"
+    }
+  },
+  {
+    "name": "collectionDeliveryProofHash",
+    "policy": "OR('PlatformOperatorMSP.member', 'BuyerMSP.member', 'SupplierMSP.member', 'RegulatorAuditorMSP.member')",
+    "requiredPeerCount": 2,
+    "maxPeerCount": 4,
+    "blockToLive": 0,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true,
+    "endorsementPolicy": {
+      "signaturePolicy": "AND('PlatformOperatorMSP.member', OR('BuyerMSP.member', 'SupplierMSP.member'))"
+    }
+  },
+  {
+    "name": "collectionPlsCertificationProof",
+    "policy": "OR('PlatformOperatorMSP.member', 'FinancierMSP.member', 'RegulatorAuditorMSP.member')",
+    "requiredPeerCount": 2,
+    "maxPeerCount": 3,
+    "blockToLive": 0,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true,
+    "endorsementPolicy": {
+      "signaturePolicy": "AND('PlatformOperatorMSP.member', 'FinancierMSP.member', 'RegulatorAuditorMSP.member')"
+    }
+  },
+  {
+    "name": "collectionExportManifestProof",
+    "policy": "OR('PlatformOperatorMSP.member', 'RegulatorAuditorMSP.member')",
+    "requiredPeerCount": 1,
+    "maxPeerCount": 2,
+    "blockToLive": 0,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true,
+    "endorsementPolicy": {
+      "signaturePolicy": "AND('PlatformOperatorMSP.member', 'RegulatorAuditorMSP.member')"
+    }
+  }
+]
+

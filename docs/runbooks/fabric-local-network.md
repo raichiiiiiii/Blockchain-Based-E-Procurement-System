@@ -148,3 +148,43 @@ evidence and rely on the chaincode unit tests as the automated baseline.
   `fabric-samples/test-network`.
 - If chaincode build fails, run `npm --prefix chaincode/audit-anchor install` and retry the
   build/test commands before redeploying.
+
+## Production Consortium Extension Templates
+
+The production-extension foundation is documented separately:
+
+```text
+docs/architecture/PRODUCTION_FABRIC_CONSORTIUM_ARCHITECTURE.md
+fabric/production-consortium/
+```
+
+The production-extension artifacts are templates and prerequisite checks only.
+They do not deploy a production Fabric consortium, enroll CA identities, or
+replace the local test-network smoke path above.
+
+Non-mutating prerequisite check:
+
+```powershell
+.\scripts\fabric\check-production-consortium-prereqs.ps1
+```
+
+Dry-run lifecycle command skeleton:
+
+```powershell
+.\scripts\fabric\production-chaincode-lifecycle-skeleton.ps1
+```
+
+The skeleton prints the package/install/approve/checkcommitreadiness/commit
+command shape for the `audit-anchor` chaincode on `procurement-proof-channel`.
+Operators must fill real MSP material, package IDs, orderer endpoints, peer
+addresses, and TLS paths in a prepared Fabric admin shell before attempting live
+execution.
+
+Boundary reminders:
+
+- The current repository still does not contain production CA/MSP material.
+- Private data collection templates store proof metadata and hashes only.
+- Raw KYC, payment credentials, commercial documents, delivery attachments, and
+  unrestricted contract text remain off-chain.
+- A Fabric outage must surface as unavailable, pending, or failed proof state;
+  it must not delete or rewrite the base PostgreSQL business event.

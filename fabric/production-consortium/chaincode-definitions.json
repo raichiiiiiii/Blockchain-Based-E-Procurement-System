@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "fabric-chaincode-definition-plan-v1",
+  "readinessBoundary": "templateOnlyNoLiveProductionCommit",
+  "channelDefaults": {
+    "sequenceStart": 1,
+    "language": "javascript",
+    "initRequired": false,
+    "canonicalization": "json-canonical-v1"
+  },
+  "chaincodes": [
+    {
+      "name": "audit-anchor",
+      "packagePath": "chaincode/audit-anchor",
+      "channelName": "procurement-proof-channel",
+      "version": "1.0.0",
+      "sequence": 1,
+      "status": "implementedLocalBaseline",
+      "endorsementPolicy": "OutOf(2, 'PlatformOperatorMSP.peer', 'BuyerMSP.peer', 'SupplierMSP.peer', 'FinancierMSP.peer', 'RegulatorAuditorMSP.peer')",
+      "collectionsConfig": "fabric/production-consortium/collections-config.json",
+      "allowedPayload": ["eventId", "caseIdHash", "eventType", "payloadHash", "schemaVersion", "canonicalization", "occurredAt", "previousEventHash"]
+    },
+    {
+      "name": "escrow-governance",
+      "packagePath": "chaincode/escrow-governance",
+      "channelName": "procurement-proof-channel",
+      "version": "0.1.0-template",
+      "sequence": 1,
+      "status": "templateOnly",
+      "endorsementPolicy": "AND('PlatformOperatorMSP.peer', OutOf(1, 'BuyerMSP.peer', 'SupplierMSP.peer', 'FinancierMSP.peer'))",
+      "collectionsConfig": "fabric/production-consortium/collections-config.json",
+      "allowedPayload": ["escrowId", "orderIdHash", "termsHash", "state", "eventHash", "occurredAt"]
+    },
+    {
+      "name": "export-proof",
+      "packagePath": "chaincode/export-proof",
+      "channelName": "regulated-export-channel",
+      "version": "0.1.0-template",
+      "sequence": 1,
+      "status": "templateOnly",
+      "endorsementPolicy": "AND('PlatformOperatorMSP.peer', 'RegulatorAuditorMSP.peer')",
+      "collectionsConfig": "fabric/production-consortium/collections-config.json",
+      "allowedPayload": ["bundleId", "manifestHash", "signatureReference", "signingProfileId", "occurredAt"]
+    },
+    {
+      "name": "pls-certification-proof",
+      "packagePath": "chaincode/pls-certification-proof",
+      "channelName": "pls-governance-channel",
+      "version": "0.1.0-template",
+      "sequence": 1,
+      "status": "templateOnly",
+      "endorsementPolicy": "AND('PlatformOperatorMSP.peer', 'FinancierMSP.peer', 'RegulatorAuditorMSP.peer')",
+      "collectionsConfig": "fabric/production-consortium/collections-config.json",
+      "allowedPayload": ["certificateId", "certificateHash", "templateVersion", "termsHash", "status", "occurredAt"]
+    }
+  ]
+}
+

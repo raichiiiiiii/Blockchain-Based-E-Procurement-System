@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "fabric-production-consortium-plan-v1",
+  "readinessBoundary": "templateOnlyNoLiveProductionConsortium",
+  "participants": [
+    {
+      "organizationId": "platform-operator",
+      "displayName": "Platform Operator Org",
+      "mspId": "PlatformOperatorMSP",
+      "roles": ["networkOperator", "chaincodeReleaseCoordinator", "proofServiceOperator"]
+    },
+    {
+      "organizationId": "buyer",
+      "displayName": "Buyer Org",
+      "mspId": "BuyerMSP",
+      "roles": ["procurementParticipant", "escrowParticipant"]
+    },
+    {
+      "organizationId": "supplier",
+      "displayName": "Supplier Org",
+      "mspId": "SupplierMSP",
+      "roles": ["procurementParticipant", "deliveryProofParticipant"]
+    },
+    {
+      "organizationId": "financier",
+      "displayName": "Financier Org",
+      "mspId": "FinancierMSP",
+      "roles": ["escrowParticipant", "plsParticipant"]
+    },
+    {
+      "organizationId": "regulator-auditor",
+      "displayName": "Regulator Auditor Org",
+      "mspId": "RegulatorAuditorMSP",
+      "roles": ["auditObserver", "exportVerifier", "regulatedEvidenceReader"]
+    }
+  ],
+  "channels": [
+    {
+      "channelName": "procurement-proof-channel",
+      "members": ["PlatformOperatorMSP", "BuyerMSP", "SupplierMSP", "FinancierMSP", "RegulatorAuditorMSP"],
+      "purpose": "Shared proof anchoring for procurement, delivery evidence, escrow, PLS, and export lifecycle events.",
+      "chaincodes": ["audit-anchor", "escrow-governance"],
+      "rawDataPolicy": "hashesAndMetadataOnly"
+    },
+    {
+      "channelName": "regulated-export-channel",
+      "members": ["PlatformOperatorMSP", "RegulatorAuditorMSP"],
+      "purpose": "Export manifest proof and offline verification references.",
+      "chaincodes": ["export-proof"],
+      "rawDataPolicy": "manifestHashSignatureReferenceOnly"
+    },
+    {
+      "channelName": "pls-governance-channel",
+      "members": ["PlatformOperatorMSP", "FinancierMSP", "RegulatorAuditorMSP"],
+      "purpose": "PLS certificate, Shariah decision, and template-version proof references.",
+      "chaincodes": ["pls-certification-proof"],
+      "rawDataPolicy": "certificateHashAndTermsHashOnly"
+    }
+  ],
+  "policies": {
+    "lifecycleEndorsement": "MAJORITY Admins by channel, or explicit consortium-approved signature policy before pilot.",
+    "applicationReaders": "Any channel member reader, narrowed per channel.",
+    "applicationWriters": "Platform operator plus transaction-side organization writer where applicable.",
+    "applicationAdmins": "Consortium governance administrators only."
+  },
+  "operations": {
+    "certificateRotation": "Rotate client identities with smoke query before submitter switch; revoke old identity after proof submit/query pass.",
+    "chaincodeUpgrade": "Increment sequence for endorsement or collection changes; increment version for binary change; keep previous JSON state readable.",
+    "incidentHandling": "Fabric outage must surface as proof unavailable/pending/failed and must not delete PostgreSQL business events.",
+    "backupBoundary": "Fabric ledger and MSP backups are environment-specific and not provided by this repository template."
+  }
+}
+
