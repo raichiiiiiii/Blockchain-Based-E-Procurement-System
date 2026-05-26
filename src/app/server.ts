@@ -61,6 +61,13 @@ import type { OperationalIncidentRepository } from '../modules/ops/application/o
 import { InMemoryOperationalIncidentRepository } from '../modules/ops/infrastructure/in-memory-operational-incident-repository.js';
 import { recordReadinessIncidents } from '../modules/ops/application/record-readiness-incidents.js';
 import { buildRuntimeReadiness, type RuntimePersistenceMode, type RuntimeReadiness } from '../modules/ops/application/runtime-readiness.js';
+import { registerExternalApiRoutes } from '../modules/integration/api/external-api.routes.js';
+import type { ExternalClientCredentialRepository } from '../modules/integration/application/external-client-credential-repository.js';
+import type { ExternalIdempotencyRepository } from '../modules/integration/application/external-idempotency-repository.js';
+import type { ExternalApiAuditRepository } from '../modules/integration/application/external-api-audit-repository.js';
+import { InMemoryExternalClientCredentialRepository } from '../modules/integration/infrastructure/in-memory-external-client-credential-repository.js';
+import { InMemoryExternalIdempotencyRepository } from '../modules/integration/infrastructure/in-memory-external-idempotency-repository.js';
+import { InMemoryExternalApiAuditRepository } from '../modules/integration/infrastructure/in-memory-external-api-audit-repository.js';
 import { createPostgresPool, type PostgresExecutor } from '../infrastructure/database/postgres-client.js';
 import { PostgresMemberOrganizationRepository } from '../modules/membership/infrastructure/postgres-member-organization-repository.js';
 import { PostgresRoleRepository } from '../modules/access-control/infrastructure/postgres-role-repository.js';
@@ -107,6 +114,10 @@ export function createTestableServer(options?: {
   exportBundleRepository?: ExportBundleRepository;
   plsContractRepository?: PlsContractRepository;
   operationalIncidentRepository?: OperationalIncidentRepository;
+  externalClientCredentialRepository?: ExternalClientCredentialRepository;
+  externalIdempotencyRepository?: ExternalIdempotencyRepository;
+  externalApiAuditRepository?: ExternalApiAuditRepository;
+  externalApiSharedSecret?: string;
   registerKycAmlRoutes?: boolean;
   enforceBearerAuthForLegacyActorRoutes?: boolean;
   readiness?: () => Promise<RuntimeReadiness>;
@@ -181,6 +192,9 @@ export function createTestableServer(options?: {
   const escrowRepository = options?.escrowRepository ?? new InMemoryEscrowRepository();
   const exportBundleRepository = options?.exportBundleRepository ?? new InMemoryExportBundleRepository();
   const plsContractRepository = options?.plsContractRepository ?? new InMemoryPlsContractRepository();
+  const externalClientCredentialRepository = options?.externalClientCredentialRepository ?? new InMemoryExternalClientCredentialRepository();
+  const externalIdempotencyRepository = options?.externalIdempotencyRepository ?? new InMemoryExternalIdempotencyRepository();
+  const externalApiAuditRepository = options?.externalApiAuditRepository ?? new InMemoryExternalApiAuditRepository();
   const authenticatedPreHandler = createAuthenticatedRequestPreHandler(sessionRepository);
   const legacyActorRouteAuthenticatedPreHandler = options?.enforceBearerAuthForLegacyActorRoutes
     ? authenticatedPreHandler
@@ -350,6 +364,14 @@ export function createTestableServer(options?: {
     readiness: readinessProvider,
     operationalIncidentRepository,
     authenticatedPreHandler,
+  });
+
+  server.register(registerExternalApiRoutes, {
+    prefix: '/api/v1',
+    clientRepository: externalClientCredentialRepository,
+    idempotencyRepository: externalIdempotencyRepository,
+    auditRepository: externalApiAuditRepository,
+    sharedSecret: options?.externalApiSharedSecret ?? process.env.EXTERNAL_API_SHARED_SECRET,
   });
 
   return server;
