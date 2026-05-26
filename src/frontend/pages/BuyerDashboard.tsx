@@ -311,7 +311,7 @@ function BuyerDashboard({ activeTarget, session }: BuyerDashboardProps) {
 
   if (activeTarget === 'blockchain-proof') {
     return (
-      <EscrowDetailPage escrow={activeEscrow} />
+      <EscrowDetailPage escrow={activeEscrow} session={session} onEscrowChange={setActiveEscrow} />
     );
   }
 

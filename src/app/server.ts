@@ -332,6 +332,7 @@ export function createTestableServer(options?: {
     blockchainAnchorGateway,
     blockchainAnchorMetadataRepository,
     orderRepository: procurementOrderRepository,
+    deliveryEvidenceRepository,
     authenticatedPreHandler,
     eligibilityGateway: {
       async checkOrganizationEligibility(memberOrganizationId: string) {

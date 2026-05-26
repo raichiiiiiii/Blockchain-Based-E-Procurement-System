@@ -85,12 +85,13 @@ Chaincode build/test is automated. Live Fabric local-network deployment depends 
 | 8:00-9:00 | Contract negotiation | Version machine-readable terms, show hash, submit an offer, and record acceptance. |
 | 9:00-10:15 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata; mention signed external IoT, QR, and EPCIS-compatible proof intake as an API-backed pilot-hardening path. |
 | 10:15-11:15 | Buyer delivery review | Show evidence hash, lifecycle event, and proof state on the order detail. |
-| 11:15-12:15 | Escrow creation | Create escrow from accepted order and show escrow-created state. |
-| 12:15-13:00 | Blockchain proof | Show proof panel and honest verification states. |
-| 13:00-14:00 | Auditor verification | Verify proof or inspect audit/export evidence read-only. |
-| 14:00-15:15 | Shariah review | Show checklist metadata and approval gate. |
-| 15:15-16:30 | Financier PLS seedbed | Show approved PLS contract and distribution scenario. |
-| 16:30-18:00 | Regulator export | Request export bundle and verify manifest integrity. |
+| 11:15-12:45 | Escrow lifecycle | Create escrow, mark funded, request release, and show settlement-instruction-ready state without payment execution. |
+| 12:45-13:15 | Dispute path | Show hold/dispute/arbitration controls as auditable lifecycle transitions, not external arbitration integration. |
+| 13:15-14:00 | Blockchain proof | Show proof panel and honest verification states. |
+| 14:00-15:00 | Auditor verification | Verify proof or inspect audit/export evidence read-only. |
+| 15:00-16:00 | Shariah review | Show checklist metadata and approval gate. |
+| 16:00-17:15 | Financier PLS seedbed | Show approved PLS contract and distribution scenario. |
+| 17:15-18:30 | Regulator export | Request export bundle and verify manifest integrity. |
 | 18:00-19:00 | Evidence and validation | Point to UAT, authorization matrix, and release validation evidence. |
 | 19:00-20:00 | Limitations | State what is deliberately post-MVP. |
 
@@ -267,7 +268,7 @@ What to say:
 The buyer can review delivery evidence metadata and proof state. A failed or unavailable proof is visible and is not treated as verified.
 ```
 
-### 10. Escrow Creation
+### 10. Escrow Lifecycle
 
 Return as `buyer.demo`.
 
@@ -276,14 +277,18 @@ Show:
 - Escrow
 - accepted order reference
 - create escrow
-- escrow-created status
+- mark funded
+- request release
+- approve release into settlement instruction state
 - lifecycle event ID or hash metadata
 
 What to say:
 
 ```text
-Escrow is currently a first slice. It records escrow-created state and evidence; it does not execute payment settlement.
+Escrow now evaluates release conditions and records auditable release, hold, dispute, and arbitration outcomes. Approval prepares a settlement instruction only; it does not execute payment settlement.
 ```
+
+If demonstrating a dispute path, open a dispute and record an arbitration outcome from an authorized reviewer account. Keep the wording clear that this is platform evidence and workflow control, not integration with an external arbitration provider.
 
 ### 11. Blockchain Proof Panel
 
@@ -396,7 +401,7 @@ Close by naming limits directly:
 - not production Islamic finance compliance
 - not production document management, OCR, malware scanning, or legal signature validation
 - not full DID/VC federation
-- not a full arbitration module
+- not external arbitration integration
 - not a full tokenized receivables lifecycle
 
 ## What to Say to Supervisor
@@ -419,7 +424,7 @@ Do not claim:
 - external ERP/accounting integration
 - ISO20022 payment processing
 - raw KYC document review in the dashboard
-- full settlement, release, dispute, or arbitration automation
+- real payment settlement or external arbitration automation
 
 ## Troubleshooting
 
@@ -448,6 +453,8 @@ Do not claim:
 - [ ] Contract document upload shows checksum, extraction, and local signature state without raw content or legal signature overclaiming.
 - [ ] Buyer can review delivery evidence hash, lifecycle event, and proof state.
 - [ ] Buyer can create escrow from accepted order.
+- [ ] Buyer can mark escrow funded, request release, and approve release into settlement instruction state when conditions are satisfied.
+- [ ] Dispute/arbitration controls record an auditable outcome without claiming external arbitration integration.
 - [ ] Proof panel shows honest states and does not fabricate transaction IDs.
 - [ ] Auditor can verify proof or inspect evidence read-only.
 - [ ] Shariah reviewer can record decision.

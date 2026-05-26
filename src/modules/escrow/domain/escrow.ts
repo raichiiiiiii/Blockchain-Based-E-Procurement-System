@@ -4,10 +4,21 @@ export type EscrowBlockchainNetwork = 'fabric-local' | 'fabric';
 export type EscrowStatus =
   | 'accepted'
   | 'escrowCreated'
+  | 'funded'
+  | 'awaitingProof'
   | 'releasePending'
   | 'releaseReady'
+  | 'releaseRequested'
+  | 'releaseApproved'
+  | 'releaseRejected'
+  | 'onHold'
+  | 'disputeOpen'
+  | 'arbitration'
   | 'released'
+  | 'refunded'
   | 'cancelled'
+  | 'expired'
+  | 'settlementInstructionReady'
   | 'disputed';
 
 export type EscrowBlockchainAnchor = {
@@ -38,14 +49,30 @@ export type EscrowRecord = {
   lifecycleEventId?: string;
   lifecycleEventHash?: string;
   blockchainAnchor?: EscrowBlockchainAnchor;
+  statusReason?: string;
+  releaseConditionSummary?: {
+    acceptedOrder: boolean;
+    deliveryEvidenceRecorded: boolean;
+    eligibilitySatisfied: boolean;
+    disputeFree: boolean;
+  };
 };
 
 export const activeEscrowStatuses: readonly EscrowStatus[] = [
   'accepted',
   'escrowCreated',
+  'funded',
+  'awaitingProof',
   'releasePending',
   'releaseReady',
+  'releaseRequested',
+  'releaseApproved',
+  'releaseRejected',
+  'onHold',
+  'disputeOpen',
+  'arbitration',
   'disputed',
+  'settlementInstructionReady',
 ];
 
 export function isActiveEscrowStatus(status: EscrowStatus): boolean {

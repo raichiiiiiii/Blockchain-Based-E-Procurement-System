@@ -102,8 +102,14 @@
 .order-row small,
 .admin-event-row small,
 .guided-demo-details dd,
-.guided-demo-next p {
+.guided-demo-next p,
+.panel-footnote {
   overflow-wrap: anywhere;
+}
+
+.panel-footnote {
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
 }
 
 .hash-value,

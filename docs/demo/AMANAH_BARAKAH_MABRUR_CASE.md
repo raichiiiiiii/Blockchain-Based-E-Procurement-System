@@ -55,11 +55,13 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 8. The Buyer opens the order detail and reviews delivery evidence metadata, lifecycle hash, and proof state without seeing raw commercial documents.
 9. The Buyer opens Escrow and creates escrow from the accepted order reference.
 10. Escrow creation emits a lifecycle audit event for the escrow-created state.
-11. Delivery evidence and escrow lifecycle events are anchored when the proof gateway is available, or remain proof-ready/pending/failed with honest proof states.
-12. The Auditor opens Blockchain Proof or an event detail and verifies the proof without fabricated transaction data.
-13. The Shariah Reviewer opens Shariah Review, inspects PLS metadata, and approves the restricted seedbed terms.
-14. The Financier opens Financing, verifies the Shariah approval reference, and views profit/loss distribution scenarios.
-15. The Regulator opens Export Bundle, requests the scoped evidence bundle, and verifies manifest integrity metadata.
+11. The Buyer can mark the escrow funded, request release after accepted order, delivery evidence, eligibility, and dispute-free checks pass, and approve release into a settlement-instruction-ready state without executing payment.
+12. If evidence is contested, the Buyer or Supplier can open a dispute and an authorized reviewer can record an arbitration outcome to prepare release, refund, or cancellation.
+13. Delivery evidence and escrow lifecycle events are anchored when the proof gateway is available, or remain proof-ready/pending/failed with honest proof states.
+14. The Auditor opens Blockchain Proof or an event detail and verifies the proof without fabricated transaction data.
+15. The Shariah Reviewer opens Shariah Review, inspects PLS metadata, and approves the restricted seedbed terms.
+16. The Financier opens Financing, verifies the Shariah approval reference, and views profit/loss distribution scenarios.
+17. The Regulator opens Export Bundle, requests the scoped evidence bundle, and verifies manifest integrity metadata.
 
 ## Expected Seed Data
 
@@ -170,7 +172,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 | Delivery evidence | Supplier records safe evidence metadata for an accepted order; buyer sees evidence hash, lifecycle event, and honest proof state. |
 | Contract documents | Authorized actor uploads contract text; document checksum, extraction fields, and local signature status are visible without legal signature overclaiming. |
 | Contract negotiation | Buyer or Supplier creates machine-readable terms, submits a revised offer, and records party acceptance against the current terms hash. |
-| Escrow creation | Buyer creates escrow from accepted order; non-eligible organizations are blocked. |
+| Escrow lifecycle | Buyer creates escrow from accepted order; release actions require delivery evidence, eligibility, and dispute-free conditions; disputes and arbitration outcomes are audit-recorded. |
 | Proof verification | Verified, mismatch, not found, pending, failed, and unavailable states are distinct where applicable. |
 | Shariah review | PLS activation depends on an approved Shariah reference. |
 | Financier PLS view | Profit/loss scenarios are visible as simulation-only seedbed records. |
@@ -180,7 +182,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 ## Known MVP Limitations
 
 - PLS distribution is a simulation-only seedbed and does not execute payments.
-- Escrow is a first-slice workflow and does not automate settlement, release, dispute, or banking rails.
+- Escrow now includes an MVP release/dispute workflow, but it only prepares settlement instruction state and does not execute real payment, bank settlement, or external arbitration integration.
 - Fabric proof is local/demo-oriented; a production consortium rollout is post-MVP.
 - PostgreSQL runtime persistence is partial and explicitly scoped by runbooks.
 - Delivery evidence now includes signed external IoT/QR/EPCIS-compatible metadata intake, but not production device PKI, QR legal signature verification, full EPCIS capture/query services, external logistics network integration, or document rendering.
@@ -200,7 +202,7 @@ The demo must explicitly exclude:
 - full ERP/accounting integration
 - DID/VC federation and credential revocation
 - tokenized receivables full lifecycle
-- full arbitration/dispute module
+- external arbitration integration
 - multi-jurisdiction policy engine
 - full Fabric private data collections
 - automated consortium governance

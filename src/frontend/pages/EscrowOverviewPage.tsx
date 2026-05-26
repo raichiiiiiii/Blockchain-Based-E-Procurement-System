@@ -109,7 +109,7 @@ function EscrowOverviewPage({ session, acceptedOrder, escrow, onEscrowChange }: 
       </div> : null}
 
       {escrow ? (
-        <EscrowDetailPage escrow={escrow} />
+        <EscrowDetailPage escrow={escrow} session={session} onEscrowChange={onEscrowChange} />
       ) : escrowRequest ? (
         <section className="empty-product-state">
           Escrow proof appears after the escrow record is created.

@@ -163,6 +163,7 @@ Procure-to-pay lifecycle stages:
 - **delivery**: Goods/service delivery confirmation
 - **invoice**: Invoice issuance and approval
 - **settlement**: Payment processing and completion
+- **escrow**: Escrow creation, release, dispute, and arbitration lifecycle
 
 ## 5. Example Event Types
 
@@ -194,6 +195,20 @@ Example event types by lifecycle stage:
   - settlementCompleted
   - settlementFailed
   - settlementReversed
+
+- **escrow**:
+  - escrowCreated
+  - escrowFunded
+  - escrowReleaseRequested
+  - escrowReleaseApproved
+  - escrowReleaseRejected
+  - escrowHeld
+  - escrowDisputeOpened
+  - escrowArbitrationDecisionRecorded
+  - escrowRefunded
+  - escrowCancelled
+  - escrowExpired
+  - escrowSettlementInstructionReady
 
 ## 6. Immutable Reference Semantics
 

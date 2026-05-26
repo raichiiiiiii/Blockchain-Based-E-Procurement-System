@@ -40,16 +40,37 @@ Out of scope for first slice:
 - tokenized receivable lifecycle
 - full multi-party Fabric consortium operations
 
+Pilot-hardening release/dispute scope:
+
+- mark escrow funded without real payment execution
+- request release only when accepted order, delivery evidence, eligibility, and dispute-free conditions are satisfied
+- approve release into `settlementInstructionReady`
+- place hold
+- open dispute
+- record arbitration decision to prepare release, refund, or cancel outcome
+- emit and anchor lifecycle events for each transition when the proof gateway is available
+
 ## 3. Escrow states
 
 ```ts
 export type EscrowStatus =
   | 'accepted'
   | 'escrowCreated'
+  | 'funded'
+  | 'awaitingProof'
   | 'releasePending'
   | 'releaseReady'
+  | 'releaseRequested'
+  | 'releaseApproved'
+  | 'releaseRejected'
+  | 'onHold'
+  | 'disputeOpen'
+  | 'arbitration'
   | 'released'
+  | 'refunded'
   | 'cancelled'
+  | 'expired'
+  | 'settlementInstructionReady'
   | 'disputed';
 ```
 
@@ -59,10 +80,21 @@ State meaning:
 |---|---|
 | `accepted` | Order has been accepted but escrow record has not been created. |
 | `escrowCreated` | Escrow terms and parties are recorded. |
+| `funded` | Funding has been marked in the platform without executing real payment rails. |
+| `awaitingProof` | Escrow is waiting for delivery or release proof. |
 | `releasePending` | Escrow exists but release proof conditions are not complete. |
 | `releaseReady` | Required release proof conditions are satisfied. |
+| `releaseRequested` | A buyer or supplier has requested release after conditions were checked. |
+| `releaseApproved` | Release was approved but no external payment has executed. |
+| `releaseRejected` | Release request was rejected. |
+| `onHold` | Escrow is paused for operational review. |
+| `disputeOpen` | A buyer or supplier dispute is open. |
+| `arbitration` | Escrow is under arbitration review. |
 | `released` | Escrow has reached terminal released state. |
+| `refunded` | Escrow has reached terminal refund outcome. |
 | `cancelled` | Escrow has reached terminal cancelled state. |
+| `expired` | Escrow expired before completion. |
+| `settlementInstructionReady` | Release is approved and ready for a later payment-instruction adapter. No money has moved. |
 | `disputed` | Escrow is paused for dispute handling. |
 
 ## 4. First-slice transition
@@ -87,6 +119,21 @@ disputed -> cancelled
 ```
 
 Unsupported transitions must be rejected.
+
+Pilot-hardening transitions:
+
+```text
+escrowCreated -> funded
+funded -> releaseRequested
+releaseRequested -> settlementInstructionReady
+escrowCreated|funded|releaseRequested -> onHold
+escrowCreated|funded|onHold|releaseRequested -> disputeOpen
+disputeOpen|onHold -> settlementInstructionReady
+disputeOpen|onHold -> refunded
+disputeOpen|onHold -> cancelled
+```
+
+`settlementInstructionReady` is not payment execution. Payment adapter work remains separate.
 
 ## 5. Escrow record shape
 
@@ -176,6 +223,41 @@ GET /api/v1/escrows/{escrowId}
 
 The response returns escrow identifiers, organization ids, terms hash, status, timestamps, lifecycle event id, and blockchain anchor metadata when present.
 
+## 7A. Release and dispute transition APIs
+
+```text
+POST /api/v1/escrow/{escrowId}/fund
+POST /api/v1/escrow/{escrowId}/request-release
+POST /api/v1/escrow/{escrowId}/approve-release
+POST /api/v1/escrow/{escrowId}/hold
+POST /api/v1/escrow/{escrowId}/dispute
+POST /api/v1/escrow/{escrowId}/arbitration-decision
+```
+
+Release conditions:
+
+- order exists and is accepted
+- delivery evidence exists for the order
+- buyer and supplier organizations are eligible
+- escrow is not on hold, disputed, or under arbitration
+
+Arbitration body:
+
+```json
+{
+  "arbitrationOutcome": "approveRelease",
+  "reason": "Evidence supports release instruction preparation"
+}
+```
+
+Supported arbitration outcomes:
+
+- `approveRelease`
+- `refund`
+- `cancel`
+
+Every transition must emit an escrow lifecycle event and preserve the business event if blockchain anchoring is unavailable.
+
 ## 8. Lifecycle event integration
 
 Creating escrow must emit a procure-to-pay lifecycle event with:
@@ -186,6 +268,22 @@ eventType = escrowCreated
 targetType = escrow
 targetId = escrowId
 outcome = success
+```
+
+Release/dispute transitions emit:
+
+```text
+escrowFunded
+escrowReleaseRequested
+escrowReleaseApproved
+escrowReleaseRejected
+escrowHeld
+escrowDisputeOpened
+escrowArbitrationDecisionRecorded
+escrowRefunded
+escrowCancelled
+escrowExpired
+escrowSettlementInstructionReady
 ```
 
 The lifecycle event payload hash is the preferred value to anchor to Fabric.

@@ -101,6 +101,21 @@ disputed -> cancelled
 
 Unsupported transitions must be rejected.
 
+Pilot-hardening backend transitions now add off-chain release and dispute controls:
+
+```text
+escrowCreated -> funded
+funded -> releaseRequested
+releaseRequested -> settlementInstructionReady
+escrowCreated|funded|releaseRequested -> onHold
+escrowCreated|funded|onHold|releaseRequested -> disputeOpen
+disputeOpen|onHold -> settlementInstructionReady
+disputeOpen|onHold -> refunded
+disputeOpen|onHold -> cancelled
+```
+
+`settlementInstructionReady` is an auditable release-instruction state for the later payment adapter. It is not external payment execution, ISO 20022 execution, or bank settlement.
+
 ## 6. First slice scope
 
 Sprint 6 first escrow slice should prioritize:
@@ -113,7 +128,7 @@ Sprint 6 first escrow slice should prioritize:
 5. show escrowCreated status and blockchain proof in UI
 ```
 
-Full funding, settlement, release automation, dispute workflow, and PLS distribution can be later slices.
+Full payment settlement, external arbitration integration, and PLS distribution execution remain later slices.
 
 ## 7. EscrowContract future function sketch
 

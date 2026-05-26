@@ -9,10 +9,21 @@ import type { AuthenticatedFrontendSession } from './session-state';
 export type EscrowStatus =
   | 'accepted'
   | 'escrowCreated'
+  | 'funded'
+  | 'awaitingProof'
   | 'releasePending'
   | 'releaseReady'
+  | 'releaseRequested'
+  | 'releaseApproved'
+  | 'releaseRejected'
+  | 'onHold'
+  | 'disputeOpen'
+  | 'arbitration'
   | 'released'
+  | 'refunded'
   | 'cancelled'
+  | 'expired'
+  | 'settlementInstructionReady'
   | 'disputed';
 
 export type EscrowBlockchainAnchor = {
@@ -43,6 +54,13 @@ export type EscrowRecord = {
   lifecycleEventId?: string;
   lifecycleEventHash?: string;
   blockchainAnchor?: EscrowBlockchainAnchor;
+  statusReason?: string;
+  releaseConditionSummary?: {
+    acceptedOrder: boolean;
+    deliveryEvidenceRecorded: boolean;
+    eligibilitySatisfied: boolean;
+    disputeFree: boolean;
+  };
   source?: 'backend' | 'localDemoAdapter';
 };
 
@@ -53,6 +71,25 @@ export type CreateEscrowRequest = {
   financierOrganizationId?: string;
   termsHash: string;
   acceptedOrderReference?: string;
+};
+
+export type EscrowTransitionAction =
+  | 'fund'
+  | 'request-release'
+  | 'approve-release'
+  | 'hold'
+  | 'dispute'
+  | 'arbitration-decision';
+
+export type EscrowTransitionRequest = {
+  action: EscrowTransitionAction;
+  reason?: string;
+  arbitrationOutcome?: 'approveRelease' | 'refund' | 'cancel';
+};
+
+export type EscrowTransitionResponse = {
+  escrow: EscrowRecord;
+  releaseConditions: NonNullable<EscrowRecord['releaseConditionSummary']>;
 };
 
 const demoLifecycleHash = 'sha256:60bbd179b6c8d614109f6ba4fd161b97589f8e6e54c4abec2ce9e07a6f49160b';
@@ -233,6 +270,61 @@ export async function getEscrow(
 
     throw error;
   }
+}
+
+export async function transitionEscrow(
+  escrowId: string,
+  request: EscrowTransitionRequest,
+  session?: AuthenticatedFrontendSession,
+): Promise<EscrowTransitionResponse> {
+  if (session?.source !== 'backend') {
+    assertLocalFallbackEnabled('Escrow lifecycle transition');
+    const localEscrow = getLocalDemoEscrowRecord(session);
+    return {
+      escrow: {
+        ...localEscrow,
+        status: request.action === 'fund'
+          ? 'funded'
+          : request.action === 'request-release'
+            ? 'releaseRequested'
+            : request.action === 'approve-release'
+              ? 'settlementInstructionReady'
+              : request.action === 'hold'
+                ? 'onHold'
+                : request.action === 'dispute'
+                  ? 'disputeOpen'
+                  : request.arbitrationOutcome === 'refund'
+                    ? 'refunded'
+                    : request.arbitrationOutcome === 'cancel'
+                      ? 'cancelled'
+                      : 'settlementInstructionReady',
+        statusReason: request.reason,
+      },
+      releaseConditions: {
+        acceptedOrder: true,
+        deliveryEvidenceRecorded: true,
+        eligibilitySatisfied: true,
+        disputeFree: request.action !== 'dispute',
+      },
+    };
+  }
+
+  const response = await requestJson<EscrowTransitionResponse>(
+    `/api/v1/escrow/${encodeURIComponent(escrowId)}/${request.action}`,
+    {
+      method: 'POST',
+      headers: backendHeaders(session),
+      body: JSON.stringify({
+        reason: request.reason,
+        arbitrationOutcome: request.arbitrationOutcome,
+      }),
+    },
+  );
+
+  return {
+    ...response,
+    escrow: withBackendSource(response.escrow),
+  };
 }
 
 export function escrowToProofRecord(escrow: EscrowRecord): BlockchainProofRecord {
