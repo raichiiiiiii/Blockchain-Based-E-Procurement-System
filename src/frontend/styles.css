@@ -991,6 +991,71 @@ button {
   gap: 20px;
 }
 
+.export-summary-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.export-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+.export-summary-grid div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.export-summary-grid dt {
+  color: #52615d;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.export-summary-grid dd {
+  margin: 0;
+  color: #16201d;
+  overflow-wrap: anywhere;
+}
+
+.export-summary-grid code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: #14211d;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.86rem;
+}
+
+.export-claim-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  border-top: 1px solid #edf1ef;
+  padding-top: 16px;
+}
+
+.export-claim-grid section {
+  display: grid;
+  gap: 8px;
+}
+
+.export-claim-grid h4 {
+  margin: 0;
+  color: #16201d;
+  font-size: 1rem;
+}
+
+.export-claim-grid p {
+  margin: 0;
+  color: #52615d;
+  line-height: 1.6;
+}
+
 .order-action-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
@@ -1744,7 +1809,9 @@ button {
 
   .admin-member-layout,
   .admin-definition-grid,
-  .admin-form {
+  .admin-form,
+  .export-summary-grid,
+  .export-claim-grid {
     grid-template-columns: 1fr;
   }
 

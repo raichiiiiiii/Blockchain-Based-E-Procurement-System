@@ -38,6 +38,34 @@ function statusLabel(status: string): string {
     .replace(/^./, char => char.toUpperCase());
 }
 
+function scopeLabel(scope: ExportBundleScope): string {
+  return scopeOptions.find(option => option.value === scope)?.label ?? statusLabel(scope);
+}
+
+function formatDateTime(value?: string): string {
+  if (!value) {
+    return 'Not bounded';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatDateRange(bundle: ExportBundleRecord): string {
+  const { occurredFrom, occurredTo } = bundle.manifest.dateRange;
+  return `${formatDateTime(occurredFrom)} to ${formatDateTime(occurredTo)}`;
+}
+
 function summarizeRecords(bundle: ExportBundleRecord) {
   return [
     {
@@ -58,6 +86,10 @@ function summarizeRecords(bundle: ExportBundleRecord) {
   ];
 }
 
+function getProofReferences(bundle: ExportBundleRecord) {
+  return bundle.manifest.records.filter(record => record.recordType === 'blockchainAnchorMetadata');
+}
+
 function ExportBundlePage({ session }: ExportBundlePageProps) {
   const [request, setRequest] = useState<CreateExportBundleRequest>({
     scope: 'combinedAudit',
@@ -73,6 +105,8 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
   const [error, setError] = useState<string>();
 
   const summaryCards = useMemo(() => bundle ? summarizeRecords(bundle) : [], [bundle]);
+  const proofReferences = useMemo(() => bundle ? getProofReferences(bundle) : [], [bundle]);
+  const verificationStatus = verification ? statusLabel(verification.verificationStatus) : 'Not verified';
 
   const handleRequestChange = (field: keyof CreateExportBundleRequest, value: string) => {
     setRequest(current => ({
@@ -189,6 +223,62 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
 
       {bundle ? (
         <>
+          <section className="workspace-panel export-summary-panel">
+            <div className="admin-section-header">
+              <div>
+                <h3>Manifest Summary</h3>
+                <p>Review the integrity boundary before relying on the bundle.</p>
+              </div>
+              <span className={statusClass(verification?.verificationStatus ?? 'pending')}>
+                {verificationStatus}
+              </span>
+            </div>
+
+            <dl className="export-summary-grid">
+              <div>
+                <dt>Bundle ID</dt>
+                <dd><code>{bundle.bundleId}</code></dd>
+              </div>
+              <div>
+                <dt>Scope</dt>
+                <dd>{scopeLabel(bundle.scope)}</dd>
+              </div>
+              <div>
+                <dt>Date range</dt>
+                <dd>{formatDateRange(bundle)}</dd>
+              </div>
+              <div>
+                <dt>Event count</dt>
+                <dd>{bundle.manifest.recordCount}</dd>
+              </div>
+              <div>
+                <dt>Manifest hash</dt>
+                <dd><code>{bundle.integrity.manifestHash}</code></dd>
+              </div>
+              <div>
+                <dt>Included proof references</dt>
+                <dd>{proofReferences.length}</dd>
+              </div>
+            </dl>
+
+            <div className="export-claim-grid">
+              <section>
+                <h4>What this proves</h4>
+                <p>
+                  The manifest and bundle hashes match the selected audit metadata, lifecycle references,
+                  and proof references at generation time.
+                </p>
+              </section>
+              <section>
+                <h4>What this does not prove</h4>
+                <p>
+                  This does not certify raw documents, execute payments, provide production signing,
+                  or integrate with an external regulator portal.
+                </p>
+              </section>
+            </div>
+          </section>
+
           <div className="dashboard-grid">
             {summaryCards.map(card => (
               <section className="metric-panel" key={card.label}>
@@ -223,6 +313,10 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
                 <dd><code>{bundle.integrity.manifestHash}</code></dd>
               </div>
               <div className="proof-field">
+                <dt>Verification status</dt>
+                <dd>{verificationStatus}</dd>
+              </div>
+              <div className="proof-field">
                 <dt>Download reference</dt>
                 <dd><code>{bundle.download.reference}</code></dd>
               </div>
@@ -249,6 +343,7 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
                   <span>{record.source}</span>
                   <strong>{record.recordType}</strong>
                   <small>{record.occurredAt ?? 'Timestamp unavailable'}</small>
+                  {record.anchorStatus ? <small>Proof status: {statusLabel(record.anchorStatus)}</small> : null}
                   <code>{record.payloadHash ?? record.recordId}</code>
                 </div>
               ))}
