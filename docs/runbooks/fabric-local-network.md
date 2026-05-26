@@ -63,7 +63,41 @@ sequence: 1
 
 ## Live Smoke Path
 
-After deployment, use the Fabric peer CLI from `fabric-samples/test-network` with the channel context established by the sample network scripts. Submit one metadata-only anchor and verify it with a matching and mismatching hash:
+The preferred repeatable path is the smoke script:
+
+```powershell
+.\scripts\fabric\smoke-audit-anchor.ps1 -PrerequisiteCheckOnly
+```
+
+The prerequisite check builds and tests the chaincode, then reports whether the
+local Fabric test-network, peer CLI, TLS certificates, and Org1 admin MSP are
+available. It exits successfully in check mode even when live Fabric prerequisites
+are missing so release evidence can record the blocker honestly.
+
+When the local Fabric test-network is available, run the live smoke:
+
+```powershell
+.\scripts\fabric\smoke-audit-anchor.ps1 `
+  -TestNetworkPath $env:FABRIC_TEST_NETWORK_DIR `
+  -AssumeNetworkRunning
+```
+
+If `audit-anchor` is already deployed, use:
+
+```powershell
+.\scripts\fabric\smoke-audit-anchor.ps1 `
+  -TestNetworkPath $env:FABRIC_TEST_NETWORK_DIR `
+  -AssumeDeployed
+```
+
+The live smoke submits one metadata-only anchor and verifies matching,
+mismatching, and missing payload hashes. Expected verification states are
+`verified`, `mismatch`, and `notFound`.
+
+Manual fallback: after deployment, use the Fabric peer CLI from
+`fabric-samples/test-network` with the channel context established by the sample
+network scripts. Submit one metadata-only anchor and verify it with a matching
+and mismatching hash:
 
 ```powershell
 $anchorJson='{"eventId":"smoke-event-001","caseIdHash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","eventType":"smokeProof","payloadHash":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","schemaVersion":"1.0","canonicalization":"json-canonical-v1","occurredAt":"2026-05-26T00:00:00.000Z"}'
@@ -74,7 +108,8 @@ peer chaincode query -C procurement-channel -n audit-anchor -c '{"Args":["verify
 peer chaincode query -C procurement-channel -n audit-anchor -c '{"Args":["verifyEvent","missing-event","sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"]}'
 ```
 
-Expected verification states are `verified`, `mismatch`, and `notFound`. If the local Fabric peer CLI is unavailable, record the blocker in release evidence and rely on the chaincode unit tests as the automated baseline.
+If the local Fabric peer CLI is unavailable, record the blocker in release
+evidence and rely on the chaincode unit tests as the automated baseline.
 
 ## Contract Functions
 
