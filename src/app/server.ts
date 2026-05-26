@@ -64,6 +64,8 @@ import { PostgresAccessAuditEventRepository } from '../modules/shared/infrastruc
 import { PostgresPlatformUserCredentialRepository } from '../modules/auth/infrastructure/postgres-platform-user-credential-repository.js';
 import { PostgresAuthSessionRepository } from '../modules/auth/infrastructure/postgres-auth-session-repository.js';
 import { PostgresProcureToPayLifecycleEventRepository } from '../modules/procurement/infrastructure/postgres-procure-to-pay-lifecycle-event-repository.js';
+import { PostgresProcurementOrderRepository } from '../modules/procurement/infrastructure/postgres-procurement-order-repository.js';
+import { PostgresDeliveryEvidenceRepository } from '../modules/procurement/infrastructure/postgres-delivery-evidence-repository.js';
 import { PostgresBlockchainAnchorMetadataRepository } from '../modules/blockchain/infrastructure/postgres-blockchain-anchor-metadata-repository.js';
 import { PostgresEscrowRepository } from '../modules/escrow/infrastructure/postgres-escrow-repository.js';
 
@@ -341,6 +343,8 @@ function createRuntimeServerDependencies(
       credentialRepository: new PostgresPlatformUserCredentialRepository(postgresPool),
       sessionRepository: new PostgresAuthSessionRepository(postgresPool),
       procureToPayLifecycleEventRepository: new PostgresProcureToPayLifecycleEventRepository(postgresPool),
+      procurementOrderRepository: new PostgresProcurementOrderRepository(postgresPool),
+      deliveryEvidenceRepository: new PostgresDeliveryEvidenceRepository(postgresPool),
       blockchainAnchorMetadataRepository: new PostgresBlockchainAnchorMetadataRepository(postgresPool),
       escrowRepository: new PostgresEscrowRepository(postgresPool),
     },

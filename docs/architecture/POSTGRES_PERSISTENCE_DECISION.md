@@ -47,6 +47,8 @@ role assignments
 KYC/AML onboarding cases where adapter work is pulled in
 access audit events
 procure-to-pay lifecycle events
+procurement orders
+delivery evidence metadata
 blockchain anchor metadata
 escrow first-slice tables if PBI-006 starts
 ```
@@ -63,6 +65,7 @@ migrations/
   002_audit_procurement.sql
   003_blockchain_anchors.sql
   004_escrow_first_slice.sql
+  005_procurement_orders_delivery_evidence.sql
 ```
 
 Recommended script names:
@@ -174,7 +177,28 @@ Persistence tasks should include:
 - build passes
 - full regression passes after adapter integration
 
-## 11. Non-goals
+## 11. Runtime coverage after commercial-readiness persistence pass
+
+The local `PERSISTENCE_ADAPTER=postgres` runtime composition currently wires PostgreSQL adapters for:
+
+| Area | Runtime Postgres coverage | Notes |
+|---|---|---|
+| Auth/session | Covered | Demo credentials and sessions persist after migration/seed. |
+| Membership/RBAC | Covered | Member organizations, platform users, roles, memberships, and assignments persist. |
+| Access audit | Covered | Shared access audit events persist and feed access-history/security-alert reads. |
+| Procurement lifecycle events | Covered | Procure-to-pay lifecycle events persist. |
+| Procurement orders | Covered | Buyer-created and supplier-acknowledged order records persist. |
+| Delivery evidence | Covered | Metadata-only delivery evidence, evidence hash, lifecycle reference, and proof status persist. |
+| Blockchain anchor metadata | Covered | Proof metadata and failed/pending/anchored status persist. |
+| Escrow | Covered | Escrow first-slice records and proof metadata persist. |
+| KYC/AML cases | In-memory | Compliance review UI remains local/demo-level until a Postgres onboarding case adapter is added. |
+| Export bundles | In-memory | Export bundle generation is persisted only in memory unless a reporting adapter is added. |
+| Shariah reviews | In-memory | Shariah review records remain in memory in runtime composition. |
+| PLS contracts/distributions | In-memory | Restricted seedbed records remain in memory in runtime composition. |
+
+Delivery evidence persistence remains metadata-only. Raw delivery documents, IoT feeds, QR signatures, and external logistics payloads are outside MVP scope and must not be stored on-chain.
+
+## 12. Non-goals
 
 Sprint 6 PostgreSQL work does not need to implement:
 
@@ -187,7 +211,7 @@ Sprint 6 PostgreSQL work does not need to implement:
 
 These can be future hardening tasks.
 
-## 12. ADR trigger
+## 13. ADR trigger
 
 Create or update an ADR if implementation proposes:
 

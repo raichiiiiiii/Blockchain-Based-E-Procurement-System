@@ -35,7 +35,7 @@ memory   default, keeps the backend fast and isolated for tests
 postgres persists implemented runtime repositories after migration/seed
 ```
 
-The current Postgres runtime path covers auth/session, member organizations, roles, role assignments, access audit events, procurement lifecycle events, blockchain anchor metadata, and escrow records. Routes without Postgres adapters remain on their in-memory repository until their adapter is implemented.
+The current Postgres runtime path covers auth/session, member organizations, roles, role assignments, access audit events, procurement lifecycle events, procurement orders, delivery evidence metadata, blockchain anchor metadata, and escrow records. KYC/AML cases, Shariah review records, export bundles, and PLS contracts remain on their in-memory repositories until dedicated adapters are implemented.
 
 ## Start PostgreSQL
 
@@ -74,8 +74,8 @@ Preview the seed plan:
 npm run db:seed -- --dry-run
 ```
 
-Seed local demo users, organizations, role assignments, procurement lifecycle events,
-pending blockchain anchor metadata, and a demo escrow record:
+Seed local demo users, organizations, role assignments, a procurement order, delivery evidence metadata,
+procurement lifecycle events, pending blockchain anchor metadata, and a demo escrow record:
 
 ```powershell
 $env:DEMO_SEED_ENABLED="true"
@@ -104,6 +104,8 @@ Optional checks with `psql`:
 ```powershell
 psql $env:DATABASE_URL -c "select filename, applied_at from schema_migrations order by filename;"
 psql $env:DATABASE_URL -c "select username from platform_user_credentials order by username;"
+psql $env:DATABASE_URL -c "select order_id, status from procurement_orders order by order_id;"
+psql $env:DATABASE_URL -c "select evidence_id, verification_status from delivery_evidence order by evidence_id;"
 psql $env:DATABASE_URL -c "select event_id, anchor_status from blockchain_anchor_metadata order by event_id;"
 ```
 

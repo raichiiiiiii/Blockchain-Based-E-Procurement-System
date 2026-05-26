@@ -102,6 +102,7 @@ async function seed(): Promise<void> {
   if (isDryRun()) {
     console.log(`Validated demo seed plan for ${demoAccounts.length} demo account(s).`);
     console.log(`Demo usernames: ${demoAccounts.map(account => account.username).join(', ')}`);
+    console.log('Demo procurement order, delivery evidence, lifecycle events, anchor metadata, and escrow records are included.');
     return;
   }
 
@@ -305,6 +306,54 @@ async function seed(): Promise<void> {
 
     await client.query(
       `
+        INSERT INTO procurement_orders (
+          order_id,
+          buyer_organization_id,
+          supplier_organization_id,
+          title,
+          description,
+          amount,
+          currency,
+          status,
+          created_by,
+          created_at,
+          updated_at,
+          accepted_by,
+          accepted_at,
+          lifecycle_event_ids,
+          latest_lifecycle_payload_hash
+        )
+        VALUES (
+          'demo-order-001',
+          'demo-buyer-org',
+          'demo-supplier-org',
+          'Halal packaging lot',
+          'Accepted order available for delivery evidence and escrow demonstration.',
+          '68000.00',
+          'MYR',
+          'accepted',
+          'demo-buyer-user',
+          $1,
+          $1,
+          'demo-supplier-user',
+          $1,
+          ARRAY['demo-ptp-event-001']::text[],
+          'sha256:demo-ptp-event-hash'
+        )
+        ON CONFLICT (order_id)
+        DO UPDATE SET
+          status = EXCLUDED.status,
+          updated_at = EXCLUDED.updated_at,
+          accepted_by = EXCLUDED.accepted_by,
+          accepted_at = EXCLUDED.accepted_at,
+          lifecycle_event_ids = EXCLUDED.lifecycle_event_ids,
+          latest_lifecycle_payload_hash = EXCLUDED.latest_lifecycle_payload_hash
+      `,
+      [now],
+    );
+
+    await client.query(
+      `
         INSERT INTO blockchain_anchor_metadata (
           event_id,
           payload_hash,
@@ -333,6 +382,139 @@ async function seed(): Promise<void> {
         DO UPDATE SET
           anchor_status = EXCLUDED.anchor_status,
           updated_at = EXCLUDED.updated_at
+      `,
+      [now],
+    );
+
+    await client.query(
+      `
+        INSERT INTO procure_to_pay_lifecycle_events (
+          event_id,
+          schema_version,
+          occurred_at,
+          recorded_at,
+          request_id,
+          correlation_id,
+          case_id,
+          lifecycle_stage,
+          event_type,
+          actor_user_id,
+          actor_source,
+          target_type,
+          target_id,
+          outcome,
+          payload_hash,
+          canonicalization,
+          metadata
+        )
+        VALUES (
+          'demo-delivery-event-001',
+          'procure-to-pay-lifecycle-event.v1',
+          $1,
+          $1,
+          'demo-seed-request',
+          'demo-correlation-001',
+          'demo-case-001',
+          'delivery',
+          'deliveryEvidenceSubmitted',
+          'demo-supplier-user',
+          'actorContext',
+          'delivery',
+          'demo-delivery-evidence-001',
+          'success',
+          'sha256:demo-delivery-event-hash',
+          'json-stable-v1',
+          '{"demo": true, "proofOnly": true}'::jsonb
+        )
+        ON CONFLICT (event_id) DO NOTHING
+      `,
+      [now],
+    );
+
+    await client.query(
+      `
+        INSERT INTO blockchain_anchor_metadata (
+          event_id,
+          payload_hash,
+          case_id_hash,
+          anchor_status,
+          blockchain_network,
+          channel_name,
+          chaincode_name,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          'demo-delivery-event-001',
+          'sha256:demo-delivery-event-hash',
+          'sha256:demo-case-001',
+          'pending',
+          'fabric-local',
+          'procurement-channel',
+          'audit-anchor',
+          $1,
+          $1
+        )
+        ON CONFLICT (event_id)
+        DO UPDATE SET
+          anchor_status = EXCLUDED.anchor_status,
+          updated_at = EXCLUDED.updated_at
+      `,
+      [now],
+    );
+
+    await client.query(
+      `
+        INSERT INTO delivery_evidence (
+          evidence_id,
+          order_id,
+          buyer_organization_id,
+          supplier_organization_id,
+          submitted_by_user_id,
+          evidence_type,
+          evidence_reference,
+          evidence_hash,
+          notes,
+          submitted_at,
+          verification_status,
+          lifecycle_event_id,
+          lifecycle_event_hash,
+          blockchain_event_id,
+          blockchain_payload_hash,
+          blockchain_anchor_status,
+          blockchain_network,
+          blockchain_channel_name,
+          blockchain_chaincode_name
+        )
+        VALUES (
+          'demo-delivery-evidence-001',
+          'demo-order-001',
+          'demo-buyer-org',
+          'demo-supplier-org',
+          'demo-supplier-user',
+          'deliveryNote',
+          'delivery-ref:barakah:dn-1002',
+          'sha256:demo-delivery-evidence-hash',
+          'Sealed carton count and dispatch timestamp recorded by supplier operations.',
+          $1,
+          'metadataRecorded',
+          'demo-delivery-event-001',
+          'sha256:demo-delivery-event-hash',
+          'demo-delivery-event-001',
+          'sha256:demo-delivery-event-hash',
+          'pending',
+          'fabric-local',
+          'procurement-channel',
+          'audit-anchor'
+        )
+        ON CONFLICT (evidence_id)
+        DO UPDATE SET
+          evidence_reference = EXCLUDED.evidence_reference,
+          evidence_hash = EXCLUDED.evidence_hash,
+          notes = EXCLUDED.notes,
+          submitted_at = EXCLUDED.submitted_at,
+          verification_status = EXCLUDED.verification_status,
+          blockchain_anchor_status = EXCLUDED.blockchain_anchor_status
       `,
       [now],
     );
@@ -464,7 +646,7 @@ async function seed(): Promise<void> {
     );
 
     await client.query('COMMIT');
-    console.log(`Seeded ${demoAccounts.length} demo account(s), proof metadata, and demo escrow.`);
+    console.log(`Seeded ${demoAccounts.length} demo account(s), procurement order, delivery evidence, proof metadata, and demo escrow.`);
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
