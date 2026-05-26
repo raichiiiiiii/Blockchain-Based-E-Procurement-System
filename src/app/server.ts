@@ -56,6 +56,11 @@ import { registerPlsRoutes } from '../modules/financing/api/pls.routes.js';
 import type { PlsContractRepository } from '../modules/financing/application/pls-contract-repository.js';
 import { InMemoryPlsContractRepository } from '../modules/financing/infrastructure/in-memory-pls-contract-repository.js';
 import { registerSecurityAlertRoutes } from '../modules/security/api/security-alert.routes.js';
+import { registerOpsStatusRoutes } from '../modules/ops/api/ops-status.routes.js';
+import type { OperationalIncidentRepository } from '../modules/ops/application/operational-incident-repository.js';
+import { InMemoryOperationalIncidentRepository } from '../modules/ops/infrastructure/in-memory-operational-incident-repository.js';
+import { recordReadinessIncidents } from '../modules/ops/application/record-readiness-incidents.js';
+import { buildRuntimeReadiness, type RuntimePersistenceMode, type RuntimeReadiness } from '../modules/ops/application/runtime-readiness.js';
 import { createPostgresPool, type PostgresExecutor } from '../infrastructure/database/postgres-client.js';
 import { PostgresMemberOrganizationRepository } from '../modules/membership/infrastructure/postgres-member-organization-repository.js';
 import { PostgresRoleRepository } from '../modules/access-control/infrastructure/postgres-role-repository.js';
@@ -70,27 +75,10 @@ import { PostgresBlockchainAnchorMetadataRepository } from '../modules/blockchai
 import { PostgresEscrowRepository } from '../modules/escrow/infrastructure/postgres-escrow-repository.js';
 
 const DEFAULT_DEV_PORT = 3100;
-type RuntimePersistenceMode = 'memory' | 'postgres';
 
 type RuntimeServerDependencies = {
   postgresPool?: PostgresExecutor & { end(): Promise<void> };
   serverOptions: Parameters<typeof createTestableServer>[0];
-};
-
-type RuntimeReadiness = {
-  status: 'ready' | 'degraded';
-  checks: {
-    database: {
-      mode: RuntimePersistenceMode;
-      reachable: boolean;
-    };
-    fabric: {
-      mode: 'local' | 'unavailable';
-    };
-    demoSeed: {
-      enabled: boolean;
-    };
-  };
 };
 
 // Factory function for creating testable servers
@@ -118,11 +106,17 @@ export function createTestableServer(options?: {
   escrowRepository?: EscrowRepository;
   exportBundleRepository?: ExportBundleRepository;
   plsContractRepository?: PlsContractRepository;
+  operationalIncidentRepository?: OperationalIncidentRepository;
   registerKycAmlRoutes?: boolean;
   enforceBearerAuthForLegacyActorRoutes?: boolean;
   readiness?: () => Promise<RuntimeReadiness>;
 }) {
   const server = fastify();
+  const operationalIncidentRepository = options?.operationalIncidentRepository ?? new InMemoryOperationalIncidentRepository();
+  const readinessProvider = options?.readiness ?? (async () => buildRuntimeReadiness({
+    databaseMode: 'memory',
+    databaseReachable: true,
+  }));
 
   server.get('/health', async () => ({
     data: {
@@ -131,23 +125,8 @@ export function createTestableServer(options?: {
   }));
 
   server.get('/ready', async (_request, reply) => {
-    const readiness = options?.readiness
-      ? await options.readiness()
-      : {
-          status: 'ready',
-          checks: {
-            database: {
-              mode: 'memory' as const,
-              reachable: true,
-            },
-            fabric: {
-              mode: 'local' as const,
-            },
-            demoSeed: {
-              enabled: false,
-            },
-          },
-        };
+    const readiness = await readinessProvider();
+    await recordReadinessIncidents(readiness, operationalIncidentRepository);
 
     return reply.code(readiness.status === 'ready' ? 200 : 503).send({ data: readiness });
   });
@@ -362,6 +341,14 @@ export function createTestableServer(options?: {
     prefix: '/api/v1',
     accessAuditEventRepository,
     blockchainAnchorMetadataRepository,
+    operationalIncidentRepository,
+    authenticatedPreHandler,
+  });
+
+  server.register(registerOpsStatusRoutes, {
+    prefix: '/api/v1',
+    readiness: readinessProvider,
+    operationalIncidentRepository,
     authenticatedPreHandler,
   });
 
@@ -381,20 +368,9 @@ function createRuntimeServerDependencies(
       serverOptions: {
         registerKycAmlRoutes: true,
         enforceBearerAuthForLegacyActorRoutes: true,
-        readiness: async () => ({
-          status: 'ready',
-          checks: {
-            database: {
-              mode: 'memory',
-              reachable: true,
-            },
-            fabric: {
-              mode: 'local',
-            },
-            demoSeed: {
-              enabled: process.env.DEMO_SEED_ENABLED === 'true',
-            },
-          },
+        readiness: async () => buildRuntimeReadiness({
+          databaseMode: 'memory',
+          databaseReachable: true,
         }),
       },
     };
@@ -404,37 +380,15 @@ function createRuntimeServerDependencies(
   const readiness = async (): Promise<RuntimeReadiness> => {
     try {
       await postgresPool.query('SELECT 1');
-      return {
-        status: 'ready',
-        checks: {
-          database: {
-            mode: 'postgres',
-            reachable: true,
-          },
-          fabric: {
-            mode: 'local',
-          },
-          demoSeed: {
-            enabled: process.env.DEMO_SEED_ENABLED === 'true',
-          },
-        },
-      };
+      return buildRuntimeReadiness({
+        databaseMode: 'postgres',
+        databaseReachable: true,
+      });
     } catch {
-      return {
-        status: 'degraded',
-        checks: {
-          database: {
-            mode: 'postgres',
-            reachable: false,
-          },
-          fabric: {
-            mode: 'unavailable',
-          },
-          demoSeed: {
-            enabled: process.env.DEMO_SEED_ENABLED === 'true',
-          },
-        },
-      };
+      return buildRuntimeReadiness({
+        databaseMode: 'postgres',
+        databaseReachable: false,
+      });
     }
   };
 

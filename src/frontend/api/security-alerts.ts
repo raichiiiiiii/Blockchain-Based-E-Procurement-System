@@ -3,8 +3,8 @@ import { requestJson } from './http-client';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 
 export type SecurityAlertSeverity = 'info' | 'warning' | 'critical';
-export type SecurityAlertType = 'deniedAction' | 'proofFailure';
-export type SecurityAlertSource = 'accessAudit' | 'blockchainAnchor';
+export type SecurityAlertType = 'deniedAction' | 'proofFailure' | 'operationalIncident';
+export type SecurityAlertSource = 'accessAudit' | 'blockchainAnchor' | 'operational';
 
 export type SecurityAlert = {
   alertId: string;
@@ -27,6 +27,7 @@ type SecurityAlertsResponse = {
 export type SecurityAlertsSummary = SecurityAlertsResponse & {
   deniedActions: SecurityAlert[];
   proofFailures: SecurityAlert[];
+  operationalIncidents: SecurityAlert[];
 };
 
 function emptySecurityAlertsSummary(): SecurityAlertsSummary {
@@ -35,6 +36,7 @@ function emptySecurityAlertsSummary(): SecurityAlertsSummary {
     items: [],
     deniedActions: [],
     proofFailures: [],
+    operationalIncidents: [],
   };
 }
 
@@ -43,6 +45,7 @@ function toSummary(response: SecurityAlertsResponse): SecurityAlertsSummary {
     ...response,
     deniedActions: response.items.filter(alert => alert.alertType === 'deniedAction'),
     proofFailures: response.items.filter(alert => alert.alertType === 'proofFailure'),
+    operationalIncidents: response.items.filter(alert => alert.alertType === 'operationalIncident'),
   };
 }
 

@@ -1,11 +1,13 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import type { BlockchainAnchorMetadataRepository } from '../../blockchain/application/blockchain-anchor-metadata-repository.js';
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
+import type { OperationalIncidentRepository } from '../../ops/application/operational-incident-repository.js';
 import { listSecurityAlerts } from '../application/security-alert-read-model.js';
 
 export type SecurityAlertRoutesOptions = {
   accessAuditEventRepository?: AccessAuditEventRepository;
   blockchainAnchorMetadataRepository?: BlockchainAnchorMetadataRepository;
+  operationalIncidentRepository?: OperationalIncidentRepository;
   authenticatedPreHandler: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
 };
 
@@ -44,6 +46,7 @@ export const registerSecurityAlertRoutes: FastifyPluginAsync<SecurityAlertRoutes
     const summary = await listSecurityAlerts({
       accessAuditEventRepository: options.accessAuditEventRepository,
       blockchainAnchorMetadataRepository: options.blockchainAnchorMetadataRepository,
+      operationalIncidentRepository: options.operationalIncidentRepository,
     });
 
     return reply.code(200).send({

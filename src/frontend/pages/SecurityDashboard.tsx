@@ -27,6 +27,18 @@ function alertTypeLabel(type: SecurityAlert['alertType']): string {
     .replace(/^./, char => char.toUpperCase());
 }
 
+function alertSourceLabel(alert: SecurityAlert): string {
+  if (alert.source === 'accessAudit') {
+    return 'Denied action';
+  }
+
+  if (alert.source === 'blockchainAnchor') {
+    return 'Proof failure';
+  }
+
+  return 'Operational alert';
+}
+
 function AlertList({ alerts }: { alerts: SecurityAlert[] }) {
   if (alerts.length === 0) {
     return <div className="empty-product-state">No alerts are currently visible for this view.</div>;
@@ -37,7 +49,7 @@ function AlertList({ alerts }: { alerts: SecurityAlert[] }) {
       {alerts.map(alert => (
         <div className="order-row" key={alert.alertId}>
           <span>{alertTypeLabel(alert.alertType)}</span>
-          <strong>{alert.source === 'accessAudit' ? 'Denied action' : 'Proof failure'}</strong>
+          <strong>{alertSourceLabel(alert)}</strong>
           <small>{alert.occurredAt}</small>
           <p>{alert.message}</p>
           {alert.relatedEventId ? <code>{alert.relatedEventId}</code> : null}
@@ -56,6 +68,7 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
     generatedAt: new Date().toISOString(),
     deniedActions: [],
     proofFailures: [],
+    operationalIncidents: [],
     items: [],
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -83,6 +96,7 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
             generatedAt: new Date().toISOString(),
             deniedActions: [],
             proofFailures: [],
+            operationalIncidents: [],
             items: [],
           });
         }
@@ -101,6 +115,7 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
   const allAlerts = useMemo(() => [
     ...summary.deniedActions,
     ...summary.proofFailures,
+    ...summary.operationalIncidents,
   ].sort((left, right) => right.occurredAt.localeCompare(left.occurredAt)), [summary]);
 
   if (activeTarget === 'access-alerts') {
@@ -184,6 +199,11 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
         <span>Proof Failures</span>
         <strong>{summary.proofFailures.length}</strong>
         <p>Failed, mismatched, and unavailable proof remain distinct from verified proof.</p>
+      </section>
+      <section className="metric-panel">
+        <span>Operational Alerts</span>
+        <strong>{summary.operationalIncidents.length}</strong>
+        <p>Runtime dependency incidents are visible without granting mutation powers.</p>
       </section>
     </div>
   );

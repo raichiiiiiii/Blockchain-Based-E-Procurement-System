@@ -74,6 +74,10 @@ test('readiness endpoint reports dependency checks and degrades with HTTP 503', 
         fabric: {
           mode: 'unavailable'
         },
+        payment: {
+          mode: 'notConfigured',
+          configured: false
+        },
         demoSeed: {
           enabled: true
         }
@@ -97,6 +101,10 @@ test('readiness endpoint reports dependency checks and degrades with HTTP 503', 
         },
         fabric: {
           mode: 'unavailable'
+        },
+        payment: {
+          mode: 'notConfigured',
+          configured: false
         },
         demoSeed: {
           enabled: true

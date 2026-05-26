@@ -57,6 +57,8 @@ http://127.0.0.1:3100/health
 http://127.0.0.1:3100/ready
 ```
 
+Protected operational status is available at `/api/v1/ops/status` for administrator and security operator sessions. See `docs/runbooks/observability-incident-hooks.md`.
+
 ## Smoke Test
 
 Run:

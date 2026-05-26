@@ -2,10 +2,12 @@ import type { BlockchainAnchorMetadataRepository } from '../../blockchain/applic
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
 import type { AccessAuditEvent } from '../../shared/application/access-audit-event.js';
 import type { BlockchainAnchorMetadata } from '../../blockchain/application/blockchain-anchor-metadata-repository.js';
+import type { OperationalIncidentRepository } from '../../ops/application/operational-incident-repository.js';
+import type { OperationalIncident } from '../../ops/application/operational-incident.js';
 
-export type SecurityAlertType = 'deniedAction' | 'proofFailure';
+export type SecurityAlertType = 'deniedAction' | 'proofFailure' | 'operationalIncident';
 export type SecurityAlertSeverity = 'info' | 'warning' | 'critical';
-export type SecurityAlertSource = 'accessAudit' | 'blockchainAnchor';
+export type SecurityAlertSource = 'accessAudit' | 'blockchainAnchor' | 'operational';
 
 export type SecurityAlert = {
   alertId: string;
@@ -28,6 +30,7 @@ export type SecurityAlertSummary = {
 export type SecurityAlertReadModelDependencies = {
   accessAuditEventRepository?: AccessAuditEventRepository;
   blockchainAnchorMetadataRepository?: BlockchainAnchorMetadataRepository;
+  operationalIncidentRepository?: OperationalIncidentRepository;
 };
 
 export type SecurityAlertReadModelOptions = {
@@ -77,13 +80,26 @@ function toProofFailureAlert(metadata: BlockchainAnchorMetadata): SecurityAlert 
   };
 }
 
+function toOperationalIncidentAlert(incident: OperationalIncident): SecurityAlert {
+  return {
+    alertId: `security-alert-ops-${incident.incidentId}`,
+    alertType: 'operationalIncident',
+    severity: incident.severity,
+    source: 'operational',
+    relatedEventId: incident.incidentId,
+    message: incident.message,
+    occurredAt: incident.occurredAt,
+  };
+}
+
 export async function listSecurityAlerts(
   dependencies: SecurityAlertReadModelDependencies,
   options: SecurityAlertReadModelOptions = {},
 ): Promise<SecurityAlertSummary> {
-  const [accessAuditEvents, anchorMetadata] = await Promise.all([
+  const [accessAuditEvents, anchorMetadata, operationalIncidents] = await Promise.all([
     dependencies.accessAuditEventRepository?.list() ?? Promise.resolve([]),
     dependencies.blockchainAnchorMetadataRepository?.list() ?? Promise.resolve([]),
+    dependencies.operationalIncidentRepository?.list() ?? Promise.resolve([]),
   ]);
 
   const deniedActionAlerts = accessAuditEvents
@@ -94,8 +110,12 @@ export async function listSecurityAlerts(
     .filter(metadata => metadata.anchorStatus === 'failed')
     .map(toProofFailureAlert);
 
+  const operationalIncidentAlerts = operationalIncidents
+    .filter(incident => incident.status === 'open')
+    .map(toOperationalIncidentAlert);
+
   const limit = options.limit && options.limit > 0 ? options.limit : DEFAULT_ALERT_LIMIT;
-  const items = [...deniedActionAlerts, ...proofFailureAlerts]
+  const items = [...deniedActionAlerts, ...proofFailureAlerts, ...operationalIncidentAlerts]
     .sort((left, right) => (
       right.occurredAt.localeCompare(left.occurredAt) ||
       left.alertId.localeCompare(right.alertId)

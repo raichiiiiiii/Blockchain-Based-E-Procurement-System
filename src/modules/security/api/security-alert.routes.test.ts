@@ -6,6 +6,8 @@ import { InMemoryAuthSessionRepository } from '../../auth/infrastructure/in-memo
 import { createAccessAuditEvent } from '../../shared/application/access-audit-event-builder.js';
 import { InMemoryAccessAuditEventRepository } from '../../shared/infrastructure/in-memory-access-audit-event-repository.js';
 import { InMemoryBlockchainAnchorMetadataRepository } from '../../blockchain/infrastructure/in-memory-blockchain-anchor-metadata-repository.js';
+import { InMemoryOperationalIncidentRepository } from '../../ops/infrastructure/in-memory-operational-incident-repository.js';
+import type { RuntimeReadiness } from '../../ops/application/runtime-readiness.js';
 
 async function createSession(
   repository: InMemoryAuthSessionRepository,
@@ -32,6 +34,7 @@ async function createSession(
 async function createSecurityAlertTestContext() {
   const sessionRepository = new InMemoryAuthSessionRepository();
   const accessAuditEventRepository = new InMemoryAccessAuditEventRepository();
+  const operationalIncidentRepository = new InMemoryOperationalIncidentRepository();
   const blockchainAnchorMetadataRepository = new InMemoryBlockchainAnchorMetadataRepository([{
     eventId: 'proof-event-failed',
     payloadHash: `sha256:${'4'.repeat(64)}`,
@@ -102,6 +105,7 @@ async function createSecurityAlertTestContext() {
     sessionRepository,
     accessAuditEventRepository,
     blockchainAnchorMetadataRepository,
+    operationalIncidentRepository,
   });
   await server.ready();
 
@@ -216,4 +220,64 @@ test('denied access event appears as a security alert', async () => {
   assert.strictEqual(deniedAlert.actorUserId, 'buyer-user');
   assert.strictEqual(deniedAlert.relatedEventId, 'access-denied-1');
   assert.match(deniedAlert.message, /denied/i);
+});
+
+test('operational readiness incidents appear as security alerts', async () => {
+  const sessionRepository = new InMemoryAuthSessionRepository();
+  const operationalIncidentRepository = new InMemoryOperationalIncidentRepository();
+
+  await createSession(sessionRepository, {
+    token: 'security-token',
+    actorUserId: 'security-user',
+    actorOrganizationId: 'security-org',
+    actorRoleCodes: ['securityOperator'],
+  });
+
+  const degradedReadiness: RuntimeReadiness = {
+    status: 'degraded',
+    checks: {
+      database: {
+        mode: 'postgres',
+        reachable: false,
+      },
+      fabric: {
+        mode: 'unavailable',
+      },
+      payment: {
+        mode: 'notConfigured',
+        configured: false,
+      },
+      demoSeed: {
+        enabled: true,
+      },
+    },
+  };
+
+  const server = createTestableServer({
+    sessionRepository,
+    operationalIncidentRepository,
+    readiness: async () => degradedReadiness,
+  });
+  await server.ready();
+
+  await server.inject({
+    method: 'GET',
+    url: '/ready',
+  });
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/security/alerts',
+    headers: {
+      authorization: 'Bearer security-token',
+    },
+  });
+
+  const operationalAlerts = response.json().data.items.filter(
+    (item: { alertType: string }) => item.alertType === 'operationalIncident',
+  );
+
+  assert.strictEqual(response.statusCode, 200);
+  assert.strictEqual(operationalAlerts.length, 2);
+  assert.ok(operationalAlerts.every((alert: { source: string }) => alert.source === 'operational'));
 });
