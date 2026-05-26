@@ -15,6 +15,7 @@ import ShariahDashboard from './pages/ShariahDashboard';
 import FinancingDashboard from './pages/FinancingDashboard';
 import RoleDashboard from './pages/RoleDashboard';
 import DocumentWorkspacePage from './pages/DocumentWorkspacePage';
+import ContractNegotiationPage from './pages/ContractNegotiationPage';
 import { loginWithCredentials, logoutSession, type LoginCredentials } from './lib/auth-client';
 import {
   clearStoredSession,
@@ -97,6 +98,10 @@ function renderRoleDashboard(
 ) {
   if (activeTarget === 'documents') {
     return <DocumentWorkspacePage session={session} />;
+  }
+
+  if (activeTarget === 'contracts') {
+    return <ContractNegotiationPage session={session} />;
   }
 
   if (role === 'buyer') {

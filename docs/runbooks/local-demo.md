@@ -110,6 +110,8 @@ Landing page
 -> Create order
 -> Contract Documents
 -> Upload contract text and inspect checksum/extraction/signature state
+-> Contract Negotiation
+-> Save machine-readable terms and inspect terms hash
 -> Escrow
 -> Create escrow from an accepted order
 -> Blockchain Proof panel
@@ -127,6 +129,8 @@ Landing page
 -> Accept order
 -> Delivery Evidence
 -> Contract Documents
+-> Contract Negotiation
+-> Submit revised offer or accept current terms
 -> Escrow
 ```
 
@@ -228,9 +232,11 @@ Landing page
 -> Access History
 ```
 
-Role-specific dashboard entry is available for Administrator, Buyer, Supplier, Compliance Reviewer, Shariah Reviewer, Financier, Auditor, Regulator, and Security Operator. The administrator workflow includes member governance, status actions, role assignment controls, and access-history inspection. Buyer and supplier workflows include order creation, received-order acknowledgement, accepted-order escrow readiness, and metadata-only delivery evidence. Escrow creation requires an accepted order or explicit demo accepted-order reference, and buyer/supplier organizations must be eligible. Compliance reviewer workflow includes safe KYC/AML case metadata, decision actions, and downstream eligibility visibility. Shariah reviewer workflow includes PLS checklist metadata and decision controls. Financier workflow includes Shariah-gated PLS activation and profit/loss distribution scenarios. Regulator and auditor workflows include scoped export bundle generation and deterministic bundle-hash verification. Security operator workflow is read-only and shows backend-backed access/proof anomaly metadata when a backend session is active.
+Role-specific dashboard entry is available for Administrator, Buyer, Supplier, Compliance Reviewer, Shariah Reviewer, Financier, Auditor, Regulator, and Security Operator. The administrator workflow includes member governance, status actions, role assignment controls, and access-history inspection. Buyer and supplier workflows include order creation, received-order acknowledgement, accepted-order escrow readiness, contract document intake, contract negotiation, and metadata-only delivery evidence. Escrow creation requires an accepted order or explicit demo accepted-order reference, and buyer/supplier organizations must be eligible. Compliance reviewer workflow includes safe KYC/AML case metadata, decision actions, and downstream eligibility visibility. Shariah reviewer workflow includes PLS checklist metadata and decision controls. Financier workflow includes Shariah-gated PLS activation and profit/loss distribution scenarios. Regulator and auditor workflows include scoped export bundle generation and deterministic bundle-hash verification. Security operator workflow is read-only and shows backend-backed access/proof anomaly metadata when a backend session is active.
 
 The Contract Documents panel lets authorized actors upload text/JSON document content for metadata, checksum, local storage reference, extraction output, and local detached-signature metadata state. PDF and DOCX bytes can be stored, but extraction is explicitly unsupported until a production extractor adapter is connected. The UI must not claim malware scanning, OCR, legal signature validation, or production document management.
+
+The Contract Negotiation panel lets authorized buyer/supplier/financier-facing actors create machine-readable terms, link a human document reference, submit a revised offer, and record buyer or supplier acceptance against the current terms hash. It does not claim legal signing, ERP sync, or payment settlement.
 
 ## Fabric Proof Path
 
@@ -281,6 +287,7 @@ Financing
 Export Bundle
 Security Status
 Contract Documents
+Contract Negotiation
 ```
 
 ## Current Known Limitations
@@ -288,6 +295,7 @@ Contract Documents
 - Mandatory actors can sign in and reach role-specific dashboard entry states. Shariah and financier workflows are demonstrable with restricted PLS seedbed data.
 - Delivery evidence is metadata-only; no IoT feeds or QR signature capture are implemented.
 - Document intake is local-storage MVP scope only; no production object storage, OCR, PDF/DOCX extraction, malware scanning, or legal e-signature verification is implemented.
+- Contract negotiation uses an in-memory repository in this slice; production redline editing, PostgreSQL persistence, legal signing, ERP export, and automatic order/escrow creation are not implemented.
 - Compliance dashboard uses a local demo case queue until a backend case-list endpoint is added.
 - Eligibility gating is implemented for order creation, escrow creation, and PLS activation.
 - Fabric live network deployment remains a local/manual path unless the Fabric samples are installed.

@@ -9,6 +9,7 @@ export type DashboardNavigationTarget =
   | 'received-orders'
   | 'delivery-evidence'
   | 'documents'
+  | 'contracts'
   | 'escrow'
   | 'blockchain-proof'
   | 'compliance'
@@ -36,6 +37,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'roles', label: 'Roles' },
     { id: 'access-history', label: 'Access History' },
     { id: 'documents', label: 'Contract Documents' },
+    { id: 'contracts', label: 'Contract Negotiation' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
   ],
@@ -43,6 +45,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'orders', label: 'Orders' },
     { id: 'documents', label: 'Contract Documents' },
+    { id: 'contracts', label: 'Contract Negotiation' },
     { id: 'escrow', label: 'Escrow' },
     { id: 'blockchain-proof', label: 'Blockchain Proof' },
     { id: 'settings', label: 'Settings' },
@@ -53,6 +56,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'received-orders', label: 'Received Orders' },
     { id: 'delivery-evidence', label: 'Delivery Evidence' },
     { id: 'documents', label: 'Contract Documents' },
+    { id: 'contracts', label: 'Contract Negotiation' },
     { id: 'escrow', label: 'Escrow' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
@@ -76,6 +80,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'financing', label: 'Financing' },
     { id: 'documents', label: 'Contract Documents' },
+    { id: 'contracts', label: 'Contract Negotiation' },
     { id: 'shariah-review', label: 'Shariah Review' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },

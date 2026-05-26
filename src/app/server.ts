@@ -77,6 +77,9 @@ import { InMemoryDocumentRepository } from '../modules/documents/infrastructure/
 import { LocalDocumentStorageAdapter } from '../modules/documents/infrastructure/local-document-storage-adapter.js';
 import { LocalDocumentTextExtractionAdapter } from '../modules/documents/infrastructure/local-document-text-extraction-adapter.js';
 import { LocalSignatureMetadataAdapter } from '../modules/documents/infrastructure/local-signature-metadata-adapter.js';
+import { registerContractRoutes } from '../modules/contracts/api/contract.routes.js';
+import type { ProcurementContractRepository } from '../modules/contracts/application/contract-repository.js';
+import { InMemoryProcurementContractRepository } from '../modules/contracts/infrastructure/in-memory-procurement-contract-repository.js';
 import { createPostgresPool, type PostgresExecutor } from '../infrastructure/database/postgres-client.js';
 import { PostgresMemberOrganizationRepository } from '../modules/membership/infrastructure/postgres-member-organization-repository.js';
 import { PostgresRoleRepository } from '../modules/access-control/infrastructure/postgres-role-repository.js';
@@ -131,6 +134,7 @@ export function createTestableServer(options?: {
   documentStorage?: DocumentStoragePort;
   documentTextExtractor?: DocumentTextExtractionPort;
   signatureVerifier?: SignatureVerificationPort;
+  procurementContractRepository?: ProcurementContractRepository;
   registerKycAmlRoutes?: boolean;
   enforceBearerAuthForLegacyActorRoutes?: boolean;
   readiness?: () => Promise<RuntimeReadiness>;
@@ -212,6 +216,7 @@ export function createTestableServer(options?: {
   const documentStorage = options?.documentStorage ?? new LocalDocumentStorageAdapter();
   const documentTextExtractor = options?.documentTextExtractor ?? new LocalDocumentTextExtractionAdapter();
   const signatureVerifier = options?.signatureVerifier ?? new LocalSignatureMetadataAdapter();
+  const procurementContractRepository = options?.procurementContractRepository ?? new InMemoryProcurementContractRepository();
   const authenticatedPreHandler = createAuthenticatedRequestPreHandler(sessionRepository);
   const legacyActorRouteAuthenticatedPreHandler = options?.enforceBearerAuthForLegacyActorRoutes
     ? authenticatedPreHandler
@@ -397,6 +402,12 @@ export function createTestableServer(options?: {
     storage: documentStorage,
     extractor: documentTextExtractor,
     signatureVerifier,
+    authenticatedPreHandler,
+  });
+
+  server.register(registerContractRoutes, {
+    prefix: '/api/v1',
+    repository: procurementContractRepository,
     authenticatedPreHandler,
   });
 

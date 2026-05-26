@@ -82,13 +82,14 @@ Chaincode build/test is automated. Live Fabric local-network deployment depends 
 | 4:00-5:30 | Compliance review | Show safe KYC/AML metadata and eligibility decision. |
 | 5:30-7:00 | Buyer order | Create or inspect procurement order for supplier. |
 | 7:00-8:00 | Contract documents | Upload contract text and show checksum, extraction fields, and local signature state. |
-| 8:00-9:30 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata. |
-| 9:30-10:30 | Buyer delivery review | Show evidence hash, lifecycle event, and proof state on the order detail. |
-| 10:30-12:00 | Escrow creation | Create escrow from accepted order and show escrow-created state. |
-| 11:00-12:00 | Blockchain proof | Show proof panel and honest verification states. |
-| 12:00-13:30 | Auditor verification | Verify proof or inspect audit/export evidence read-only. |
-| 13:30-15:00 | Shariah review | Show checklist metadata and approval gate. |
-| 15:00-16:30 | Financier PLS seedbed | Show approved PLS contract and distribution scenario. |
+| 8:00-9:00 | Contract negotiation | Version machine-readable terms, show hash, submit an offer, and record acceptance. |
+| 9:00-10:15 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata. |
+| 10:15-11:15 | Buyer delivery review | Show evidence hash, lifecycle event, and proof state on the order detail. |
+| 11:15-12:15 | Escrow creation | Create escrow from accepted order and show escrow-created state. |
+| 12:15-13:00 | Blockchain proof | Show proof panel and honest verification states. |
+| 13:00-14:00 | Auditor verification | Verify proof or inspect audit/export evidence read-only. |
+| 14:00-15:15 | Shariah review | Show checklist metadata and approval gate. |
+| 15:15-16:30 | Financier PLS seedbed | Show approved PLS contract and distribution scenario. |
 | 16:30-18:00 | Regulator export | Request export bundle and verify manifest integrity. |
 | 18:00-19:00 | Evidence and validation | Point to UAT, authorization matrix, and release validation evidence. |
 | 19:00-20:00 | Limitations | State what is deliberately post-MVP. |
@@ -225,7 +226,27 @@ What to say:
 Document intake records metadata, checksum, extraction output, and signature state. It does not claim legal e-signature validation, OCR, malware scanning, or production document management.
 ```
 
-### 8. Buyer Delivery Review
+### 8. Contract Negotiation
+
+Sign in as `buyer.demo` or `supplier.demo`.
+
+Show:
+
+- Contract Negotiation
+- saved machine-readable terms
+- linked document reference
+- deterministic terms hash
+- revised offer
+- buyer or supplier acceptance record
+- acceptance trail and lifecycle events
+
+What to say:
+
+```text
+The negotiation workspace connects the human document reference to machine-readable terms. Offers and acceptances are versioned and hashed, but this is not legal signing, ERP sync, or payment execution.
+```
+
+### 9. Buyer Delivery Review
 
 Return as `buyer.demo`.
 
@@ -244,7 +265,7 @@ What to say:
 The buyer can review delivery evidence metadata and proof state. A failed or unavailable proof is visible and is not treated as verified.
 ```
 
-### 9. Escrow Creation
+### 10. Escrow Creation
 
 Return as `buyer.demo`.
 
@@ -262,7 +283,7 @@ What to say:
 Escrow is currently a first slice. It records escrow-created state and evidence; it does not execute payment settlement.
 ```
 
-### 10. Blockchain Proof Panel
+### 11. Blockchain Proof Panel
 
 Show proof from escrow, audit event detail, or Blockchain Proof.
 
@@ -278,7 +299,7 @@ What to say:
 The blockchain layer is proof infrastructure. Operational data stays off-chain, while selected event hashes can be anchored and verified.
 ```
 
-### 11. Auditor Verification
+### 12. Auditor Verification
 
 Sign in as `auditor.demo`.
 
@@ -294,7 +315,7 @@ What to say:
 The auditor has read-only evidence tools. Verification states are explicit: verified, mismatch, not found, and unavailable are different outcomes.
 ```
 
-### 12. Shariah Review
+### 13. Shariah Review
 
 Sign in as `shariah.demo`.
 
@@ -311,7 +332,7 @@ What to say:
 The PLS seedbed is controlled by Shariah governance. Activation requires an approved reference and does not imply production Islamic finance certification.
 ```
 
-### 13. Financier PLS Contract and Distribution
+### 14. Financier PLS Contract and Distribution
 
 Sign in as `financier.demo`.
 
@@ -328,7 +349,7 @@ What to say:
 The financier can inspect and simulate allocation scenarios. No external payments are executed and no profit or principal is guaranteed.
 ```
 
-### 14. Regulator Export Bundle
+### 15. Regulator Export Bundle
 
 Sign in as `regulator.demo`.
 
@@ -345,7 +366,7 @@ What to say:
 The regulator flow packages reviewable evidence with integrity metadata. Production signing and external regulator portal integration remain post-MVP.
 ```
 
-### 15. Evidence, Runbook, and Validation
+### 16. Evidence, Runbook, and Validation
 
 Show:
 
@@ -363,7 +384,7 @@ What to say:
 The demo is backed by documented UAT scripts, authorization checks, and validation evidence rather than a one-off walkthrough.
 ```
 
-### 16. Known Limitations
+### 17. Known Limitations
 
 Close by naming limits directly:
 
