@@ -77,6 +77,22 @@ type RuntimeServerDependencies = {
   serverOptions: Parameters<typeof createTestableServer>[0];
 };
 
+type RuntimeReadiness = {
+  status: 'ready' | 'degraded';
+  checks: {
+    database: {
+      mode: RuntimePersistenceMode;
+      reachable: boolean;
+    };
+    fabric: {
+      mode: 'local' | 'unavailable';
+    };
+    demoSeed: {
+      enabled: boolean;
+    };
+  };
+};
+
 // Factory function for creating testable servers
 export function createTestableServer(options?: {
   audit?: (event: MemberOrgCreateAuditEvent) => void;
@@ -104,8 +120,37 @@ export function createTestableServer(options?: {
   plsContractRepository?: PlsContractRepository;
   registerKycAmlRoutes?: boolean;
   enforceBearerAuthForLegacyActorRoutes?: boolean;
+  readiness?: () => Promise<RuntimeReadiness>;
 }) {
   const server = fastify();
+
+  server.get('/health', async () => ({
+    data: {
+      status: 'ok',
+    },
+  }));
+
+  server.get('/ready', async (_request, reply) => {
+    const readiness = options?.readiness
+      ? await options.readiness()
+      : {
+          status: 'ready',
+          checks: {
+            database: {
+              mode: 'memory' as const,
+              reachable: true,
+            },
+            fabric: {
+              mode: 'local' as const,
+            },
+            demoSeed: {
+              enabled: false,
+            },
+          },
+        };
+
+    return reply.code(readiness.status === 'ready' ? 200 : 503).send({ data: readiness });
+  });
 
   // Register the actor context plugin
   server.register(actorContextPlugin);
@@ -336,17 +381,69 @@ function createRuntimeServerDependencies(
       serverOptions: {
         registerKycAmlRoutes: true,
         enforceBearerAuthForLegacyActorRoutes: true,
+        readiness: async () => ({
+          status: 'ready',
+          checks: {
+            database: {
+              mode: 'memory',
+              reachable: true,
+            },
+            fabric: {
+              mode: 'local',
+            },
+            demoSeed: {
+              enabled: process.env.DEMO_SEED_ENABLED === 'true',
+            },
+          },
+        }),
       },
     };
   }
 
   const postgresPool = createPostgresPool();
+  const readiness = async (): Promise<RuntimeReadiness> => {
+    try {
+      await postgresPool.query('SELECT 1');
+      return {
+        status: 'ready',
+        checks: {
+          database: {
+            mode: 'postgres',
+            reachable: true,
+          },
+          fabric: {
+            mode: 'local',
+          },
+          demoSeed: {
+            enabled: process.env.DEMO_SEED_ENABLED === 'true',
+          },
+        },
+      };
+    } catch {
+      return {
+        status: 'degraded',
+        checks: {
+          database: {
+            mode: 'postgres',
+            reachable: false,
+          },
+          fabric: {
+            mode: 'unavailable',
+          },
+          demoSeed: {
+            enabled: process.env.DEMO_SEED_ENABLED === 'true',
+          },
+        },
+      };
+    }
+  };
 
   return {
     postgresPool,
     serverOptions: {
       registerKycAmlRoutes: true,
       enforceBearerAuthForLegacyActorRoutes: true,
+      readiness,
       memberRepository: new PostgresMemberOrganizationRepository(postgresPool),
       roleRepository: new PostgresRoleRepository(postgresPool),
       roleAssignmentRepository: new PostgresRoleAssignmentRepository(postgresPool),

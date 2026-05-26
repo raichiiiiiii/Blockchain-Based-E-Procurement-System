@@ -45,3 +45,63 @@ test('schema validation failure returns standardized error envelope', async () =
   assert.strictEqual(body.validationContext, undefined);
   assert.strictEqual(body.statusCode, undefined);
 });
+
+test('health endpoint returns an ok status envelope', async () => {
+  const server = createTestableServer();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/health'
+  });
+
+  assert.strictEqual(response.statusCode, 200);
+  assert.deepStrictEqual(JSON.parse(response.body), {
+    data: {
+      status: 'ok'
+    }
+  });
+});
+
+test('readiness endpoint reports dependency checks and degrades with HTTP 503', async () => {
+  const server = createTestableServer({
+    readiness: async () => ({
+      status: 'degraded',
+      checks: {
+        database: {
+          mode: 'postgres',
+          reachable: false
+        },
+        fabric: {
+          mode: 'unavailable'
+        },
+        demoSeed: {
+          enabled: true
+        }
+      }
+    })
+  });
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/ready'
+  });
+
+  assert.strictEqual(response.statusCode, 503);
+  assert.deepStrictEqual(JSON.parse(response.body), {
+    data: {
+      status: 'degraded',
+      checks: {
+        database: {
+          mode: 'postgres',
+          reachable: false
+        },
+        fabric: {
+          mode: 'unavailable'
+        },
+        demoSeed: {
+          enabled: true
+        }
+      }
+    }
+  });
+});
