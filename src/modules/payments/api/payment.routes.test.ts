@@ -242,6 +242,37 @@ describe('Payment instruction routes', () => {
     assert.strictEqual(anonymous.statusCode, 401);
   });
 
+  it('exports ISO 20022-like payment initiation and status artifacts for authorized readers', async () => {
+    const { app } = await createApp();
+
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: '/payments/instructions',
+      headers: { 'x-actor-role': 'buyer' },
+      payload: validPayload({ sandboxStatus: 'settled' }),
+    });
+    const paymentInstructionId = createResponse.json().data.paymentInstructionId;
+
+    const exportResponse = await app.inject({
+      method: 'GET',
+      url: `/payments/instructions/${paymentInstructionId}/iso20022?requestedExecutionDate=2026-05-27`,
+      headers: { 'x-actor-role': 'auditor' },
+    });
+
+    assert.strictEqual(exportResponse.statusCode, 200);
+    const body = exportResponse.json();
+    assert.strictEqual(body.data.paymentInitiation.standard, 'ISO20022-like');
+    assert.strictEqual(body.data.paymentInitiation.messageDefinition, 'pain.001.001.13');
+    assert.strictEqual(body.data.paymentInitiation.paymentInformation.requestedExecutionDate, '2026-05-27');
+    assert.strictEqual(
+      body.data.paymentInitiation.paymentInformation.creditTransferTransactionInformation.instructedAmount.currency,
+      'MYR',
+    );
+    assert.strictEqual(body.data.paymentStatusReport.messageDefinition, 'pain.002.001.15');
+    assert.strictEqual(body.data.paymentStatusReport.transactionInformationAndStatus.transactionStatus, 'ACSC');
+    assert.strictEqual(body.data.paymentStatusReport.claimBoundary, 'mappingOnlyNoBankExecution');
+  });
+
   it('rejects invalid payment instruction payloads with the standard validation envelope', async () => {
     const { app } = await createApp();
 

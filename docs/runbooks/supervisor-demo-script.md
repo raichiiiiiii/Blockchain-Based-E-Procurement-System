@@ -305,7 +305,7 @@ Show:
 What to say:
 
 ```text
-This is a payment adapter boundary. It records sandbox or manual settlement status as audit evidence, but it does not execute bank payment, ISO 20022 messages, or production settlement.
+This is a payment adapter boundary. It records sandbox or manual settlement status as audit evidence. The system can export ISO 20022-like JSON for integration review, but it does not execute bank payment, transmit payment rails, or provide certification.
 ```
 
 ### 11. Blockchain Proof Panel

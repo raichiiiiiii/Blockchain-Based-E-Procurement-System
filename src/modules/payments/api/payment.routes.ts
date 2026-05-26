@@ -9,6 +9,7 @@ import {
   getPaymentInstruction,
   reconcilePaymentInstruction,
 } from '../application/payment-instruction-service.js';
+import { mapPaymentInstructionToIso20022Artifacts } from '../application/iso20022-payment-mapper.js';
 import type { PaymentAdapterName, PaymentInstructionStatus } from '../domain/payment-instruction.js';
 
 export type PaymentRoutesOptions = {
@@ -32,6 +33,10 @@ type CreatePaymentInstructionBody = {
 
 type ReconcilePaymentInstructionBody = {
   status?: PaymentInstructionStatus;
+};
+
+type Iso20022PaymentQuery = {
+  requestedExecutionDate?: string;
 };
 
 function actorFromRequest(request: FastifyRequest) {
@@ -130,6 +135,36 @@ export const registerPaymentRoutes: FastifyPluginAsync<PaymentRoutesOptions> = a
       );
 
       return sendPaymentResult(reply, result);
+    },
+  );
+
+  fastify.get<{
+    Params: { paymentInstructionId: string };
+    Querystring: Iso20022PaymentQuery;
+  }>(
+    '/payments/instructions/:paymentInstructionId/iso20022',
+    async (request, reply) => {
+      const result = await getPaymentInstruction(
+        request.params.paymentInstructionId,
+        actorFromRequest(request),
+        { repository: options.repository },
+      );
+
+      switch (result.status) {
+        case 'updated': {
+          const mapped = mapPaymentInstructionToIso20022Artifacts(result.instruction, {
+            requestedExecutionDate: request.query.requestedExecutionDate,
+          });
+
+          if (mapped.status === 'invalidInput') {
+            return reply.code(400).send(createApplicationValidationError('Invalid ISO 20022 payment mapping request', mapped.issues));
+          }
+
+          return reply.code(200).send({ data: mapped.data });
+        }
+        default:
+          return sendPaymentResult(reply, result);
+      }
     },
   );
 

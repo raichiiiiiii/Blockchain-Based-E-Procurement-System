@@ -26,7 +26,7 @@ The payment adapter records auditable settlement instruction state after escrow 
 
 - real payment execution
 - bank connectivity
-- ISO 20022 message generation
+- ISO 20022 bank execution or certification
 - payment credentials storage
 - automatic escrow settlement finality
 - production reconciliation files

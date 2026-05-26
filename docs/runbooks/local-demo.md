@@ -116,6 +116,7 @@ Landing page
 -> Create escrow from an accepted order
 -> Mark escrow funded, request release, and approve release to settlement instruction state
 -> Create sandbox/manual payment instruction and reconcile status without claiming bank execution
+-> Export ISO 20022-like payment initiation/status JSON for mapping review only
 -> Blockchain Proof panel
 ```
 
@@ -301,7 +302,7 @@ Contract Negotiation
 - Compliance dashboard uses a local demo case queue until a backend case-list endpoint is added.
 - Eligibility gating is implemented for order creation, escrow creation, and PLS activation.
 - Fabric live network deployment remains a local/manual path unless the Fabric samples are installed.
-- Escrow is an MVP hybrid slice with release/dispute workflow and sandbox/manual payment instruction evidence; it is not production settlement or bank payment execution.
+- Escrow is an MVP hybrid slice with release/dispute workflow, sandbox/manual payment instruction evidence, and ISO 20022-like JSON mapping; it is not production settlement, bank payment execution, or ISO 20022 certification.
 - PLS workflow is a restricted single-venture seedbed and does not provide production payment rails, guaranteed returns, or full Islamic finance product coverage.
 - Export signing is MVP-equivalent manifest and bundle hashing; production signing, key management, and external regulator portal integration are not implemented.
 - KYC cases, export bundles, Shariah reviews, and PLS contracts still use in-memory runtime repositories in PostgreSQL mode until dedicated adapters are added.

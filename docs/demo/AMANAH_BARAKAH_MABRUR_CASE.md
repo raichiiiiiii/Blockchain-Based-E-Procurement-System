@@ -56,7 +56,7 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 9. The Buyer opens Escrow and creates escrow from the accepted order reference.
 10. Escrow creation emits a lifecycle audit event for the escrow-created state.
 11. The Buyer can mark the escrow funded, request release after accepted order, delivery evidence, eligibility, and dispute-free checks pass, and approve release into a settlement-instruction-ready state without executing payment.
-12. The Buyer or Financier can create a sandbox/manual payment instruction from the settlement-ready escrow and reconcile it to pending, accepted, failed, or settled status without moving money.
+12. The Buyer or Financier can create a sandbox/manual payment instruction from the settlement-ready escrow, reconcile it to pending, accepted, failed, or settled status without moving money, and export an ISO 20022-like mapping artifact for integration review.
 13. If evidence is contested, the Buyer or Supplier can open a dispute and an authorized reviewer can record an arbitration outcome to prepare release, refund, or cancellation.
 14. Delivery evidence, escrow lifecycle, and settlement lifecycle events are anchored when the proof gateway is available, or remain proof-ready/pending/failed with honest proof states.
 15. The Auditor opens Blockchain Proof or an event detail and verifies the proof without fabricated transaction data.
@@ -175,6 +175,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 | Contract negotiation | Buyer or Supplier creates machine-readable terms, submits a revised offer, and records party acceptance against the current terms hash. |
 | Escrow lifecycle | Buyer creates escrow from accepted order; release actions require delivery evidence, eligibility, and dispute-free conditions; disputes and arbitration outcomes are audit-recorded. |
 | Payment instruction | Buyer or financier creates sandbox/manual settlement instruction; reconciliation status is auditable and does not imply bank execution. |
+| ISO 20022 mapping | Authorized reviewer exports payment initiation/status JSON for mapping review only; no bank execution or certification is claimed. |
 | Proof verification | Verified, mismatch, not found, pending, failed, and unavailable states are distinct where applicable. |
 | Shariah review | PLS activation depends on an approved Shariah reference. |
 | Financier PLS view | Profit/loss scenarios are visible as simulation-only seedbed records. |
@@ -186,6 +187,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 - PLS distribution is a simulation-only seedbed and does not execute payments.
 - Escrow now includes an MVP release/dispute workflow, but it only prepares settlement instruction state and does not execute real payment, bank settlement, or external arbitration integration.
 - Payment adapter support is sandbox/manual only and records auditable status evidence; it does not connect to banks or execute ISO 20022 payment rails.
+- ISO 20022 support is mapping-only JSON for integration review; it does not submit bank messages or provide certification.
 - Fabric proof is local/demo-oriented; a production consortium rollout is post-MVP.
 - PostgreSQL runtime persistence is partial and explicitly scoped by runbooks.
 - Delivery evidence now includes signed external IoT/QR/EPCIS-compatible metadata intake, but not production device PKI, QR legal signature verification, full EPCIS capture/query services, external logistics network integration, or document rendering.
