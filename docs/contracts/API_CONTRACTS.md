@@ -1040,6 +1040,76 @@ Forbidden response:
 }
 ```
 
+### 10.4 Security alert read model
+
+`GET /api/v1/security/alerts`
+
+Purpose:
+- Provide a security-operator read model for recent denied actions and blockchain proof failures.
+- Avoid granting security operators administrator, compliance, finance, or auditor mutation permissions.
+- Avoid using frontend-local fabricated alert data.
+
+Authorization:
+- Requires an authenticated `securityOperator` or `administrator` role.
+- Anonymous requests receive `401 UNAUTHORIZED`.
+- Other roles receive `403 FORBIDDEN`.
+
+Response (success):
+
+```json
+{
+  "data": {
+    "generatedAt": "2026-05-26T00:00:00.000Z",
+    "items": [
+      {
+        "alertId": "security-alert-denied-access-denied-1",
+        "alertType": "deniedAction",
+        "severity": "warning",
+        "source": "accessAudit",
+        "actorUserId": "buyer-user",
+        "relatedEventId": "access-denied-1",
+        "message": "changeRoleAssignment was denied for roleAssignment assignment-1. Reason: admin_required.",
+        "occurredAt": "2026-05-25T04:04:00.000Z"
+      },
+      {
+        "alertId": "security-alert-proof-proof-event-failed",
+        "alertType": "proofFailure",
+        "severity": "critical",
+        "source": "blockchainAnchor",
+        "relatedEventId": "proof-event-failed",
+        "relatedProofStatus": "failed",
+        "message": "Blockchain proof anchoring failed for event proof-event-failed. Reason: blockchain_unavailable.",
+        "occurredAt": "2026-05-25T04:09:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+Alert fields:
+- `alertId`: Stable read-model alert identifier.
+- `alertType`: `deniedAction` or `proofFailure`.
+- `severity`: `info`, `warning`, or `critical`.
+- `source`: `accessAudit` or `blockchainAnchor`.
+- `actorUserId`: Included only when available from the source event.
+- `actorOrganizationId`: Included only when available from the source event.
+- `relatedEventId`: Access-audit event id or blockchain event id.
+- `relatedProofStatus`: Included for blockchain proof alerts.
+- `message`: Safe operational message. It must not expose credentials, private documents, raw KYC data, payment data, or raw commercial payloads.
+- `occurredAt`: Source event timestamp.
+
+Proof-state rules:
+- `failed` proof metadata may become a `proofFailure` alert.
+- Missing, pending, unavailable, or mismatched proof must not be displayed as verified.
+- Fabric transaction IDs are not fabricated. If the source metadata does not contain one, the alert must not invent one.
+
+Empty result behavior:
+- Returns `200 OK` with `data.items = []`.
+
+Error responses:
+- `401 UNAUTHORIZED` when no valid authenticated session is supplied.
+- `403 FORBIDDEN` when the authenticated actor lacks `securityOperator` or `administrator`.
+
 ## 11. Shariah review submission contracts
 
 ### 11.1 Submit review request

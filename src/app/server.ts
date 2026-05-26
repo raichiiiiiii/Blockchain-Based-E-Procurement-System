@@ -55,6 +55,7 @@ import { InMemoryExportBundleRepository } from '../modules/reporting/infrastruct
 import { registerPlsRoutes } from '../modules/financing/api/pls.routes.js';
 import type { PlsContractRepository } from '../modules/financing/application/pls-contract-repository.js';
 import { InMemoryPlsContractRepository } from '../modules/financing/infrastructure/in-memory-pls-contract-repository.js';
+import { registerSecurityAlertRoutes } from '../modules/security/api/security-alert.routes.js';
 import { createPostgresPool, type PostgresExecutor } from '../infrastructure/database/postgres-client.js';
 import { PostgresMemberOrganizationRepository } from '../modules/membership/infrastructure/postgres-member-organization-repository.js';
 import { PostgresRoleRepository } from '../modules/access-control/infrastructure/postgres-role-repository.js';
@@ -299,6 +300,13 @@ export function createTestableServer(options?: {
         };
       }
     }
+  });
+
+  server.register(registerSecurityAlertRoutes, {
+    prefix: '/api/v1',
+    accessAuditEventRepository,
+    blockchainAnchorMetadataRepository,
+    authenticatedPreHandler,
   });
 
   return server;

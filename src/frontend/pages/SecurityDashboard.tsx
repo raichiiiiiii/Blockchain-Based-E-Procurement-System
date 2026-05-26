@@ -20,7 +20,7 @@ function severityClass(severity: SecurityAlert['severity']): string {
   return 'admin-status admin-status-muted';
 }
 
-function alertTypeLabel(type: SecurityAlert['type']): string {
+function alertTypeLabel(type: SecurityAlert['alertType']): string {
   return type
     .replace(/([A-Z])/g, ' $1')
     .replace(/^./, char => char.toUpperCase());
@@ -35,11 +35,12 @@ function AlertList({ alerts }: { alerts: SecurityAlert[] }) {
     <div className="order-list">
       {alerts.map(alert => (
         <div className="order-row" key={alert.alertId}>
-          <span>{alertTypeLabel(alert.type)}</span>
-          <strong>{alert.title}</strong>
+          <span>{alertTypeLabel(alert.alertType)}</span>
+          <strong>{alert.source === 'accessAudit' ? 'Denied action' : 'Proof failure'}</strong>
           <small>{alert.occurredAt}</small>
-          <p>{alert.summary}</p>
-          {alert.payloadHash ? <code>{alert.payloadHash}</code> : null}
+          <p>{alert.message}</p>
+          {alert.relatedEventId ? <code>{alert.relatedEventId}</code> : null}
+          {alert.relatedProofStatus ? <span className="admin-status admin-status-pending">{alert.relatedProofStatus}</span> : null}
           <span className={severityClass(alert.severity)}>{alert.severity}</span>
         </div>
       ))}
@@ -52,11 +53,47 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
     generatedAt: new Date().toISOString(),
     deniedActions: [],
     proofFailures: [],
+    items: [],
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | undefined>();
+
+  const sessionId = session.sessionId;
+  const sessionSource = session.source;
+  const sessionToken = session.sessionToken;
 
   useEffect(() => {
-    void getSecurityAlerts(session).then(setSummary);
-  }, [session]);
+    let isCurrent = true;
+    setIsLoading(true);
+    setLoadError(undefined);
+
+    void getSecurityAlerts(session)
+      .then(nextSummary => {
+        if (isCurrent) {
+          setSummary(nextSummary);
+        }
+      })
+      .catch(() => {
+        if (isCurrent) {
+          setLoadError('Security alerts are unavailable right now.');
+          setSummary({
+            generatedAt: new Date().toISOString(),
+            deniedActions: [],
+            proofFailures: [],
+            items: [],
+          });
+        }
+      })
+      .finally(() => {
+        if (isCurrent) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [sessionId, sessionSource, sessionToken]);
 
   const allAlerts = useMemo(() => [
     ...summary.deniedActions,
@@ -73,6 +110,8 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
           </div>
           <span className="admin-count">{summary.deniedActions.length}</span>
         </div>
+        {isLoading ? <div className="empty-product-state">Loading security alerts...</div> : null}
+        {loadError ? <div className="admin-alert admin-alert-error" role="alert">{loadError}</div> : null}
         <AlertList alerts={summary.deniedActions} />
       </section>
     );
@@ -88,6 +127,8 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
           </div>
           <span className="admin-count">{summary.proofFailures.length}</span>
         </div>
+        {isLoading ? <div className="empty-product-state">Loading proof alerts...</div> : null}
+        {loadError ? <div className="admin-alert admin-alert-error" role="alert">{loadError}</div> : null}
         <AlertList alerts={summary.proofFailures} />
       </section>
     );
@@ -103,6 +144,8 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
           </div>
           <span className="admin-count">{summary.deniedActions.length}</span>
         </div>
+        {isLoading ? <div className="empty-product-state">Loading denied actions...</div> : null}
+        {loadError ? <div className="admin-alert admin-alert-error" role="alert">{loadError}</div> : null}
         <AlertList alerts={summary.deniedActions} />
       </section>
     );
@@ -122,6 +165,7 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
       <section className="workspace-panel workspace-panel-hero">
         <h2>Security Status</h2>
         <p>Monitor denied actions and proof anomalies without access to unrelated business controls.</p>
+        {loadError ? <div className="admin-alert admin-alert-error" role="alert">{loadError}</div> : null}
       </section>
       <section className="metric-panel">
         <span>Open Alerts</span>
