@@ -225,6 +225,17 @@ Landing page
 -> Denied Actions
 ```
 
+ERP/accounting adapter demonstrable API path:
+
+```text
+POST /api/v1/integrations/erp/export
+profileType: ublOrder
+sourceId: demo-order-001
+Idempotency-Key: demo-erp-export-001
+```
+
+The response is local JSON mapping evidence only. It is not production ERP posting, Peppol delivery, UBL XML validation, or tax reporting.
+
 Administrator demonstrable path:
 
 ```text
@@ -310,4 +321,5 @@ Contract Negotiation
 - Escrow is an MVP hybrid slice with release/dispute workflow, sandbox/manual payment instruction evidence, and ISO 20022-like JSON mapping; it is not production settlement, bank payment execution, or ISO 20022 certification.
 - PLS workflow is a restricted single-venture seedbed with internal Shariah certificate artifact tracking; it does not provide external certification, production payment rails, guaranteed returns, or full Islamic finance product coverage.
 - Export signing includes a local software-key detached manifest signature and offline verification package metadata; production KMS/HSM custody, legal attestation, certificate authority lifecycle, and external regulator portal integration are not implemented.
+- ERP/accounting integration is a local JSON adapter boundary with UBL/Peppol-like and OCDS-like mappings only; production ERP posting, Peppol network delivery, and tax reporting are not implemented.
 - KYC cases, export bundles, Shariah reviews, and PLS contracts still use in-memory runtime repositories in PostgreSQL mode until dedicated adapters are added.

@@ -63,6 +63,7 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 16. The Shariah Reviewer opens Shariah Review, inspects PLS metadata, approves the restricted seedbed terms, and confirms active certificate artifact coverage for the template.
 17. The Financier opens Financing, verifies the Shariah approval and certificate artifact references, and views profit/loss distribution scenarios.
 18. The Regulator opens Export Bundle, requests the scoped evidence bundle, signs the manifest with the local software-key profile, and verifies the detached signature metadata for offline review.
+19. The Administrator or integrator calls the ERP/accounting adapter API to export local JSON mapping evidence for the accepted order, contract release package, or payment status without external posting.
 
 ## Expected Seed Data
 
@@ -90,6 +91,7 @@ The normal local demo path expects `npm run db:seed` to create backend/database 
 | Escrow record | Escrow-created state linked to the accepted order reference |
 | PLS contract | Restricted seedbed contract linked to the procurement case, Shariah approval reference, certificate artifact reference, and distribution examples |
 | Export bundle | Combined audit scope with manifest hash, verification metadata, and detached local software-key signature package metadata |
+| ERP/accounting mapping | Local JSON export job for UBL/Peppol-like order or invoice mapping, OCDS-like contract release, or payment status |
 
 Seed data should avoid raw KYC documents, raw escrow terms, payment credentials, and private commercial documents in visible dashboard cards.
 
@@ -147,6 +149,7 @@ The demo should be able to explain or inspect these events as governed actions:
 | Shariah certificate artifact registered | Reviewer registers active template coverage | Certificate hash and conditions support activation gate without claiming external certification. |
 | PLS activated or distribution scenario recorded | Financier acts on approved contract | Seedbed allocation event is recorded without implying payment execution. |
 | Export bundle requested, signed, or verified | Regulator or auditor requests/verifies bundle | Manifest hash, detached signature state, and verification state are visible. |
+| ERP/accounting artifact exported | Administrator or integrator requests local adapter export | Mapping job records profile, source id, claim boundary, and mapping errors where applicable. |
 | Denied action | Unauthorized actor attempts protected action | Denial is captured for audit/security review where implemented. |
 
 ## Required Blockchain Proof Points
@@ -181,6 +184,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 | Shariah review | PLS activation depends on an approved Shariah reference and active certificate artifact coverage. |
 | Financier PLS view | Profit/loss scenarios are visible as simulation-only seedbed records. |
 | Regulator export | Bundle manifest, detached local software-key signature, and integrity verification are visible. |
+| ERP/accounting adapter | Local JSON mapping jobs are visible via API evidence and do not imply external posting. |
 | Authorization negative cases | Unauthorized actors are hidden from or rejected by protected workflows. |
 
 ## Known MVP Limitations
@@ -196,6 +200,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 - Document intake stores local files and extracts text/JSON only; PDF/DOCX extraction, OCR, malware scanning, and legal e-signature verification remain post-MVP.
 - Contract negotiation uses in-memory contract records in this slice; production redlining, legal signing, PostgreSQL persistence, ERP mapping exports, and automatic order/escrow creation remain future work.
 - Export signing uses a local software-key detached manifest signature and offline package metadata; production KMS/HSM custody, legal attestation, certificate authority lifecycle, and external regulator portal integration remain future work.
+- ERP/accounting adapter produces local JSON mapping artifacts only; production ERP connection, Peppol access point delivery, UBL XML certification, and tax reporting remain future work.
 - Security operator workflow is read-only and does not replace SIEM or incident response operations.
 
 ## Post-MVP Exclusions

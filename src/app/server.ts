@@ -67,12 +67,14 @@ import { InMemoryOperationalIncidentRepository } from '../modules/ops/infrastruc
 import { recordReadinessIncidents } from '../modules/ops/application/record-readiness-incidents.js';
 import { buildRuntimeReadiness, type RuntimePersistenceMode, type RuntimeReadiness } from '../modules/ops/application/runtime-readiness.js';
 import { registerExternalApiRoutes } from '../modules/integration/api/external-api.routes.js';
+import { registerErpAccountingRoutes } from '../modules/integration/api/erp-accounting.routes.js';
 import type { ExternalClientCredentialRepository } from '../modules/integration/application/external-client-credential-repository.js';
 import type { ExternalIdempotencyRepository } from '../modules/integration/application/external-idempotency-repository.js';
 import type { ExternalApiAuditRepository } from '../modules/integration/application/external-api-audit-repository.js';
 import { InMemoryExternalClientCredentialRepository } from '../modules/integration/infrastructure/in-memory-external-client-credential-repository.js';
 import { InMemoryExternalIdempotencyRepository } from '../modules/integration/infrastructure/in-memory-external-idempotency-repository.js';
 import { InMemoryExternalApiAuditRepository } from '../modules/integration/infrastructure/in-memory-external-api-audit-repository.js';
+import { LocalJsonErpAccountingAdapter } from '../modules/integration/infrastructure/local-json-erp-accounting-adapter.js';
 import { registerDocumentRoutes } from '../modules/documents/api/document.routes.js';
 import type { DocumentRepository } from '../modules/documents/application/document-repository.js';
 import type { DocumentStoragePort } from '../modules/documents/application/document-storage-port.js';
@@ -478,6 +480,15 @@ export function createTestableServer(options?: {
     blockchainAnchorGateway,
     blockchainAnchorMetadataRepository,
     sharedSecret: options?.externalApiSharedSecret ?? process.env.EXTERNAL_API_SHARED_SECRET,
+  });
+
+  server.register(registerErpAccountingRoutes, {
+    prefix: '/api/v1',
+    adapter: new LocalJsonErpAccountingAdapter(),
+    orderRepository: procurementOrderRepository,
+    paymentInstructionRepository,
+    contractRepository: procurementContractRepository,
+    authenticatedPreHandler,
   });
 
   server.register(registerDocumentRoutes, {
