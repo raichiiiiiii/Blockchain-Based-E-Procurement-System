@@ -51,6 +51,22 @@ export type ComplianceEligibilityResult = {
   rationale?: string;
 };
 
+export type ComplianceChecklistSnapshot = {
+  memberOrganizationId: string;
+  organizationName: string;
+  eligibility: ComplianceEligibility;
+  onboardingStatus: ComplianceCaseStatus | null;
+  riskSummary?: string;
+  expectedMonthlyTransactionValue?: string;
+  evidenceReferences: SafeEvidenceReference[];
+  decisionOutcome: ComplianceDecisionOutcome | null;
+  isFinal: boolean;
+  sourceCaseId: string | null;
+  checkedAt: string;
+  reasonCodes?: string[];
+  rationale?: string;
+};
+
 const STORAGE_KEY = 'eprocurement.compliance.cases.v1';
 
 const seedCases: ComplianceCaseResponse[] = [
@@ -212,6 +228,21 @@ function hasComplianceAccess(session?: AuthenticatedFrontendSession): boolean {
   return roles.includes('complianceReviewer') || roles.includes('administrator');
 }
 
+function hasSafeSnapshotAccess(
+  memberOrganizationId: string,
+  session?: AuthenticatedFrontendSession,
+): boolean {
+  if (!session) {
+    return false;
+  }
+
+  if (hasComplianceAccess(session)) {
+    return true;
+  }
+
+  return session.actor.actorOrganizationId === memberOrganizationId;
+}
+
 function readCases(): ComplianceCaseResponse[] {
   if (typeof window === 'undefined') {
     return seedCases.map(item => ({ ...item }));
@@ -351,5 +382,49 @@ export function getLocalOrganizationEligibility(memberOrganizationId: string): C
     checkedAt,
     reasonCodes: onboardingCase.decision?.reasonCodes,
     rationale: onboardingCase.decision?.rationale,
+  };
+}
+
+export async function getComplianceChecklistSnapshot(
+  memberOrganizationId: string,
+  session?: AuthenticatedFrontendSession,
+): Promise<ComplianceChecklistSnapshot> {
+  if (!hasSafeSnapshotAccess(memberOrganizationId, session)) {
+    throw new BackendApiError('FORBIDDEN', 'User is not allowed to inspect this onboarding readiness view');
+  }
+
+  const onboardingCase = readCases().find(item => item.memberOrganizationId === memberOrganizationId);
+  const checkedAt = new Date().toISOString();
+
+  if (!onboardingCase) {
+    return {
+      memberOrganizationId,
+      organizationName: memberOrganizationId,
+      eligibility: 'unknown',
+      onboardingStatus: null,
+      evidenceReferences: [],
+      decisionOutcome: null,
+      isFinal: false,
+      sourceCaseId: null,
+      checkedAt,
+    };
+  }
+
+  const includeReviewerRationale = hasComplianceAccess(session);
+
+  return {
+    memberOrganizationId: onboardingCase.memberOrganizationId,
+    organizationName: onboardingCase.organizationName,
+    eligibility: onboardingCase.eligibility,
+    onboardingStatus: onboardingCase.status,
+    riskSummary: onboardingCase.riskSummary,
+    expectedMonthlyTransactionValue: onboardingCase.expectedMonthlyTransactionValue,
+    evidenceReferences: onboardingCase.evidenceReferences,
+    decisionOutcome: onboardingCase.decision?.outcome ?? null,
+    isFinal: onboardingCase.status !== 'submitted',
+    sourceCaseId: onboardingCase.caseId,
+    checkedAt,
+    reasonCodes: onboardingCase.decision?.reasonCodes,
+    rationale: includeReviewerRationale ? onboardingCase.decision?.rationale : undefined,
   };
 }

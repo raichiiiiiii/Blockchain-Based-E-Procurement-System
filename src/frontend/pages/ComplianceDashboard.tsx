@@ -5,6 +5,9 @@ import {
   type ComplianceCaseResponse,
   type ComplianceDecisionOutcome,
 } from '../api/compliance-cases';
+import SmartOnboardingChecklist, {
+  smartOnboardingChecklistFromCase,
+} from '../components/compliance/SmartOnboardingChecklist';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 
@@ -208,15 +211,10 @@ function ComplianceDashboard({ activeTarget, session }: ComplianceDashboardProps
                 </div>
               </dl>
 
-              <div className="workflow-meta-grid">
-                {selectedCase.evidenceReferences.map(reference => (
-                  <div className="workflow-meta-panel" key={`${selectedCase.caseId}-${reference.type}`}>
-                    <span>{reference.type}</span>
-                    <strong>{reference.label}</strong>
-                    <p>{reference.checksum ?? 'Checksum pending'}</p>
-                  </div>
-                ))}
-              </div>
+              <SmartOnboardingChecklist
+                audience="reviewer"
+                data={smartOnboardingChecklistFromCase(selectedCase)}
+              />
 
               {selectedCase.decision ? (
                 <div className="empty-product-state">

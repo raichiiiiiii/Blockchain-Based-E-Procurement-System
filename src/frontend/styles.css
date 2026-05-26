@@ -659,6 +659,10 @@ button {
   gap: 16px;
 }
 
+.dashboard-wide-panel {
+  grid-column: 1 / -1;
+}
+
 .workspace-panel,
 .metric-panel {
   border: 1px solid #d8e2dd;
@@ -1157,6 +1161,117 @@ button {
   margin: 0;
   line-height: 1.55;
   overflow-wrap: anywhere;
+}
+
+.onboarding-checklist {
+  display: grid;
+  gap: 18px;
+}
+
+.onboarding-checklist-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid #edf1ef;
+  padding-bottom: 16px;
+}
+
+.onboarding-checklist-header div {
+  display: grid;
+  gap: 8px;
+}
+
+.onboarding-checklist-header span,
+.onboarding-checklist-item span {
+  color: #0c6b58;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.onboarding-checklist-header h3,
+.onboarding-evidence-list h4 {
+  margin: 0;
+  color: #16201d;
+  font-size: 1.15rem;
+}
+
+.onboarding-checklist-header p,
+.onboarding-checklist-item p,
+.onboarding-reason-panel p {
+  margin: 0;
+  color: #52615d;
+  line-height: 1.6;
+}
+
+.onboarding-eligibility-pill {
+  border-radius: 999px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+.onboarding-checklist-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.onboarding-checklist-item {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid #edf1ef;
+  border-radius: 8px;
+  background: #fbfcfb;
+  padding: 14px;
+}
+
+.onboarding-checklist-item strong {
+  color: #16201d;
+}
+
+.onboarding-checklist-complete {
+  border-color: #bddccb;
+  background: #eef8f3;
+  color: #0c6b58;
+}
+
+.onboarding-checklist-attention {
+  border-color: #efd69a;
+  background: #fff9e9;
+  color: #7a5300;
+}
+
+.onboarding-checklist-blocked {
+  border-color: #e2a39a;
+  background: #fff0eb;
+  color: #9f2f2f;
+}
+
+.onboarding-checklist-unknown {
+  border-color: #d8e2dd;
+  background: #f5f7f6;
+  color: #4f5d66;
+}
+
+.onboarding-checklist-details {
+  margin-bottom: 0;
+}
+
+.onboarding-evidence-list,
+.onboarding-reason-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.onboarding-reason-panel {
+  border-top: 1px solid #edf1ef;
+  padding-top: 16px;
+}
+
+.onboarding-checklist-note {
+  font-size: 0.9rem;
 }
 
 .delivery-evidence-list {
@@ -1802,7 +1917,8 @@ button {
 
   .admin-section-header,
   .admin-role-row,
-  .admin-event-row {
+  .admin-event-row,
+  .onboarding-checklist-header {
     align-items: stretch;
     flex-direction: column;
   }
@@ -1811,7 +1927,8 @@ button {
   .admin-definition-grid,
   .admin-form,
   .export-summary-grid,
-  .export-claim-grid {
+  .export-claim-grid,
+  .onboarding-checklist-grid {
     grid-template-columns: 1fr;
   }
 

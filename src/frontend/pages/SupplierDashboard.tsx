@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
+import { getComplianceChecklistSnapshot } from '../api/compliance-cases';
 import { acknowledgeProcurementOrder, listProcurementOrders } from '../api/procurement-orders';
 import {
   listDeliveryEvidenceForOrder,
   submitDeliveryEvidenceForOrder,
 } from '../api/delivery-evidence';
+import SmartOnboardingChecklist, {
+  type SmartOnboardingChecklistData,
+} from '../components/compliance/SmartOnboardingChecklist';
 import DeliveryEvidenceList from '../components/procurement/DeliveryEvidenceList';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
@@ -59,6 +63,8 @@ function SupplierDashboard({ activeTarget, session }: SupplierDashboardProps) {
   const [isSubmittingEvidence, setIsSubmittingEvidence] = useState(false);
   const [deliveryEvidenceError, setDeliveryEvidenceError] = useState<string | undefined>();
   const [deliveryEvidenceMessage, setDeliveryEvidenceMessage] = useState<string | undefined>();
+  const [onboardingSnapshot, setOnboardingSnapshot] = useState<SmartOnboardingChecklistData | undefined>();
+  const [onboardingError, setOnboardingError] = useState<string | undefined>();
 
   const selectedOrder = useMemo(
     () => orders.find(order => order.orderId === selectedOrderId) ?? orders[0],
@@ -123,8 +129,28 @@ function SupplierDashboard({ activeTarget, session }: SupplierDashboardProps) {
     }
   };
 
+  const loadOnboardingSnapshot = async () => {
+    const organizationId = session.actor.actorOrganizationId;
+    if (!organizationId) {
+      setOnboardingSnapshot(undefined);
+      setOnboardingError('No supplier organization is attached to this session.');
+      return;
+    }
+
+    setOnboardingError(undefined);
+
+    try {
+      const snapshot = await getComplianceChecklistSnapshot(organizationId, session);
+      setOnboardingSnapshot(snapshot);
+    } catch (error) {
+      setOnboardingSnapshot(undefined);
+      setOnboardingError(normalizeErrorMessage(error));
+    }
+  };
+
   useEffect(() => {
     void loadOrders();
+    void loadOnboardingSnapshot();
   }, [session.sessionId]);
 
   const handleAcknowledgement = async (
@@ -450,6 +476,15 @@ function SupplierDashboard({ activeTarget, session }: SupplierDashboardProps) {
         <span>Delivery Evidence</span>
         <strong>Metadata</strong>
         <p>Evidence is tracked as safe references and hashes, not raw documents.</p>
+      </section>
+      <section className="workspace-panel dashboard-wide-panel">
+        {onboardingSnapshot ? (
+          <SmartOnboardingChecklist audience="organization" data={onboardingSnapshot} />
+        ) : (
+          <div className="empty-product-state">
+            {onboardingError ?? 'Loading onboarding readiness...'}
+          </div>
+        )}
       </section>
     </div>
   );
