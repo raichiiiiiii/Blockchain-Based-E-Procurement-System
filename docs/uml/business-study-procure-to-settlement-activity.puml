@@ -1,0 +1,70 @@
+@startuml
+skinparam shadowing false
+start
+:Credential-only sign in;
+if (Actor authenticated?) then (yes)
+  :Resolve trusted actor context;
+else (no)
+  :Reject protected access;
+  stop
+endif
+
+:Compliance reviewer maintains KYC/AML eligibility;
+if (Buyer and supplier eligible?) then (yes)
+  :Buyer negotiates or references contract terms;
+  :Buyer creates procurement order;
+else (no)
+  :Block protected transaction action;
+  stop
+endif
+
+:Supplier receives order;
+if (Supplier response) then (accept)
+  :Accepted order recorded;
+elseif (reject)
+  :Rejected order recorded;
+  stop
+else (changes)
+  :Negotiation/offer update required;
+  stop
+endif
+
+:Supplier submits delivery proof;
+:External/client proof may include IoT, QR or EPCIS event;
+if (Proof valid and idempotent?) then (yes)
+  :Create delivery evidence and lifecycle event;
+else (no)
+  :Reject or record failed external request;
+  stop
+endif
+
+:Create/fund escrow state;
+if (Release conditions satisfied?) then (yes)
+  :Request release;
+  :Approve release;
+  :Create settlementInstructionReady state;
+  :Create sandbox/manual payment instruction;
+else (dispute)
+  :Open dispute or hold;
+  :Record arbitration decision;
+  if (Decision) then (release)
+    :Move to settlementInstructionReady;
+  elseif (refund)
+    :Move to refunded;
+  else (cancel)
+    :Move to cancelled;
+  endif
+else (not ready)
+  :Remain awaiting proof/release pending;
+endif
+
+:Anchor lifecycle hash when proof gateway available;
+if (Anchor available?) then (yes)
+  :Store proof metadata;
+else (no)
+  :Record pending/failed/unavailable proof state;
+endif
+
+:Auditor/regulator verifies proof or export bundle;
+stop
+@enduml
