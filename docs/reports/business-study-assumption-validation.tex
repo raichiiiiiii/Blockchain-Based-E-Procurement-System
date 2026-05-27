@@ -1,0 +1,284 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{verbatim}
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, urlcolor=blue!50!black}
+\setlist[itemize]{leftmargin=*, itemsep=2pt, topsep=2pt}
+\setlist[enumerate]{leftmargin=*, itemsep=2pt, topsep=2pt}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\repo}[1]{\texttt{#1}}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\title{Business Study and Assumption Validation Report\\\large Digital Procurement and PLS Seedbed}
+\author{Senior Software Architecture, Business Analysis, and Technical Research Review}
+\date{2026-05-27}
+
+\begin{document}
+\maketitle
+
+\begin{center}
+\begin{tabular}{ll}
+Repository & \repo{raichiiiiiii/Blockchain-Based-E-Procurement-System} \\
+Branch inspected & \repo{origin/main} \\
+Baseline commit observed & \repo{679c2e18b5894d9df3bdbea9a20d403610bb69b4} \\
+Report branch & \repo{docs/business-study-assumption-validation} \\
+Report status & First validation draft for review before merge \\
+\end{tabular}
+\end{center}
+
+\section*{Executive Summary}
+
+The current \repo{origin/main} is aligned with the documented direction of a compliance-first digital procurement evidence platform with blockchain proof anchoring and Shariah-governed PLS seedbed support. It is not aligned with a production-certified or commercial-ready claim. Repository evidence states the current maturity as supervisor-demo plus selected pilot-hardening features, not commercial-ready or production-certified. The latest production-extension validation records completed hardening across payment adapters, escrow release/dispute, IoT/QR/EPCIS intake, document handling, Shariah certificate artifacts, signed export bundles, ERP/accounting adapter foundation, contract negotiation, external API gateway, containerized deployment, observability, and backup/restore runbooks.
+
+The largest remaining gap is not feature count. It is validation depth. Several implemented capabilities are intentionally adapter foundations, local simulations, or metadata-only controls. The system still needs a formal assumption register, standard-to-domain mapping closure, persistence completion beyond the core Postgres-backed subset, production-like Fabric lab validation, managed secret/key operations, legal/Shariah stakeholder review, and pilot-readiness evidence before development continues toward a fully deployable system.
+
+\section{Repository Inspection Summary}
+
+\subsection{What exists}
+
+The inspected repository contains:
+
+\begin{itemize}
+  \item Source code under \repo{src/app} and \repo{src/modules} using TypeScript, Fastify, React/Vite frontend, module-level application/domain/infrastructure boundaries, and Postgres adapters for selected runtime repositories.
+  \item Deployment files including \repo{Dockerfile.backend}, \repo{Dockerfile.frontend}, \repo{docker-compose.yml}, and \repo{docker-compose.app.yml}.
+  \item Architecture and contract documentation under \repo{docs/architecture}, \repo{docs/contracts}, \repo{docs/process}, and \repo{docs/runbooks}.
+  \item QA/evidence records under \repo{docs/evidence/qa}, including final release candidate and production-extension validation evidence.
+  \item Production-extension backlog rows under \repo{backlog/production-extension-roadmap.csv}.
+  \item Fabric local chaincode baseline and production-consortium templates under \repo{chaincode} and \repo{fabric/production-consortium}.
+\end{itemize}
+
+\subsection{System boundaries observed}
+
+\begin{longtable}{P{0.20\linewidth}P{0.36\linewidth}P{0.32\linewidth}}
+\toprule
+Boundary & Observed responsibility & Validation comment \\
+\midrule
+Application API & Fastify server registers auth, membership, access control, procurement, delivery evidence, KYC/AML, blockchain proof, escrow, reporting/export, PLS, security, operations, external API, ERP/accounting, documents, contracts, and payments. & Broad backend composition exists. Some modules remain in-memory unless explicitly backed by Postgres. \\
+PostgreSQL & Operational persistence for auth, membership, roles, access audit, procurement lifecycle, procurement orders, delivery evidence, blockchain metadata, and escrow. & Not yet a complete persistence layer for every production-extension module. \\
+Fabric / blockchain & Proof anchoring through AuditAnchor and production-consortium templates. & Production consortium implementation remains open; no real CA/MSP/channel deployment evidence. \\
+Frontend & React/Vite product shell, role dashboards, proof/escrow/export/PLS/status surfaces. & Product UI appears aligned with product vocabulary rule; framework replacement is not currently justified. \\
+External integrations & External API gateway, ERP/accounting adapter, payment adapter, document/signature, EPCIS/IoT/QR interfaces. & Mostly adapter foundations and local/sandbox implementations; production certification is not evidenced. \\
+\bottomrule
+\end{longtable}
+
+\subsection{What appears complete}
+
+Completed production-extension rows include PBI-437, PBI-439 to PBI-451, and PBI-453 to PBI-461. The open rows are intentionally limited to PBI-436, PBI-438, PBI-452, and PBI-462. The production-extension validation records passing build, frontend build, tests, database dry-runs, AuditAnchor chaincode checks, Docker compose checks, deployable smoke, UI label scan, and browser smoke across all nine demo accounts.
+
+\subsection{What appears incomplete}
+
+\begin{itemize}
+  \item PBI-438 remains incomplete because no live production-like Fabric consortium exists with real CA/MSP material, channel artifacts, lifecycle commit, and cross-organization smoke evidence.
+  \item PBI-452 remains open because blockchain status visualization does not yet cover full Fabric network health and all PLS-wide/operator states.
+  \item PBI-462 remains open because procurement and public-contract standards mapping research is not closed.
+  \item Runtime Postgres coverage is incomplete for the newest extension modules. Several repositories still default to in-memory adapters after the Postgres-backed core repositories are configured.
+  \item Legal, Shariah, banking, ERP, logistics, and regulator assumptions remain project assumptions until validated with named stakeholders or controlled external pilots.
+\end{itemize}
+
+\subsection{Undocumented or weakly justified areas}
+
+\begin{itemize}
+  \item The distinction between \repo{docs/report} and the requested \repo{docs/reports} path should be normalized in a documentation index update.
+  \item Some older durable docs still contain Sprint 1 or Aider-era wording and should be refreshed to Codex/current-agent-neutral operating language.
+  \item Production operating policies for secrets, keys, retention, legal hold, incident response, and environment promotion are still runbook-level rather than enforced system controls.
+\end{itemize}
+
+\section{Documentation Review}
+
+\begin{longtable}{P{0.30\linewidth}P{0.30\linewidth}P{0.28\linewidth}}
+\toprule
+Document & Purpose & Review finding \\
+\midrule
+\repo{docs/evidence/qa/PRODUCTION_EXTENSION_RELEASE_VALIDATION.md} & Release evidence for production-extension consolidation. & Primary evidence for current readiness; explicitly limits claims to supervisor demo/internal technical review. \\
+\repo{backlog/production-extension-roadmap.csv} & PBI-436 to PBI-462 execution roadmap. & Current extension status source. PBI-462 still planned. \\
+\repo{docs/architecture/EXTENDED_PRODUCTION_ARCHITECTURE_PLAN.tex} & Production-extension target architecture and business/technical transition plan. & Aligns with current ports/adapters direction. \\
+\repo{docs/architecture/PRODUCTION_FABRIC_CONSORTIUM_ARCHITECTURE.md} & Fabric consortium plan and foundation boundary. & Good architecture plan; explicitly not live consortium implementation. \\
+\repo{docs/contracts/ESCROW_WORKFLOW_CONTRACT.md} & Escrow state and transition contract. & Updated with release/dispute pilot-hardening states and no-payment-execution rule. \\
+\repo{docs/contracts/BLOCKCHAIN_ANCHOR_CONTRACT.md} & Anchor and proof API semantics. & Good claim boundary: proof anchoring does not replace workflow, authorization, or Postgres state. \\
+\repo{docs/process/CODING_RULES.md} & Engineering constraints. & Useful technical rules, but agent-process wording is stale and should be updated. \\
+\bottomrule
+\end{longtable}
+
+\section{Assumption Register}
+
+\begin{longtable}{P{0.08\linewidth}P{0.32\linewidth}P{0.20\linewidth}P{0.28\linewidth}}
+\toprule
+ID & Assumption & Status & Evidence / next action \\
+\midrule
+A01 & Product is supervisor-demo plus selected pilot hardening, not production-certified. & Validated by project documentation. & Production-extension validation and scorecard state this directly. Preserve claim boundary. \\
+A02 & Credential-only login and backend-seeded demo accounts are the normal path. & Validated by repository evidence. & Demo accounts and no role-card login are recorded in release validation. \\
+A03 & PostgreSQL is the operational system of record. & Partially validated. & Core repositories have Postgres adapters; newer extension modules still need persistent adapters/migrations. \\
+A04 & Fabric stores proof metadata and hashes, not raw business data. & Validated by documentation and external Fabric research. & Fabric private data supports private data plus ledger hashes; repository also prohibits raw KYC/documents/payment data on-chain. \\
+A05 & Production Fabric consortium is planned but not implemented. & Validated by evidence. & PBI-438 remains open until real CA/MSP/channel/lifecycle/smoke evidence exists. \\
+A06 & External standards are adapter/input-output formats, not the internal domain model. & Validated by architecture direction; PBI-462 unresolved. & Must close with standards mapping research before deeper ERP/public-contract implementation. \\
+A07 & Payment support is sandbox/manual and does not move real money. & Validated by docs and evidence. & Payment adapters should remain behind PaymentPort until certification and rails are selected. \\
+A08 & ISO 20022 support is mapping-only, not bank certification. & Validated by docs; external research supports repository/catalogue discipline. & Do not claim bank execution. \\
+A09 & Shariah certification artifacts are record tracking, not formal external certification. & Validated by evidence. & Requires named Shariah/legal review before pilot claim. \\
+A10 & Document signature verification is local/adapted metadata, not legal e-signature certification. & Validated by project evidence. & Requires external trust store/legal signature policy later. \\
+A11 & Containerized deployment is internal-pilot oriented, not hardened production hosting. & Validated by deployment evidence. & Needs secrets, TLS, image hardening, environment promotion, and backup drills. \\
+A12 & Target market and pilot scenario require stakeholder validation. & Unresolved. & Interview supervisor/sponsor and at least one procurement/financing domain representative. \\
+\bottomrule
+\end{longtable}
+
+\section{Business Rule Validation}
+
+\begin{longtable}{P{0.34\linewidth}P{0.22\linewidth}P{0.32\linewidth}}
+\toprule
+Business rule & Status & Comment \\
+\midrule
+Protected workflows require authenticated server-derived actor context. & Validated. & Auth/session contract and server route registration use authenticated pre-handlers. \\
+Eligibility controls must block protected procurement/escrow/PLS actions when parties are not eligible. & Validated for implemented flows; needs end-to-end pilot test. & Procurement, escrow, and PLS route registration include eligibility gateway behavior. \\
+No raw KYC, commercial documents, delivery images, payment credentials, unrestricted contract text, or bank details may be written on-chain. & Validated by architecture; must be tested continuously. & Fabric architecture and blockchain contract preserve proof-only boundary. \\
+Blockchain proof UI must not fabricate transaction IDs or verified states. & Validated by evidence; keep regression tests. & Release validation and PBI-457 evidence support this rule. \\
+Escrow release cannot bypass accepted order, delivery evidence, eligibility, and dispute-free conditions. & Validated by contract; inspect tests during next hardening cycle. & Escrow contract defines release conditions and state restrictions. \\
+Payment settlement cannot be claimed until adapter status confirms it. & Validated by design; production rail unresolved. & Current state is settlement instruction/sandbox/manual adapter only. \\
+PLS cannot imply guaranteed profit or principal. & Validated by project claim boundary; requires formal Shariah/legal review. & Keep seedbed language conservative. \\
+External integration calls require scoped credentials, signature/HMAC, idempotency, and audit logging. & Validated by PBI-458 evidence; needs security review. & Next phase should add threat-model and rate-limit hardening. \\
+\bottomrule
+\end{longtable}
+
+\section{Requirement and System Analysis}
+
+\subsection{Actors and user goals}
+
+The active user-facing actors are Administrator, Compliance Reviewer, Buyer/Procurement Officer, SME/Supplier, Shariah Reviewer, Bank/Financier, Auditor, Regulator/Reporting User, Security Operator, Platform Operator, and external integration clients. Their core goals are governance, eligibility review, procurement execution, delivery proof, escrow/payment control, Shariah/PLS governance, audit/export verification, operational monitoring, and external event ingestion.
+
+\subsection{Primary business process}
+
+The main process is:
+
+\begin{enumerate}
+  \item User authenticates with credential-only login.
+  \item Platform resolves trusted actor context and role/organization access.
+  \item Compliance/eligibility gates supplier and buyer participation.
+  \item Buyer and supplier negotiate or reference machine-readable terms.
+  \item Buyer creates order; supplier acknowledges or rejects.
+  \item Supplier or external device/client submits delivery evidence.
+  \item Escrow evaluates release conditions, hold/dispute/arbitration, and settlement instruction readiness.
+  \item Payment adapter records sandbox/manual instruction and reconciliation status.
+  \item Lifecycle events are hashed and anchored when proof infrastructure is available.
+  \item Auditor/regulator verifies proof/export bundle.
+\end{enumerate}
+
+\subsection{UML diagram sources}
+
+The following PlantUML files are included with this report:
+
+\begin{itemize}
+  \item \repo{docs/uml/business-study-use-case.puml}
+  \item \repo{docs/uml/business-study-procure-to-settlement-activity.puml}
+  \item \repo{docs/uml/business-study-domain-class.puml}
+  \item \repo{docs/uml/business-study-escrow-state-machine.puml}
+\end{itemize}
+
+They should be rendered during the documentation build or reviewed directly as version-controlled diagram source.
+
+\section{External Research Findings}
+
+\begin{longtable}{P{0.24\linewidth}P{0.46\linewidth}P{0.18\linewidth}}
+\toprule
+Source & Finding used in validation & Design implication \\
+\midrule
+Hyperledger Fabric docs & Fabric is an enterprise-grade permissioned DLT with known participants and modular architecture. & Fabric is appropriate for proof anchoring/consortium evidence but should not replace operational workflow persistence. \\
+Hyperledger Fabric private data docs & Private data collections keep private data with authorized organizations and write hashes to the channel ledger. & Proof/hash-only and off-chain raw data rules are consistent with Fabric design. \\
+GS1 EPCIS 2.0 & EPCIS defines visibility events and standard interfaces for capture/query/share of visibility event data. & IoT/QR/logistics support should stay as adapter/interface mapping rather than hard-coded hardware logic. \\
+OCDS & OCDS release structures cover parties, planning, tender, award, contract, and implementation sections and treat releases as immutable events. & Contract/export mapping should use release-package semantics for disclosure/export, not replace the internal contract model. \\
+ISO 20022 & The ISO 20022 repository includes a data dictionary, business-process catalogue, message definitions, and payments business areas. & Internal payment instructions can map to ISO-20022-like artifacts, but bank certification remains outside current evidence. \\
+\bottomrule
+\end{longtable}
+
+\section{Deviation Analysis}
+
+\begin{longtable}{P{0.34\linewidth}P{0.24\linewidth}P{0.30\linewidth}}
+\toprule
+Deviation / risk & Severity & Required action \\
+\midrule
+Newer modules still depend on in-memory adapters in runtime composition while deployable model uses Postgres for only part of the domain. & High for pilot. & Add Postgres migrations/adapters for documents, contracts, payments, PLS, certificates, integration credentials/idempotency, incidents, and export signing metadata. \\
+PBI-462 remains planned; standards mapping is not closed. & High for product-market and interoperability. & Run formal standards mapping spike before production ERP/OCDS/UBL/Peppol claims. \\
+PBI-438 remains planned; Fabric consortium is templates only. & High for blockchain production claims. & Build production-like Fabric lab with real MSP/CA/channel lifecycle evidence. \\
+Some process docs still mention Aider/Sprint 1 assumptions. & Medium. & Refresh durable process docs to current Codex/agent-neutral and production-extension context. \\
+Container model uses local development secrets/defaults and no managed TLS/secrets. & High for deployment. & Add environment hardening, secrets policy, image scanning, non-root containers, TLS/reverse proxy guidance. \\
+Legal/Shariah/compliance stakeholder validation is not recorded. & High for external pilot. & Prepare review pack and log decisions before external pilot or investor-facing claims. \\
+\bottomrule
+\end{longtable}
+
+\section{Risks and Open Questions}
+
+\begin{enumerate}
+  \item Which jurisdiction and retention policy is the first deployable pilot targeting?
+  \item Which actors are legally authorized to approve Shariah certificate artifacts, export signing profiles, and dispute/arbitration outcomes?
+  \item Should the next release prioritize full Postgres persistence or production-like Fabric lab execution first?
+  \item Which external integration is most valuable for the first pilot: ERP/accounting, EPCIS/logistics, or payment sandbox?
+  \item What is the acceptable minimum operational security baseline: local Docker pilot, VPS pilot, or managed cloud pilot?
+  \item What data should be retained, redacted, encrypted, or legally held for KYC, documents, audit logs, and export bundles?
+\end{enumerate}
+
+\section{Recommendations}
+
+\subsection{Immediate next phase}
+
+Begin a validation-and-hardening phase rather than a new feature phase. The recommended next cycle is:
+
+\begin{enumerate}
+  \item Close PBI-462 as a standards mapping and business-rule validation spike.
+  \item Produce a persistence coverage matrix and implement missing Postgres adapters/migrations for pilot-critical modules.
+  \item Run a live deployable environment rehearsal using \repo{docker-compose.app.yml}, seeded accounts, browser smoke, backup/restore dry run, and evidence capture.
+  \item Create a Fabric lab plan for PBI-438 but do not close PBI-438 until real CA/MSP/channel/lifecycle and cross-org smoke evidence exists.
+  \item Update stale durable docs so process, architecture, and contract language match current production-extension state.
+\end{enumerate}
+
+\subsection{Frontend framework consideration}
+
+Do not change frontend framework now. The existing React/Vite web application is sufficient for the current internal-pilot target. React Native is not justified until mobile-first requirements, offline capture, camera/QR scanning, field logistics workflows, and device-management constraints are validated. If QR scanning becomes a hard user requirement, evaluate responsive web/PWA first because it preserves the current codebase and deployment model.
+
+\section{Next Development Plan}
+
+\begin{longtable}{P{0.16\linewidth}P{0.42\linewidth}P{0.30\linewidth}}
+\toprule
+Milestone & Objective & Acceptance evidence \\
+\midrule
+M1 Standards and assumptions closure & Close PBI-462; map OCDS, UBL/Peppol, EPCIS, ISO 20022, Fabric, and Shariah rules to internal fields and boundaries. & Standards mapping report, traceability table, updated contracts, external citations. \\
+M2 Persistence completion & Replace pilot-critical in-memory repositories with Postgres adapters/migrations. & Migration/seed tests, repository tests, data survival after restart. \\
+M3 Deployable pilot rehearsal & Run containerized app, live DB, browser smoke, backup/restore dry run, and security/ops checks. & Evidence file with commands, environment, screenshots if applicable, blockers. \\
+M4 Fabric lab validation & Build production-like Fabric lab and smoke-test AuditAnchor with real MSP/channel lifecycle. & Package IDs, approvals, commit, verified/mismatch/notFound smoke results. \\
+M5 Security/compliance hardening & Add secrets policy, role matrix review, retention/legal hold plan, incident response and audit-event catalog. & Threat model, control checklist, updated runbooks, regression tests. \\
+M6 Stakeholder validation & Validate business process with supervisor/sponsor/domain stakeholders. & Interview notes, accepted assumptions, revised backlog priorities. \\
+\bottomrule
+\end{longtable}
+
+\section{Appendix A: Evidence and Citation Table}
+
+\begin{longtable}{P{0.32\linewidth}P{0.50\linewidth}}
+\toprule
+Evidence & Use \\
+\midrule
+\repo{docs/evidence/qa/PRODUCTION_EXTENSION_RELEASE_VALIDATION.md} & Current release state, completed/open production-extension rows, browser smoke, and claim boundaries. \\
+\repo{backlog/production-extension-roadmap.csv} & PBI-436 to PBI-462 status and dependencies. \\
+\repo{src/app/server.ts} & Runtime module registration and partial Postgres runtime composition. \\
+\repo{docker-compose.app.yml} & Internal deployable stack definition. \\
+\repo{docs/architecture/PRODUCTION_FABRIC_CONSORTIUM_ARCHITECTURE.md} & Fabric consortium architecture and PBI-438 completion boundary. \\
+\url{https://hyperledger-fabric.readthedocs.io/en/latest/whatis.html} & Fabric permissioned, modular enterprise DLT reference. \\
+\url{https://hyperledger-fabric.readthedocs.io/en/latest/private-data/private-data.html} & Fabric private data collection and ledger hash behavior. \\
+\url{https://standard.open-contracting.org/latest/en/schema/reference/} & OCDS release structure and contracting-process sections. \\
+\url{https://ref.gs1.org/standards/epcis/2.0.0/} & GS1 EPCIS 2.0 visibility event and capture/query interface reference. \\
+\url{https://www.iso20022.org/iso-20022-message-definitions} & ISO 20022 message-definition repository and payment business-area reference. \\
+\bottomrule
+\end{longtable}
+
+\section{Appendix B: Raw Notes}
+
+\begin{itemize}
+  \item Current system is not assumed correct by default. This report treats implementation behavior as a hypothesis and records validation status per assumption.
+  \item The largest architecture risk is not missing UI capability; it is persistence, operational hardening, and externally validated business-rule completeness.
+  \item UML files are intentionally stored as PlantUML source so they can be reviewed and version controlled.
+  \item This report does not run runtime commands. It records repository inspection and research findings. Independent validation should run build/test/deploy commands before merge into \repo{main}.
+\end{itemize}
+
+\end{document}
