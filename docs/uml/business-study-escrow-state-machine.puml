@@ -1,0 +1,43 @@
+@startuml
+skinparam shadowing false
+[*] --> escrowCreated : create from accepted order
+
+escrowCreated --> funded : mark funding reserved
+escrowCreated --> onHold : operational hold
+escrowCreated --> disputeOpen : dispute raised
+escrowCreated --> cancelled : cancel/expire before funding
+
+funded --> releaseRequested : release requested after evidence check
+funded --> onHold : operational hold
+funded --> disputeOpen : dispute raised
+funded --> expired : timeout
+
+releaseRequested --> settlementInstructionReady : approve release
+releaseRequested --> releaseRejected : reject release
+releaseRequested --> onHold : hold for review
+releaseRequested --> disputeOpen : dispute raised
+
+releaseRejected --> funded : remediate evidence
+onHold --> releaseRequested : resume after review
+onHold --> disputeOpen : escalate dispute
+onHold --> cancelled : cancel after review
+
+disputeOpen --> arbitration : arbitration accepted
+arbitration --> settlementInstructionReady : approveRelease decision
+arbitration --> refunded : refund decision
+arbitration --> cancelled : cancel decision
+
+settlementInstructionReady --> released : sandbox/manual payment settled
+settlementInstructionReady --> onHold : payment exception
+
+released --> [*]
+refunded --> [*]
+cancelled --> [*]
+expired --> [*]
+
+note right of settlementInstructionReady
+No real bank payment is implied.
+Payment adapters must reconcile status
+before terminal settlement claims.
+end note
+@enduml
