@@ -12,4 +12,3 @@ Files:
 - `connection-profile-template.yaml`: gateway connection-profile shape with placeholder endpoints and certificate paths.
 
 Use `scripts/fabric/check-production-consortium-prereqs.ps1` to validate the local prerequisite surface and `scripts/fabric/production-chaincode-lifecycle-skeleton.ps1` to print lifecycle command skeletons for operators.
-

@@ -64,4 +64,3 @@ if (-not $Execute) {
 }
 
 throw "Automatic production lifecycle execution is intentionally not implemented. Run reviewed commands manually in the prepared Fabric admin shell and record evidence."
-

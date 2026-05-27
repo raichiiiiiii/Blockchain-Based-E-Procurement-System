@@ -132,4 +132,3 @@ channels:
         chaincodeQuery: true
         ledgerQuery: true
         eventSource: true
-

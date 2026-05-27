@@ -1,7 +1,7 @@
 # Document Processing Architecture
 
-Status: MVP foundation  
-Owner: Architecture + Backend + Security  
+Status: MVP foundation
+Owner: Architecture + Backend + Security
 Last updated: 2026-05-26
 
 ## Purpose

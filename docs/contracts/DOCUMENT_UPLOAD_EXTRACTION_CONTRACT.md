@@ -1,7 +1,7 @@
 # Document Upload and Extraction Contract
 
-Status: MVP foundation  
-Owner: Backend + Frontend + QA  
+Status: MVP foundation
+Owner: Backend + Frontend + QA
 Last updated: 2026-05-26
 
 ## Purpose
