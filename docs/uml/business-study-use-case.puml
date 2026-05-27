@@ -1,0 +1,69 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Administrator" as Admin
+actor "Compliance Reviewer" as Compliance
+actor "Buyer / Procurement Officer" as Buyer
+actor "SME / Supplier" as Supplier
+actor "Shariah Reviewer" as Shariah
+actor "Bank / Financier" as Financier
+actor "Auditor" as Auditor
+actor "Regulator / Reporting User" as Regulator
+actor "Security Operator" as Security
+actor "Platform Operator" as Operator
+actor "External Integration Client" as External
+
+rectangle "Digital Procurement and PLS Seedbed" {
+  usecase "Authenticate with\ncredential-only login" as UCAuth
+  usecase "Manage members, roles,\nand access history" as UCGovern
+  usecase "Review KYC/AML case\nand eligibility" as UCKyc
+  usecase "Negotiate and accept\nmachine-readable contract" as UCContract
+  usecase "Create procurement order" as UCOrder
+  usecase "Acknowledge order and\nsubmit delivery proof" as UCDelivery
+  usecase "Evaluate escrow release,\nhold, dispute, arbitration" as UCEscrow
+  usecase "Create payment instruction\nand reconcile sandbox/manual status" as UCPayment
+  usecase "Register Shariah certificate\nand approve PLS activation" as UCShariah
+  usecase "Inspect PLS scenario\nand allocation records" as UCPls
+  usecase "Request and verify\nsigned export bundle" as UCExport
+  usecase "Verify blockchain proof\nand proof timeline" as UCProof
+  usecase "Inspect operational incidents\nand security alerts" as UCOps
+  usecase "Submit signed external\nIoT/QR/EPCIS/ERP events" as UCExternal
+}
+
+Admin --> UCAuth
+Compliance --> UCAuth
+Buyer --> UCAuth
+Supplier --> UCAuth
+Shariah --> UCAuth
+Financier --> UCAuth
+Auditor --> UCAuth
+Regulator --> UCAuth
+Security --> UCAuth
+
+Admin --> UCGovern
+Compliance --> UCKyc
+Buyer --> UCContract
+Supplier --> UCContract
+Buyer --> UCOrder
+Supplier --> UCDelivery
+Buyer --> UCEscrow
+Supplier --> UCEscrow
+Financier --> UCPayment
+Shariah --> UCShariah
+Financier --> UCPls
+Auditor --> UCProof
+Regulator --> UCExport
+Security --> UCOps
+Operator --> UCOps
+External --> UCExternal
+
+UCContract --> UCOrder : terms reference
+UCOrder --> UCDelivery : accepted order
+UCDelivery --> UCEscrow : release evidence
+UCEscrow --> UCPayment : settlement instruction
+UCShariah --> UCPls : approval gate
+UCExport --> UCProof : manifest/signature proof
+UCExternal --> UCDelivery : logistics proof
+@enduml
