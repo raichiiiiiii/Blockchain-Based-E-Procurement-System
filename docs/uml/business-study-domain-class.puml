@@ -1,0 +1,139 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+class PlatformUser {
+  +userId: string
+  +username: string
+  +status: active|inactive|revoked
+}
+
+class AuthSession {
+  +sessionId: string
+  +actorUserId: string
+  +actorRoleCodes: string[]
+  +status: active|revoked|expired
+  +expiresAt: datetime
+}
+
+class MemberOrganization {
+  +organizationId: string
+  +legalName: string
+  +organizationType: string
+  +status: pendingReview|active|inactive|suspended|deleted
+}
+
+class RoleAssignment {
+  +assignmentId: string
+  +userId: string
+  +organizationId: string
+  +roleCode: string
+  +status: active|revoked
+}
+
+class OnboardingCase {
+  +caseId: string
+  +organizationId: string
+  +kycStatus: pending|approved|rejected|flagged|blocked
+  +eligibility: eligible|notEligible|unknown
+}
+
+class ProcurementContract {
+  +contractId: string
+  +status: draft|offered|accepted|signed|cancelled
+  +version: int
+  +termsHash: string
+}
+
+class MachineReadableTerms {
+  +parties: json
+  +lineItems: json
+  +deliveryTerms: json
+  +acceptanceCriteria: json
+  +escrowReleaseConditions: json
+  +plsTerms: json
+}
+
+class ProcurementOrder {
+  +orderId: string
+  +buyerOrganizationId: string
+  +supplierOrganizationId: string
+  +status: draft|submitted|accepted|rejected|fulfilled
+}
+
+class DeliveryEvidence {
+  +evidenceId: string
+  +orderId: string
+  +sourceType: manual|iot|qr|epcis
+  +payloadHash: string
+  +verificationStatus: pending|verified|rejected|failed
+}
+
+class EscrowRecord {
+  +escrowId: string
+  +orderId: string
+  +status: escrowCreated|funded|releaseRequested|settlementInstructionReady|onHold|disputeOpen|refunded|cancelled
+  +termsHash: string
+}
+
+class PaymentInstruction {
+  +paymentInstructionId: string
+  +escrowId: string
+  +adapterName: string
+  +status: created|pending|accepted|failed|settled|cancelled
+}
+
+class PlsContract {
+  +plsContractId: string
+  +procurementReference: string
+  +profitRatio: decimal
+  +lossAllocationRule: string
+  +status: draft|approved|active|inactive
+}
+
+class ShariahCertificate {
+  +certificateId: string
+  +scope: string
+  +status: active|revoked|expired
+  +certificateHash: string
+}
+
+class ExportBundle {
+  +bundleId: string
+  +scope: string
+  +manifestHash: string
+  +signatureStatus: unsigned|signed|invalid
+}
+
+class BlockchainAnchorMetadata {
+  +eventId: string
+  +payloadHash: string
+  +anchorStatus: notAnchored|pending|anchored|failed
+  +verificationStatus: verified|mismatch|notFound|unavailable
+}
+
+class ProcureToPayLifecycleEvent {
+  +eventId: string
+  +eventType: string
+  +targetType: string
+  +targetId: string
+  +payloadHash: string
+  +occurredAt: datetime
+}
+
+PlatformUser "1" -- "0..*" AuthSession
+PlatformUser "1" -- "0..*" RoleAssignment
+MemberOrganization "1" -- "0..*" RoleAssignment
+MemberOrganization "1" -- "0..*" OnboardingCase
+ProcurementContract "1" *-- "1" MachineReadableTerms
+ProcurementContract "1" -- "0..*" ProcurementOrder
+ProcurementOrder "1" -- "0..*" DeliveryEvidence
+ProcurementOrder "1" -- "0..1" EscrowRecord
+EscrowRecord "1" -- "0..*" PaymentInstruction
+PlsContract "0..*" -- "0..1" ShariahCertificate
+ProcurementContract "0..1" -- "0..1" PlsContract
+ExportBundle "1" -- "0..*" ProcureToPayLifecycleEvent
+ProcureToPayLifecycleEvent "1" -- "0..1" BlockchainAnchorMetadata
+DeliveryEvidence "1" -- "0..1" BlockchainAnchorMetadata
+EscrowRecord "1" -- "0..*" ProcureToPayLifecycleEvent
+@enduml
