@@ -65,9 +65,11 @@ The current pass added:
 | Frontend login smoke at `http://127.0.0.1:5173/login` | Passed: credential fields and sign-in button visible, no role-card shortcuts |
 | Forbidden product label search in `src/frontend` | Passed, no matches |
 | Role shortcut search in `src/frontend` | Passed, no matches |
-| Live PostgreSQL startup | Blocked: Docker daemon was not running |
-| Local PostgreSQL port check | Blocked: `localhost:5432` was not accepting TCP connections |
-| Full browser actor sign-in smoke | Not rerun in this environment because persistent seeded credentials require PostgreSQL |
+| Live PostgreSQL startup | Passed after Docker Desktop was started |
+| Live migration apply | Passed, migrations applied through `011_operational_incidents.sql` |
+| Live seed apply | Passed after rerun once migration apply completed |
+| Backend health/readiness | Passed, `/ready` reported PostgreSQL reachable |
+| Full browser actor sign-in smoke | Passed for `admin.demo`, `buyer.demo`, `supplier.demo`, `compliance.demo`, `shariah.demo`, `financier.demo`, `auditor.demo`, `regulator.demo`, and `security.demo` |
 
 ## Evidence Files Added Or Updated
 
@@ -83,13 +85,12 @@ The current pass added:
 
 ## Known Limitations
 
-- This pass did not run live database apply/seed because Docker Desktop was unavailable.
 - This pass did not claim production Fabric consortium execution, production payment execution, production ERP/accounting integration, production ISO 20022 execution, or external Shariah certification.
 - Document metadata, contract negotiation records, external API credentials/idempotency/audit, payment instructions, and ERP/accounting jobs still need later persistence hardening.
-- Live browser actor smoke should be rerun after PostgreSQL is available.
+- Live Fabric network deployment was not rerun in this pass.
 
 ## Go / No-Go
 
-Go for repository-level build/test validation and supervisor-demo evidence review.
+Go for repository-level build/test validation, PostgreSQL-backed seeded account smoke, and supervisor-demo evidence review.
 
-No-go for pilot-ready, commercial-ready, production-certified, or live database browser UAT claims until the environment blocker is cleared and live actor smoke is appended.
+No-go for pilot-ready, commercial-ready, production-certified, production payment, production Fabric consortium, or external certification claims.
