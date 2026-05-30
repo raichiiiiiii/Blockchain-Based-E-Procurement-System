@@ -34,7 +34,7 @@ PostgreSQL is the operational source of truth for MVP business state. Hyperledge
 | Machine-readable contracts | `src/modules/contracts/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP/pilot persistent | Migration `014_procurement_contracts.sql`; stores indexed metadata and machine-readable aggregate JSON, with terms hash only for proof/reference use. |
 | External API gateway | `src/modules/integration/` | PostgreSQL wired | PostgreSQL client/idempotency/audit repositories + in-memory tests | Production-extension foundation | Migration `015_external_api_gateway.sql`; stores hashed local shared-secret material, idempotency records, and request audit only. |
 | ERP/accounting adapter jobs | `src/modules/integration/` | Routes registered in runtime | Local JSON adapter + in-memory job state | Production-extension foundation | Not production ERP connectivity. |
-| Payment instructions | `src/modules/payments/` | Routes registered in runtime | In-memory repository + sandbox/manual adapters | Production-extension foundation | Not real payment execution. |
+| Payment instructions | `src/modules/payments/` | PostgreSQL wired | PostgreSQL repository + sandbox/manual adapters + in-memory tests | Production-extension foundation | Migration `016_payment_instructions.sql`; durable instruction records only, not real payment execution. |
 
 ## Required Follow-Up Before Pilot Claim
 
@@ -42,7 +42,6 @@ No required follow-up item remains in this section after operational incident pe
 
 Recommended later persistence hardening:
 
-- payment instructions
 - ERP/accounting jobs
 
 ## Runtime Source-Of-Truth Rules
@@ -60,6 +59,7 @@ Recommended later persistence hardening:
 - `docs/evidence/qa/PERSISTENCE_GAP_DOCUMENT_METADATA_VALIDATION.md`
 - `docs/evidence/qa/PERSISTENCE_GAP_CONTRACT_NEGOTIATION_VALIDATION.md`
 - `docs/evidence/qa/PERSISTENCE_GAP_EXTERNAL_API_GATEWAY_VALIDATION.md`
+- `docs/evidence/qa/PERSISTENCE_GAP_PAYMENT_INSTRUCTION_VALIDATION.md`
 - `docs/evidence/qa/PRODUCTION_EXTENSION_RELEASE_VALIDATION.md`
 - `docs/runbooks/postgres-local-dev.md`
 - `docs/runbooks/deployable-mvp.md`

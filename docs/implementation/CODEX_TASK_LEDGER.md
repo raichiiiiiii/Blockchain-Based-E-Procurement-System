@@ -549,3 +549,57 @@ Known limitations:
 Next task:
 
 Continue later persistence hardening for payment instructions and ERP/accounting jobs.
+
+## TASK-2026-05-30-011 Payment Instruction PostgreSQL Persistence
+
+Stage: Phase 3 persistence gap closure
+Status: done
+
+Business reason:
+
+Sandbox/manual payment instruction records must survive backend restart in PostgreSQL runtime mode. This preserves instruction status, adapter reference, failure reason, and settlement lifecycle event references while keeping payment execution explicitly out of scope.
+
+Files inspected:
+
+- `src/modules/payments/`
+- `src/modules/escrow/`
+- `src/app/server.ts`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+
+Files changed:
+
+- `migrations/016_payment_instructions.sql`
+- `src/app/server.ts`
+- `src/modules/payments/infrastructure/postgres-payment-instruction-repository.ts`
+- `src/modules/payments/infrastructure/postgres-payment-instruction-repository.test.ts`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/runbooks/local-demo.md`
+- `docs/evidence/qa/PERSISTENCE_GAP_PAYMENT_INSTRUCTION_VALIDATION.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Tests run:
+
+- `node --test --loader ts-node/esm src/modules/payments/infrastructure/postgres-payment-instruction-repository.test.ts` passed, 6 tests.
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm run db:migrate -- --dry-run` passed, 16 migrations.
+- `npm run db:seed -- --dry-run` passed.
+- `docker compose config` passed.
+- `npm test` passed, 801 tests.
+- Live `npm run db:migrate` with `DATABASE_URL` and `DB_MIGRATIONS_ENABLED=true` passed against local Docker PostgreSQL; migration `016_payment_instructions.sql` applied.
+- Live table verification for `payment_instructions` passed.
+- `git diff --check` passed with CRLF warnings for edited files.
+
+Evidence produced:
+
+- `docs/evidence/qa/PERSISTENCE_GAP_PAYMENT_INSTRUCTION_VALIDATION.md`
+
+Known limitations:
+
+- Payment instructions remain sandbox/manual records. No bank rail, ISO 20022 execution, or production payment settlement is implemented or claimed.
+- No payment credentials or bank account secrets are stored.
+- The partial unique index preserves the current one-active-instruction-per-escrow rule for pending, accepted, and settled instructions.
+
+Next task:
+
+Continue later persistence hardening for ERP/accounting jobs.

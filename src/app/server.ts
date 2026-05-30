@@ -93,6 +93,7 @@ import { InMemoryProcurementContractRepository } from '../modules/contracts/infr
 import { registerPaymentRoutes } from '../modules/payments/api/payment.routes.js';
 import type { PaymentInstructionRepository } from '../modules/payments/application/payment-instruction-repository.js';
 import { InMemoryPaymentInstructionRepository } from '../modules/payments/infrastructure/in-memory-payment-instruction-repository.js';
+import { PostgresPaymentInstructionRepository } from '../modules/payments/infrastructure/postgres-payment-instruction-repository.js';
 import { LocalSandboxPaymentAdapter } from '../modules/payments/infrastructure/local-sandbox-payment-adapter.js';
 import { ManualSettlementAdapter } from '../modules/payments/infrastructure/manual-settlement-adapter.js';
 import { createPostgresPool, type PostgresExecutor } from '../infrastructure/database/postgres-client.js';
@@ -597,6 +598,7 @@ function createRuntimeServerDependencies(
       externalClientCredentialRepository: new PostgresExternalClientCredentialRepository(postgresPool),
       externalIdempotencyRepository: new PostgresExternalIdempotencyRepository(postgresPool),
       externalApiAuditRepository: new PostgresExternalApiAuditRepository(postgresPool),
+      paymentInstructionRepository: new PostgresPaymentInstructionRepository(postgresPool),
     },
   };
 }
