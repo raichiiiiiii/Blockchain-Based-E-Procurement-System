@@ -53,6 +53,7 @@ $env:PORT="3100"
 $env:PERSISTENCE_ADAPTER="postgres"
 $env:DATABASE_URL="postgres://pls_app:pls_app_password@localhost:5432/pls_platform"
 $env:DATABASE_SSL_MODE="disable"
+$env:EXTERNAL_API_SHARED_SECRET="change-me-local-external-secret"
 npm run build
 npm run dev
 ```
@@ -60,6 +61,8 @@ npm run dev
 The backend exposes REST routes under `/api/v1`. Use `PERSISTENCE_ADAPTER=memory` for a fully in-memory fast demo. Use `PERSISTENCE_ADAPTER=postgres` after migrations and seed have been applied to persist auth/session, membership/RBAC, access audit, procurement lifecycle events, procurement orders, delivery evidence metadata, blockchain anchor metadata, escrow records, KYC/AML onboarding cases, Shariah reviews, PLS contract/distribution records, export bundles, and operational readiness incidents.
 
 Document intake stores local files through `DocumentStoragePort`. The default local adapter writes under `.local-documents/` unless `DOCUMENT_STORAGE_DIR` is set. This folder is ignored by git and should not be used as production object storage.
+
+External API proof/logistics demo clients are database-seeded by `npm run db:seed` with hashed shared-secret material only. Use `EXTERNAL_API_SHARED_SECRET=change-me-local-external-secret` for the local walkthrough; replace it outside local demo environments and do not commit production secrets.
 
 ## One-Command Local Startup
 
@@ -322,4 +325,4 @@ Contract Negotiation
 - PLS workflow is a restricted single-venture seedbed with internal Shariah certificate artifact tracking; it does not provide external certification, production payment rails, guaranteed returns, or full Islamic finance product coverage.
 - Export signing includes a local software-key detached manifest signature and offline verification package metadata; production KMS/HSM custody, legal attestation, certificate authority lifecycle, and external regulator portal integration are not implemented.
 - ERP/accounting integration is a local JSON adapter boundary with UBL/Peppol-like and OCDS-like mappings only; production ERP posting, Peppol network delivery, and tax reporting are not implemented.
-- KYC/AML cases, export bundles, Shariah reviews, PLS contracts, and operational incidents are now PostgreSQL-wired in runtime mode. Later persistence hardening remains for document metadata, contract negotiation records, external API credentials/idempotency/audit, payment instructions, and ERP/accounting jobs.
+- KYC/AML cases, export bundles, Shariah reviews, PLS contracts, operational incidents, document metadata, contract negotiation records, and external API credentials/idempotency/audit are now PostgreSQL-wired in runtime mode. Later persistence hardening remains for payment instructions and ERP/accounting jobs.

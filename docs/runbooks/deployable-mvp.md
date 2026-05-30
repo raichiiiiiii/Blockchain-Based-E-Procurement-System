@@ -30,6 +30,7 @@ The app compose file externalizes the deployment-relevant settings:
 | `DATABASE_SSL_MODE` | `disable` | Local compose mode only. |
 | `DB_MIGRATIONS_ENABLED` | `true` | Backend container applies migrations on startup. |
 | `DEMO_SEED_ENABLED` | `true` | Backend container seeds demo accounts and data on startup. |
+| `EXTERNAL_API_SHARED_SECRET` | `change-me-local-external-secret` | Local-only shared secret for seeded external proof/logistics demo clients. Replace outside local demo environments. |
 | `VITE_API_PROXY_TARGET` | `http://backend:3100` | Documented for parity; production static frontend uses Nginx `/api/v1` proxy. |
 | `VITE_ENABLE_LOCAL_DEMO_FALLBACK` | `false` | Local fabricated data fallback remains disabled. |
 | `VITE_ENABLE_GUIDED_DEMO` | `false` | Guided mode is disabled unless explicitly enabled elsewhere. |
@@ -94,6 +95,16 @@ Seeded usernames:
 - `auditor.demo`
 - `regulator.demo`
 - `security.demo`
+
+## External API Demo Clients
+
+The seed path also creates hashed local demo client records for:
+
+- `proof-client` with `proof:verify`
+- `delivery-proof-client` with `evidence:write` and `logistics:write`
+- `erp-sync-client` with `erp:sync`
+
+These records store `secretHash` only. The local compose shared secret is for development smoke testing and must be replaced in any non-local environment.
 
 ## Stop
 

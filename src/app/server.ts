@@ -74,6 +74,9 @@ import type { ExternalApiAuditRepository } from '../modules/integration/applicat
 import { InMemoryExternalClientCredentialRepository } from '../modules/integration/infrastructure/in-memory-external-client-credential-repository.js';
 import { InMemoryExternalIdempotencyRepository } from '../modules/integration/infrastructure/in-memory-external-idempotency-repository.js';
 import { InMemoryExternalApiAuditRepository } from '../modules/integration/infrastructure/in-memory-external-api-audit-repository.js';
+import { PostgresExternalClientCredentialRepository } from '../modules/integration/infrastructure/postgres-external-client-credential-repository.js';
+import { PostgresExternalIdempotencyRepository } from '../modules/integration/infrastructure/postgres-external-idempotency-repository.js';
+import { PostgresExternalApiAuditRepository } from '../modules/integration/infrastructure/postgres-external-api-audit-repository.js';
 import { LocalJsonErpAccountingAdapter } from '../modules/integration/infrastructure/local-json-erp-accounting-adapter.js';
 import { registerDocumentRoutes } from '../modules/documents/api/document.routes.js';
 import type { DocumentRepository } from '../modules/documents/application/document-repository.js';
@@ -591,6 +594,9 @@ function createRuntimeServerDependencies(
       operationalIncidentRepository: new PostgresOperationalIncidentRepository(postgresPool),
       documentRepository: new PostgresDocumentRepository(postgresPool),
       procurementContractRepository: new PostgresProcurementContractRepository(postgresPool),
+      externalClientCredentialRepository: new PostgresExternalClientCredentialRepository(postgresPool),
+      externalIdempotencyRepository: new PostgresExternalIdempotencyRepository(postgresPool),
+      externalApiAuditRepository: new PostgresExternalApiAuditRepository(postgresPool),
     },
   };
 }

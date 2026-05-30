@@ -486,3 +486,66 @@ Known limitations:
 Next task:
 
 Continue later persistence hardening for external API client/idempotency records, payment instructions, and ERP/accounting jobs.
+
+## TASK-2026-05-30-010 External API Gateway PostgreSQL Persistence
+
+Stage: Phase 3 persistence gap closure
+Status: done
+
+Business reason:
+
+The external API gateway is the intake boundary for proof verification, IoT/QR/EPCIS delivery proof, ERP sync, and future payment callbacks. Runtime mode needs durable external client credentials, idempotency keys, and request audit so accepted and rejected external calls survive backend restart.
+
+Files inspected:
+
+- `src/modules/integration/`
+- `src/app/server.ts`
+- `scripts/db/seed-demo-data.ts`
+- `docs/contracts/EXTERNAL_API_GATEWAY_CONTRACT.md`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+
+Files changed:
+
+- `migrations/015_external_api_gateway.sql`
+- `src/app/server.ts`
+- `src/modules/integration/infrastructure/postgres-external-client-credential-repository.ts`
+- `src/modules/integration/infrastructure/postgres-external-idempotency-repository.ts`
+- `src/modules/integration/infrastructure/postgres-external-api-audit-repository.ts`
+- `src/modules/integration/infrastructure/postgres-external-api-gateway-repositories.test.ts`
+- `scripts/db/seed-demo-data.ts`
+- `docker-compose.app.yml`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/runbooks/local-demo.md`
+- `docs/runbooks/deployable-mvp.md`
+- `docs/evidence/qa/PERSISTENCE_GAP_EXTERNAL_API_GATEWAY_VALIDATION.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Tests run:
+
+- `node --test --loader ts-node/esm src/modules/integration/infrastructure/postgres-external-api-gateway-repositories.test.ts` passed, 4 tests.
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm run db:migrate -- --dry-run` passed, 15 migrations.
+- `npm run db:seed -- --dry-run` passed.
+- `docker compose config` passed.
+- `docker compose -f docker-compose.app.yml config` passed.
+- `npm test` passed, 795 tests.
+- Live `npm run db:migrate` with `DATABASE_URL` and `DB_MIGRATIONS_ENABLED=true` passed against local Docker PostgreSQL; migration `015_external_api_gateway.sql` applied.
+- Live `npm run db:seed` with `DATABASE_URL`, `DB_MIGRATIONS_ENABLED=true`, `DEMO_SEED_ENABLED=true`, and `EXTERNAL_API_SHARED_SECRET=change-me-local-external-secret` passed.
+- Live table verification for `external_client_credentials`, `external_idempotency_records`, and `external_api_audit_events` passed.
+- Live seeded client verification passed for `proof-client`, `delivery-proof-client`, and `erp-sync-client`.
+- `git diff --check` passed with CRLF warnings for edited files.
+
+Evidence produced:
+
+- `docs/evidence/qa/PERSISTENCE_GAP_EXTERNAL_API_GATEWAY_VALIDATION.md`
+
+Known limitations:
+
+- The local shared secret is for development smoke testing only and must be replaced outside local demo environments.
+- This does not add production API key rotation, per-client secret management, rate limiting infrastructure, or external identity federation.
+- External request payloads remain validated adapter inputs; they do not replace internal procurement, delivery, proof, or audit domain models.
+
+Next task:
+
+Continue later persistence hardening for payment instructions and ERP/accounting jobs.

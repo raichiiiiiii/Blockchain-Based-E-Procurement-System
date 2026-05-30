@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto';
 import { createPostgresPool } from '../../src/infrastructure/database/postgres-client.js';
 import { loadDatabaseConfig } from '../../src/infrastructure/database/database-config.js';
+import { hashExternalSecret } from '../../src/modules/integration/application/external-request-signing.js';
 
 const DEMO_PASSWORD = 'demo-password';
+const DEMO_EXTERNAL_SHARED_SECRET = process.env.EXTERNAL_API_SHARED_SECRET ?? 'change-me-local-external-secret';
 
 type DemoAccount = {
   userId: string;
@@ -90,6 +92,24 @@ const roleLabels: Record<string, string> = {
   securityOperator: 'Security Operator',
 };
 
+const demoExternalClients = [
+  {
+    clientId: 'proof-client',
+    clientName: 'Demo Proof Verification Client',
+    scopes: ['proof:verify'],
+  },
+  {
+    clientId: 'delivery-proof-client',
+    clientName: 'Demo Delivery Proof Client',
+    scopes: ['evidence:write', 'logistics:write'],
+  },
+  {
+    clientId: 'erp-sync-client',
+    clientName: 'Demo ERP Sync Client',
+    scopes: ['erp:sync'],
+  },
+];
+
 function isDryRun(): boolean {
   return process.argv.includes('--dry-run');
 }
@@ -103,6 +123,7 @@ async function seed(): Promise<void> {
     console.log(`Validated demo seed plan for ${demoAccounts.length} demo account(s).`);
     console.log(`Demo usernames: ${demoAccounts.map(account => account.username).join(', ')}`);
     console.log('Demo KYC/AML eligibility, Shariah review, Shariah certificate artifact, PLS contract, procurement order, delivery evidence, lifecycle events, anchor metadata, and escrow records are included.');
+    console.log('Demo external API client credentials are included with hashed local shared-secret material only.');
     return;
   }
 
@@ -219,6 +240,38 @@ async function seed(): Promise<void> {
             updated_at = EXCLUDED.updated_at
         `,
         [account.userId, account.organizationId, `role_${account.roleCode}`, now],
+      );
+    }
+
+    const externalSecretHash = hashExternalSecret(DEMO_EXTERNAL_SHARED_SECRET);
+    for (const externalClient of demoExternalClients) {
+      await client.query(
+        `
+          INSERT INTO external_client_credentials (
+            client_id,
+            client_name,
+            scopes,
+            status,
+            secret_hash,
+            created_at,
+            revoked_at
+          )
+          VALUES ($1, $2, $3::jsonb, 'active', $4, $5, NULL)
+          ON CONFLICT (client_id)
+          DO UPDATE SET
+            client_name = EXCLUDED.client_name,
+            scopes = EXCLUDED.scopes,
+            status = EXCLUDED.status,
+            secret_hash = EXCLUDED.secret_hash,
+            revoked_at = EXCLUDED.revoked_at
+        `,
+        [
+          externalClient.clientId,
+          externalClient.clientName,
+          JSON.stringify(externalClient.scopes),
+          externalSecretHash,
+          now,
+        ],
       );
     }
 
