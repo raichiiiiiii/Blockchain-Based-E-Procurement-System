@@ -176,7 +176,7 @@ This phase adds:
 - `fabric/production-consortium/channel-plan.json`
 - `fabric/production-consortium/chaincode-definitions.json`
 - `fabric/production-consortium/collections-config.json`
-- `fabric/production-consortium/connection-profile-template.yaml`
+- `fabric/production-consortium/connection-profile-template.yaml.template`
 - `scripts/fabric/check-production-consortium-prereqs.ps1`
 - `scripts/fabric/production-chaincode-lifecycle-skeleton.ps1`
 

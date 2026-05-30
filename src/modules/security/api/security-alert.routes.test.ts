@@ -242,6 +242,11 @@ test('operational readiness incidents appear as security alerts', async () => {
       },
       fabric: {
         mode: 'unavailable',
+        proofAdapter: 'fabric',
+        configured: false,
+        available: false,
+        simulated: false,
+        reason: 'missing_fabric_runtime_configuration',
       },
       payment: {
         mode: 'notConfigured',

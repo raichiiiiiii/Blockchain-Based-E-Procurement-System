@@ -499,7 +499,7 @@ duplicate anchorEvent same eventId -> rejected
 Create the real connection profile outside the repository from:
 
 ```text
-fabric/production-consortium/connection-profile-template.yaml
+fabric/production-consortium/connection-profile-template.yaml.template
 ```
 
 Store the real version outside the repo:

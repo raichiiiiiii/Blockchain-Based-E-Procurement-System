@@ -14,6 +14,11 @@ function readiness(databaseReachable: boolean): RuntimeReadiness {
       },
       fabric: {
         mode: databaseReachable ? 'local' : 'unavailable',
+        proofAdapter: databaseReachable ? 'in-memory' : 'fabric',
+        configured: databaseReachable,
+        available: databaseReachable,
+        simulated: databaseReachable,
+        reason: databaseReachable ? 'in_memory_anchor_gateway' : 'missing_fabric_runtime_configuration',
       },
       payment: {
         mode: 'notConfigured',

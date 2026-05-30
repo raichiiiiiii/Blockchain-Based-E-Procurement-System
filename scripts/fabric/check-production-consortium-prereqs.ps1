@@ -68,7 +68,7 @@ $requiredFiles = @(
   "channel-plan.json",
   "chaincode-definitions.json",
   "collections-config.json",
-  "connection-profile-template.yaml",
+  "connection-profile-template.yaml.template",
   "compose/docker-compose.fabric-lab.template.yaml",
   "config/configtx.yaml.template",
   "config/core-override-notes.md",
