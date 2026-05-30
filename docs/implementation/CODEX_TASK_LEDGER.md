@@ -662,3 +662,49 @@ Known limitations:
 Next task:
 
 Run final persistence-hardening validation and update release evidence/scorecard if needed.
+
+## TASK-2026-05-30-013 Persistence Hardening Final Validation
+
+Stage: Phase 3 persistence gap closure
+Status: done
+
+Business reason:
+
+Close the current PostgreSQL runtime persistence-hardening pass with one consolidated validation artifact after the remaining ERP/accounting job persistence gap was closed.
+
+Files inspected:
+
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/evidence/qa/PERSISTENCE_GAP_*_VALIDATION.md`
+- `docs/runbooks/local-demo.md`
+- `docker-compose.yml`
+- `docker-compose.app.yml`
+
+Files changed:
+
+- `docs/evidence/qa/PERSISTENCE_HARDENING_FINAL_VALIDATION.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Tests run:
+
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm run db:migrate -- --dry-run` passed, 17 migrations.
+- `npm run db:seed -- --dry-run` passed.
+- `docker compose config` passed.
+- `docker compose -f docker-compose.app.yml config` passed.
+- `npm test` passed, 805 tests.
+- `git diff --check` passed.
+
+Evidence produced:
+
+- `docs/evidence/qa/PERSISTENCE_HARDENING_FINAL_VALIDATION.md`
+
+Known limitations:
+
+- This final validation does not claim production payment execution, production ERP/Peppol connectivity, production KMS/HSM signing, production Fabric consortium operation, formal Shariah certification, or commercial readiness.
+- Product readiness remains supervisor-demo plus selected pilot-hardening features, not commercial-ready or production-certified.
+
+Next task:
+
+Resume the production-extension roadmap at the next not-yet-closed phase from `backlog/production-extension-roadmap.csv`, with the same rule that every implementation phase must preserve authentication, RBAC, evidence integrity, and claim boundaries.
