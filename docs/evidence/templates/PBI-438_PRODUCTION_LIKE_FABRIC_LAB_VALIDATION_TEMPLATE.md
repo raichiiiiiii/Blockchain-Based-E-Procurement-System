@@ -297,6 +297,11 @@ Confirm no private keys, wallets, CA admin secrets, TLS private keys, or product
 | `git diff --check` |  |  |
 | `scripts/fabric/check-production-consortium-prereqs.ps1` |  |  |
 | `scripts/fabric/production-chaincode-lifecycle-skeleton.ps1` |  |  |
+| `scripts/fabric/initialize-production-lab-workspace.ps1` |  |  |
+| `scripts/fabric/bootstrap-production-lab-identities.ps1` |  |  |
+| `scripts/fabric/create-production-lab-channel.ps1` |  |  |
+| `scripts/fabric/run-production-chaincode-lifecycle.ps1` |  |  |
+| `scripts/fabric/collect-production-lab-evidence.ps1` |  |  |
 
 ## Known Limitations
 

@@ -35,16 +35,28 @@ organizations:
   RegulatorAuditorMSP:
     mspid: RegulatorAuditorMSP
     peers:
-      - peer0.regulator-auditor.example.test
+      - peer0.regulatorauditor.example.test
     certificateAuthorities:
-      - ca.regulator-auditor.example.test
+      - ca.regulatorauditor.example.test
 orderers:
-  orderer0.consortium.example.test:
-    url: grpcs://orderer0.consortium.example.test:7050
+  orderer1.consortium.example.test:
+    url: grpcs://orderer1.consortium.example.test:7050
     grpcOptions:
-      ssl-target-name-override: orderer0.consortium.example.test
+      ssl-target-name-override: orderer1.consortium.example.test
     tlsCACerts:
-      path: /opt/fabric/crypto/ordererOrganizations/consortium.example.test/orderers/orderer0.consortium.example.test/tls/ca.crt
+      path: /opt/fabric/crypto/ordererOrganizations/consortium.example.test/orderers/orderer1.consortium.example.test/tls/ca.crt
+  orderer2.consortium.example.test:
+    url: grpcs://orderer2.consortium.example.test:8050
+    grpcOptions:
+      ssl-target-name-override: orderer2.consortium.example.test
+    tlsCACerts:
+      path: /opt/fabric/crypto/ordererOrganizations/consortium.example.test/orderers/orderer2.consortium.example.test/tls/ca.crt
+  orderer3.consortium.example.test:
+    url: grpcs://orderer3.consortium.example.test:9050
+    grpcOptions:
+      ssl-target-name-override: orderer3.consortium.example.test
+    tlsCACerts:
+      path: /opt/fabric/crypto/ordererOrganizations/consortium.example.test/orderers/orderer3.consortium.example.test/tls/ca.crt
 peers:
   peer0.platform.example.test:
     url: grpcs://peer0.platform.example.test:7051
@@ -70,12 +82,12 @@ peers:
       ssl-target-name-override: peer0.financier.example.test
     tlsCACerts:
       path: /opt/fabric/crypto/peerOrganizations/financier.example.test/peers/peer0.financier.example.test/tls/ca.crt
-  peer0.regulator-auditor.example.test:
-    url: grpcs://peer0.regulator-auditor.example.test:11051
+  peer0.regulatorauditor.example.test:
+    url: grpcs://peer0.regulatorauditor.example.test:11051
     grpcOptions:
-      ssl-target-name-override: peer0.regulator-auditor.example.test
+      ssl-target-name-override: peer0.regulatorauditor.example.test
     tlsCACerts:
-      path: /opt/fabric/crypto/peerOrganizations/regulator-auditor.example.test/peers/peer0.regulator-auditor.example.test/tls/ca.crt
+      path: /opt/fabric/crypto/peerOrganizations/regulatorauditor.example.test/peers/peer0.regulatorauditor.example.test/tls/ca.crt
 certificateAuthorities:
   ca.platform.example.test:
     url: https://ca.platform.example.test:7054
@@ -97,15 +109,17 @@ certificateAuthorities:
     caName: ca-financier
     tlsCACerts:
       path: /opt/fabric/crypto/peerOrganizations/financier.example.test/ca/ca.financier.example.test-cert.pem
-  ca.regulator-auditor.example.test:
-    url: https://ca.regulator-auditor.example.test:11054
-    caName: ca-regulator-auditor
+  ca.regulatorauditor.example.test:
+    url: https://ca.regulatorauditor.example.test:11054
+    caName: ca-regulatorauditor
     tlsCACerts:
-      path: /opt/fabric/crypto/peerOrganizations/regulator-auditor.example.test/ca/ca.regulator-auditor.example.test-cert.pem
+      path: /opt/fabric/crypto/peerOrganizations/regulatorauditor.example.test/ca/ca.regulatorauditor.example.test-cert.pem
 channels:
   procurement-proof-channel:
     orderers:
-      - orderer0.consortium.example.test
+      - orderer1.consortium.example.test
+      - orderer2.consortium.example.test
+      - orderer3.consortium.example.test
     peers:
       peer0.platform.example.test:
         endorsingPeer: true
@@ -127,7 +141,7 @@ channels:
         chaincodeQuery: true
         ledgerQuery: true
         eventSource: true
-      peer0.regulator-auditor.example.test:
+      peer0.regulatorauditor.example.test:
         endorsingPeer: true
         chaincodeQuery: true
         ledgerQuery: true

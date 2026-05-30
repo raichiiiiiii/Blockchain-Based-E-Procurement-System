@@ -10,6 +10,9 @@ They are templates only. They do not include certificates, private keys, CA mate
 - `chaincode-definitions.json`: intended chaincode modules and lifecycle metadata.
 - `collections-config.json`: private data collection template for proof hashes and metadata.
 - `connection-profile-template.yaml`: gateway connection-profile shape with placeholder endpoints and certificate paths.
+- `compose/docker-compose.fabric-lab.template.yaml`: one-host Docker Compose scaffold for separate CA, orderer, and peer containers.
+- `config/configtx.yaml.template`: channel configuration template for `procurement-proof-channel`.
+- `config/*-notes.md`: operator notes for CA, peer, and orderer override behavior.
 
 ## PBI-438 Production-Like Lab Guidance
 
@@ -50,6 +53,24 @@ Print the lifecycle skeleton before executing any live Fabric lifecycle commands
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/fabric/production-chaincode-lifecycle-skeleton.ps1
 ```
+
+Initialize an external local lab workspace in dry-run mode first:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/fabric/initialize-production-lab-workspace.ps1 `
+  -ExternalWorkspace "$HOME/fabric-labs/eprocure-consortium"
+```
+
+Then create the external workspace after reviewing the target path:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/fabric/initialize-production-lab-workspace.ps1 `
+  -ExternalWorkspace "$HOME/fabric-labs/eprocure-consortium" `
+  -Execute
+```
+
+The bootstrap, channel, chaincode lifecycle, and evidence scripts also default
+to dry-run mode and refuse repository-local lab workspaces.
 
 After `audit-anchor` is committed in the production-like lab, run the live proof smoke script against the prepared peer/orderer context:
 

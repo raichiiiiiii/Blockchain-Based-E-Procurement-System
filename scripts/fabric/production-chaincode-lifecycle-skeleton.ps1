@@ -6,6 +6,8 @@ param(
   [string]$PackageFile = "audit-anchor_1.0.0.tar.gz",
   [string]$Sequence = "1",
   [string]$Version = "1.0.0",
+  [string]$ExternalWorkspace = $env:FABRIC_PRODUCTION_LAB_WORKSPACE,
+  [string]$ConfirmExecution = "",
   [switch]$Execute
 )
 
@@ -59,8 +61,24 @@ foreach ($command in $commands) {
 
 if (-not $Execute) {
   Write-Host ""
-  Write-Host "Dry run only. Review the commands, fill MSP-specific package IDs and endpoint paths, then rerun manually in a prepared Fabric admin shell."
+  Write-Host "Dry run only. Review the commands, then use scripts/fabric/run-production-chaincode-lifecycle.ps1 for a guarded execution wrapper in a prepared Fabric admin shell."
   exit 0
 }
 
-throw "Automatic production lifecycle execution is intentionally not implemented. Run reviewed commands manually in the prepared Fabric admin shell and record evidence."
+$wrapper = Join-Path $PSScriptRoot "run-production-chaincode-lifecycle.ps1"
+if (-not (Test-Path $wrapper)) {
+  throw "Missing guarded lifecycle wrapper: $wrapper"
+}
+
+& powershell -ExecutionPolicy Bypass -File $wrapper `
+  -ConfigDir $ConfigDir `
+  -ChannelName $ChannelName `
+  -ChaincodeName $ChaincodeName `
+  -PackageLabel $PackageLabel `
+  -Version $Version `
+  -Sequence $Sequence `
+  -ExternalWorkspace $ExternalWorkspace `
+  -ConfirmExecution $ConfirmExecution `
+  -Execute
+
+exit $LASTEXITCODE

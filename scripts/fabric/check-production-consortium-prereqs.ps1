@@ -68,7 +68,12 @@ $requiredFiles = @(
   "channel-plan.json",
   "chaincode-definitions.json",
   "collections-config.json",
-  "connection-profile-template.yaml"
+  "connection-profile-template.yaml",
+  "compose/docker-compose.fabric-lab.template.yaml",
+  "config/configtx.yaml.template",
+  "config/core-override-notes.md",
+  "config/orderer-override-notes.md",
+  "config/ca-server-config-notes.md"
 )
 
 $missing = [System.Collections.Generic.List[string]]::new()

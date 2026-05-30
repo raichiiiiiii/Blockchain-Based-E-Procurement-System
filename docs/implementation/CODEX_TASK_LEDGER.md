@@ -892,3 +892,95 @@ Next task:
 Prepare a manual Fabric lab with real Fabric binaries, CA/MSP material, channel
 artifacts, chaincode lifecycle execution, backend gateway configuration, and
 browser/API proof verification evidence before reconsidering PBI-438 closure.
+
+## TASK-2026-05-30-017 Dockerized PBI-438 Production-Like Fabric Lab Scaffold
+
+Stage: PBI-438 production-extension scaffold
+Status: done
+
+Business reason:
+
+Convert PBI-438 from operator guidance into a runnable one-host Docker Compose
+lab scaffold while preserving the evidence boundary: no live lab was run, no
+secrets were committed, and PBI-438 remains Planned until real production-like
+Fabric evidence exists.
+
+Files inspected:
+
+- `backlog/production-extension-roadmap.csv`
+- `fabric/production-consortium/README.md`
+- `fabric/production-consortium/channel-plan.json`
+- `fabric/production-consortium/chaincode-definitions.json`
+- `fabric/production-consortium/collections-config.json`
+- `fabric/production-consortium/connection-profile-template.yaml`
+- `docs/runbooks/pbi-438-production-like-fabric-lab.md`
+- `docs/evidence/templates/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION_TEMPLATE.md`
+- `scripts/fabric/check-production-consortium-prereqs.ps1`
+- `scripts/fabric/production-chaincode-lifecycle-skeleton.ps1`
+- `scripts/fabric/smoke-production-audit-anchor.ps1`
+- `src/app/server.ts`
+- `src/modules/blockchain/infrastructure/fabric-blockchain-anchor-gateway.ts`
+- `src/modules/ops/application/runtime-readiness.ts`
+
+Files changed:
+
+- `.gitignore`
+- `backlog/production-extension-roadmap.csv`
+- `docs/architecture/FABRIC_RUNTIME_GATEWAY_INTEGRATION_GAP.md`
+- `docs/evidence/qa/PBI-438_DOCKERIZED_FABRIC_LAB_SCAFFOLD_VALIDATION.md`
+- `docs/evidence/templates/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION_TEMPLATE.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+- `docs/runbooks/pbi-438-production-like-fabric-lab.md`
+- `fabric/production-consortium/README.md`
+- `fabric/production-consortium/compose/docker-compose.fabric-lab.template.yaml`
+- `fabric/production-consortium/config/configtx.yaml.template`
+- `fabric/production-consortium/config/core-override-notes.md`
+- `fabric/production-consortium/config/orderer-override-notes.md`
+- `fabric/production-consortium/config/ca-server-config-notes.md`
+- `fabric/production-consortium/connection-profile-template.yaml`
+- `scripts/fabric/bootstrap-production-lab-identities.ps1`
+- `scripts/fabric/check-production-consortium-prereqs.ps1`
+- `scripts/fabric/collect-production-lab-evidence.ps1`
+- `scripts/fabric/create-production-lab-channel.ps1`
+- `scripts/fabric/initialize-production-lab-workspace.ps1`
+- `scripts/fabric/production-chaincode-lifecycle-skeleton.ps1`
+- `scripts/fabric/run-production-chaincode-lifecycle.ps1`
+
+Tests and validation run:
+
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm test` passed with 806 passing tests.
+- `npm run chaincode:audit-anchor:build` passed.
+- `npm run chaincode:audit-anchor:test` passed with 9 passing tests.
+- `powershell -ExecutionPolicy Bypass -File scripts/fabric/initialize-production-lab-workspace.ps1 -ExternalWorkspace C:\fabric-labs\eprocure-consortium` passed dry-run.
+- `powershell -ExecutionPolicy Bypass -File scripts/fabric/bootstrap-production-lab-identities.ps1 -ExternalWorkspace C:\fabric-labs\eprocure-consortium` passed dry-run.
+- `powershell -ExecutionPolicy Bypass -File scripts/fabric/create-production-lab-channel.ps1 -ExternalWorkspace C:\fabric-labs\eprocure-consortium` passed dry-run.
+- `powershell -ExecutionPolicy Bypass -File scripts/fabric/run-production-chaincode-lifecycle.ps1 -ExternalWorkspace C:\fabric-labs\eprocure-consortium` passed dry-run.
+- `powershell -ExecutionPolicy Bypass -File scripts/fabric/collect-production-lab-evidence.ps1 -ExternalWorkspace C:\fabric-labs\eprocure-consortium` passed dry-run.
+- `powershell -ExecutionPolicy Bypass -File scripts/fabric/check-production-consortium-prereqs.ps1` passed as a non-strict prerequisite report.
+- `powershell -ExecutionPolicy Bypass -File scripts/fabric/production-chaincode-lifecycle-skeleton.ps1` passed dry-run.
+- `docker compose -f fabric/production-consortium/compose/docker-compose.fabric-lab.template.yaml config` passed with dummy local env values.
+- `docker compose config` passed.
+- `docker compose -f docker-compose.app.yml config` passed.
+- `backlog/production-extension-roadmap.csv` parse and duplicate check passed; PBI-438 remains `Planned`.
+- `git ls-files` secret-material scan passed with no tracked generated crypto, wallets, channel artifacts, connection profiles, private keys, blocks, or chaincode archives.
+- `git diff --check` passed with CRLF warnings only.
+
+Evidence produced:
+
+- `docs/evidence/qa/PBI-438_DOCKERIZED_FABRIC_LAB_SCAFFOLD_VALIDATION.md`
+- `docs/architecture/FABRIC_RUNTIME_GATEWAY_INTEGRATION_GAP.md`
+
+Known limitations:
+
+- No live production-like Fabric lab was run.
+- No CA/MSP material, private keys, wallets, channel blocks, generated connection profiles, or live evidence are committed.
+- The backend Fabric adapter exists as a seam, but runtime composition still does not instantiate a real Fabric gateway from `BLOCKCHAIN_ANCHOR_ADAPTER=fabric`.
+- PBI-438 remains Planned until a human operator runs the lab and records sanitized live evidence.
+
+Next task:
+
+Run the scaffold in an external workspace with Fabric binaries and CA bootstrap
+secrets available, then implement the backend Fabric gateway runtime composition
+slice before attempting PBI-438 closure.

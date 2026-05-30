@@ -46,6 +46,12 @@ Recommended minimum production-like consortium lab:
 
 A reduced lab may be useful for rehearsal, but must be labelled `consortium rehearsal only` and is not sufficient to close PBI-438.
 
+A one-machine Docker Compose lab is acceptable for the first production-like
+PBI-438 lab only when it has separate CA containers, separate MSPs, TLS-enabled
+peer/orderer containers, distinct ledger volumes, reachable endpoints, real
+channel creation, real lifecycle commands, cross-organization endorsement,
+backend Fabric mode, and recorded evidence.
+
 ## Required Channel
 
 Start with one channel:
@@ -176,6 +182,25 @@ Run the dry-run lifecycle skeleton:
 powershell -ExecutionPolicy Bypass -File scripts/fabric/production-chaincode-lifecycle-skeleton.ps1
 ```
 
+Initialize the external workspace in dry-run mode:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/fabric/initialize-production-lab-workspace.ps1 `
+  -ExternalWorkspace "$HOME/fabric-labs/eprocure-consortium"
+```
+
+After confirming the target path is outside the repository, create the external
+workspace and copy templates:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/fabric/initialize-production-lab-workspace.ps1 `
+  -ExternalWorkspace "$HOME/fabric-labs/eprocure-consortium" `
+  -Execute
+```
+
+This creates external directories for `crypto`, `channel-artifacts`,
+`connection-profiles`, `wallets`, `logs`, `evidence`, `compose`, and `ledgers`.
+
 Expected before a live environment exists:
 
 ```text
@@ -224,6 +249,16 @@ node identities created
 application wallet identity created
 no private keys copied into repo
 ```
+
+Use the bootstrap helper as an operator-reviewed dry run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/fabric/bootstrap-production-lab-identities.ps1 `
+  -ExternalWorkspace "$HOME/fabric-labs/eprocure-consortium"
+```
+
+Only run with `-Execute` after the CA containers are running and required
+bootstrap secrets are supplied from an untracked local environment.
 
 ## Deploy Peers and Orderers
 
@@ -279,7 +314,7 @@ LevelDB
 Start the network and record logs:
 
 ```bash
-docker compose -f compose/consortium-network.yaml up -d
+docker compose -f $HOME/fabric-labs/eprocure-consortium/compose/docker-compose.fabric-lab.yaml up -d
 docker ps
 docker logs orderer1 --tail 100
 docker logs peer0.platform --tail 100
@@ -312,6 +347,16 @@ peer channel join -b procurement-proof-channel.block
 
 Run `peer channel list` from each organization admin context and record the output.
 
+The repository also provides a dry-run-safe wrapper:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/fabric/create-production-lab-channel.ps1 `
+  -ExternalWorkspace "$HOME/fabric-labs/eprocure-consortium"
+```
+
+Run with `-Execute` only when the external MSP/TLS material and Fabric admin
+context are ready.
+
 ## Package and Install `audit-anchor`
 
 From the repository root:
@@ -343,6 +388,19 @@ export CC_PACKAGE_ID="audit-anchor_1.0:<hash>"
 ```
 
 ## Approve and Commit Chaincode
+
+Review the guarded lifecycle wrapper before executing live commands:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/fabric/run-production-chaincode-lifecycle.ps1 `
+  -ExternalWorkspace "$HOME/fabric-labs/eprocure-consortium"
+```
+
+The wrapper requires both `-Execute` and
+`-ConfirmExecution EXECUTE_PBI438_CHAINCODE_LIFECYCLE` before it will package
+chaincode. Install, approval, readiness, commit, and querycommitted still require
+the operator to run from the correct organization admin contexts and record
+sanitized evidence.
 
 Approve from each required organization admin context:
 
@@ -563,6 +621,18 @@ docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md
 ```
 
 Only recommend `Ready to mark Completed` when live evidence exists. Otherwise select `Not ready` and keep PBI-438 `Planned`.
+
+To create an external draft from the template without touching the repository QA
+evidence folder:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/fabric/collect-production-lab-evidence.ps1 `
+  -ExternalWorkspace "$HOME/fabric-labs/eprocure-consortium" `
+  -Execute
+```
+
+Review and sanitize that external draft before copying anything into
+`docs/evidence/qa/`.
 
 ## Final Validation
 

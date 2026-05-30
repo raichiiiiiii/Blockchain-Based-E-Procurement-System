@@ -1,0 +1,397 @@
+# PBI-438 production-like local Fabric lab Compose template.
+#
+# This file is a runnable scaffold for a single-host Dockerized consortium lab.
+# It is not live evidence by itself. Keep generated crypto, ledgers, wallets,
+# channel artifacts, logs, and evidence under FABRIC_PRODUCTION_LAB_WORKSPACE,
+# not inside this repository.
+#
+# Required before use:
+#   $env:FABRIC_PRODUCTION_LAB_WORKSPACE = "C:\fabric-labs\eprocure-consortium"
+#   Set CA bootstrap IDs/secrets as environment variables or in a local
+#   untracked .env file outside the repository.
+
+name: pbi438-production-fabric-lab
+
+networks:
+  fabric_lab:
+    name: pbi438-fabric-lab
+
+services:
+  ca.orderer:
+    image: hyperledger/fabric-ca:1.5
+    container_name: pbi438-ca-orderer
+    command: sh -c 'fabric-ca-server start -b "$${ORDERER_CA_BOOTSTRAP_ID}:$${ORDERER_CA_BOOTSTRAP_SECRET}" -d'
+    environment:
+      FABRIC_CA_SERVER_CA_NAME: ca-orderer
+      FABRIC_CA_SERVER_TLS_ENABLED: "true"
+      FABRIC_CA_SERVER_PORT: "6054"
+      ORDERER_CA_BOOTSTRAP_ID: ${ORDERER_CA_BOOTSTRAP_ID:?set outside repository}
+      ORDERER_CA_BOOTSTRAP_SECRET: ${ORDERER_CA_BOOTSTRAP_SECRET:?set outside repository}
+    volumes:
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/fabric-ca/orderer:/etc/hyperledger/fabric-ca-server
+    ports:
+      - "6054:6054"
+    networks:
+      fabric_lab:
+        aliases:
+          - ca.orderer.example.test
+
+  ca.platform:
+    image: hyperledger/fabric-ca:1.5
+    container_name: pbi438-ca-platform
+    command: sh -c 'fabric-ca-server start -b "$${PLATFORM_CA_BOOTSTRAP_ID}:$${PLATFORM_CA_BOOTSTRAP_SECRET}" -d'
+    environment:
+      FABRIC_CA_SERVER_CA_NAME: ca-platform
+      FABRIC_CA_SERVER_TLS_ENABLED: "true"
+      FABRIC_CA_SERVER_PORT: "7054"
+      PLATFORM_CA_BOOTSTRAP_ID: ${PLATFORM_CA_BOOTSTRAP_ID:?set outside repository}
+      PLATFORM_CA_BOOTSTRAP_SECRET: ${PLATFORM_CA_BOOTSTRAP_SECRET:?set outside repository}
+    volumes:
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/fabric-ca/platform:/etc/hyperledger/fabric-ca-server
+    ports:
+      - "7054:7054"
+    networks:
+      fabric_lab:
+        aliases:
+          - ca.platform.example.test
+
+  ca.buyer:
+    image: hyperledger/fabric-ca:1.5
+    container_name: pbi438-ca-buyer
+    command: sh -c 'fabric-ca-server start -b "$${BUYER_CA_BOOTSTRAP_ID}:$${BUYER_CA_BOOTSTRAP_SECRET}" -d'
+    environment:
+      FABRIC_CA_SERVER_CA_NAME: ca-buyer
+      FABRIC_CA_SERVER_TLS_ENABLED: "true"
+      FABRIC_CA_SERVER_PORT: "8054"
+      BUYER_CA_BOOTSTRAP_ID: ${BUYER_CA_BOOTSTRAP_ID:?set outside repository}
+      BUYER_CA_BOOTSTRAP_SECRET: ${BUYER_CA_BOOTSTRAP_SECRET:?set outside repository}
+    volumes:
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/fabric-ca/buyer:/etc/hyperledger/fabric-ca-server
+    ports:
+      - "8054:8054"
+    networks:
+      fabric_lab:
+        aliases:
+          - ca.buyer.example.test
+
+  ca.supplier:
+    image: hyperledger/fabric-ca:1.5
+    container_name: pbi438-ca-supplier
+    command: sh -c 'fabric-ca-server start -b "$${SUPPLIER_CA_BOOTSTRAP_ID}:$${SUPPLIER_CA_BOOTSTRAP_SECRET}" -d'
+    environment:
+      FABRIC_CA_SERVER_CA_NAME: ca-supplier
+      FABRIC_CA_SERVER_TLS_ENABLED: "true"
+      FABRIC_CA_SERVER_PORT: "9054"
+      SUPPLIER_CA_BOOTSTRAP_ID: ${SUPPLIER_CA_BOOTSTRAP_ID:?set outside repository}
+      SUPPLIER_CA_BOOTSTRAP_SECRET: ${SUPPLIER_CA_BOOTSTRAP_SECRET:?set outside repository}
+    volumes:
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/fabric-ca/supplier:/etc/hyperledger/fabric-ca-server
+    ports:
+      - "9054:9054"
+    networks:
+      fabric_lab:
+        aliases:
+          - ca.supplier.example.test
+
+  ca.financier:
+    image: hyperledger/fabric-ca:1.5
+    container_name: pbi438-ca-financier
+    command: sh -c 'fabric-ca-server start -b "$${FINANCIER_CA_BOOTSTRAP_ID}:$${FINANCIER_CA_BOOTSTRAP_SECRET}" -d'
+    environment:
+      FABRIC_CA_SERVER_CA_NAME: ca-financier
+      FABRIC_CA_SERVER_TLS_ENABLED: "true"
+      FABRIC_CA_SERVER_PORT: "10054"
+      FINANCIER_CA_BOOTSTRAP_ID: ${FINANCIER_CA_BOOTSTRAP_ID:?set outside repository}
+      FINANCIER_CA_BOOTSTRAP_SECRET: ${FINANCIER_CA_BOOTSTRAP_SECRET:?set outside repository}
+    volumes:
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/fabric-ca/financier:/etc/hyperledger/fabric-ca-server
+    ports:
+      - "10054:10054"
+    networks:
+      fabric_lab:
+        aliases:
+          - ca.financier.example.test
+
+  ca.regulatorauditor:
+    image: hyperledger/fabric-ca:1.5
+    container_name: pbi438-ca-regulatorauditor
+    command: sh -c 'fabric-ca-server start -b "$${REGULATOR_AUDITOR_CA_BOOTSTRAP_ID}:$${REGULATOR_AUDITOR_CA_BOOTSTRAP_SECRET}" -d'
+    environment:
+      FABRIC_CA_SERVER_CA_NAME: ca-regulatorauditor
+      FABRIC_CA_SERVER_TLS_ENABLED: "true"
+      FABRIC_CA_SERVER_PORT: "11054"
+      REGULATOR_AUDITOR_CA_BOOTSTRAP_ID: ${REGULATOR_AUDITOR_CA_BOOTSTRAP_ID:?set outside repository}
+      REGULATOR_AUDITOR_CA_BOOTSTRAP_SECRET: ${REGULATOR_AUDITOR_CA_BOOTSTRAP_SECRET:?set outside repository}
+    volumes:
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/fabric-ca/regulatorauditor:/etc/hyperledger/fabric-ca-server
+    ports:
+      - "11054:11054"
+    networks:
+      fabric_lab:
+        aliases:
+          - ca.regulatorauditor.example.test
+
+  orderer1:
+    image: hyperledger/fabric-orderer:2.5
+    container_name: pbi438-orderer1
+    environment:
+      FABRIC_LOGGING_SPEC: INFO
+      ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
+      ORDERER_GENERAL_LISTENPORT: "7050"
+      ORDERER_GENERAL_LOCALMSPID: OrdererOrgMSP
+      ORDERER_GENERAL_LOCALMSPDIR: /var/hyperledger/orderer/msp
+      ORDERER_GENERAL_BOOTSTRAPMETHOD: none
+      ORDERER_CHANNELPARTICIPATION_ENABLED: "true"
+      ORDERER_GENERAL_TLS_ENABLED: "true"
+      ORDERER_GENERAL_TLS_PRIVATEKEY: /var/hyperledger/orderer/tls/server.key
+      ORDERER_GENERAL_TLS_CERTIFICATE: /var/hyperledger/orderer/tls/server.crt
+      ORDERER_GENERAL_TLS_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+      ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE: /var/hyperledger/orderer/tls/server.crt
+      ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY: /var/hyperledger/orderer/tls/server.key
+      ORDERER_GENERAL_CLUSTER_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+      ORDERER_ADMIN_TLS_ENABLED: "true"
+      ORDERER_ADMIN_LISTENADDRESS: 0.0.0.0:9443
+      ORDERER_ADMIN_TLS_CERTIFICATE: /var/hyperledger/orderer/tls/server.crt
+      ORDERER_ADMIN_TLS_PRIVATEKEY: /var/hyperledger/orderer/tls/server.key
+      ORDERER_ADMIN_TLS_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+    volumes:
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/ordererOrganizations/consortium.example.test/orderers/orderer1.consortium.example.test/msp:/var/hyperledger/orderer/msp:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/ordererOrganizations/consortium.example.test/orderers/orderer1.consortium.example.test/tls:/var/hyperledger/orderer/tls:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/ledgers/orderer1:/var/hyperledger/production/orderer
+    ports:
+      - "7050:7050"
+      - "9443:9443"
+    networks:
+      fabric_lab:
+        aliases:
+          - orderer1.consortium.example.test
+
+  orderer2:
+    image: hyperledger/fabric-orderer:2.5
+    container_name: pbi438-orderer2
+    environment:
+      FABRIC_LOGGING_SPEC: INFO
+      ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
+      ORDERER_GENERAL_LISTENPORT: "8050"
+      ORDERER_GENERAL_LOCALMSPID: OrdererOrgMSP
+      ORDERER_GENERAL_LOCALMSPDIR: /var/hyperledger/orderer/msp
+      ORDERER_GENERAL_BOOTSTRAPMETHOD: none
+      ORDERER_CHANNELPARTICIPATION_ENABLED: "true"
+      ORDERER_GENERAL_TLS_ENABLED: "true"
+      ORDERER_GENERAL_TLS_PRIVATEKEY: /var/hyperledger/orderer/tls/server.key
+      ORDERER_GENERAL_TLS_CERTIFICATE: /var/hyperledger/orderer/tls/server.crt
+      ORDERER_GENERAL_TLS_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+      ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE: /var/hyperledger/orderer/tls/server.crt
+      ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY: /var/hyperledger/orderer/tls/server.key
+      ORDERER_GENERAL_CLUSTER_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+      ORDERER_ADMIN_TLS_ENABLED: "true"
+      ORDERER_ADMIN_LISTENADDRESS: 0.0.0.0:9444
+      ORDERER_ADMIN_TLS_CERTIFICATE: /var/hyperledger/orderer/tls/server.crt
+      ORDERER_ADMIN_TLS_PRIVATEKEY: /var/hyperledger/orderer/tls/server.key
+      ORDERER_ADMIN_TLS_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+    volumes:
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/ordererOrganizations/consortium.example.test/orderers/orderer2.consortium.example.test/msp:/var/hyperledger/orderer/msp:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/ordererOrganizations/consortium.example.test/orderers/orderer2.consortium.example.test/tls:/var/hyperledger/orderer/tls:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/ledgers/orderer2:/var/hyperledger/production/orderer
+    ports:
+      - "8050:8050"
+      - "9444:9444"
+    networks:
+      fabric_lab:
+        aliases:
+          - orderer2.consortium.example.test
+
+  orderer3:
+    image: hyperledger/fabric-orderer:2.5
+    container_name: pbi438-orderer3
+    environment:
+      FABRIC_LOGGING_SPEC: INFO
+      ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
+      ORDERER_GENERAL_LISTENPORT: "9050"
+      ORDERER_GENERAL_LOCALMSPID: OrdererOrgMSP
+      ORDERER_GENERAL_LOCALMSPDIR: /var/hyperledger/orderer/msp
+      ORDERER_GENERAL_BOOTSTRAPMETHOD: none
+      ORDERER_CHANNELPARTICIPATION_ENABLED: "true"
+      ORDERER_GENERAL_TLS_ENABLED: "true"
+      ORDERER_GENERAL_TLS_PRIVATEKEY: /var/hyperledger/orderer/tls/server.key
+      ORDERER_GENERAL_TLS_CERTIFICATE: /var/hyperledger/orderer/tls/server.crt
+      ORDERER_GENERAL_TLS_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+      ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE: /var/hyperledger/orderer/tls/server.crt
+      ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY: /var/hyperledger/orderer/tls/server.key
+      ORDERER_GENERAL_CLUSTER_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+      ORDERER_ADMIN_TLS_ENABLED: "true"
+      ORDERER_ADMIN_LISTENADDRESS: 0.0.0.0:9445
+      ORDERER_ADMIN_TLS_CERTIFICATE: /var/hyperledger/orderer/tls/server.crt
+      ORDERER_ADMIN_TLS_PRIVATEKEY: /var/hyperledger/orderer/tls/server.key
+      ORDERER_ADMIN_TLS_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+    volumes:
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/ordererOrganizations/consortium.example.test/orderers/orderer3.consortium.example.test/msp:/var/hyperledger/orderer/msp:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/ordererOrganizations/consortium.example.test/orderers/orderer3.consortium.example.test/tls:/var/hyperledger/orderer/tls:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/ledgers/orderer3:/var/hyperledger/production/orderer
+    ports:
+      - "9050:9050"
+      - "9445:9445"
+    networks:
+      fabric_lab:
+        aliases:
+          - orderer3.consortium.example.test
+
+  peer0.platform:
+    image: hyperledger/fabric-peer:2.5
+    container_name: pbi438-peer0-platform
+    environment:
+      CORE_PEER_ID: peer0.platform.example.test
+      CORE_PEER_ADDRESS: peer0.platform.example.test:7051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:7051
+      CORE_PEER_CHAINCODEADDRESS: peer0.platform.example.test:7052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:7052
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer0.platform.example.test:7051
+      CORE_PEER_LOCALMSPID: PlatformOperatorMSP
+      CORE_PEER_MSPCONFIGPATH: /etc/hyperledger/fabric/msp
+      CORE_PEER_TLS_ENABLED: "true"
+      CORE_PEER_TLS_CERT_FILE: /etc/hyperledger/fabric/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /etc/hyperledger/fabric/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /etc/hyperledger/fabric/tls/ca.crt
+      CORE_LEDGER_STATE_STATEDATABASE: goleveldb
+      CORE_VM_ENDPOINT: unix:///host/var/run/docker.sock
+      CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: pbi438-fabric-lab
+      FABRIC_LOGGING_SPEC: INFO
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/peerOrganizations/platform.example.test/peers/peer0.platform.example.test/msp:/etc/hyperledger/fabric/msp:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/peerOrganizations/platform.example.test/peers/peer0.platform.example.test/tls:/etc/hyperledger/fabric/tls:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/ledgers/peer0.platform:/var/hyperledger/production
+    ports:
+      - "7051:7051"
+    networks:
+      fabric_lab:
+        aliases:
+          - peer0.platform.example.test
+
+  peer0.buyer:
+    image: hyperledger/fabric-peer:2.5
+    container_name: pbi438-peer0-buyer
+    environment:
+      CORE_PEER_ID: peer0.buyer.example.test
+      CORE_PEER_ADDRESS: peer0.buyer.example.test:8051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:8051
+      CORE_PEER_CHAINCODEADDRESS: peer0.buyer.example.test:8052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:8052
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer0.buyer.example.test:8051
+      CORE_PEER_LOCALMSPID: BuyerMSP
+      CORE_PEER_MSPCONFIGPATH: /etc/hyperledger/fabric/msp
+      CORE_PEER_TLS_ENABLED: "true"
+      CORE_PEER_TLS_CERT_FILE: /etc/hyperledger/fabric/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /etc/hyperledger/fabric/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /etc/hyperledger/fabric/tls/ca.crt
+      CORE_LEDGER_STATE_STATEDATABASE: goleveldb
+      CORE_VM_ENDPOINT: unix:///host/var/run/docker.sock
+      CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: pbi438-fabric-lab
+      FABRIC_LOGGING_SPEC: INFO
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/peerOrganizations/buyer.example.test/peers/peer0.buyer.example.test/msp:/etc/hyperledger/fabric/msp:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/peerOrganizations/buyer.example.test/peers/peer0.buyer.example.test/tls:/etc/hyperledger/fabric/tls:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/ledgers/peer0.buyer:/var/hyperledger/production
+    ports:
+      - "8051:8051"
+    networks:
+      fabric_lab:
+        aliases:
+          - peer0.buyer.example.test
+
+  peer0.supplier:
+    image: hyperledger/fabric-peer:2.5
+    container_name: pbi438-peer0-supplier
+    environment:
+      CORE_PEER_ID: peer0.supplier.example.test
+      CORE_PEER_ADDRESS: peer0.supplier.example.test:9051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:9051
+      CORE_PEER_CHAINCODEADDRESS: peer0.supplier.example.test:9052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:9052
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer0.supplier.example.test:9051
+      CORE_PEER_LOCALMSPID: SupplierMSP
+      CORE_PEER_MSPCONFIGPATH: /etc/hyperledger/fabric/msp
+      CORE_PEER_TLS_ENABLED: "true"
+      CORE_PEER_TLS_CERT_FILE: /etc/hyperledger/fabric/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /etc/hyperledger/fabric/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /etc/hyperledger/fabric/tls/ca.crt
+      CORE_LEDGER_STATE_STATEDATABASE: goleveldb
+      CORE_VM_ENDPOINT: unix:///host/var/run/docker.sock
+      CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: pbi438-fabric-lab
+      FABRIC_LOGGING_SPEC: INFO
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/peerOrganizations/supplier.example.test/peers/peer0.supplier.example.test/msp:/etc/hyperledger/fabric/msp:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/peerOrganizations/supplier.example.test/peers/peer0.supplier.example.test/tls:/etc/hyperledger/fabric/tls:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/ledgers/peer0.supplier:/var/hyperledger/production
+    ports:
+      - "9051:9051"
+    networks:
+      fabric_lab:
+        aliases:
+          - peer0.supplier.example.test
+
+  peer0.financier:
+    image: hyperledger/fabric-peer:2.5
+    container_name: pbi438-peer0-financier
+    environment:
+      CORE_PEER_ID: peer0.financier.example.test
+      CORE_PEER_ADDRESS: peer0.financier.example.test:10051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:10051
+      CORE_PEER_CHAINCODEADDRESS: peer0.financier.example.test:10052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:10052
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer0.financier.example.test:10051
+      CORE_PEER_LOCALMSPID: FinancierMSP
+      CORE_PEER_MSPCONFIGPATH: /etc/hyperledger/fabric/msp
+      CORE_PEER_TLS_ENABLED: "true"
+      CORE_PEER_TLS_CERT_FILE: /etc/hyperledger/fabric/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /etc/hyperledger/fabric/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /etc/hyperledger/fabric/tls/ca.crt
+      CORE_LEDGER_STATE_STATEDATABASE: goleveldb
+      CORE_VM_ENDPOINT: unix:///host/var/run/docker.sock
+      CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: pbi438-fabric-lab
+      FABRIC_LOGGING_SPEC: INFO
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/peerOrganizations/financier.example.test/peers/peer0.financier.example.test/msp:/etc/hyperledger/fabric/msp:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/peerOrganizations/financier.example.test/peers/peer0.financier.example.test/tls:/etc/hyperledger/fabric/tls:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/ledgers/peer0.financier:/var/hyperledger/production
+    ports:
+      - "10051:10051"
+    networks:
+      fabric_lab:
+        aliases:
+          - peer0.financier.example.test
+
+  peer0.regulatorauditor:
+    image: hyperledger/fabric-peer:2.5
+    container_name: pbi438-peer0-regulatorauditor
+    environment:
+      CORE_PEER_ID: peer0.regulatorauditor.example.test
+      CORE_PEER_ADDRESS: peer0.regulatorauditor.example.test:11051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:11051
+      CORE_PEER_CHAINCODEADDRESS: peer0.regulatorauditor.example.test:11052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:11052
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer0.regulatorauditor.example.test:11051
+      CORE_PEER_LOCALMSPID: RegulatorAuditorMSP
+      CORE_PEER_MSPCONFIGPATH: /etc/hyperledger/fabric/msp
+      CORE_PEER_TLS_ENABLED: "true"
+      CORE_PEER_TLS_CERT_FILE: /etc/hyperledger/fabric/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /etc/hyperledger/fabric/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /etc/hyperledger/fabric/tls/ca.crt
+      CORE_LEDGER_STATE_STATEDATABASE: goleveldb
+      CORE_VM_ENDPOINT: unix:///host/var/run/docker.sock
+      CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: pbi438-fabric-lab
+      FABRIC_LOGGING_SPEC: INFO
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/peerOrganizations/regulatorauditor.example.test/peers/peer0.regulatorauditor.example.test/msp:/etc/hyperledger/fabric/msp:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/peerOrganizations/regulatorauditor.example.test/peers/peer0.regulatorauditor.example.test/tls:/etc/hyperledger/fabric/tls:ro
+      - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/ledgers/peer0.regulatorauditor:/var/hyperledger/production
+    ports:
+      - "11051:11051"
+    networks:
+      fabric_lab:
+        aliases:
+          - peer0.regulatorauditor.example.test

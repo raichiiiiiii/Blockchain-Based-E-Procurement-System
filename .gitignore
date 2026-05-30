@@ -22,3 +22,10 @@ backups/
 /connection-profiles/
 /fabric-labs/
 audit-anchor*.tar.gz
+/fabric/production-consortium/compose/.env
+/fabric/production-consortium/**/crypto/
+/fabric/production-consortium/**/wallets/
+/fabric/production-consortium/**/channel-artifacts/
+/fabric/production-consortium/**/connection-profiles/
+/fabric/production-consortium/**/ledgers/
+/fabric/production-consortium/**/logs/
