@@ -225,10 +225,11 @@ export async function uploadDocument(
     createdAt,
   };
 
+  const savedDocument = await dependencies.repository.saveDocument(document);
   await dependencies.repository.saveExtraction(extraction);
 
   return {
     status: 'uploaded',
-    document: await dependencies.repository.saveDocument(document),
+    document: savedDocument,
   };
 }

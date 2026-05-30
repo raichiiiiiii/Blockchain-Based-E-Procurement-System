@@ -379,3 +379,56 @@ Known limitations:
 Next task:
 
 Continue later persistence hardening for document metadata, machine-readable contracts, external API client/idempotency records, payment instructions, and ERP/accounting jobs.
+
+## TASK-2026-05-30-008 Document Metadata PostgreSQL Persistence
+
+Stage: Phase 3 persistence gap closure
+Status: done
+
+Business reason:
+
+Document upload and extraction are part of the production-extension foundation. In PostgreSQL runtime mode, document metadata, extraction status, machine-readable field candidates, checksum, and local signature metadata must survive backend restart while raw files remain outside the database and off-chain.
+
+Files inspected:
+
+- `src/modules/documents/`
+- `src/app/server.ts`
+- `migrations/`
+- `docs/contracts/DOCUMENT_UPLOAD_EXTRACTION_CONTRACT.md`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+
+Files changed:
+
+- `migrations/013_document_metadata.sql`
+- `src/app/server.ts`
+- `src/modules/documents/application/upload-document.ts`
+- `src/modules/documents/infrastructure/postgres-document-repository.ts`
+- `src/modules/documents/infrastructure/postgres-document-repository.test.ts`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/evidence/qa/PERSISTENCE_GAP_DOCUMENT_METADATA_VALIDATION.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Tests run:
+
+- `node --test --loader ts-node/esm src/modules/documents/infrastructure/postgres-document-repository.test.ts` passed, 5 tests.
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm run db:migrate -- --dry-run` passed, 13 migrations.
+- `npm run db:seed -- --dry-run` passed.
+- `docker compose config` passed.
+- `git diff --check` passed with CRLF warnings for edited files.
+
+Evidence produced:
+
+- `docs/evidence/qa/PERSISTENCE_GAP_DOCUMENT_METADATA_VALIDATION.md`
+
+Known limitations:
+
+- Local file storage remains `.local-documents/` and is not production object storage.
+- Malware scanning remains explicit as `notScanned`.
+- PDF/DOCX extraction remains unsupported until a production extractor adapter is connected.
+- Local detached signature metadata is not legal e-signature validation.
+
+Next task:
+
+Continue later persistence hardening for machine-readable contracts, external API client/idempotency records, payment instructions, and ERP/accounting jobs.

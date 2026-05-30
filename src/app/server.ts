@@ -110,6 +110,7 @@ import { PostgresShariahCertificateRepository } from '../modules/shariah-certifi
 import { PostgresPlsContractRepository } from '../modules/financing/infrastructure/postgres-pls-contract-repository.js';
 import { PostgresExportBundleRepository } from '../modules/reporting/infrastructure/postgres-export-bundle-repository.js';
 import { PostgresOperationalIncidentRepository } from '../modules/ops/infrastructure/postgres-operational-incident-repository.js';
+import { PostgresDocumentRepository } from '../modules/documents/infrastructure/postgres-document-repository.js';
 
 const DEFAULT_DEV_PORT = 3100;
 
@@ -587,6 +588,7 @@ function createRuntimeServerDependencies(
       plsContractRepository: new PostgresPlsContractRepository(postgresPool),
       exportBundleRepository: new PostgresExportBundleRepository(postgresPool),
       operationalIncidentRepository: new PostgresOperationalIncidentRepository(postgresPool),
+      documentRepository: new PostgresDocumentRepository(postgresPool),
     },
   };
 }
