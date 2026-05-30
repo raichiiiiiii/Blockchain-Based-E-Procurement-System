@@ -290,17 +290,23 @@ try {
   Assert-VerificationStatus -Result $notFoundResult -Expected "notFound"
   Write-Evidence "[PASS] verifyEvent returned notFound for an unknown event"
 
+  $duplicateRejected = $false
   try {
     Invoke-PeerCli -PeerCommand $peerCommand -Arguments $invokeArguments | Out-Null
-    throw "duplicate anchorEvent was unexpectedly accepted"
   } catch {
     $duplicateMessage = $_.Exception.Message
     if ($duplicateMessage -notmatch "DUPLICATE_ANCHOR|duplicate|already anchored") {
       throw "Duplicate anchor check failed for a non-duplicate reason: $duplicateMessage"
     }
 
-    Write-Evidence "[PASS] duplicate anchorEvent was rejected"
+    $duplicateRejected = $true
   }
+
+  if (-not $duplicateRejected) {
+    throw "duplicate anchorEvent was unexpectedly accepted"
+  }
+
+  Write-Evidence "[PASS] duplicate anchorEvent was rejected"
 
   Write-Evidence ""
   Write-Evidence "Production-like Fabric AuditAnchor smoke validation passed for eventId '$EventId'."
