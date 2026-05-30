@@ -25,7 +25,7 @@ PostgreSQL is the operational source of truth for MVP business state. Hyperledge
 | Escrow records | `src/modules/escrow/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Includes release/dispute state foundation. |
 | KYC/AML onboarding cases | `src/modules/kyc-aml-onboarding/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Migration `007_kyc_aml_onboarding_cases.sql`; seed includes eligible buyer, supplier, and financier demo cases. |
 | Shariah reviews | `src/modules/shariah-review/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Migration `008_shariah_reviews.sql`; seed includes approved restricted PLS review metadata. |
-| Shariah certificate artifacts | `src/modules/shariah-certification/` | Routes registered in runtime | In-memory repository in runtime composition | Pilot-hardening gap | Tracks artifact metadata, not external certification. |
+| Shariah certificate artifacts | `src/modules/shariah-certification/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP/pilot persistent | Migration `012_shariah_certificates.sql`; tracks artifact metadata and certificate hash only, not external certification. |
 | PLS contracts and distributions | `src/modules/financing/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Migration `009_pls_contracts_distributions.sql`; seed includes restricted PLS demo contract metadata. Keep seedbed/simulation language. |
 | Export bundles and signing metadata | `src/modules/reporting/` | PostgreSQL wired | PostgreSQL repository + local software-key adapter | MVP/pilot persistent | Migration `010_export_bundles.sql`; local signing is not production key management. |
 | Operational incidents | `src/modules/ops/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP/pilot persistent | Migration `011_operational_incidents.sql`; readiness incidents now survive backend restart in PostgreSQL mode. |
@@ -59,6 +59,7 @@ Recommended later persistence hardening:
 ## Validation References
 
 - `docs/evidence/qa/POSTGRES_RUNTIME_PERSISTENCE_VALIDATION.md`
+- `docs/evidence/qa/PERSISTENCE_GAP_SHARIAH_CERTIFICATE_VALIDATION.md`
 - `docs/evidence/qa/PRODUCTION_EXTENSION_RELEASE_VALIDATION.md`
 - `docs/runbooks/postgres-local-dev.md`
 - `docs/runbooks/deployable-mvp.md`

@@ -102,7 +102,7 @@ async function seed(): Promise<void> {
   if (isDryRun()) {
     console.log(`Validated demo seed plan for ${demoAccounts.length} demo account(s).`);
     console.log(`Demo usernames: ${demoAccounts.map(account => account.username).join(', ')}`);
-    console.log('Demo KYC/AML eligibility, Shariah review, PLS contract, procurement order, delivery evidence, lifecycle events, anchor metadata, and escrow records are included.');
+    console.log('Demo KYC/AML eligibility, Shariah review, Shariah certificate artifact, PLS contract, procurement order, delivery evidence, lifecycle events, anchor metadata, and escrow records are included.');
     return;
   }
 
@@ -422,6 +422,65 @@ async function seed(): Promise<void> {
 
     await client.query(
       `
+        INSERT INTO shariah_certificates (
+          certificate_id,
+          issued_by,
+          reviewer_board,
+          fatwa_reference,
+          scope,
+          contract_template_version,
+          conditions,
+          issued_at,
+          expires_at,
+          status,
+          certificate_document_id,
+          certificate_hash,
+          created_by_user_id,
+          created_at
+        )
+        VALUES (
+          'shariah-certificate-mudarabah-v1',
+          'MVP Shariah Governance Board',
+          'Restricted PLS Seedbed Review Panel',
+          'FATWA-MVP-PLS-001',
+          'restricted-pls-seedbed',
+          'mudarabah-procurement-v1',
+          $1::jsonb,
+          '2026-05-20T00:00:00.000Z',
+          '2027-05-20T00:00:00.000Z',
+          'active',
+          'doc-shariah-certificate-demo',
+          'sha256:demo-shariah-certificate-hash',
+          'demo-shariah-user',
+          '2026-05-20T00:00:00.000Z'
+        )
+        ON CONFLICT (certificate_id)
+        DO UPDATE SET
+          issued_by = EXCLUDED.issued_by,
+          reviewer_board = EXCLUDED.reviewer_board,
+          fatwa_reference = EXCLUDED.fatwa_reference,
+          scope = EXCLUDED.scope,
+          contract_template_version = EXCLUDED.contract_template_version,
+          conditions = EXCLUDED.conditions,
+          issued_at = EXCLUDED.issued_at,
+          expires_at = EXCLUDED.expires_at,
+          status = EXCLUDED.status,
+          certificate_document_id = EXCLUDED.certificate_document_id,
+          certificate_hash = EXCLUDED.certificate_hash,
+          created_by_user_id = EXCLUDED.created_by_user_id,
+          created_at = EXCLUDED.created_at
+      `,
+      [
+        JSON.stringify([
+          'Simulation-only PLS distribution records',
+          'No guaranteed profit or principal',
+          'No external payment execution',
+        ]),
+      ],
+    );
+
+    await client.query(
+      `
         INSERT INTO pls_contracts (
           contract_id,
           procurement_reference,
@@ -453,7 +512,7 @@ async function seed(): Promise<void> {
           'capitalProviderBearsFinancialLossExceptMisconduct',
           'approvedForActivation',
           '{"reviewId":"review-demo-approved","status":"approved","decidedAt":"2026-05-21T10:00:00.000Z"}'::jsonb,
-          NULL,
+          '{"certificateId":"shariah-certificate-mudarabah-v1","status":"active","certificateHash":"sha256:demo-shariah-certificate-hash","issuedAt":"2026-05-20T00:00:00.000Z","expiresAt":"2027-05-20T00:00:00.000Z"}'::jsonb,
           NULL,
           $1,
           $1

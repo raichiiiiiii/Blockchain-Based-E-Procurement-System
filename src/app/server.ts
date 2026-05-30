@@ -106,6 +106,7 @@ import { PostgresBlockchainAnchorMetadataRepository } from '../modules/blockchai
 import { PostgresEscrowRepository } from '../modules/escrow/infrastructure/postgres-escrow-repository.js';
 import { PostgresOnboardingCaseRepository } from '../modules/kyc-aml-onboarding/infrastructure/postgres-onboarding-case-repository.js';
 import { PostgresShariahReviewRepository } from '../modules/shariah-review/infrastructure/postgres-shariah-review-repository.js';
+import { PostgresShariahCertificateRepository } from '../modules/shariah-certification/infrastructure/postgres-shariah-certificate-repository.js';
 import { PostgresPlsContractRepository } from '../modules/financing/infrastructure/postgres-pls-contract-repository.js';
 import { PostgresExportBundleRepository } from '../modules/reporting/infrastructure/postgres-export-bundle-repository.js';
 import { PostgresOperationalIncidentRepository } from '../modules/ops/infrastructure/postgres-operational-incident-repository.js';
@@ -580,6 +581,7 @@ function createRuntimeServerDependencies(
       deliveryEvidenceRepository: new PostgresDeliveryEvidenceRepository(postgresPool),
       onboardingCaseRepository: new PostgresOnboardingCaseRepository(postgresPool),
       shariahReviewRepository: new PostgresShariahReviewRepository(postgresPool),
+      shariahCertificateRepository: new PostgresShariahCertificateRepository(postgresPool),
       blockchainAnchorMetadataRepository: new PostgresBlockchainAnchorMetadataRepository(postgresPool),
       escrowRepository: new PostgresEscrowRepository(postgresPool),
       plsContractRepository: new PostgresPlsContractRepository(postgresPool),

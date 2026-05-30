@@ -323,3 +323,59 @@ Known limitations:
 Next task:
 
 The persistence matrix no longer lists a required follow-up item before the next evidence review. Recommended later hardening remains for documents, contracts, external API credentials/idempotency, payment instructions, and ERP/accounting jobs.
+
+## TASK-2026-05-30-007 Shariah Certificate Artifact PostgreSQL Persistence
+
+Stage: Phase 3 persistence gap closure
+Status: done
+
+Business reason:
+
+Shariah certificate artifact metadata gates restricted PLS activation when the certificate repository is wired. In PostgreSQL runtime mode, the demo certificate artifact must survive backend restart while preserving the claim boundary that the system tracks governance evidence only and does not claim formal external Shariah certification.
+
+Files inspected:
+
+- `src/modules/shariah-certification/`
+- `src/modules/financing/`
+- `src/app/server.ts`
+- `migrations/`
+- `scripts/db/seed-demo-data.ts`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+
+Files changed:
+
+- `migrations/012_shariah_certificates.sql`
+- `scripts/db/seed-demo-data.ts`
+- `src/app/server.ts`
+- `src/modules/shariah-certification/infrastructure/postgres-shariah-certificate-repository.ts`
+- `src/modules/shariah-certification/infrastructure/postgres-shariah-certificate-repository.test.ts`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/evidence/qa/PERSISTENCE_GAP_SHARIAH_CERTIFICATE_VALIDATION.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Tests run:
+
+- `npm test -- --test-name-pattern=PostgresShariahCertificateRepository` ran the project test harness and passed, 782 tests.
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm run db:migrate -- --dry-run` passed, 12 migrations.
+- `npm run db:seed -- --dry-run` passed.
+- `docker compose config` passed.
+- Live `npm run db:migrate` with `DATABASE_URL` and `DB_MIGRATIONS_ENABLED=true` passed against local Docker PostgreSQL; migration `012_shariah_certificates.sql` applied.
+- Live `npm run db:seed` with `DATABASE_URL` and `DEMO_SEED_ENABLED=true` passed after migration flag was enabled.
+- `docker exec pls-postgres psql -U pls_app -d pls_platform -tAc "SELECT certificate_id, status, contract_template_version FROM shariah_certificates ORDER BY certificate_id;"` passed and returned the active demo certificate artifact.
+- `git diff --check` passed with CRLF warnings for edited TypeScript files.
+
+Evidence produced:
+
+- `docs/evidence/qa/PERSISTENCE_GAP_SHARIAH_CERTIFICATE_VALIDATION.md`
+
+Known limitations:
+
+- This does not implement external Shariah board certification, legal attestation, or certificate document upload verification.
+- This does not make the PLS seedbed a production Islamic finance platform.
+- Certificate artifacts store metadata and hash references only; raw certificate documents remain outside this table and off-chain.
+
+Next task:
+
+Continue later persistence hardening for document metadata, machine-readable contracts, external API client/idempotency records, payment instructions, and ERP/accounting jobs.
