@@ -708,3 +708,50 @@ Known limitations:
 Next task:
 
 Resume the production-extension roadmap at the next not-yet-closed phase from `backlog/production-extension-roadmap.csv`, with the same rule that every implementation phase must preserve authentication, RBAC, evidence integrity, and claim boundaries.
+
+## TASK-2026-05-30-014 Production Extension Architecture and Standards Research Closure
+
+Stage: Production-extension roadmap governance
+Status: done
+
+Business reason:
+
+Close the remaining architecture parent and procurement standards research rows so implementation agents have a clear source-reference map for machine-readable contracts, ERP/accounting exports, delivery proof, payment mapping, and regulator exports.
+
+Files inspected:
+
+- `backlog/production-extension-roadmap.csv`
+- `docs/architecture/EXTENDED_PRODUCTION_ARCHITECTURE_PLAN.tex`
+- `docs/evidence/qa/EXTENDED_PRODUCTION_ARCHITECTURE_PLAN_VALIDATION.md`
+- `docs/contracts/ERP_ACCOUNTING_ADAPTER_CONTRACT.md`
+- `docs/contracts/DOCUMENT_UPLOAD_EXTRACTION_CONTRACT.md`
+- `docs/evidence/qa/PBI-449_ERP_ACCOUNTING_ADAPTER_VALIDATION.md`
+- official OCDS, UBL, Peppol, EPCIS, and ISO 20022 references
+
+Files changed:
+
+- `backlog/production-extension-roadmap.csv`
+- `docs/architecture/PROCUREMENT_STANDARDS_MAPPING_RESEARCH.md`
+- `docs/evidence/qa/PBI-436_462_PRODUCTION_EXTENSION_RESEARCH_VALIDATION.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Tests run:
+
+- `Import-Csv backlog/production-extension-roadmap.csv` passed, 27 rows.
+- `Import-Csv backlog/backlog.csv` passed, 435 rows.
+- Duplicate PBI check for production extension rows passed.
+- `git diff --check` passed with CRLF warning only.
+
+Evidence produced:
+
+- `docs/architecture/PROCUREMENT_STANDARDS_MAPPING_RESEARCH.md`
+- `docs/evidence/qa/PBI-436_462_PRODUCTION_EXTENSION_RESEARCH_VALIDATION.md`
+
+Known limitations:
+
+- This was research/governance closure only.
+- No production Peppol access point, certified UBL XML, full OCDS package, full EPCIS capture/query repository, ISO 20022 bank rail, or production ERP connector is claimed.
+
+Next task:
+
+Assess PBI-452 blockchain status visualization for feasible closure. PBI-438 remains blocked until real Fabric CA/MSP/channel material and live cross-org smoke evidence exist.
