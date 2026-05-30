@@ -153,7 +153,7 @@ services:
       ORDERER_ADMIN_LISTENADDRESS: 0.0.0.0:9443
       ORDERER_ADMIN_TLS_CERTIFICATE: /var/hyperledger/orderer/tls/server.crt
       ORDERER_ADMIN_TLS_PRIVATEKEY: /var/hyperledger/orderer/tls/server.key
-      ORDERER_ADMIN_TLS_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+      ORDERER_ADMIN_TLS_CLIENTROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
     volumes:
       - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/ordererOrganizations/consortium.example.test/orderers/orderer1.consortium.example.test/msp:/var/hyperledger/orderer/msp:ro
       - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/ordererOrganizations/consortium.example.test/orderers/orderer1.consortium.example.test/tls:/var/hyperledger/orderer/tls:ro
@@ -188,7 +188,7 @@ services:
       ORDERER_ADMIN_LISTENADDRESS: 0.0.0.0:9444
       ORDERER_ADMIN_TLS_CERTIFICATE: /var/hyperledger/orderer/tls/server.crt
       ORDERER_ADMIN_TLS_PRIVATEKEY: /var/hyperledger/orderer/tls/server.key
-      ORDERER_ADMIN_TLS_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+      ORDERER_ADMIN_TLS_CLIENTROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
     volumes:
       - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/ordererOrganizations/consortium.example.test/orderers/orderer2.consortium.example.test/msp:/var/hyperledger/orderer/msp:ro
       - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/ordererOrganizations/consortium.example.test/orderers/orderer2.consortium.example.test/tls:/var/hyperledger/orderer/tls:ro
@@ -223,7 +223,7 @@ services:
       ORDERER_ADMIN_LISTENADDRESS: 0.0.0.0:9445
       ORDERER_ADMIN_TLS_CERTIFICATE: /var/hyperledger/orderer/tls/server.crt
       ORDERER_ADMIN_TLS_PRIVATEKEY: /var/hyperledger/orderer/tls/server.key
-      ORDERER_ADMIN_TLS_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+      ORDERER_ADMIN_TLS_CLIENTROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
     volumes:
       - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/ordererOrganizations/consortium.example.test/orderers/orderer3.consortium.example.test/msp:/var/hyperledger/orderer/msp:ro
       - ${FABRIC_PRODUCTION_LAB_WORKSPACE:?set external workspace}/crypto/ordererOrganizations/consortium.example.test/orderers/orderer3.consortium.example.test/tls:/var/hyperledger/orderer/tls:ro
