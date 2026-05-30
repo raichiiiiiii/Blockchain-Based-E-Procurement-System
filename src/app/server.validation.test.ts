@@ -72,7 +72,12 @@ test('readiness endpoint reports dependency checks and degrades with HTTP 503', 
           reachable: false
         },
         fabric: {
-          mode: 'unavailable'
+          mode: 'unavailable',
+          proofAdapter: 'fabric',
+          configured: false,
+          available: false,
+          simulated: false,
+          reason: 'missing_fabric_runtime_configuration'
         },
         payment: {
           mode: 'notConfigured',
@@ -100,7 +105,12 @@ test('readiness endpoint reports dependency checks and degrades with HTTP 503', 
           reachable: false
         },
         fabric: {
-          mode: 'unavailable'
+          mode: 'unavailable',
+          proofAdapter: 'fabric',
+          configured: false,
+          available: false,
+          simulated: false,
+          reason: 'missing_fabric_runtime_configuration'
         },
         payment: {
           mode: 'notConfigured',

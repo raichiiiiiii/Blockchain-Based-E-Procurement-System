@@ -1,6 +1,14 @@
+import {
+  buildBlockchainAnchorReadiness,
+  loadBlockchainAnchorRuntimeConfig,
+  type BlockchainAnchorRuntimeReadiness,
+} from '../../blockchain/application/blockchain-anchor-runtime-config.js';
+
 export type RuntimePersistenceMode = 'memory' | 'postgres';
 
-export type RuntimeFabricMode = 'local' | 'configured' | 'unavailable';
+export type RuntimeFabricMode = BlockchainAnchorRuntimeReadiness['mode'];
+
+export type RuntimeProofAdapterMode = BlockchainAnchorRuntimeReadiness['proofAdapter'];
 
 export type RuntimePaymentMode = 'notConfigured' | 'manual' | 'sandbox' | 'external';
 
@@ -11,9 +19,7 @@ export type RuntimeReadiness = {
       mode: RuntimePersistenceMode;
       reachable: boolean;
     };
-    fabric: {
-      mode: RuntimeFabricMode;
-    };
+    fabric: BlockchainAnchorRuntimeReadiness;
     payment: {
       mode: RuntimePaymentMode;
       configured: boolean;
@@ -25,11 +31,13 @@ export type RuntimeReadiness = {
 };
 
 export function resolveRuntimeFabricMode(env: NodeJS.ProcessEnv = process.env): RuntimeFabricMode {
-  if (env.FABRIC_GATEWAY_ENABLED === 'true') {
-    return 'configured';
-  }
+  return resolveRuntimeBlockchainAnchorReadiness(env).mode;
+}
 
-  return 'local';
+export function resolveRuntimeBlockchainAnchorReadiness(
+  env: NodeJS.ProcessEnv = process.env,
+): BlockchainAnchorRuntimeReadiness {
+  return buildBlockchainAnchorReadiness(loadBlockchainAnchorRuntimeConfig(env));
 }
 
 export function resolveRuntimePaymentMode(env: NodeJS.ProcessEnv = process.env): RuntimePaymentMode {
@@ -44,21 +52,22 @@ export function resolveRuntimePaymentMode(env: NodeJS.ProcessEnv = process.env):
 export function buildRuntimeReadiness(input: {
   databaseMode: RuntimePersistenceMode;
   databaseReachable: boolean;
+  blockchain?: BlockchainAnchorRuntimeReadiness;
   env?: NodeJS.ProcessEnv;
 }): RuntimeReadiness {
   const env = input.env ?? process.env;
   const paymentMode = resolveRuntimePaymentMode(env);
+  const fabric = input.blockchain ?? resolveRuntimeBlockchainAnchorReadiness(env);
+  const dependencyReady = input.databaseReachable && fabric.mode !== 'unavailable';
 
   return {
-    status: input.databaseReachable ? 'ready' : 'degraded',
+    status: dependencyReady ? 'ready' : 'degraded',
     checks: {
       database: {
         mode: input.databaseMode,
         reachable: input.databaseReachable,
       },
-      fabric: {
-        mode: input.databaseReachable ? resolveRuntimeFabricMode(env) : 'unavailable',
-      },
+      fabric,
       payment: {
         mode: paymentMode,
         configured: paymentMode !== 'notConfigured',

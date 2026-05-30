@@ -9,7 +9,7 @@ They are templates only. They do not include certificates, private keys, CA mate
 - `channel-plan.json`: participant, channel, endorsement, and operations plan.
 - `chaincode-definitions.json`: intended chaincode modules and lifecycle metadata.
 - `collections-config.json`: private data collection template for proof hashes and metadata.
-- `connection-profile-template.yaml`: gateway connection-profile shape with placeholder endpoints and certificate paths.
+- `connection-profile-template.yaml.template`: gateway connection-profile shape with placeholder endpoints and certificate paths.
 - `compose/docker-compose.fabric-lab.template.yaml`: one-host Docker Compose scaffold for separate CA, orderer, and peer containers.
 - `config/configtx.yaml.template`: channel configuration template for `procurement-proof-channel`.
 - `config/*-notes.md`: operator notes for CA, peer, and orderer override behavior.

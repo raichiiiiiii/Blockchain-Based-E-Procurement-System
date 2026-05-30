@@ -4,7 +4,8 @@ import type { AuthenticatedFrontendSession } from '../lib/session-state';
 
 export type RuntimeReadinessStatus = 'ready' | 'degraded';
 export type RuntimePersistenceMode = 'memory' | 'postgres';
-export type RuntimeFabricMode = 'local' | 'configured' | 'unavailable';
+export type RuntimeFabricMode = 'disabled' | 'local' | 'configured' | 'unavailable';
+export type RuntimeProofAdapterMode = 'disabled' | 'in-memory' | 'fabric-local' | 'fabric';
 export type RuntimePaymentMode = 'notConfigured' | 'manual' | 'sandbox' | 'external';
 
 export type OperationalIncident = {
@@ -26,6 +27,17 @@ export type RuntimeReadiness = {
     };
     fabric: {
       mode: RuntimeFabricMode;
+      proofAdapter?: RuntimeProofAdapterMode;
+      configured?: boolean;
+      available?: boolean;
+      simulated?: boolean;
+      reason?: string;
+      missingConfiguration?: string[];
+      channelName?: string;
+      chaincodeName?: string;
+      connectionProfileConfigured?: boolean;
+      walletPathConfigured?: boolean;
+      identityConfigured?: boolean;
     };
     payment: {
       mode: RuntimePaymentMode;

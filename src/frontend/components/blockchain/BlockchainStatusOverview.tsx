@@ -40,6 +40,14 @@ function fabricStatus(mode?: RuntimeFabricMode): { label: string; tone: StatusTo
     };
   }
 
+  if (mode === 'disabled') {
+    return {
+      label: 'Disabled',
+      tone: 'neutral',
+      detail: 'Proof anchoring is disabled by runtime configuration.',
+    };
+  }
+
   return {
     label: 'Local proof mode',
     tone: 'neutral',

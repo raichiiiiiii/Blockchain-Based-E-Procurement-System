@@ -83,7 +83,7 @@ $copyOperations = @(
     Transform = "none"
   },
   @{
-    Source = Join-Path $repoRoot "fabric/production-consortium/connection-profile-template.yaml"
+    Source = Join-Path $repoRoot "fabric/production-consortium/connection-profile-template.yaml.template"
     Target = Join-Path $workspace "connection-profiles/procurement-proof-connection.template.yaml"
     Transform = "none"
   }

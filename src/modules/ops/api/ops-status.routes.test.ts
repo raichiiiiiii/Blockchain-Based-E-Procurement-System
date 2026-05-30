@@ -33,6 +33,11 @@ const degradedReadiness: RuntimeReadiness = {
     },
     fabric: {
       mode: 'unavailable',
+      proofAdapter: 'fabric',
+      configured: false,
+      available: false,
+      simulated: false,
+      reason: 'missing_fabric_runtime_configuration',
     },
     payment: {
       mode: 'notConfigured',

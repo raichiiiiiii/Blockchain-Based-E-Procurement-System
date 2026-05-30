@@ -912,7 +912,7 @@ Files inspected:
 - `fabric/production-consortium/channel-plan.json`
 - `fabric/production-consortium/chaincode-definitions.json`
 - `fabric/production-consortium/collections-config.json`
-- `fabric/production-consortium/connection-profile-template.yaml`
+- `fabric/production-consortium/connection-profile-template.yaml.template`
 - `docs/runbooks/pbi-438-production-like-fabric-lab.md`
 - `docs/evidence/templates/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION_TEMPLATE.md`
 - `scripts/fabric/check-production-consortium-prereqs.ps1`
@@ -937,7 +937,7 @@ Files changed:
 - `fabric/production-consortium/config/core-override-notes.md`
 - `fabric/production-consortium/config/orderer-override-notes.md`
 - `fabric/production-consortium/config/ca-server-config-notes.md`
-- `fabric/production-consortium/connection-profile-template.yaml`
+- `fabric/production-consortium/connection-profile-template.yaml.template`
 - `scripts/fabric/bootstrap-production-lab-identities.ps1`
 - `scripts/fabric/check-production-consortium-prereqs.ps1`
 - `scripts/fabric/collect-production-lab-evidence.ps1`
@@ -984,3 +984,98 @@ Next task:
 Run the scaffold in an external workspace with Fabric binaries and CA bootstrap
 secrets available, then implement the backend Fabric gateway runtime composition
 slice before attempting PBI-438 closure.
+
+## TASK-2026-05-30-018 PBI-438 Runtime Fabric Gateway Wiring
+
+Date: 2026-05-30
+Branch: `feature/PBI-438-runtime-fabric-gateway-wiring`
+Related issue: GitHub Issue #5
+Related PBI: PBI-438
+
+Scope:
+
+- Implement safe runtime parsing for `BLOCKCHAIN_ANCHOR_ADAPTER`.
+- Prevent `fabric-local` and `fabric` runtime modes from silently falling back
+  to the in-memory proof gateway.
+- Expose configured proof adapter state through readiness and operational
+  status.
+- Keep PBI-438 Planned until live production-like Fabric lab evidence exists.
+
+Files inspected:
+
+- `src/app/server.ts`
+- `src/modules/blockchain/application/blockchain-anchor-gateway.ts`
+- `src/modules/blockchain/application/blockchain-proof-service.ts`
+- `src/modules/blockchain/api/blockchain-anchor.routes.ts`
+- `src/modules/blockchain/infrastructure/fabric-blockchain-anchor-gateway.ts`
+- `src/modules/blockchain/infrastructure/in-memory-blockchain-anchor-gateway.ts`
+- `src/modules/ops/application/runtime-readiness.ts`
+- `src/modules/ops/api/ops-status.routes.ts`
+- `package.json`
+- `docs/architecture/FABRIC_RUNTIME_GATEWAY_INTEGRATION_GAP.md`
+- `docs/evidence/qa/PBI-438_DOCKERIZED_FABRIC_LAB_SCAFFOLD_VALIDATION.md`
+- `backlog/production-extension-roadmap.csv`
+
+Files changed:
+
+- `.env.example`
+- `src/app/server.ts`
+- `src/frontend/api/ops-status.ts`
+- `src/frontend/components/blockchain/BlockchainStatusOverview.tsx`
+- `src/modules/blockchain/application/blockchain-anchor-runtime-config.ts`
+- `src/modules/blockchain/infrastructure/blockchain-anchor-gateway-composition.ts`
+- `src/modules/blockchain/infrastructure/disabled-blockchain-anchor-gateway.ts`
+- `src/modules/blockchain/infrastructure/fabric-contract-client-factory.ts`
+- `src/modules/blockchain/infrastructure/unavailable-fabric-anchor-gateway.ts`
+- `src/modules/blockchain/infrastructure/fabric-runtime-config-loader.test.ts`
+- `src/modules/blockchain/infrastructure/fabric-runtime-gateway-composition.test.ts`
+- `src/modules/ops/application/runtime-readiness.ts`
+- `src/modules/ops/application/runtime-readiness.test.ts`
+- route/readiness/security alert tests that construct `RuntimeReadiness`
+- `docs/architecture/FABRIC_RUNTIME_GATEWAY_INTEGRATION_GAP.md`
+- `docs/architecture/PRODUCTION_FABRIC_CONSORTIUM_ARCHITECTURE.md`
+- `docs/evidence/qa/PBI-437_438_PRODUCTION_FABRIC_CONSORTIUM_VALIDATION.md`
+- `docs/evidence/qa/PBI-438_RUNTIME_FABRIC_GATEWAY_WIRING_VALIDATION.md`
+- `docs/runbooks/pbi-438-production-like-fabric-lab.md`
+- `fabric/production-consortium/README.md`
+- `fabric/production-consortium/connection-profile-template.yaml.template`
+- `scripts/fabric/check-production-consortium-prereqs.ps1`
+- `scripts/fabric/initialize-production-lab-workspace.ps1`
+
+Validation:
+
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm test` passed with 815 tests.
+- `npm run db:migrate -- --dry-run` passed.
+- `npm run db:seed -- --dry-run` passed.
+- `docker compose config` passed.
+- `docker compose -f docker-compose.app.yml config` passed.
+- `npm run chaincode:audit-anchor:build` passed.
+- `npm run chaincode:audit-anchor:test` passed with 9 tests.
+- Fabric prerequisite and lifecycle skeleton dry-run checks passed.
+- PBI-438 status check passed; PBI-438 remains Planned.
+- Tracked secret-material scan passed after renaming the connection-profile
+  template to `.yaml.template`.
+- `git diff --check` passed with CRLF warnings only.
+
+Result:
+
+- `disabled` mode now composes an explicit disabled proof gateway.
+- `in-memory` mode keeps the local simulated gateway for tests and local demos.
+- `fabric-local` and `fabric` modes validate Fabric environment variables and
+  compose an explicit unavailable gateway when configuration or SDK wiring is
+  missing.
+- `/ready` and `/api/v1/ops/status` report proof adapter state.
+- Fabric SDK dependencies were not added; real Fabric Gateway client wiring
+  remains a follow-up.
+- PBI-438 remains Planned.
+
+Known limitations:
+
+- No live production-like Fabric lab was run.
+- No generated Fabric crypto, wallet, channel artifact, or connection profile
+  material is committed.
+- `fabric-local` and `fabric` modes currently fail safely to unavailable until
+  the official Fabric Gateway client dependency and human-run lab evidence are
+  added.

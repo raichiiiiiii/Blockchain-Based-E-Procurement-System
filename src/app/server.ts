@@ -48,6 +48,7 @@ import { registerBlockchainAnchorRoutes } from '../modules/blockchain/api/blockc
 import type { BlockchainAnchorGateway } from '../modules/blockchain/application/blockchain-anchor-gateway.js';
 import type { BlockchainAnchorMetadataRepository } from '../modules/blockchain/application/blockchain-anchor-metadata-repository.js';
 import { InMemoryBlockchainAnchorGateway } from '../modules/blockchain/infrastructure/in-memory-blockchain-anchor-gateway.js';
+import { createRuntimeBlockchainAnchorGateway } from '../modules/blockchain/infrastructure/blockchain-anchor-gateway-composition.js';
 import { InMemoryBlockchainAnchorMetadataRepository } from '../modules/blockchain/infrastructure/in-memory-blockchain-anchor-metadata-repository.js';
 import { registerEscrowRoutes } from '../modules/escrow/api/escrow.routes.js';
 import type { EscrowRepository } from '../modules/escrow/application/escrow-repository.js';
@@ -545,14 +546,18 @@ function loadRuntimePersistenceMode(env: NodeJS.ProcessEnv = process.env): Runti
 function createRuntimeServerDependencies(
   mode: RuntimePersistenceMode = loadRuntimePersistenceMode(),
 ): RuntimeServerDependencies {
+  const blockchainGatewayComposition = createRuntimeBlockchainAnchorGateway();
+
   if (mode !== 'postgres') {
     return {
       serverOptions: {
         registerKycAmlRoutes: true,
         enforceBearerAuthForLegacyActorRoutes: true,
+        blockchainAnchorGateway: blockchainGatewayComposition.gateway,
         readiness: async () => buildRuntimeReadiness({
           databaseMode: 'memory',
           databaseReachable: true,
+          blockchain: blockchainGatewayComposition.readiness,
         }),
       },
     };
@@ -565,11 +570,13 @@ function createRuntimeServerDependencies(
       return buildRuntimeReadiness({
         databaseMode: 'postgres',
         databaseReachable: true,
+        blockchain: blockchainGatewayComposition.readiness,
       });
     } catch {
       return buildRuntimeReadiness({
         databaseMode: 'postgres',
         databaseReachable: false,
+        blockchain: blockchainGatewayComposition.readiness,
       });
     }
   };
@@ -580,6 +587,7 @@ function createRuntimeServerDependencies(
       registerKycAmlRoutes: true,
       enforceBearerAuthForLegacyActorRoutes: true,
       readiness,
+      blockchainAnchorGateway: blockchainGatewayComposition.gateway,
       memberRepository: new PostgresMemberOrganizationRepository(postgresPool),
       roleRepository: new PostgresRoleRepository(postgresPool),
       roleAssignmentRepository: new PostgresRoleAssignmentRepository(postgresPool),
