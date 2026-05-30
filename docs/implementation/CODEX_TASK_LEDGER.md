@@ -432,3 +432,57 @@ Known limitations:
 Next task:
 
 Continue later persistence hardening for machine-readable contracts, external API client/idempotency records, payment instructions, and ERP/accounting jobs.
+
+## TASK-2026-05-30-009 Machine-Readable Contract PostgreSQL Persistence
+
+Stage: Phase 3 persistence gap closure
+Status: done
+
+Business reason:
+
+The contract negotiation and machine-readable contract model must survive backend restart in PostgreSQL runtime mode. The MVP needs durable contract metadata, terms hash, offers, acceptances, and lifecycle event references while preserving the internal domain aggregate and avoiding external schema lock-in.
+
+Files inspected:
+
+- `src/modules/contracts/`
+- `src/app/server.ts`
+- `migrations/`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/evidence/qa/PBI-450_451_CONTRACT_NEGOTIATION_MODEL_VALIDATION.md`
+
+Files changed:
+
+- `migrations/014_procurement_contracts.sql`
+- `src/app/server.ts`
+- `src/modules/contracts/infrastructure/postgres-procurement-contract-repository.ts`
+- `src/modules/contracts/infrastructure/postgres-procurement-contract-repository.test.ts`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/evidence/qa/PERSISTENCE_GAP_CONTRACT_NEGOTIATION_VALIDATION.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Tests run:
+
+- `node --test --loader ts-node/esm src/modules/contracts/infrastructure/postgres-procurement-contract-repository.test.ts` passed, 4 tests.
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm run db:migrate -- --dry-run` passed, 14 migrations.
+- `npm run db:seed -- --dry-run` passed.
+- `docker compose config` passed.
+- `npm test` passed, 791 tests.
+- Live `npm run db:migrate` with `DATABASE_URL` and `DB_MIGRATIONS_ENABLED=true` passed against local Docker PostgreSQL; migration `014_procurement_contracts.sql` applied.
+- Live table verification for `procurement_contracts` passed.
+- `git diff --check` passed with CRLF warnings for edited files.
+
+Evidence produced:
+
+- `docs/evidence/qa/PERSISTENCE_GAP_CONTRACT_NEGOTIATION_VALIDATION.md`
+
+Known limitations:
+
+- This stores contract metadata and the machine-readable contract aggregate; it does not implement production document signing, ERP synchronization, or external registry publication.
+- Human-readable contract documents remain linked by document ID/reference rather than copied into the contract table.
+- The implementation keeps the current MVP contract workflow and does not claim legal contract execution beyond tracked acceptance metadata.
+
+Next task:
+
+Continue later persistence hardening for external API client/idempotency records, payment instructions, and ERP/accounting jobs.

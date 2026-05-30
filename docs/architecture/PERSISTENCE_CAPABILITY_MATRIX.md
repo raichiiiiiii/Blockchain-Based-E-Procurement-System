@@ -31,7 +31,7 @@ PostgreSQL is the operational source of truth for MVP business state. Hyperledge
 | Operational incidents | `src/modules/ops/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP/pilot persistent | Migration `011_operational_incidents.sql`; readiness incidents now survive backend restart in PostgreSQL mode. |
 | Security alert read model | `src/modules/security/` | Derived read model | Derived from access/proof/ops repositories | MVP-critical read model | Persistence depends on source repositories. |
 | Documents | `src/modules/documents/` | PostgreSQL metadata wired | Local filesystem storage + PostgreSQL metadata/extraction repository | MVP/pilot persistent metadata | Migration `013_document_metadata.sql`; `.local-documents/` remains ignored and is not production object storage. |
-| Machine-readable contracts | `src/modules/contracts/` | Routes registered in runtime | In-memory repository | Pilot-hardening gap | Terms hash exists; durability requires adapter. |
+| Machine-readable contracts | `src/modules/contracts/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP/pilot persistent | Migration `014_procurement_contracts.sql`; stores indexed metadata and machine-readable aggregate JSON, with terms hash only for proof/reference use. |
 | External API gateway | `src/modules/integration/` | Routes registered in runtime | In-memory client/idempotency/audit repositories | Production-extension foundation | Requires durable secrets/idempotency before real external use. |
 | ERP/accounting adapter jobs | `src/modules/integration/` | Routes registered in runtime | Local JSON adapter + in-memory job state | Production-extension foundation | Not production ERP connectivity. |
 | Payment instructions | `src/modules/payments/` | Routes registered in runtime | In-memory repository + sandbox/manual adapters | Production-extension foundation | Not real payment execution. |
@@ -42,7 +42,6 @@ No required follow-up item remains in this section after operational incident pe
 
 Recommended later persistence hardening:
 
-- machine-readable contracts repository
 - external API clients, idempotency keys, and external request audit
 - payment instructions
 - ERP/accounting jobs
@@ -60,6 +59,7 @@ Recommended later persistence hardening:
 - `docs/evidence/qa/POSTGRES_RUNTIME_PERSISTENCE_VALIDATION.md`
 - `docs/evidence/qa/PERSISTENCE_GAP_SHARIAH_CERTIFICATE_VALIDATION.md`
 - `docs/evidence/qa/PERSISTENCE_GAP_DOCUMENT_METADATA_VALIDATION.md`
+- `docs/evidence/qa/PERSISTENCE_GAP_CONTRACT_NEGOTIATION_VALIDATION.md`
 - `docs/evidence/qa/PRODUCTION_EXTENSION_RELEASE_VALIDATION.md`
 - `docs/runbooks/postgres-local-dev.md`
 - `docs/runbooks/deployable-mvp.md`
