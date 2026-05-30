@@ -5,6 +5,7 @@ import BlockchainProofTimeline from '../components/blockchain/BlockchainProofTim
 import ExportBundlePage from './ExportBundlePage';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
+import { getRuntimeReadiness, type RuntimeFabricMode } from '../api/ops-status';
 import {
   getBlockchainProof,
   verifyBlockchainProof,
@@ -28,6 +29,7 @@ function RegulatorDashboard({ activeTarget, session }: RegulatorDashboardProps) 
   const [proofRecords, setProofRecords] = useState<BlockchainProofRecord[]>([]);
   const [proofLoadError, setProofLoadError] = useState<string | undefined>();
   const [verificationState, setVerificationState] = useState<VerificationState>();
+  const [fabricMode, setFabricMode] = useState<RuntimeFabricMode>();
 
   useEffect(() => {
     let cancelled = false;
@@ -50,6 +52,17 @@ function RegulatorDashboard({ activeTarget, session }: RegulatorDashboardProps) 
     }
 
     void loadProofRecords();
+    getRuntimeReadiness()
+      .then(readiness => {
+        if (!cancelled) {
+          setFabricMode(readiness.checks.fabric.mode);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFabricMode('unavailable');
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -98,6 +111,7 @@ function RegulatorDashboard({ activeTarget, session }: RegulatorDashboardProps) 
             proof: item.proof,
             status: item.verificationStatus,
           }))}
+          fabricMode={fabricMode}
         />
         <BlockchainProofTimeline items={timelineItemsWithVerification} />
         {selectedProof ? (

@@ -75,7 +75,7 @@ describe('runtime blockchain gateway composition', () => {
     assert.strictEqual(verification.verificationStatus, 'unavailable');
   });
 
-  it('does not fall back to in-memory gateway when Fabric SDK wiring is unavailable', async () => {
+  it('does not fall back to in-memory gateway when Fabric runtime configuration is invalid', async () => {
     const composition = createRuntimeBlockchainAnchorGateway({
       BLOCKCHAIN_ANCHOR_ADAPTER: 'fabric',
       FABRIC_CHANNEL_NAME: 'procurement-proof-channel',
@@ -90,7 +90,7 @@ describe('runtime blockchain gateway composition', () => {
     assert.ok(!(composition.gateway instanceof InMemoryBlockchainAnchorGateway));
     assert.strictEqual(composition.readiness.mode, 'unavailable');
     assert.strictEqual(composition.readiness.proofAdapter, 'fabric');
-    assert.strictEqual(composition.readiness.reason, 'fabric_gateway_sdk_dependency_missing');
+    assert.strictEqual(composition.readiness.reason, 'fabric_gateway_configuration_invalid');
     assert.strictEqual(anchorResult.anchorStatus, 'failed');
     assert.strictEqual(anchorResult.blockchainNetwork, 'fabric');
     assert.strictEqual(anchorResult.channelName, 'procurement-proof-channel');

@@ -20,6 +20,14 @@ export default defineConfig(({ mode }) => {
         '/api/v1': {
           target: apiProxyTarget,
           changeOrigin: true
+        },
+        '/ready': {
+          target: apiProxyTarget,
+          changeOrigin: true
+        },
+        '/health': {
+          target: apiProxyTarget,
+          changeOrigin: true
         }
       }
     },

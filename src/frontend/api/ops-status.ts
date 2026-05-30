@@ -62,3 +62,7 @@ export async function getOpsStatus(
     headers: createSessionHeaders(session),
   });
 }
+
+export async function getRuntimeReadiness(): Promise<RuntimeReadiness> {
+  return requestJson<RuntimeReadiness>('/ready');
+}

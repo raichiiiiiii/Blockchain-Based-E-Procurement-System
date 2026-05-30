@@ -4,6 +4,7 @@ import BlockchainStatusOverview from '../components/blockchain/BlockchainStatusO
 import BlockchainProofTimeline from '../components/blockchain/BlockchainProofTimeline';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
+import { getRuntimeReadiness, type RuntimeFabricMode } from '../api/ops-status';
 import {
   getBlockchainProof,
   verifyBlockchainProof,
@@ -28,6 +29,7 @@ function AuditorDashboard({ activeTarget, session }: AuditorDashboardProps) {
   const [proofRecords, setProofRecords] = useState<BlockchainProofRecord[]>([]);
   const [proofLoadError, setProofLoadError] = useState<string | undefined>();
   const [verificationState, setVerificationState] = useState<VerificationState>();
+  const [fabricMode, setFabricMode] = useState<RuntimeFabricMode>();
 
   useEffect(() => {
     let cancelled = false;
@@ -50,6 +52,17 @@ function AuditorDashboard({ activeTarget, session }: AuditorDashboardProps) {
     }
 
     void loadProofRecords();
+    getRuntimeReadiness()
+      .then(readiness => {
+        if (!cancelled) {
+          setFabricMode(readiness.checks.fabric.mode);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFabricMode('unavailable');
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -108,6 +121,7 @@ function AuditorDashboard({ activeTarget, session }: AuditorDashboardProps) {
             proof: item.proof,
             status: item.verificationStatus,
           }))}
+          fabricMode={fabricMode}
         />
         <BlockchainProofTimeline items={timelineItemsWithVerification} />
         {selectedProof ? (
