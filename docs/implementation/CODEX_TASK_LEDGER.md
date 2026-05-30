@@ -603,3 +603,62 @@ Known limitations:
 Next task:
 
 Continue later persistence hardening for ERP/accounting jobs.
+
+## TASK-2026-05-30-012 ERP/Accounting Job PostgreSQL Persistence
+
+Stage: Phase 3 persistence gap closure
+Status: done
+
+Business reason:
+
+ERP/accounting export and import jobs must survive backend restart in PostgreSQL runtime mode so idempotent UBL/OCDS/payment-status mapping artifacts remain inspectable. This keeps the current local JSON adapter and does not claim production ERP connectivity.
+
+Files inspected:
+
+- `src/modules/integration/application/erp-accounting-port.ts`
+- `src/modules/integration/domain/erp-accounting.ts`
+- `src/modules/integration/infrastructure/local-json-erp-accounting-adapter.ts`
+- `src/modules/integration/api/erp-accounting.routes.ts`
+- `src/app/server.ts`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+
+Files changed:
+
+- `migrations/017_erp_integration_jobs.sql`
+- `src/app/server.ts`
+- `src/modules/integration/application/erp-integration-job-repository.ts`
+- `src/modules/integration/infrastructure/in-memory-erp-integration-job-repository.ts`
+- `src/modules/integration/infrastructure/local-json-erp-accounting-adapter.ts`
+- `src/modules/integration/infrastructure/postgres-erp-integration-job-repository.ts`
+- `src/modules/integration/infrastructure/postgres-erp-integration-job-repository.test.ts`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/runbooks/local-demo.md`
+- `docs/evidence/qa/PERSISTENCE_GAP_ERP_ACCOUNTING_JOB_VALIDATION.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Tests run:
+
+- `node --test --loader ts-node/esm src/modules/integration/infrastructure/postgres-erp-integration-job-repository.test.ts` passed, 4 tests.
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm run db:migrate -- --dry-run` passed, 17 migrations.
+- `npm run db:seed -- --dry-run` passed.
+- `docker compose config` passed.
+- `npm test` passed, 805 tests.
+- Live `npm run db:migrate` with `DATABASE_URL` and `DB_MIGRATIONS_ENABLED=true` passed against local Docker PostgreSQL; migration `017_erp_integration_jobs.sql` applied.
+- Live table verification for `erp_integration_jobs` passed.
+- `git diff --check` passed with CRLF warnings for edited files.
+
+Evidence produced:
+
+- `docs/evidence/qa/PERSISTENCE_GAP_ERP_ACCOUNTING_JOB_VALIDATION.md`
+
+Known limitations:
+
+- ERP/accounting remains a local JSON mapping adapter. It is not production ERP connectivity, Peppol network integration, accounting-system sync, or automated journal posting.
+- Mapping artifacts may contain business metadata; they are stored in PostgreSQL only and are not placed on-chain.
+- The adapter remains deterministic and idempotent for local demo/pilot-hardening use.
+
+Next task:
+
+Run final persistence-hardening validation and update release evidence/scorecard if needed.

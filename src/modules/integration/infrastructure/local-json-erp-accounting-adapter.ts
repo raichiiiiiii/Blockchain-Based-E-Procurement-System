@@ -2,7 +2,9 @@ import type { ProcurementContract } from '../../contracts/domain/procurement-con
 import type { PaymentInstruction } from '../../payments/domain/payment-instruction.js';
 import type { ProcurementOrder } from '../../procurement/domain/procurement-order.js';
 import type { ErpAccountingPort, ErpExportContext, ErpImportContext } from '../application/erp-accounting-port.js';
+import type { ErpIntegrationJobRepository } from '../application/erp-integration-job-repository.js';
 import type { ErpIntegrationJob, ErpProfileType } from '../domain/erp-accounting.js';
+import { InMemoryErpIntegrationJobRepository } from './in-memory-erp-integration-job-repository.js';
 
 function dateOnly(timestamp: string): string {
   return timestamp.slice(0, 10);
@@ -12,13 +14,8 @@ function nextJobId(): string {
   return `erp_job_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
 }
 
-function cloneJob(job: ErpIntegrationJob): ErpIntegrationJob {
-  return JSON.parse(JSON.stringify(job)) as ErpIntegrationJob;
-}
-
 export class LocalJsonErpAccountingAdapter implements ErpAccountingPort {
-  private readonly jobs = new Map<string, ErpIntegrationJob>();
-  private readonly idempotency = new Map<string, string>();
+  constructor(private readonly jobRepository: ErpIntegrationJobRepository = new InMemoryErpIntegrationJobRepository()) {}
 
   async exportPurchaseOrder(order: ProcurementOrder, context: ErpExportContext): Promise<ErpIntegrationJob> {
     return this.saveCompletedJob('ublOrder', order.orderId, context, {
@@ -205,17 +202,11 @@ export class LocalJsonErpAccountingAdapter implements ErpAccountingPort {
   }
 
   async getJob(jobId: string): Promise<ErpIntegrationJob | null> {
-    const job = this.jobs.get(jobId);
-    return job ? cloneJob(job) : null;
+    return this.jobRepository.getJob(jobId);
   }
 
   async getJobByIdempotencyKey(profileType: ErpProfileType, idempotencyKey: string): Promise<ErpIntegrationJob | null> {
-    const jobId = this.idempotency.get(`${profileType}:${idempotencyKey}`);
-    if (!jobId) {
-      return null;
-    }
-
-    return this.getJob(jobId);
+    return this.jobRepository.getJobByIdempotencyKey(profileType, idempotencyKey);
   }
 
   private async saveCompletedJob(
@@ -235,14 +226,11 @@ export class LocalJsonErpAccountingAdapter implements ErpAccountingPort {
     });
   }
 
-  private saveJob(input: Omit<ErpIntegrationJob, 'jobId' | 'createdAt' | 'claimBoundary'>): ErpIntegrationJob {
+  private async saveJob(input: Omit<ErpIntegrationJob, 'jobId' | 'createdAt' | 'claimBoundary'>): Promise<ErpIntegrationJob> {
     if (input.idempotencyKey) {
-      const existing = this.idempotency.get(`${input.profileType}:${input.idempotencyKey}`);
+      const existing = await this.jobRepository.getJobByIdempotencyKey(input.profileType, input.idempotencyKey);
       if (existing) {
-        const job = this.jobs.get(existing);
-        if (job) {
-          return cloneJob(job);
-        }
+        return existing;
       }
     }
 
@@ -252,12 +240,6 @@ export class LocalJsonErpAccountingAdapter implements ErpAccountingPort {
       createdAt: new Date().toISOString(),
       claimBoundary: 'localJsonAdapterOnlyNoProductionErpSync',
     };
-    this.jobs.set(job.jobId, cloneJob(job));
-
-    if (input.idempotencyKey) {
-      this.idempotency.set(`${input.profileType}:${input.idempotencyKey}`, job.jobId);
-    }
-
-    return cloneJob(job);
+    return this.jobRepository.save(job);
   }
 }

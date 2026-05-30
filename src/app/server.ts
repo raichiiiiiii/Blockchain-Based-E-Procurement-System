@@ -71,12 +71,14 @@ import { registerErpAccountingRoutes } from '../modules/integration/api/erp-acco
 import type { ExternalClientCredentialRepository } from '../modules/integration/application/external-client-credential-repository.js';
 import type { ExternalIdempotencyRepository } from '../modules/integration/application/external-idempotency-repository.js';
 import type { ExternalApiAuditRepository } from '../modules/integration/application/external-api-audit-repository.js';
+import type { ErpAccountingPort } from '../modules/integration/application/erp-accounting-port.js';
 import { InMemoryExternalClientCredentialRepository } from '../modules/integration/infrastructure/in-memory-external-client-credential-repository.js';
 import { InMemoryExternalIdempotencyRepository } from '../modules/integration/infrastructure/in-memory-external-idempotency-repository.js';
 import { InMemoryExternalApiAuditRepository } from '../modules/integration/infrastructure/in-memory-external-api-audit-repository.js';
 import { PostgresExternalClientCredentialRepository } from '../modules/integration/infrastructure/postgres-external-client-credential-repository.js';
 import { PostgresExternalIdempotencyRepository } from '../modules/integration/infrastructure/postgres-external-idempotency-repository.js';
 import { PostgresExternalApiAuditRepository } from '../modules/integration/infrastructure/postgres-external-api-audit-repository.js';
+import { PostgresErpIntegrationJobRepository } from '../modules/integration/infrastructure/postgres-erp-integration-job-repository.js';
 import { LocalJsonErpAccountingAdapter } from '../modules/integration/infrastructure/local-json-erp-accounting-adapter.js';
 import { registerDocumentRoutes } from '../modules/documents/api/document.routes.js';
 import type { DocumentRepository } from '../modules/documents/application/document-repository.js';
@@ -155,6 +157,7 @@ export function createTestableServer(options?: {
   externalIdempotencyRepository?: ExternalIdempotencyRepository;
   externalApiAuditRepository?: ExternalApiAuditRepository;
   externalApiSharedSecret?: string;
+  erpAccountingAdapter?: ErpAccountingPort;
   documentRepository?: DocumentRepository;
   documentStorage?: DocumentStoragePort;
   documentTextExtractor?: DocumentTextExtractionPort;
@@ -295,6 +298,7 @@ export function createTestableServer(options?: {
   const externalClientCredentialRepository = options?.externalClientCredentialRepository ?? new InMemoryExternalClientCredentialRepository();
   const externalIdempotencyRepository = options?.externalIdempotencyRepository ?? new InMemoryExternalIdempotencyRepository();
   const externalApiAuditRepository = options?.externalApiAuditRepository ?? new InMemoryExternalApiAuditRepository();
+  const erpAccountingAdapter = options?.erpAccountingAdapter ?? new LocalJsonErpAccountingAdapter();
   const documentRepository = options?.documentRepository ?? new InMemoryDocumentRepository();
   const documentStorage = options?.documentStorage ?? new LocalDocumentStorageAdapter();
   const documentTextExtractor = options?.documentTextExtractor ?? new LocalDocumentTextExtractionAdapter();
@@ -496,7 +500,7 @@ export function createTestableServer(options?: {
 
   server.register(registerErpAccountingRoutes, {
     prefix: '/api/v1',
-    adapter: new LocalJsonErpAccountingAdapter(),
+    adapter: erpAccountingAdapter,
     orderRepository: procurementOrderRepository,
     paymentInstructionRepository,
     contractRepository: procurementContractRepository,
@@ -599,6 +603,7 @@ function createRuntimeServerDependencies(
       externalIdempotencyRepository: new PostgresExternalIdempotencyRepository(postgresPool),
       externalApiAuditRepository: new PostgresExternalApiAuditRepository(postgresPool),
       paymentInstructionRepository: new PostgresPaymentInstructionRepository(postgresPool),
+      erpAccountingAdapter: new LocalJsonErpAccountingAdapter(new PostgresErpIntegrationJobRepository(postgresPool)),
     },
   };
 }
