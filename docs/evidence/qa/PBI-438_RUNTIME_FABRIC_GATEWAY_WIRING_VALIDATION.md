@@ -1,5 +1,11 @@
 # PBI-438 Runtime Fabric Gateway Wiring Validation
 
+> Supersession note: This file records the runtime-wiring state before the live
+> production-like Fabric lab. PBI-438 was later completed for a production-like
+> local Fabric lab. See
+> `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md` and
+> `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md` for current status.
+
 Date: 2026-05-30
 Branch: `feature/PBI-438-runtime-fabric-gateway-wiring`
 Commit inspected before change: `def41f2d199a317a95503726df57ed55da4669f9`

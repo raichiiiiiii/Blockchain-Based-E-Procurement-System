@@ -3,13 +3,28 @@
 Date: 2026-05-30
 Owner: human Fabric operator / blockchain engineer
 Related PBI: PBI-438
-Status: operator guidance only; this file is not closure evidence.
+Status: reusable lab guidance; PBI-438 closure evidence is recorded separately.
+
+Current status note, 2026-05-31:
+
+PBI-438 is Completed for the first production-like local Fabric lab and runtime
+Fabric Gateway validation. See
+`docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md` and
+`docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md`. This runbook remains
+the operator path for rerunning or extending the lab. It does not by itself
+claim managed production Fabric operations.
 
 ## Purpose
 
-Use this runbook to prepare the real production-like Fabric lab required before PBI-438 can be closed. The lab must be created outside the Git repository and must produce live evidence from real CA-generated MSPs, TLS-enabled peers/orderers, channel lifecycle commands, committed `audit-anchor` chaincode, and application proof surfaces running in Fabric mode.
+Use this runbook to prepare or rerun the production-like Fabric lab. The lab
+must be created outside the Git repository and must produce live evidence from
+real CA-generated MSPs, TLS-enabled peers/orderers, channel lifecycle commands,
+committed `audit-anchor` chaincode, and application proof surfaces running in
+Fabric mode.
 
-This runbook deliberately does not provide a shortcut for simulated completion. If the live lab does not exist, PBI-438 remains `Planned`.
+This runbook deliberately does not provide a shortcut for simulated completion.
+For future reruns, do not treat a simulated or dry-run-only environment as
+production-like Fabric evidence.
 
 ## Completion Boundary
 

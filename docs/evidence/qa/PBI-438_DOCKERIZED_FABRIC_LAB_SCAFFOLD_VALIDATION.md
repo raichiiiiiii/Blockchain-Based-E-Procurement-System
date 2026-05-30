@@ -1,5 +1,10 @@
 # PBI-438 Dockerized Fabric Lab Scaffold Validation
 
+> Supersession note: This file records scaffold-only status at the time it was
+> written. PBI-438 was later completed for a production-like local Fabric lab.
+> See `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md` and
+> `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md` for current status.
+
 Date: 2026-05-30
 Branch: `feature/PBI-438-dockerized-fabric-lab-scaffold`
 Status: scaffold validated; PBI-438 remains Planned

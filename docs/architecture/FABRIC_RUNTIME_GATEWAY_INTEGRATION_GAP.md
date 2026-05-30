@@ -2,6 +2,11 @@
 
 Date: 2026-05-31
 Related PBI: PBI-438
+Status: Resolved for production-like local Fabric lab runtime validation.
+
+Remaining hardening: production peer failover, managed identity lifecycle,
+production secret storage, HSM/KMS-backed key handling, production operations,
+and external consortium governance.
 
 ## Current State
 
@@ -42,6 +47,17 @@ PBI-438 live lab validation was completed on 2026-05-31 and is recorded in:
 ```text
 docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md
 ```
+
+## Decision
+
+The earlier runtime gap is closed for the repository's production-like local
+Fabric lab scope. The backend can compose a configured Fabric Gateway client,
+the proof API verified live `verified`, `mismatch`, and `notFound` states
+against committed `audit-anchor` chaincode, and the frontend proof status
+surface reads configured Fabric mode through runtime readiness.
+
+The filename is retained for historical traceability, but the document should
+now be read as an implementation status note rather than an unresolved gap.
 
 ## Required Runtime Configuration Target
 

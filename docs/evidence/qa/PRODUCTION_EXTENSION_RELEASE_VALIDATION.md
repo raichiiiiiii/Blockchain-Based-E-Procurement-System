@@ -1,5 +1,10 @@
 # Production Extension Release Validation
 
+> Supersession note: This file records the state at the time it was written.
+> PBI-438 was later completed for a production-like local Fabric lab. See
+> `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md` and
+> `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md` for current status.
+
 Date: 2026-05-26
 Branch: release/production-extension-validation
 Commit inspected before validation changes: e567a93 docs(fabric): add production consortium architecture

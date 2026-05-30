@@ -1,5 +1,10 @@
 # PBI-438 Production-Like Fabric Lab Guidance Update
 
+> Supersession note: This file records operator guidance before the live lab was
+> executed. PBI-438 was later completed for a production-like local Fabric lab.
+> See `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md` and
+> `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md` for current status.
+
 Date: 2026-05-30
 Branch: `codex/pbi-438-production-like-fabric-lab-guidance`
 Commit baseline: `2d9989eb169181aceb2381732615c4b5412f062a`

@@ -1,5 +1,11 @@
 # PBI-438 Production-Like Fabric Lab Readiness
 
+> Supersession note: This file records the readiness requirements before the
+> live lab was executed. PBI-438 was later completed for a production-like local
+> Fabric lab. See
+> `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md` and
+> `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md` for current status.
+
 ## Purpose
 
 Define the evidence required before PBI-438 can move from Planned to Completed.
