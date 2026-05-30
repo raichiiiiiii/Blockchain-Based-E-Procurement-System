@@ -155,3 +155,89 @@
 .onboarding-checklist-header > * {
   min-width: 0;
 }
+
+.blockchain-status-overview {
+  display: grid;
+  gap: 1rem;
+}
+
+.blockchain-status-guide,
+.blockchain-status-surface-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.blockchain-status-guide {
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+}
+
+.blockchain-status-guide-item,
+.blockchain-status-surface {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.blockchain-status-guide-item {
+  display: grid;
+  gap: 0.45rem;
+  align-content: start;
+  padding: 0.75rem;
+}
+
+.blockchain-status-guide-item p,
+.blockchain-status-surface p,
+.blockchain-status-surface dd {
+  margin: 0;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.blockchain-status-surface {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  padding: 0.85rem;
+}
+
+.blockchain-status-surface > * {
+  min-width: 0;
+}
+
+.blockchain-status-surface span {
+  color: #7a5700;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.blockchain-status-surface strong {
+  display: block;
+  margin: 0.15rem 0 0.35rem;
+  overflow-wrap: anywhere;
+}
+
+.blockchain-status-surface dl {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.blockchain-status-surface dl > div {
+  min-width: 0;
+}
+
+.blockchain-status-surface dt {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+}
+
+.blockchain-status-surface code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}

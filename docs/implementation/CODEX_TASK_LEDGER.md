@@ -755,3 +755,60 @@ Known limitations:
 Next task:
 
 Assess PBI-452 blockchain status visualization for feasible closure. PBI-438 remains blocked until real Fabric CA/MSP/channel material and live cross-org smoke evidence exist.
+
+## TASK-2026-05-30-015 Blockchain Status Visualization Closure
+
+Stage: Production-extension pilot hardening
+Status: done
+
+Business reason:
+
+Close the remaining proof status visualization gap by giving actors and operators a clear surface for anchored, pending, failed, mismatch, unavailable, verified, not found, and not anchored states without fabricating Fabric data.
+
+Files inspected:
+
+- `backlog/production-extension-roadmap.csv`
+- `docs/architecture/BLOCKCHAIN_PROOF_UI_CONTRACT.md`
+- `docs/contracts/BLOCKCHAIN_ANCHOR_CONTRACT.md`
+- `src/frontend/components/blockchain/*`
+- `src/frontend/components/status/*`
+- `src/frontend/pages/*Dashboard.tsx`
+- `src/modules/blockchain/api/blockchain-anchor.routes.ts`
+- `src/modules/ops/api/ops-status.routes.ts`
+
+Files changed:
+
+- `backlog/production-extension-roadmap.csv`
+- `docs/evidence/qa/PBI-452_BLOCKCHAIN_STATUS_VISUALIZATION_VALIDATION.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+- `src/frontend/api/ops-status.ts`
+- `src/frontend/components/blockchain/BlockchainStatusOverview.tsx`
+- `src/frontend/lib/demo-proof-timeline.ts`
+- `src/frontend/pages/AuditorDashboard.tsx`
+- `src/frontend/pages/RegulatorDashboard.tsx`
+- `src/frontend/pages/SecurityDashboard.tsx`
+- `src/frontend/pages/FinancingDashboard.tsx`
+- `src/frontend/pages/ExportBundlePage.tsx`
+- `src/frontend/styles/components.css`
+- `src/frontend/styles/responsive.css`
+- `src/modules/blockchain/api/blockchain-anchor.routes.ts`
+- `src/modules/blockchain/api/blockchain-anchor.routes.test.ts`
+
+Tests run:
+
+- `npm test -- src/modules/blockchain/api/blockchain-anchor.routes.test.ts` passed; the repository test runner executed the full suite with 806 passing tests.
+- `npm run build` passed.
+- `npm run frontend:build` failed once on frontend type issues, then passed after correction.
+
+Evidence produced:
+
+- `docs/evidence/qa/PBI-452_BLOCKCHAIN_STATUS_VISUALIZATION_VALIDATION.md`
+
+Known limitations:
+
+- PBI-438 remains Planned because production Fabric consortium implementation still requires real CA/MSP/channel artifacts and live cross-organization smoke evidence.
+- PLS proof status remains coverage-only unless a PLS certificate or terms-hash anchor record exists.
+
+Next task:
+
+Run final validation for this closure, then either push the accumulated `main` commits or continue only if a new explicit implementation phase remains.

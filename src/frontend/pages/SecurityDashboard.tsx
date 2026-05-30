@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { getOpsStatus, type OpsStatusResponse } from '../api/ops-status';
 import { getSecurityAlerts, type SecurityAlert, type SecurityAlertsSummary } from '../api/security-alerts';
+import BlockchainStatusOverview from '../components/blockchain/BlockchainStatusOverview';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
+import type { BlockchainDisplayStatus } from '../components/status/BlockchainStatusIndicator';
 import StatusIndicator, { type StatusTone } from '../components/status/StatusIndicator';
 
 type SecurityDashboardProps = {
@@ -39,6 +42,23 @@ function alertSourceLabel(alert: SecurityAlert): string {
   return 'Operational alert';
 }
 
+function proofStatusFromAlert(status?: string): BlockchainDisplayStatus {
+  if (
+    status === 'notAnchored' ||
+    status === 'pending' ||
+    status === 'anchored' ||
+    status === 'failed' ||
+    status === 'verified' ||
+    status === 'mismatch' ||
+    status === 'notFound' ||
+    status === 'unavailable'
+  ) {
+    return status;
+  }
+
+  return 'unavailable';
+}
+
 function AlertList({ alerts }: { alerts: SecurityAlert[] }) {
   if (alerts.length === 0) {
     return <div className="empty-product-state">No alerts are currently visible for this view.</div>;
@@ -73,6 +93,7 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | undefined>();
+  const [opsStatus, setOpsStatus] = useState<OpsStatusResponse | undefined>();
 
   const sessionId = session.sessionId;
   const sessionSource = session.source;
@@ -83,10 +104,14 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
     setIsLoading(true);
     setLoadError(undefined);
 
-    void getSecurityAlerts(session)
-      .then(nextSummary => {
+    void Promise.all([
+      getSecurityAlerts(session),
+      getOpsStatus(session).catch(() => undefined),
+    ])
+      .then(([nextSummary, nextOpsStatus]) => {
         if (isCurrent) {
           setSummary(nextSummary);
+          setOpsStatus(nextOpsStatus);
         }
       })
       .catch(() => {
@@ -99,6 +124,7 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
             operationalIncidents: [],
             items: [],
           });
+          setOpsStatus(undefined);
         }
       })
       .finally(() => {
@@ -117,6 +143,28 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
     ...summary.proofFailures,
     ...summary.operationalIncidents,
   ].sort((left, right) => right.occurredAt.localeCompare(left.occurredAt)), [summary]);
+
+  const proofStatusItems = useMemo(() => {
+    const proofAlerts = summary.proofFailures.slice(0, 5).map(alert => ({
+      surface: 'Proof failure',
+      label: alert.relatedEventId ?? alert.alertId,
+      description: alert.message,
+      status: proofStatusFromAlert(alert.relatedProofStatus),
+      detail: alert.occurredAt,
+    }));
+
+    if (proofAlerts.length > 0) {
+      return proofAlerts;
+    }
+
+    return [{
+      surface: 'Proof failures',
+      label: 'No current proof alert',
+      description: 'No failed, mismatched, not found, or unavailable proof alert is currently visible.',
+      status: 'notAnchored' as const,
+      detail: 'This means no proof anomaly has been reported to the security read model.',
+    }];
+  }, [summary.proofFailures]);
 
   if (activeTarget === 'access-alerts') {
     return (
@@ -185,6 +233,12 @@ function SecurityDashboard({ activeTarget, session }: SecurityDashboardProps) {
         <p>Monitor denied actions and proof anomalies without access to unrelated business controls.</p>
         {loadError ? <div className="admin-alert admin-alert-error" role="alert">{loadError}</div> : null}
       </section>
+      <BlockchainStatusOverview
+        title="Blockchain proof health"
+        description="Proof failures and Fabric readiness are visible as operational status only. This view does not create proof or alter records."
+        fabricMode={opsStatus?.readiness.checks.fabric.mode}
+        items={proofStatusItems}
+      />
       <section className="metric-panel">
         <span>Open Alerts</span>
         <strong>{allAlerts.length}</strong>

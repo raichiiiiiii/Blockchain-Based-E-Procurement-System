@@ -57,6 +57,10 @@
     padding: 16px;
   }
 
+  .blockchain-status-surface {
+    grid-template-columns: 1fr;
+  }
+
   .guided-demo-panel {
     width: min(360px, calc(100vw - 24px));
   }

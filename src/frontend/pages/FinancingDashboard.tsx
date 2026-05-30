@@ -9,6 +9,7 @@ import {
   type PlsDistributionRecord,
 } from '../api/pls-financing';
 import PlsScenarioSimulator from '../components/financing/PlsScenarioSimulator';
+import BlockchainStatusOverview from '../components/blockchain/BlockchainStatusOverview';
 import { listShariahCertificates, type ShariahCertificate } from '../api/shariah-certificates';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
@@ -316,6 +317,20 @@ function FinancingDashboard({ activeTarget, session }: FinancingDashboardProps) 
                 </dl>
 
                 <PlsScenarioSimulator contract={selectedContract} />
+
+                <BlockchainStatusOverview
+                  title="PLS proof coverage"
+                  description="PLS proof status is shown as metadata coverage only. This view does not execute payments or certify finance outcomes."
+                  items={[{
+                    surface: 'PLS',
+                    label: selectedContract.contractId,
+                    description: selectedContract.status === 'active'
+                      ? 'The contract is active in the application workflow. A blockchain proof record is not claimed unless anchor metadata exists.'
+                      : 'The contract is not active or does not carry proof anchor metadata in this view.',
+                    status: 'notAnchored',
+                    detail: 'Future production Fabric work may add PLS certificate or terms-hash proof references.',
+                  }]}
+                />
 
                 <div className="admin-action-row" aria-label="Financing actions">
                   <button

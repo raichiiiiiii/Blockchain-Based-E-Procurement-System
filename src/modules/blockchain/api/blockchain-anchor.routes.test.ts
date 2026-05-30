@@ -112,6 +112,24 @@ describe('Blockchain anchor routes', () => {
     assert.strictEqual(body.data.blockNumber, undefined);
   });
 
+  it('allows regulator reporting users to inspect proof metadata read-only', async () => {
+    const app = await createApp({
+      metadataRepository: new InMemoryBlockchainAnchorMetadataRepository([anchoredMetadata()]),
+      gateway: new InMemoryBlockchainAnchorGateway(),
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/blockchain/anchors/event-anchored',
+      headers: authorizedHeaders('regulator'),
+    });
+
+    const body = JSON.parse(response.body);
+    assert.strictEqual(response.statusCode, 200);
+    assert.strictEqual(body.data.eventId, 'event-anchored');
+    assert.strictEqual(body.data.anchorStatus, 'anchored');
+  });
+
   it('verifies a matching proof through the gateway', async () => {
     const gateway = new InMemoryBlockchainAnchorGateway({
       seedRecords: [onChainRecord()],
@@ -202,7 +220,7 @@ describe('Blockchain anchor routes', () => {
     assert.strictEqual(body.data.anchoredPayloadHash, undefined);
   });
 
-  it('rejects non-auditor and non-operator proof access', async () => {
+  it('rejects roles outside proof review access', async () => {
     const app = await createApp({
       metadataRepository: new InMemoryBlockchainAnchorMetadataRepository([anchoredMetadata()]),
       gateway: new InMemoryBlockchainAnchorGateway(),

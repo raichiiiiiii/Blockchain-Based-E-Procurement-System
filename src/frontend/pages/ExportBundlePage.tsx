@@ -14,6 +14,7 @@ import {
 } from '../api/export-bundles';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 import StatusIndicator, { type StatusTone } from '../components/status/StatusIndicator';
+import BlockchainStatusIndicator, { type BlockchainDisplayStatus } from '../components/status/BlockchainStatusIndicator';
 
 type ExportBundlePageProps = {
   session: AuthenticatedFrontendSession;
@@ -45,6 +46,18 @@ function statusLabel(status: string): string {
   return status
     .replace(/([A-Z])/g, ' $1')
     .replace(/^./, char => char.toUpperCase());
+}
+
+function isBlockchainDisplayStatus(status?: string): status is BlockchainDisplayStatus {
+  return status === 'notAnchored' ||
+    status === 'pending' ||
+    status === 'anchored' ||
+    status === 'failed' ||
+    status === 'verified' ||
+    status === 'mismatch' ||
+    status === 'notFound' ||
+    status === 'unavailable' ||
+    status === 'verifying';
 }
 
 function scopeLabel(scope: ExportBundleScope): string {
@@ -472,7 +485,9 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
                   <span>{record.source}</span>
                   <strong>{record.recordType}</strong>
                   <small>{record.occurredAt ?? 'Timestamp unavailable'}</small>
-                  {record.anchorStatus ? <small>Proof status: {statusLabel(record.anchorStatus)}</small> : null}
+                  {isBlockchainDisplayStatus(record.anchorStatus) ? (
+                    <BlockchainStatusIndicator status={record.anchorStatus} compact />
+                  ) : null}
                   <code>{record.payloadHash ?? record.recordId}</code>
                 </div>
               ))}

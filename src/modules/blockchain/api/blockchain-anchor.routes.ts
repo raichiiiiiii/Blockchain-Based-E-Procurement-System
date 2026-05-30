@@ -22,7 +22,7 @@ type ValidationIssue = {
   message: string;
 };
 
-const allowedProofRoles = new Set(['auditor', 'securityOperator']);
+const allowedProofRoles = new Set(['auditor', 'regulator', 'securityOperator']);
 
 function hasProofAccess(request: FastifyRequest): boolean {
   const actorContext = request.actorContext;
@@ -72,12 +72,12 @@ export const registerBlockchainAnchorRoutes: FastifyPluginAsync<BlockchainAnchor
 
     if (!hasProofAccess(request)) {
       return reply.code(403).send({
-        error: {
-          code: 'FORBIDDEN',
-          message: 'User must have auditor or security operator role to access blockchain proofs',
-        },
-      });
-    }
+          error: {
+            code: 'FORBIDDEN',
+            message: 'User must have auditor, regulator, or security operator role to access blockchain proofs',
+          },
+        });
+      }
   });
 
   fastify.get<{

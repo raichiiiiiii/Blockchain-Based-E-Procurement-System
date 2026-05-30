@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import BlockchainProofPanel from '../components/blockchain/BlockchainProofPanel';
+import BlockchainStatusOverview from '../components/blockchain/BlockchainStatusOverview';
 import BlockchainProofTimeline from '../components/blockchain/BlockchainProofTimeline';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 import {
-  getLocalDemoProofRecord,
+  getBlockchainProof,
   verifyBlockchainProof,
+  type BlockchainProofRecord,
   type BlockchainVerificationResult,
 } from '../lib/blockchain-proof-client';
-import { getDemoProofTimelineItems } from '../lib/demo-proof-timeline';
+import { buildProofTimelineItems, proofTimelineDefinitions } from '../lib/demo-proof-timeline';
 import ExportBundlePage from './ExportBundlePage';
 
 type AuditorDashboardProps = {
@@ -18,20 +20,52 @@ type AuditorDashboardProps = {
 
 type VerificationState = BlockchainVerificationResult | { verificationStatus: 'verifying' };
 
-const auditorProof = getLocalDemoProofRecord('audit-event-anchored');
-const auditorProofTimelineItems = getDemoProofTimelineItems();
-
 function isVerificationResult(value: VerificationState | undefined): value is BlockchainVerificationResult {
   return Boolean(value && value.verificationStatus !== 'verifying');
 }
 
 function AuditorDashboard({ activeTarget, session }: AuditorDashboardProps) {
+  const [proofRecords, setProofRecords] = useState<BlockchainProofRecord[]>([]);
+  const [proofLoadError, setProofLoadError] = useState<string | undefined>();
   const [verificationState, setVerificationState] = useState<VerificationState>();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProofRecords() {
+      setProofLoadError(undefined);
+      try {
+        const records = await Promise.all(
+          proofTimelineDefinitions.map(definition => getBlockchainProof(definition.eventId, session)),
+        );
+        if (!cancelled) {
+          setProofRecords(records);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setProofLoadError(error instanceof Error ? error.message : 'Proof status could not be loaded');
+          setProofRecords([]);
+        }
+      }
+    }
+
+    void loadProofRecords();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session.sessionId, session.sessionToken]);
 
   const handleVerifyProof = async (eventId: string, payloadHash?: string) => {
     setVerificationState({ verificationStatus: 'verifying' });
     setVerificationState(await verifyBlockchainProof({ eventId, payloadHash }, session));
   };
+
+  const timelineItems = useMemo(() => buildProofTimelineItems(proofRecords), [proofRecords]);
+  const selectedProof = useMemo(
+    () => proofRecords.find(proof => proof.anchorStatus === 'anchored') ?? proofRecords[0] ?? timelineItems[0]?.proof,
+    [proofRecords, timelineItems],
+  );
 
   if (activeTarget === 'audit-trail') {
     return (
@@ -49,11 +83,12 @@ function AuditorDashboard({ activeTarget, session }: AuditorDashboardProps) {
 
   if (activeTarget === 'blockchain-proof') {
     const verification = isVerificationResult(verificationState) ? verificationState : undefined;
-    const timelineItems = auditorProofTimelineItems.map(item => (
-      item.proof.eventId === auditorProof.eventId
-        ? { ...item, verificationStatus: verificationState?.verificationStatus }
-        : item
-    ));
+    const timelineItemsWithVerification = timelineItems.map(item => ({
+      ...item,
+      verificationStatus: item.proof.eventId === selectedProof?.eventId
+        ? verificationState?.verificationStatus
+        : undefined,
+    }));
 
     return (
       <div className="proof-workspace">
@@ -62,13 +97,27 @@ function AuditorDashboard({ activeTarget, session }: AuditorDashboardProps) {
           <h2>Audit proof verification</h2>
           <p>Verify anchored event proof metadata without exposing restricted records or private payloads.</p>
         </section>
-        <BlockchainProofTimeline items={timelineItems} />
-        <BlockchainProofPanel
-          {...auditorProof}
-          verification={verification}
-          verificationStatus={verificationState?.verificationStatus}
-          onVerify={handleVerifyProof}
+        {proofLoadError ? <div className="admin-alert admin-alert-error" role="alert">{proofLoadError}</div> : null}
+        <BlockchainStatusOverview
+          title="Proof status overview"
+          description="Order, delivery, escrow, PLS, export, and verification states are shown from available proof metadata only."
+          items={timelineItemsWithVerification.map(item => ({
+            surface: item.label,
+            label: item.proof.eventId,
+            description: item.description,
+            proof: item.proof,
+            status: item.verificationStatus,
+          }))}
         />
+        <BlockchainProofTimeline items={timelineItemsWithVerification} />
+        {selectedProof ? (
+          <BlockchainProofPanel
+            {...selectedProof}
+            verification={verification}
+            verificationStatus={verificationState?.verificationStatus}
+            onVerify={handleVerifyProof}
+          />
+        ) : null}
       </div>
     );
   }
