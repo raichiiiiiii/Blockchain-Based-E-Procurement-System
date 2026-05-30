@@ -72,7 +72,7 @@ Minimum Sprint 6 route map:
 | Route | Product purpose | Auth required | Notes |
 |---|---|---|---|
 | `/` | Landing page | No | Default localhost entry point. |
-| `/login` | Sign in | No | Supports demo account selector. |
+| `/login` | Sign in | No | Credential-only sign-in using issued demo credentials. |
 | `/dashboard` | Role dashboard | Yes | Requires authenticated actor context. |
 | `/logout` | Logout transition | Yes where possible | Clears local session after backend logout attempt. |
 | `/audit` | Audit trail entry | Yes | May route to existing access-history pages. |
@@ -93,11 +93,11 @@ The landing page should communicate the system in domain language:
 
 The landing page must not list PBI tasks or sprint artifacts as user-facing content.
 
-## 5. Login and demo account journey
+## 5. Login and credential journey
 
-Sprint 6 may use demo accounts for supervisor demonstration.
+The product login page uses issued credentials only. Demo accounts are database-seeded for local supervisor demonstration and documented in runbooks, but the product UI must not show role-card shortcuts, a role picker, or "Continue as" controls.
 
-Recommended demo roles:
+Recommended seeded roles:
 
 | Demo role | Product purpose |
 |---|---|
@@ -217,7 +217,7 @@ Frontend validation evidence should confirm:
 
 - localhost default route opens landing page
 - login page is reachable
-- demo account selector uses product role labels
+- login page is credential-only and does not expose role-card shortcuts
 - successful login reaches role dashboard
 - unauthenticated dashboard access redirects to login
 - logout returns user to anonymous flow

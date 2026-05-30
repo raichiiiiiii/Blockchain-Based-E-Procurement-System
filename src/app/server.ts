@@ -42,7 +42,7 @@ import type { DeliveryEvidenceRepository } from '../modules/procurement/applicat
 import { InMemoryDeliveryEvidenceRepository } from '../modules/procurement/infrastructure/in-memory-delivery-evidence-repository.js';
 import { registerKYCAMLRoutes } from '../modules/kyc-aml-onboarding/api/routes.js';
 import { getOnboardingEligibility } from '../modules/kyc-aml-onboarding/application/get-onboarding-eligibility.js';
-import type { OnboardingCaseRepository } from '../modules/kyc-aml-onboarding/infrastructure/in-memory-onboarding-case-repository.js';
+import type { OnboardingCaseRepository } from '../modules/kyc-aml-onboarding/application/create-onboarding-case.js';
 import { InMemoryOnboardingCaseRepository } from '../modules/kyc-aml-onboarding/infrastructure/in-memory-onboarding-case-repository.js';
 import { registerBlockchainAnchorRoutes } from '../modules/blockchain/api/blockchain-anchor.routes.js';
 import type { BlockchainAnchorGateway } from '../modules/blockchain/application/blockchain-anchor-gateway.js';
@@ -104,6 +104,11 @@ import { PostgresProcurementOrderRepository } from '../modules/procurement/infra
 import { PostgresDeliveryEvidenceRepository } from '../modules/procurement/infrastructure/postgres-delivery-evidence-repository.js';
 import { PostgresBlockchainAnchorMetadataRepository } from '../modules/blockchain/infrastructure/postgres-blockchain-anchor-metadata-repository.js';
 import { PostgresEscrowRepository } from '../modules/escrow/infrastructure/postgres-escrow-repository.js';
+import { PostgresOnboardingCaseRepository } from '../modules/kyc-aml-onboarding/infrastructure/postgres-onboarding-case-repository.js';
+import { PostgresShariahReviewRepository } from '../modules/shariah-review/infrastructure/postgres-shariah-review-repository.js';
+import { PostgresPlsContractRepository } from '../modules/financing/infrastructure/postgres-pls-contract-repository.js';
+import { PostgresExportBundleRepository } from '../modules/reporting/infrastructure/postgres-export-bundle-repository.js';
+import { PostgresOperationalIncidentRepository } from '../modules/ops/infrastructure/postgres-operational-incident-repository.js';
 
 const DEFAULT_DEV_PORT = 3100;
 
@@ -573,8 +578,13 @@ function createRuntimeServerDependencies(
       procureToPayLifecycleEventRepository: new PostgresProcureToPayLifecycleEventRepository(postgresPool),
       procurementOrderRepository: new PostgresProcurementOrderRepository(postgresPool),
       deliveryEvidenceRepository: new PostgresDeliveryEvidenceRepository(postgresPool),
+      onboardingCaseRepository: new PostgresOnboardingCaseRepository(postgresPool),
+      shariahReviewRepository: new PostgresShariahReviewRepository(postgresPool),
       blockchainAnchorMetadataRepository: new PostgresBlockchainAnchorMetadataRepository(postgresPool),
       escrowRepository: new PostgresEscrowRepository(postgresPool),
+      plsContractRepository: new PostgresPlsContractRepository(postgresPool),
+      exportBundleRepository: new PostgresExportBundleRepository(postgresPool),
+      operationalIncidentRepository: new PostgresOperationalIncidentRepository(postgresPool),
     },
   };
 }

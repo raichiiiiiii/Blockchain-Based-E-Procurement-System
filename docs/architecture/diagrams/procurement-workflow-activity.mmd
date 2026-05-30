@@ -1,0 +1,28 @@
+flowchart TD
+  visitor["Visitor reviews product overview"] --> login["Sign in with issued credentials"]
+  login --> admin["Administrator confirms organization, membership, and roles"]
+  admin --> compliance["Compliance reviewer decides KYC / AML eligibility"]
+  compliance --> buyerOrder["Buyer creates procurement order"]
+  buyerOrder --> supplierReview["Supplier reviews received order"]
+  supplierReview --> supplierDecision{"Supplier decision"}
+  supplierDecision -->|accept| acceptedOrder["Order accepted"]
+  supplierDecision -->|clarification| clarification["Clarification requested"]
+  supplierDecision -->|reject| rejected["Order rejected"]
+  acceptedOrder --> escrowCreate["Buyer creates escrow"]
+  escrowCreate --> deliveryEvidence["Supplier submits delivery evidence metadata"]
+  deliveryEvidence --> buyerReview{"Buyer delivery review"}
+  buyerReview -->|accept| releaseReady["Escrow release-readiness evaluated"]
+  buyerReview -->|clarification| evidenceClarification["Delivery clarification requested"]
+  buyerReview -->|reject| evidenceRejected["Delivery evidence rejected"]
+  releaseReady --> plsOptional{"PLS / mudarabah financing applies?"}
+  plsOptional -->|yes| shariahReview["Shariah reviewer reviews PLS terms"]
+  shariahReview --> financier["Financier reviews financing readiness"]
+  plsOptional -->|no| auditTrail["Lifecycle event enters audit trail"]
+  financier --> auditTrail
+  auditTrail --> proof["Selected event hash can be anchored or verified"]
+  proof --> regulator["Regulator reviews export bundle manifest"]
+  proof --> auditor["Auditor verifies transaction history and proof"]
+  proof --> security["Security operator monitors denied actions and proof failures"]
+  regulator --> operator["Operator validates deployment readiness"]
+  auditor --> operator
+  security --> operator

@@ -35,7 +35,7 @@ memory   default, keeps the backend fast and isolated for tests
 postgres persists implemented runtime repositories after migration/seed
 ```
 
-The current Postgres runtime path covers auth/session, member organizations, roles, role assignments, access audit events, procurement lifecycle events, procurement orders, delivery evidence metadata, blockchain anchor metadata, and escrow records. KYC/AML cases, Shariah review records, export bundles, and PLS contracts remain on their in-memory repositories until dedicated adapters are implemented.
+The current Postgres runtime path covers auth/session, member organizations, roles, role assignments, access audit events, procurement lifecycle events, procurement orders, delivery evidence metadata, blockchain anchor metadata, escrow records, KYC/AML onboarding cases, Shariah review records, PLS contract/distribution records, export bundles, and operational readiness incidents.
 
 ## Start PostgreSQL
 
@@ -74,8 +74,7 @@ Preview the seed plan:
 npm run db:seed -- --dry-run
 ```
 
-Seed local demo users, organizations, role assignments, a procurement order, delivery evidence metadata,
-procurement lifecycle events, pending blockchain anchor metadata, and a demo escrow record:
+Seed local demo users, organizations, role assignments, KYC/AML eligibility records, Shariah review metadata, a restricted PLS contract, a procurement order, delivery evidence metadata, procurement lifecycle events, pending blockchain anchor metadata, and a demo escrow record:
 
 ```powershell
 $env:DEMO_SEED_ENABLED="true"
@@ -107,6 +106,11 @@ psql $env:DATABASE_URL -c "select username from platform_user_credentials order 
 psql $env:DATABASE_URL -c "select order_id, status from procurement_orders order by order_id;"
 psql $env:DATABASE_URL -c "select evidence_id, verification_status from delivery_evidence order by evidence_id;"
 psql $env:DATABASE_URL -c "select event_id, anchor_status from blockchain_anchor_metadata order by event_id;"
+psql $env:DATABASE_URL -c "select case_id, status from kyc_aml_onboarding_cases order by case_id;"
+psql $env:DATABASE_URL -c "select review_id, status from shariah_reviews order by review_id;"
+psql $env:DATABASE_URL -c "select contract_id, status from pls_contracts order by contract_id;"
+psql $env:DATABASE_URL -c "select bundle_id, status from export_bundles order by bundle_id;"
+psql $env:DATABASE_URL -c "select incident_id, status from operational_incidents order by incident_id;"
 ```
 
 ## Stop PostgreSQL

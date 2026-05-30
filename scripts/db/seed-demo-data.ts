@@ -102,7 +102,7 @@ async function seed(): Promise<void> {
   if (isDryRun()) {
     console.log(`Validated demo seed plan for ${demoAccounts.length} demo account(s).`);
     console.log(`Demo usernames: ${demoAccounts.map(account => account.username).join(', ')}`);
-    console.log('Demo procurement order, delivery evidence, lifecycle events, anchor metadata, and escrow records are included.');
+    console.log('Demo KYC/AML eligibility, Shariah review, PLS contract, procurement order, delivery evidence, lifecycle events, anchor metadata, and escrow records are included.');
     return;
   }
 
@@ -221,6 +221,262 @@ async function seed(): Promise<void> {
         [account.userId, account.organizationId, `role_${account.roleCode}`, now],
       );
     }
+
+    const eligibleDemoOrganizations = [
+      {
+        caseId: 'demo-kyc-case-buyer',
+        organizationId: 'demo-buyer-org',
+        submittedBy: 'demo-buyer-user',
+        legalName: 'Amanah Retail Sdn Bhd',
+        registrationNumber: 'REG-DEMO-BUYER-ORG',
+        businessType: 'regulatedBuyer',
+      },
+      {
+        caseId: 'demo-kyc-case-supplier',
+        organizationId: 'demo-supplier-org',
+        submittedBy: 'demo-supplier-user',
+        legalName: 'Barakah Supplies Sdn Bhd',
+        registrationNumber: 'REG-DEMO-SUPPLIER-ORG',
+        businessType: 'smeSupplier',
+      },
+      {
+        caseId: 'demo-kyc-case-financier',
+        organizationId: 'demo-financier-org',
+        submittedBy: 'demo-financier-user',
+        legalName: 'Mabrur Finance Partner',
+        registrationNumber: 'REG-DEMO-FINANCIER-ORG',
+        businessType: 'financier',
+      },
+    ];
+
+    for (const organization of eligibleDemoOrganizations) {
+      await client.query(
+        `
+          INSERT INTO kyc_aml_onboarding_cases (
+            case_id,
+            member_organization_id,
+            kyc,
+            aml,
+            evidence_references,
+            status,
+            submitted_by_user_id,
+            created_at,
+            updated_at,
+            decision,
+            decided_by_user_id,
+            decided_at,
+            decision_outcome
+          )
+          VALUES (
+            $1,
+            $2,
+            $3::jsonb,
+            $4::jsonb,
+            $5::jsonb,
+            'approved',
+            $6,
+            $7,
+            $7,
+            $8::jsonb,
+            'demo-compliance-user',
+            $7,
+            'pass'
+          )
+          ON CONFLICT (case_id)
+          DO UPDATE SET
+            kyc = EXCLUDED.kyc,
+            aml = EXCLUDED.aml,
+            evidence_references = EXCLUDED.evidence_references,
+            status = EXCLUDED.status,
+            updated_at = EXCLUDED.updated_at,
+            decision = EXCLUDED.decision,
+            decided_by_user_id = EXCLUDED.decided_by_user_id,
+            decided_at = EXCLUDED.decided_at,
+            decision_outcome = EXCLUDED.decision_outcome
+        `,
+        [
+          organization.caseId,
+          organization.organizationId,
+          JSON.stringify({
+            legalName: organization.legalName,
+            registrationNumber: organization.registrationNumber,
+            countryCode: 'MY',
+            businessType: organization.businessType,
+          }),
+          JSON.stringify({
+            declaredBusinessActivity: 'Procurement case participant for the local supervised demo.',
+            expectedMonthlyTransactionValue: '100000.00',
+            declaredSanctionsExposure: false,
+            declaredPepExposure: false,
+            riskSummary: 'Approved demo onboarding profile.',
+          }),
+          JSON.stringify([
+            {
+              type: 'companyRegistration',
+              name: `${organization.legalName} registration metadata`,
+              uri: `demo://kyc/${organization.organizationId}/registration`,
+              mediaType: 'application/json',
+              checksum: 'sha256:demo-registration-metadata-hash',
+            },
+            {
+              type: 'authorizedRepresentativeIdentity',
+              name: `${organization.legalName} representative metadata`,
+              uri: `demo://kyc/${organization.organizationId}/representative`,
+              mediaType: 'application/json',
+              checksum: 'sha256:demo-representative-metadata-hash',
+            },
+            {
+              type: 'amlDeclaration',
+              name: `${organization.legalName} AML declaration metadata`,
+              uri: `demo://kyc/${organization.organizationId}/aml-declaration`,
+              mediaType: 'application/json',
+              checksum: 'sha256:demo-aml-declaration-metadata-hash',
+            },
+          ]),
+          organization.submittedBy,
+          now,
+          JSON.stringify({
+            outcome: 'pass',
+            rationale: 'Demo organization approved for supervised procurement walkthrough.',
+            reasonCodes: [],
+          }),
+        ],
+      );
+    }
+
+    await client.query(
+      `
+        INSERT INTO shariah_reviews (
+          review_id,
+          organization_id,
+          title,
+          summary,
+          status,
+          submitted_by_user_id,
+          created_at,
+          references_json,
+          checklist,
+          rationale,
+          conditions,
+          decided_at
+        )
+        VALUES (
+          'review-demo-approved',
+          'demo-supplier-org',
+          'Restricted PLS seedbed review',
+          'Review of the Amanah-Barakah procurement-linked PLS seedbed contract.',
+          'approved',
+          'demo-shariah-user',
+          $1,
+          $2::jsonb,
+          $3::jsonb,
+          'Approved for restricted MVP seedbed demonstration only. No production Shariah certification is claimed.',
+          '[]'::jsonb,
+          $1
+        )
+        ON CONFLICT (review_id)
+        DO UPDATE SET
+          organization_id = EXCLUDED.organization_id,
+          title = EXCLUDED.title,
+          summary = EXCLUDED.summary,
+          status = EXCLUDED.status,
+          submitted_by_user_id = EXCLUDED.submitted_by_user_id,
+          references_json = EXCLUDED.references_json,
+          checklist = EXCLUDED.checklist,
+          rationale = EXCLUDED.rationale,
+          conditions = EXCLUDED.conditions,
+          decided_at = EXCLUDED.decided_at
+      `,
+      [
+        now,
+        JSON.stringify([
+          {
+            type: 'contractTemplate',
+            name: 'Mudarabah procurement template',
+            uri: 'demo://shariah/mudarabah-procurement-v1',
+            description: 'Safe reference metadata for restricted PLS seedbed review.',
+            mediaType: 'application/json',
+          },
+        ]),
+        JSON.stringify({
+          status: 'checklistComplete',
+          reviewerComment: 'Checklist completed for supervised demo scope.',
+          entries: [
+            {
+              itemCode: 'item1',
+              outcome: 'pass',
+            },
+            {
+              itemCode: 'item2',
+              outcome: 'pass',
+              evidenceRefs: ['demo://shariah/evidence/template-hash'],
+            },
+            {
+              itemCode: 'item4',
+              outcome: 'pass',
+            },
+          ],
+        }),
+      ],
+    );
+
+    await client.query(
+      `
+        INSERT INTO pls_contracts (
+          contract_id,
+          procurement_reference,
+          contract_template_version,
+          buyer_organization_id,
+          supplier_organization_id,
+          financier_organization_id,
+          capital_amount,
+          currency,
+          profit_share,
+          loss_allocation,
+          status,
+          shariah_approval,
+          shariah_certificate,
+          activated_at,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          'pls-demo-halal-packaging',
+          'demo-order-001',
+          'mudarabah-procurement-v1',
+          'demo-buyer-org',
+          'demo-supplier-org',
+          'demo-financier-org',
+          '68000.00',
+          'MYR',
+          '{"financierPercent":60,"ventureOperatorPercent":40}'::jsonb,
+          'capitalProviderBearsFinancialLossExceptMisconduct',
+          'approvedForActivation',
+          '{"reviewId":"review-demo-approved","status":"approved","decidedAt":"2026-05-21T10:00:00.000Z"}'::jsonb,
+          NULL,
+          NULL,
+          $1,
+          $1
+        )
+        ON CONFLICT (contract_id)
+        DO UPDATE SET
+          procurement_reference = EXCLUDED.procurement_reference,
+          contract_template_version = EXCLUDED.contract_template_version,
+          buyer_organization_id = EXCLUDED.buyer_organization_id,
+          supplier_organization_id = EXCLUDED.supplier_organization_id,
+          financier_organization_id = EXCLUDED.financier_organization_id,
+          capital_amount = EXCLUDED.capital_amount,
+          currency = EXCLUDED.currency,
+          profit_share = EXCLUDED.profit_share,
+          loss_allocation = EXCLUDED.loss_allocation,
+          status = EXCLUDED.status,
+          shariah_approval = EXCLUDED.shariah_approval,
+          shariah_certificate = EXCLUDED.shariah_certificate,
+          activated_at = EXCLUDED.activated_at,
+          updated_at = EXCLUDED.updated_at
+      `,
+      [now],
+    );
 
     await client.query(
       `

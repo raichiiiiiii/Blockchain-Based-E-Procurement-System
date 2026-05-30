@@ -1,0 +1,21 @@
+stateDiagram-v2
+  [*] --> notCreated
+  notCreated --> escrowCreated: accepted order creates escrow
+  escrowCreated --> funded: mark funded without real payment execution
+  funded --> releaseRequested: release conditions requested
+  releaseRequested --> settlementInstructionReady: buyer approval and gates pass
+  escrowCreated --> onHold: operational hold
+  funded --> onHold: operational hold
+  releaseRequested --> onHold: operational hold
+  escrowCreated --> disputeOpen: dispute opened
+  funded --> disputeOpen: dispute opened
+  releaseRequested --> disputeOpen: dispute opened
+  onHold --> settlementInstructionReady: arbitration or review approves release
+  disputeOpen --> settlementInstructionReady: arbitration approves release
+  onHold --> refunded: arbitration refund outcome
+  disputeOpen --> refunded: arbitration refund outcome
+  onHold --> cancelled: cancellation outcome
+  disputeOpen --> cancelled: cancellation outcome
+  settlementInstructionReady --> [*]
+  refunded --> [*]
+  cancelled --> [*]

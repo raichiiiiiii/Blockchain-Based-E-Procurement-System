@@ -1,0 +1,29 @@
+sequenceDiagram
+  participant Actor
+  participant Frontend
+  participant Backend
+  participant Postgres
+  participant Gateway as Blockchain Anchor Gateway
+  participant Fabric as Fabric AuditAnchorContract
+
+  Actor->>Frontend: Perform governed procurement action
+  Frontend->>Backend: REST request with bearer session
+  Backend->>Backend: Validate session and trusted actor context
+  Backend->>Backend: Validate business rules
+  Backend->>Backend: Build canonical event hash
+  Backend->>Postgres: Persist business record and lifecycle event
+  Backend->>Gateway: Anchor event hash when configured
+  alt Fabric available
+    Gateway->>Fabric: anchorEvent(proof metadata)
+    Fabric-->>Gateway: transaction reference
+    Gateway-->>Backend: anchorStatus anchored
+  else Fabric unavailable or disabled
+    Gateway-->>Backend: anchorStatus pending or failed
+  end
+  Backend->>Postgres: Persist anchor metadata
+  Backend-->>Frontend: Business response with honest proof state
+  Actor->>Frontend: Verify proof
+  Frontend->>Backend: POST verify payload hash
+  Backend->>Gateway: verifyEvent(eventId, payloadHash)
+  Gateway-->>Backend: verified, mismatch, notFound, or unavailable
+  Backend-->>Frontend: Verification result

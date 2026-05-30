@@ -57,7 +57,7 @@ npm run build
 npm run dev
 ```
 
-The backend exposes REST routes under `/api/v1`. Use `PERSISTENCE_ADAPTER=memory` for a fully in-memory fast demo. Use `PERSISTENCE_ADAPTER=postgres` after migrations and seed have been applied to persist auth/session, membership/RBAC, access audit, procurement lifecycle events, procurement orders, delivery evidence metadata, blockchain anchor metadata, and escrow records. KYC cases, export bundles, Shariah reviews, and PLS contracts currently use in-memory repositories unless their API route is supplied a dedicated adapter.
+The backend exposes REST routes under `/api/v1`. Use `PERSISTENCE_ADAPTER=memory` for a fully in-memory fast demo. Use `PERSISTENCE_ADAPTER=postgres` after migrations and seed have been applied to persist auth/session, membership/RBAC, access audit, procurement lifecycle events, procurement orders, delivery evidence metadata, blockchain anchor metadata, escrow records, KYC/AML onboarding cases, Shariah reviews, PLS contract/distribution records, export bundles, and operational readiness incidents.
 
 Document intake stores local files through `DocumentStoragePort`. The default local adapter writes under `.local-documents/` unless `DOCUMENT_STORAGE_DIR` is set. This folder is ignored by git and should not be used as production object storage.
 
@@ -322,4 +322,4 @@ Contract Negotiation
 - PLS workflow is a restricted single-venture seedbed with internal Shariah certificate artifact tracking; it does not provide external certification, production payment rails, guaranteed returns, or full Islamic finance product coverage.
 - Export signing includes a local software-key detached manifest signature and offline verification package metadata; production KMS/HSM custody, legal attestation, certificate authority lifecycle, and external regulator portal integration are not implemented.
 - ERP/accounting integration is a local JSON adapter boundary with UBL/Peppol-like and OCDS-like mappings only; production ERP posting, Peppol network delivery, and tax reporting are not implemented.
-- KYC cases, export bundles, Shariah reviews, and PLS contracts still use in-memory runtime repositories in PostgreSQL mode until dedicated adapters are added.
+- KYC/AML cases, export bundles, Shariah reviews, PLS contracts, and operational incidents are now PostgreSQL-wired in runtime mode. Later persistence hardening remains for document metadata, contract negotiation records, external API credentials/idempotency/audit, payment instructions, and ERP/accounting jobs.

@@ -1,0 +1,26 @@
+flowchart TD
+  actors["Actors: buyer, supplier, admin, compliance, Shariah, financier, auditor, regulator, security, operator"] --> frontend["React / Vite frontend"]
+  frontend --> api["Fastify backend /api/v1"]
+  api --> auth["Auth session and trusted actor context"]
+  auth --> modules["Domain modules"]
+  modules --> membership["Membership and RBAC"]
+  modules --> compliance["KYC / AML eligibility"]
+  modules --> procurement["Orders and delivery evidence"]
+  modules --> escrow["Escrow and release-readiness"]
+  modules --> finance["PLS / Shariah / financing"]
+  modules --> audit["Audit history and export bundles"]
+  modules --> docs["Documents and contract terms"]
+  modules --> ops["Security alerts and readiness"]
+  membership --> postgres["PostgreSQL operational state"]
+  compliance --> postgres
+  procurement --> postgres
+  escrow --> postgres
+  audit --> postgres
+  docs --> storage["Local document storage adapter"]
+  audit --> proofGateway["Blockchain anchor gateway"]
+  procurement --> proofGateway
+  escrow --> proofGateway
+  proofGateway --> fabric["Hyperledger Fabric AuditAnchorContract"]
+  fabric --> proofGateway
+  proofGateway --> api
+  postgres --> api
