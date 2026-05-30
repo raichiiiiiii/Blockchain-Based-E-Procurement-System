@@ -14,3 +14,11 @@ memo_scrum.md
 conversations/
 backups/
 .local-documents/
+
+# Local Fabric lab material must remain outside source control.
+/crypto/
+/wallets/
+/channel-artifacts/
+/connection-profiles/
+/fabric-labs/
+audit-anchor*.tar.gz
