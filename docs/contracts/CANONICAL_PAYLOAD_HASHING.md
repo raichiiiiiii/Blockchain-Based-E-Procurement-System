@@ -10,6 +10,18 @@ This document defines the repository-wide hashing expectations for audit evidenc
 
 The goal is stable integrity evidence without putting raw sensitive business payloads on-chain.
 
+It defines the canonical hash rule used by transaction history, blockchain anchoring, proof verification, and export bundle manifests.
+
+## Canonicalization Profile
+
+Target profile for new cross-module proof payloads:
+
+```text
+json-canonical-v1
+```
+
+Existing transaction-history and access-audit builders still use `json-stable-v1`. This is a documented compatibility mismatch, not a reason to change code in this evidence-hardening pass. A follow-up implementation should either migrate those builders to `json-canonical-v1` with tests or publish explicit mapping/test vectors for both profiles.
+
 ## Hash Format
 
 Preferred public hash format:
@@ -140,6 +152,27 @@ Every new hash producer should test:
 - array order is preserved
 - no raw sensitive field is included in blockchain payload
 - output format matches the expected profile
+
+## Required Rules
+
+- stable key ordering
+- UTC timestamp normalization
+- no volatile fields in payload hash
+- no raw sensitive business data in on-chain payload
+- case identifiers must be hashed or pseudonymized before anchoring
+- previous event hash is optional but must be deterministic when present
+
+## Applies To
+
+- procure-to-pay lifecycle events
+- escrow lifecycle events
+- delivery evidence events
+- export bundle manifests
+- blockchain anchor input
+
+## Test Vectors
+
+Add sample payloads and expected hashes when implementation is updated.
 
 ## Migration Note
 

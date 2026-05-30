@@ -12,29 +12,37 @@ PostgreSQL is the operational source of truth for MVP business state. Hyperledge
 
 ## Runtime Persistence Summary
 
-| Capability | Module / path | Runtime mode | Current persistence | MVP classification | Notes |
+Classification terms used in this matrix:
+
+- PostgreSQL runtime-backed
+- In-memory test/demo only
+- Local adapter only
+- External integration placeholder
+- Unknown / needs inspection
+
+| Capability | Module / path | Runtime mode | Current persistence | Persistence classification | Notes |
 |---|---|---|---|---|---|
-| Credentials and sessions | `src/modules/auth/` | PostgreSQL wired in `src/app/server.ts` | PostgreSQL + in-memory tests | MVP-critical persistent | Demo accounts seeded by `scripts/db/seed-demo-data.ts`. |
-| Member organizations | `src/modules/membership/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Organization status gates downstream actions. |
-| Roles and role assignments | `src/modules/access-control/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Backend authorization remains authoritative. |
-| Access audit events | `src/modules/shared/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Feeds access history and security alert views. |
-| Procure-to-pay lifecycle events | `src/modules/procurement/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Case lifecycle and proof basis. |
-| Procurement orders | `src/modules/procurement/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Buyer/supplier procurement flow. |
-| Delivery evidence metadata | `src/modules/procurement/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Metadata and hashes only; no raw document payloads on-chain. |
-| Blockchain anchor metadata | `src/modules/blockchain/` | PostgreSQL wired | PostgreSQL + in-memory gateway | MVP-critical persistent | Anchor failures preserve business event. |
-| Escrow records | `src/modules/escrow/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Includes release/dispute state foundation. |
-| KYC/AML onboarding cases | `src/modules/kyc-aml-onboarding/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Migration `007_kyc_aml_onboarding_cases.sql`; seed includes eligible buyer, supplier, and financier demo cases. |
-| Shariah reviews | `src/modules/shariah-review/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Migration `008_shariah_reviews.sql`; seed includes approved restricted PLS review metadata. |
-| Shariah certificate artifacts | `src/modules/shariah-certification/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP/pilot persistent | Migration `012_shariah_certificates.sql`; tracks artifact metadata and certificate hash only, not external certification. |
-| PLS contracts and distributions | `src/modules/financing/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP-critical persistent | Migration `009_pls_contracts_distributions.sql`; seed includes restricted PLS demo contract metadata. Keep seedbed/simulation language. |
-| Export bundles and signing metadata | `src/modules/reporting/` | PostgreSQL wired | PostgreSQL repository + local software-key adapter | MVP/pilot persistent | Migration `010_export_bundles.sql`; local signing is not production key management. |
-| Operational incidents | `src/modules/ops/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP/pilot persistent | Migration `011_operational_incidents.sql`; readiness incidents now survive backend restart in PostgreSQL mode. |
-| Security alert read model | `src/modules/security/` | Derived read model | Derived from access/proof/ops repositories | MVP-critical read model | Persistence depends on source repositories. |
-| Documents | `src/modules/documents/` | PostgreSQL metadata wired | Local filesystem storage + PostgreSQL metadata/extraction repository | MVP/pilot persistent metadata | Migration `013_document_metadata.sql`; `.local-documents/` remains ignored and is not production object storage. |
-| Machine-readable contracts | `src/modules/contracts/` | PostgreSQL wired | PostgreSQL + in-memory tests | MVP/pilot persistent | Migration `014_procurement_contracts.sql`; stores indexed metadata and machine-readable aggregate JSON, with terms hash only for proof/reference use. |
-| External API gateway | `src/modules/integration/` | PostgreSQL wired | PostgreSQL client/idempotency/audit repositories + in-memory tests | Production-extension foundation | Migration `015_external_api_gateway.sql`; stores hashed local shared-secret material, idempotency records, and request audit only. |
-| ERP/accounting adapter jobs | `src/modules/integration/` | PostgreSQL wired | Local JSON adapter + PostgreSQL job repository + in-memory tests | Production-extension foundation | Migration `017_erp_integration_jobs.sql`; local JSON mapping artifacts only, not production ERP connectivity. |
-| Payment instructions | `src/modules/payments/` | PostgreSQL wired | PostgreSQL repository + sandbox/manual adapters + in-memory tests | Production-extension foundation | Migration `016_payment_instructions.sql`; durable instruction records only, not real payment execution. |
+| Auth/session | `src/modules/auth/` | PostgreSQL wired in `src/app/server.ts` | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Demo accounts seeded by `scripts/db/seed-demo-data.ts`. |
+| Membership | `src/modules/membership/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Organization status gates downstream actions. |
+| Access-control | `src/modules/access-control/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Backend authorization remains authoritative. |
+| Access audit | `src/modules/shared/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Feeds access history and security alert views. |
+| KYC/AML onboarding | `src/modules/kyc-aml-onboarding/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Migration `007_kyc_aml_onboarding_cases.sql`; seed includes eligible buyer, supplier, and financier demo cases. |
+| Procurement orders | `src/modules/procurement/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Buyer/supplier procurement flow. |
+| Delivery evidence | `src/modules/procurement/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Metadata and hashes only; no raw document payloads on-chain. |
+| Transaction history | `src/modules/procurement/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Procure-to-pay lifecycle and proof basis. |
+| Escrow | `src/modules/escrow/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Includes release/dispute state foundation. |
+| Blockchain anchor metadata | `src/modules/blockchain/` | PostgreSQL wired | PostgreSQL metadata + in-memory/Fabric gateway modes | PostgreSQL runtime-backed | Anchor failures preserve business event. Fabric remains proof infrastructure only. |
+| Documents | `src/modules/documents/` | PostgreSQL metadata wired | Local filesystem storage + PostgreSQL metadata/extraction repository | PostgreSQL runtime-backed; local adapter only for file storage | Migration `013_document_metadata.sql`; `.local-documents/` remains ignored and is not production object storage. |
+| Contracts | `src/modules/contracts/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Migration `014_procurement_contracts.sql`; stores indexed metadata and machine-readable aggregate JSON, with terms hash only for proof/reference use. |
+| Payments | `src/modules/payments/` | PostgreSQL wired | PostgreSQL repository + sandbox/manual adapters + in-memory tests | PostgreSQL runtime-backed; local adapter only for settlement simulation | Migration `016_payment_instructions.sql`; durable instruction records only, not real payment execution. |
+| PLS/financing | `src/modules/financing/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Migration `009_pls_contracts_distributions.sql`; seed includes restricted PLS demo contract metadata. Keep seedbed/simulation language. |
+| Shariah review | `src/modules/shariah-review/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Migration `008_shariah_reviews.sql`; seed includes approved restricted PLS review metadata. |
+| Shariah certificate | `src/modules/shariah-certification/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Migration `012_shariah_certificates.sql`; tracks artifact metadata and certificate hash only, not external certification. |
+| Export bundle | `src/modules/reporting/` | PostgreSQL wired | PostgreSQL repository + local software-key adapter | PostgreSQL runtime-backed; local adapter only for signing | Migration `010_export_bundles.sql`; local signing is not production key management. |
+| Security alerts | `src/modules/security/` | Derived read model | Derived from access/proof/ops repositories | PostgreSQL runtime-backed through source repositories | Persistence depends on source repositories. |
+| Ops incidents | `src/modules/ops/` | PostgreSQL wired | PostgreSQL + in-memory tests | PostgreSQL runtime-backed | Migration `011_operational_incidents.sql`; readiness incidents now survive backend restart in PostgreSQL mode. |
+| External API | `src/modules/integration/` | PostgreSQL wired | PostgreSQL client/idempotency/audit repositories + in-memory tests | PostgreSQL runtime-backed; external integration placeholder | Migration `015_external_api_gateway.sql`; stores hashed local shared-secret material, idempotency records, and request audit only. |
+| ERP/accounting | `src/modules/integration/` | PostgreSQL wired | Local JSON adapter + PostgreSQL job repository + in-memory tests | PostgreSQL runtime-backed; external integration placeholder | Migration `017_erp_integration_jobs.sql`; local JSON mapping artifacts only, not production ERP connectivity. |
 
 ## Required Follow-Up Before Pilot Claim
 

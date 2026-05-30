@@ -2,6 +2,61 @@
 
 Date: 2026-05-30
 
+## Product Position
+
+This repository implements a compliance-first digital procurement and PLS seedbed platform.
+
+The operational system of record is Fastify/PostgreSQL. Hyperledger Fabric is used for selective proof anchoring only.
+
+## Current Readiness
+
+Ready for:
+
+- supervisor demo
+- internal technical review
+- selected pilot-hardening review
+
+Not ready for:
+
+- production Fabric consortium operation
+- commercial deployment
+- production payment execution
+- bank certification
+- production ERP certification
+- formal Shariah certification
+
+## Current MVP / Pilot-Hardening Capabilities
+
+- credential-based demo login
+- role-based dashboard surfaces
+- membership and RBAC workflows
+- KYC/AML onboarding and eligibility scaffolding
+- procurement order workflow
+- delivery evidence metadata/hash workflow
+- escrow creation and release-readiness workflow
+- PLS/Shariah review seedbed support
+- audit trail and transaction history
+- blockchain proof anchoring and proof visualization
+- export bundle metadata and local signing support
+- security operator visibility
+- deployable Docker Compose foundation
+
+## Production-Extension Boundary
+
+PBI-438 remains Planned until a real production-like Fabric consortium environment exists.
+
+## Claim Boundaries
+
+Do not claim:
+
+- production Fabric consortium
+- production payment execution
+- ISO 20022 bank certification
+- production ERP integration
+- formal Shariah certification
+- legal e-signature certification
+- fully decentralized procurement
+
 ## Product Positioning
 
 The product is a compliance-first digital procurement evidence platform with optional procurement-linked PLS / mudarabah financing support.

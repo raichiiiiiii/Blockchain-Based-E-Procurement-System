@@ -812,3 +812,83 @@ Known limitations:
 Next task:
 
 Run final validation for this closure, then either push the accumulated `main` commits or continue only if a new explicit implementation phase remains.
+
+## TASK-2026-05-30-016 Stage 6A Evidence Hardening, Scope Guard, and Fabric Lab Readiness
+
+Stage: Stage 6A evidence hardening / scope guard
+Status: done
+
+Business reason:
+
+Preserve the current release claim boundary as supervisor-demo ready with
+selected pilot-hardening foundation, document the browser-smoke blocker without
+misclassifying it as product failure, and define the exact evidence required
+before PBI-438 can move beyond Planned.
+
+Files inspected:
+
+- `README.md`
+- `package.json`
+- `backlog/production-extension-roadmap.csv`
+- `docs/evidence/qa/PBI-452_BLOCKCHAIN_STATUS_VISUALIZATION_VALIDATION.md`
+- `docs/evidence/qa/PBI-437_438_PRODUCTION_FABRIC_CONSORTIUM_VALIDATION.md`
+- `docs/evidence/qa/PRODUCTION_EXTENSION_RELEASE_VALIDATION.md`
+- `docs/runbooks/fabric-local-network.md`
+- `docs/runbooks/deployable-mvp.md`
+- `docs/architecture/FABRIC_MVP_BOUNDARY.md`
+- `docs/architecture/PRODUCTION_FABRIC_CONSORTIUM_ARCHITECTURE.md`
+- `fabric/production-consortium/*`
+- `scripts/fabric/check-production-consortium-prereqs.ps1`
+- `scripts/fabric/production-chaincode-lifecycle-skeleton.ps1`
+- `docs/analysis/CURRENT_PRODUCT_TECHNICAL_REQUIREMENTS_META_ANALYSIS.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/contracts/CANONICAL_PAYLOAD_HASHING.md`
+
+Files changed:
+
+- `README.md`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/contracts/CANONICAL_PAYLOAD_HASHING.md`
+- `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_READINESS.md`
+- `docs/evidence/qa/PBI-452_BROWSER_SMOKE_RERUN.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+
+Tests and validation run:
+
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm test` passed with 806 passing tests.
+- `npm run db:migrate -- --dry-run` passed; 17 migration files validated.
+- `npm run db:seed -- --dry-run` passed; 9 demo accounts and MVP seed records validated.
+- `docker compose config` passed.
+- `docker compose -f docker-compose.app.yml config` passed.
+- `.\scripts\smoke\deployable-smoke-test.ps1` passed; backend and frontend containers became healthy.
+- `npm run chaincode:audit-anchor:build` passed.
+- `npm run chaincode:audit-anchor:test` passed with 9 passing chaincode tests.
+- `powershell -ExecutionPolicy Bypass -File scripts/fabric/check-production-consortium-prereqs.ps1` passed as a prerequisite-report command and reported missing Fabric live-lab tooling.
+- `powershell -ExecutionPolicy Bypass -File scripts/fabric/production-chaincode-lifecycle-skeleton.ps1` passed in dry-run/template mode.
+- PBI-438 status check passed: `backlog/production-extension-roadmap.csv` still lists PBI-438 as `Planned`.
+- `git diff --check` passed with CRLF warnings only.
+
+Evidence produced:
+
+- `docs/evidence/qa/PBI-452_BROWSER_SMOKE_RERUN.md`
+- `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_READINESS.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/contracts/CANONICAL_PAYLOAD_HASHING.md`
+
+Known limitations:
+
+- PBI-438 remains Planned. The repository has production-consortium templates and lifecycle skeletons, but no live CA/MSP/channel material, package/install/approve/commit transcript, cross-organization smoke, or backend proof verification through a production-like Fabric gateway.
+- PBI-452 browser smoke rerun remains pending because the previous in-app localhost browser policy issue was an environment/tooling blocker. Deployable container smoke passed, but it is not a browser UI rerun substitute.
+- Current readiness remains: supervisor-demo ready plus selected pilot-hardening foundation; not commercial-ready, not production-certified, and not production Fabric consortium ready.
+- `CANONICAL_PAYLOAD_HASHING.md` records a follow-up compatibility concern: current transaction-history/access-audit builders still use `json-stable-v1` naming, while the target canonical profile is `json-canonical-v1`.
+
+Next task:
+
+Prepare a manual Fabric lab with real Fabric binaries, CA/MSP material, channel
+artifacts, chaincode lifecycle execution, backend gateway configuration, and
+browser/API proof verification evidence before reconsidering PBI-438 closure.

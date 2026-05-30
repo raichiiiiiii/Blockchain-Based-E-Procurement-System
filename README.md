@@ -140,6 +140,7 @@ npm run chaincode:audit-anchor:test
 
 See also:
 
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
 - `docs/runbooks/local-demo.md`
 - `docs/runbooks/deployable-mvp.md`
 - `docs/runbooks/fabric-local-network.md`
