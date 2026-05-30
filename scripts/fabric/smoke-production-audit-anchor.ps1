@@ -222,6 +222,8 @@ try {
   $env:CORE_PEER_TLS_ENABLED = "true"
   $env:CORE_PEER_LOCALMSPID = $OrgMspId
   $env:CORE_PEER_MSPCONFIGPATH = $PeerMspConfigPath
+  $env:CORE_PEER_ADDRESS = $resolvedPeerAddresses[0]
+  $env:CORE_PEER_TLS_ROOTCERT_FILE = $resolvedPeerTlsRootCertFiles[0]
 
   $anchor = [ordered]@{
     eventId = $EventId
