@@ -1,5 +1,11 @@
 # PBI-452 Blockchain Status Visualization Validation
 
+> Supersession note: This file records the blockchain-status visualization
+> state before live PBI-438 lab completion. PBI-438 was later completed for a
+> production-like local Fabric lab. See
+> `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md` and
+> `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md` for current status.
+
 Date: 2026-05-30
 Branch: main
 Readiness statement: Supervisor-demo plus selected pilot-hardening features, not commercial-ready or production-certified.

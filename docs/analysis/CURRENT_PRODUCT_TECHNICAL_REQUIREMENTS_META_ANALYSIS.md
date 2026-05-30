@@ -1,5 +1,13 @@
 # Current Product and Technical Requirements Meta-Analysis
 
+> Supersession note, 2026-05-31: This analysis was written before the live
+> PBI-438 lab. PBI-438 was later completed for a production-like local Fabric
+> lab and runtime Fabric Gateway validation. See
+> `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md` and
+> `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md` for current status.
+> The broader claim boundary remains unchanged: not commercial-ready or
+> production-certified.
+
 Date: 2026-05-30  
 Repository: `raichiiiiiii/Blockchain-Based-E-Procurement-System`  
 Branch/ref analysed: `main` / requested `origin/main`  

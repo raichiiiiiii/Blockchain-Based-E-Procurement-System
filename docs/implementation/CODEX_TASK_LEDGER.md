@@ -2,6 +2,15 @@
 
 This ledger is the repository memory for staged Codex implementation work. It records what was inspected, changed, validated, and left open so future agents do not need to rediscover the same project state.
 
+Current PBI-438 status note, 2026-05-31:
+
+PBI-438 is Completed for production-like local Fabric lab and runtime Fabric
+Gateway validation. Earlier ledger entries that say PBI-438 remained Planned
+are retained as historical records for their execution date. Current status and
+claim boundaries are reconciled in
+`docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md` and
+`docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md`.
+
 ## TASK-2026-05-30-001 Blueprint Foundation
 
 Stage: Phase 1 / Phase 2 documentation baseline
@@ -1079,3 +1088,92 @@ Known limitations:
 - `fabric-local` and `fabric` modes currently fail safely to unavailable until
   the official Fabric Gateway client dependency and human-run lab evidence are
   added.
+
+## TASK-2026-05-31-001 Post-PBI-438 Release Reconciliation and Claim-Boundary Audit
+
+Stage: GitHub Issue #8 release reconciliation
+Status: done
+
+Business reason:
+
+Reconcile durable repository documentation after PBI-438 was completed for a
+production-like local Fabric lab. Future agents should not follow older
+Planned-state guidance as current truth, and the repository must keep strict
+claim boundaries around commercial readiness and production certification.
+
+Files inspected:
+
+- `README.md`
+- `package.json`
+- `package-lock.json`
+- `.github/workflows/ci.yml`
+- `backlog/backlog.csv`
+- `backlog/production-extension-roadmap.csv`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+- `docs/architecture/FABRIC_RUNTIME_GATEWAY_INTEGRATION_GAP.md`
+- `docs/architecture/FABRIC_MVP_BOUNDARY.md`
+- `docs/architecture/PRODUCTION_FABRIC_CONSORTIUM_ARCHITECTURE.md`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/contracts/BLOCKCHAIN_ANCHOR_CONTRACT.md`
+- `docs/contracts/CANONICAL_PAYLOAD_HASHING.md`
+- `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md`
+- `docs/evidence/qa/PBI-438_DOCKERIZED_FABRIC_LAB_SCAFFOLD_VALIDATION.md`
+- `docs/evidence/qa/PBI-438_RUNTIME_FABRIC_GATEWAY_WIRING_VALIDATION.md`
+- `docs/evidence/qa/PBI-452_BLOCKCHAIN_STATUS_VISUALIZATION_VALIDATION.md`
+- `docs/evidence/qa/PRODUCTION_EXTENSION_RELEASE_VALIDATION.md`
+- `docs/evidence/qa/FINAL_RELEASE_CANDIDATE_VALIDATION.md`
+- `docs/evidence/qa/COMMERCIAL_READINESS_SCORECARD.md`
+- `docs/runbooks/pbi-438-production-like-fabric-lab.md`
+- `docs/runbooks/deployable-mvp.md`
+- `docs/runbooks/fabric-local-network.md`
+- `src/app/server.ts`
+- `src/modules/blockchain/infrastructure/fabric-contract-client-factory.ts`
+- `src/modules/blockchain/infrastructure/fabric-blockchain-anchor-gateway.ts`
+- `src/modules/ops/application/runtime-readiness.ts`
+- `src/frontend/api/ops-status.ts`
+- `src/frontend/pages/AuditorDashboard.tsx`
+- `src/frontend/pages/RegulatorDashboard.tsx`
+- `vite.config.ts`
+
+Files changed:
+
+- `backlog/production-extension-roadmap.csv`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/architecture/FABRIC_RUNTIME_GATEWAY_INTEGRATION_GAP.md`
+- `docs/traceability/REQID_TO_PBI_TO_EVIDENCE.md`
+- `docs/analysis/CURRENT_PRODUCT_TECHNICAL_REQUIREMENTS_META_ANALYSIS.md`
+- `docs/runbooks/pbi-438-production-like-fabric-lab.md`
+- `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md`
+- older PBI-438/PBI-452/release evidence files with supersession notes
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Validation:
+
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm test` passed.
+- `npm run chaincode:audit-anchor:build` passed.
+- `npm run chaincode:audit-anchor:test` passed.
+- `npm run db:migrate -- --dry-run` passed.
+- `npm run db:seed -- --dry-run` passed.
+- `docker compose config` passed.
+- `docker compose -f docker-compose.app.yml config` passed.
+- CSV validation passed for both backlog CSV files; PBI-438 is Completed.
+- Tracked secret-material scan passed; no generated Fabric secret/artifact
+  material is tracked.
+- `git diff --check` passed with CRLF warnings only.
+
+Decision:
+
+PBI-438 remains Completed in `backlog/production-extension-roadmap.csv`.
+Completion means production-like local Fabric lab and runtime Fabric Gateway
+validation, not commercial-ready production Fabric operations or
+production-certified consortium governance.
+
+Remaining limitations:
+
+- No managed production Fabric consortium operations are claimed.
+- No production CA governance, HSM/KMS-backed key lifecycle, production payment
+  execution, or formal Shariah certification is claimed.
+- External lab artifacts remain outside the repository.

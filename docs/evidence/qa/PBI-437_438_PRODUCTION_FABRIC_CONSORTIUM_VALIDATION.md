@@ -1,5 +1,11 @@
 # PBI-437/PBI-438 Production Fabric Consortium Validation
 
+> Supersession note: This file records the PBI-437 plan/foundation state before
+> the live PBI-438 lab. PBI-438 was later completed for a production-like local
+> Fabric lab. See
+> `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md` and
+> `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md` for current status.
+
 Date: 2026-05-26
 Branch: feature/PBI-437-438-production-fabric-consortium
 Commit inspected before change: 9997d1f

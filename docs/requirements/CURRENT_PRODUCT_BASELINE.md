@@ -1,6 +1,6 @@
 # Current Product Baseline
 
-Date: 2026-05-30
+Date: 2026-05-31
 
 ## Product Position
 
@@ -43,7 +43,14 @@ Not ready for:
 
 ## Production-Extension Boundary
 
-PBI-438 remains Planned until a real production-like Fabric consortium environment exists.
+PBI-438 is Completed for a production-like local Fabric lab and runtime Fabric
+Gateway validation. This validates the application's ability to use configured
+Fabric proof infrastructure in a controlled lab with external CA/MSP/channel and
+chaincode lifecycle material.
+
+This does not claim commercial-ready production Fabric operations, managed
+consortium governance, production certificate/key lifecycle, HSM/KMS-backed key
+management, production payment execution, or formal Shariah certification.
 
 ## Claim Boundaries
 
