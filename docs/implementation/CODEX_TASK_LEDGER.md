@@ -18,6 +18,51 @@ PBIs PBI-436 through PBI-462 were merged into it under Issue #13. The previous
 `backlog/production-extension-roadmap.csv` file was archived at
 `backlog/archive/production-extension-roadmap.superseded.csv` for history only.
 
+## TASK-2026-06-01-002 Issue #25 Actor Usefulness Validation
+
+Stage: GitHub Issue #25
+Status: done
+
+Business reason:
+
+Validate whether every mandatory actor has a useful executable purpose against
+the academic procurement/use-case baseline, rather than only a role dashboard.
+
+Files changed:
+
+- `backlog/backlog.csv`
+- `docs/evidence/qa/ACTOR_USE_CASE_VALIDATION_MATRIX.md`
+- `docs/evidence/qa/ISSUE25_ACTOR_USEFULNESS_VALIDATION.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Result:
+
+- Recorded the issue-level verdict: most actors are executable and useful;
+  named gaps remain.
+- Added PBI-498 through PBI-501 for source-to-award, invoice/three-way match,
+  supplier closeout, and backend-backed Shariah decision usability gaps.
+- Confirmed API smoke for seeded credential login across administrator, buyer,
+  supplier, compliance reviewer, Shariah reviewer, financier, auditor,
+  regulator, and security operator.
+- Confirmed admin access history now returns 200 with a database-seeded
+  administrator session.
+- Confirmed Shariah reviewer can read PLS contracts but the visible backend
+  decision/checklist workflow remains partial.
+
+Validation:
+
+- Final command results are recorded in
+  `docs/evidence/qa/ISSUE25_ACTOR_USEFULNESS_VALIDATION.md`.
+
+Known limitations:
+
+- Browser credential entry was not completed by automation because the in-app
+  browser virtual clipboard was unavailable; API credential login smoke covered
+  backend sessions and actor context.
+- No implementation feature was added in this issue; gaps were captured as
+  planned backlog rows.
+
 ## TASK-2026-06-01-001 Issue #24 Productivity, API, and Auth Hardening
 
 Stage: GitHub Issue #24

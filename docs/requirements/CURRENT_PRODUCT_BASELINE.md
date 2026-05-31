@@ -25,6 +25,30 @@ Not ready for:
 - production ERP certification
 - formal Shariah certification
 
+## Actor Usefulness Validation
+
+Issue #25 validation on 2026-06-01 compared the current product against the
+academic procurement/use-case baseline in the attached procurement blockchain,
+procurement productivity, and mudarabah procurement thesis materials.
+
+Current verdict:
+
+```text
+Most actors are executable and useful; named gaps remain.
+```
+
+Evidence:
+
+- `docs/evidence/qa/ACTOR_USE_CASE_VALIDATION_MATRIX.md`
+- `docs/evidence/qa/ISSUE25_ACTOR_USEFULNESS_VALIDATION.md`
+
+Primary gaps added to the backlog:
+
+- PBI-498 source-to-award workflow closure
+- PBI-499 invoice and three-way matching workflow
+- PBI-500 supplier performance and procurement closeout workflow
+- PBI-501 backend-backed Shariah decision workspace closure
+
 ## Current MVP / Pilot-Hardening Capabilities
 
 - credential-based demo login
