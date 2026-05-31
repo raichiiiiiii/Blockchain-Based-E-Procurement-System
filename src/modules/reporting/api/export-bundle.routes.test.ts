@@ -7,6 +7,9 @@ import { InMemoryExportBundleRepository } from '../infrastructure/in-memory-expo
 import { InMemoryAccessAuditEventRepository } from '../../shared/infrastructure/in-memory-access-audit-event-repository.js';
 import { InMemoryProcureToPayLifecycleEventRepository } from '../../procurement/infrastructure/in-memory-procure-to-pay-lifecycle-event-repository.js';
 import { InMemoryBlockchainAnchorMetadataRepository } from '../../blockchain/infrastructure/in-memory-blockchain-anchor-metadata-repository.js';
+import { InMemoryBlockchainAnchorGateway } from '../../blockchain/infrastructure/in-memory-blockchain-anchor-gateway.js';
+import { registerBlockchainAnchorRoutes } from '../../blockchain/api/blockchain-anchor.routes.js';
+import type { AnchorEventInput } from '../../blockchain/application/blockchain-anchor-gateway.js';
 import { createAccessAuditEvent } from '../../shared/application/access-audit-event-builder.js';
 import type { ProcureToPayLifecycleEvent } from '../../procurement/application/procure-to-pay-lifecycle-event.js';
 import type { ExportSigningPort } from '../application/export-signing-port.js';
@@ -47,6 +50,7 @@ async function createApp(options: {
   accessRepository?: InMemoryAccessAuditEventRepository;
   lifecycleRepository?: InMemoryProcureToPayLifecycleEventRepository;
   anchorRepository?: InMemoryBlockchainAnchorMetadataRepository;
+  anchorGateway?: InMemoryBlockchainAnchorGateway;
   exportRepository?: InMemoryExportBundleRepository;
   signingPort?: ExportSigningPort;
 } = {}) {
@@ -56,10 +60,15 @@ async function createApp(options: {
     repository: options.exportRepository ?? new InMemoryExportBundleRepository(),
     accessAuditEventRepository: options.accessRepository,
     lifecycleEventRepository: options.lifecycleRepository,
+    blockchainAnchorGateway: options.anchorGateway,
     blockchainAnchorMetadataRepository: options.anchorRepository,
     signingPort: options.signingPort ?? new LocalSoftwareKeyExportSigningAdapter({
       now: () => '2026-05-26T10:00:00.000Z',
     }),
+  });
+  app.register(registerBlockchainAnchorRoutes, {
+    metadataRepository: options.anchorRepository,
+    gateway: options.anchorGateway,
   });
   await app.ready();
   return app;
@@ -104,6 +113,15 @@ async function createSeededRepositories() {
     anchorRepository,
     exportRepository: new InMemoryExportBundleRepository(),
   };
+}
+
+class CapturingExportAnchorGateway extends InMemoryBlockchainAnchorGateway {
+  readonly inputs: AnchorEventInput[] = [];
+
+  override async anchorEvent(input: AnchorEventInput) {
+    this.inputs.push({ ...input });
+    return super.anchorEvent(input);
+  }
 }
 
 describe('Export bundle routes', () => {
@@ -372,5 +390,123 @@ describe('Export bundle routes', () => {
     const missingBody = JSON.parse(missingResponse.body);
     assert.strictEqual(missingResponse.statusCode, 200);
     assert.strictEqual(missingBody.data.verificationStatus, 'notFound');
+  });
+
+  it('creates an app-owned exportBundleGenerated anchor and verifies the export proof hash', async () => {
+    const repositories = await createSeededRepositories();
+    const anchorGateway = new CapturingExportAnchorGateway({
+      now: () => '2026-05-26T12:00:00.000Z',
+    });
+    const app = await createApp({
+      ...repositories,
+      anchorGateway,
+    });
+
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: '/export-bundles',
+      headers: authorizedHeaders('regulator'),
+      payload: {
+        scope: 'combinedAudit',
+        purpose: 'export proof anchoring review',
+      },
+    });
+    const created = JSON.parse(createResponse.body).data;
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    assert.strictEqual(created.integrity.exportProof.anchorStatus, 'anchored');
+    assert.match(created.integrity.exportProof.eventId, /^exportBundleGenerated-bundle-/);
+    assert.strictEqual(created.integrity.exportProof.payloadHash, created.integrity.bundleHash);
+    assert.strictEqual(anchorGateway.inputs.length, 1);
+    assert.strictEqual(anchorGateway.inputs[0].eventId, created.integrity.exportProof.eventId);
+    assert.strictEqual(anchorGateway.inputs[0].eventType, 'exportBundleGenerated');
+    assert.strictEqual(anchorGateway.inputs[0].payloadHash, created.integrity.bundleHash);
+    assert.strictEqual(anchorGateway.inputs[0].schemaVersion, 'export-bundle-proof.v1');
+    assert.strictEqual(anchorGateway.inputs[0].canonicalization, 'json-canonical-v1');
+    assert.strictEqual(anchorGateway.inputs[0].occurredAt, created.generatedAt);
+    assert.match(anchorGateway.inputs[0].caseIdHash, /^sha256:[a-f0-9]{64}$/);
+    assert.doesNotMatch(JSON.stringify(anchorGateway.inputs[0]), /supervisory|export proof anchoring review|access-event-1|ptp-event-1|admin-user|regulator-user/);
+
+    const proofResponse = await app.inject({
+      method: 'GET',
+      url: `/blockchain/anchors/${created.integrity.exportProof.eventId}`,
+      headers: authorizedHeaders('regulator'),
+    });
+    const proofBody = JSON.parse(proofResponse.body);
+    assert.strictEqual(proofResponse.statusCode, 200);
+    assert.strictEqual(proofBody.data.anchorStatus, 'anchored');
+    assert.strictEqual(proofBody.data.payloadHash, created.integrity.bundleHash);
+
+    const verifyResponse = await app.inject({
+      method: 'POST',
+      url: `/blockchain/anchors/${created.integrity.exportProof.eventId}/verify`,
+      headers: authorizedHeaders('regulator'),
+      payload: {
+        payloadHash: created.integrity.bundleHash,
+      },
+    });
+    const verifyBody = JSON.parse(verifyResponse.body);
+    assert.strictEqual(verifyResponse.statusCode, 200);
+    assert.strictEqual(verifyBody.data.verificationStatus, 'verified');
+
+    const mismatchResponse = await app.inject({
+      method: 'POST',
+      url: `/blockchain/anchors/${created.integrity.exportProof.eventId}/verify`,
+      headers: authorizedHeaders('regulator'),
+      payload: {
+        payloadHash: `sha256:${'f'.repeat(64)}`,
+      },
+    });
+    assert.strictEqual(JSON.parse(mismatchResponse.body).data.verificationStatus, 'mismatch');
+
+    const missingResponse = await app.inject({
+      method: 'POST',
+      url: '/blockchain/anchors/missing-export-proof/verify',
+      headers: authorizedHeaders('regulator'),
+      payload: {
+        payloadHash: created.integrity.bundleHash,
+      },
+    });
+    assert.strictEqual(JSON.parse(missingResponse.body).data.verificationStatus, 'notFound');
+  });
+
+  it('keeps the export bundle persisted when export proof anchoring is unavailable', async () => {
+    const repositories = await createSeededRepositories();
+    const app = await createApp({
+      ...repositories,
+      anchorGateway: new InMemoryBlockchainAnchorGateway({ unavailable: true }),
+    });
+
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: '/export-bundles',
+      headers: authorizedHeaders('auditor'),
+      payload: {
+        scope: 'procureToPay',
+        purpose: 'anchor failure review',
+      },
+    });
+    const created = JSON.parse(createResponse.body).data;
+
+    assert.strictEqual(createResponse.statusCode, 201);
+    assert.strictEqual(created.status, 'generated');
+    assert.strictEqual(created.integrity.exportProof.anchorStatus, 'failed');
+    assert.strictEqual(created.integrity.exportProof.failureReason, 'blockchain_unavailable');
+
+    const storedBundle = await repositories.exportRepository.findById(created.bundleId);
+    assert.ok(storedBundle);
+    assert.strictEqual(storedBundle.integrity.exportProof?.anchorStatus, 'failed');
+
+    const storedMetadata = await repositories.anchorRepository.findByEventId(created.integrity.exportProof.eventId);
+    assert.ok(storedMetadata);
+    assert.strictEqual(storedMetadata.anchorStatus, 'failed');
+    assert.strictEqual(storedMetadata.payloadHash, created.integrity.bundleHash);
+
+    const proofResponse = await app.inject({
+      method: 'GET',
+      url: `/blockchain/anchors/${created.integrity.exportProof.eventId}`,
+      headers: authorizedHeaders('auditor'),
+    });
+    assert.strictEqual(JSON.parse(proofResponse.body).data.anchorStatus, 'failed');
   });
 });

@@ -11,6 +11,96 @@ claim boundaries are reconciled in
 `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md` and
 `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md`.
 
+Current backlog source note, 2026-05-31:
+
+`backlog/backlog.csv` is the single active backlog CSV. Production-extension
+PBIs PBI-436 through PBI-462 were merged into it under Issue #13. The previous
+`backlog/production-extension-roadmap.csv` file was archived at
+`backlog/archive/production-extension-roadmap.superseded.csv` for history only.
+
+## TASK-2026-05-31-004 Unified Backlog and Export Bundle App-Owned Anchor
+
+Stage: GitHub Issue #13 follow-up
+Status: done
+
+Business reason:
+
+Unify all active backlog CSV rows into one canonical backlog source and close
+the export-bundle proof gap left after Issue #12 by creating an app-owned
+`exportBundleGenerated` anchor path.
+
+Files inspected:
+
+- `backlog/backlog.csv`
+- `backlog/production-extension-roadmap.csv`
+- `backlog/plan.mermaid`
+- `README.md`
+- `docs/file-index.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/traceability/REQID_TO_PBI_TO_EVIDENCE.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+- `docs/architecture/EXTENDED_PRODUCTION_ARCHITECTURE_PLAN.tex`
+- `src/modules/reporting/api/export-bundle.routes.ts`
+- `src/modules/reporting/application/export-bundle-service.ts`
+- `src/modules/reporting/infrastructure/postgres-export-bundle-repository.ts`
+- `src/modules/blockchain/api/blockchain-anchor.routes.ts`
+- `src/modules/blockchain/application/blockchain-proof-service.ts`
+- `src/modules/blockchain/application/blockchain-anchor-metadata-repository.ts`
+- `src/frontend/pages/ExportBundlePage.tsx`
+- `src/frontend/pages/AuditorDashboard.tsx`
+- `src/frontend/pages/RegulatorDashboard.tsx`
+
+Files changed:
+
+- `backlog/backlog.csv`
+- `backlog/archive/production-extension-roadmap.superseded.csv`
+- `docs/architecture/EXTENDED_PRODUCTION_ARCHITECTURE_PLAN.tex`
+- `docs/file-index.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/traceability/REQID_TO_PBI_TO_EVIDENCE.md`
+- `docs/evidence/qa/UNIFIED_BACKLOG_RECONCILIATION_VALIDATION.md`
+- `docs/evidence/qa/EXPORT_BUNDLE_APP_OWNED_FABRIC_ANCHOR_VALIDATION.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+- `src/app/server.ts`
+- `src/frontend/api/export-bundles.ts`
+- `src/frontend/pages/ExportBundlePage.tsx`
+- `src/modules/reporting/api/export-bundle.routes.ts`
+- `src/modules/reporting/api/export-bundle.routes.test.ts`
+- `src/modules/reporting/application/anchor-export-bundle-proof.ts`
+- `src/modules/reporting/application/export-bundle-service.ts`
+- `src/modules/reporting/domain/export-bundle.ts`
+
+Result:
+
+- Merged production-extension PBIs PBI-436 through PBI-462 into
+  `backlog/backlog.csv`; canonical backlog now has 462 rows with no duplicate
+  PBI IDs.
+- Archived the former production-extension roadmap CSV at
+  `backlog/archive/production-extension-roadmap.superseded.csv`.
+- Added `exportBundleGenerated` app-owned proof anchoring for export bundle
+  generation.
+- Added route-level coverage proving lookup and direct verify agree for the
+  app-created export proof event.
+- Added safe failure coverage proving export bundles remain persisted when
+  anchoring is unavailable.
+
+Validation:
+
+- Targeted route regression
+  `node --test --loader ts-node/esm src/modules/reporting/api/export-bundle.routes.test.ts`
+  passed with 10 tests.
+- Unified backlog validation passed with 462 rows.
+- Full branch validation is recorded in
+  `docs/evidence/qa/EXPORT_BUNDLE_APP_OWNED_FABRIC_ANCHOR_VALIDATION.md`.
+
+Known limitations:
+
+- Live Fabric lab validation was not rerun.
+- Export proof anchoring covers deterministic manifest/bundle hash metadata, not
+  raw exported documents.
+- Local export signing remains a software-key MVP boundary, not production KMS
+  or HSM-backed signing.
+
 ## TASK-2026-05-30-001 Blueprint Foundation
 
 Stage: Phase 1 / Phase 2 documentation baseline
@@ -716,7 +806,9 @@ Known limitations:
 
 Next task:
 
-Resume the production-extension roadmap at the next not-yet-closed phase from `backlog/production-extension-roadmap.csv`, with the same rule that every implementation phase must preserve authentication, RBAC, evidence integrity, and claim boundaries.
+Resume the next not-yet-closed phase from the unified canonical backlog at
+`backlog/backlog.csv`, with the same rule that every implementation phase must
+preserve authentication, RBAC, evidence integrity, and claim boundaries.
 
 ## TASK-2026-05-30-014 Production Extension Architecture and Standards Research Closure
 
@@ -1166,7 +1258,8 @@ Validation:
 
 Decision:
 
-PBI-438 remains Completed in `backlog/production-extension-roadmap.csv`.
+PBI-438 remains Completed in the unified canonical backlog at
+`backlog/backlog.csv`.
 Completion means production-like local Fabric lab and runtime Fabric Gateway
 validation, not commercial-ready production Fabric operations or
 production-certified consortium governance.

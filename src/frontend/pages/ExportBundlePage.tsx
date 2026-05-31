@@ -131,6 +131,7 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
 
   const summaryCards = useMemo(() => bundle ? summarizeRecords(bundle) : [], [bundle]);
   const proofReferences = useMemo(() => bundle ? getProofReferences(bundle) : [], [bundle]);
+  const exportProof = bundle?.integrity.exportProof;
   const verificationStatus = verification ? statusLabel(verification.verificationStatus) : 'Not verified';
 
   const handleRequestChange = (field: keyof CreateExportBundleRequest, value: string) => {
@@ -335,6 +336,14 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
                 <dt>Included proof references</dt>
                 <dd>{proofReferences.length}</dd>
               </div>
+              <div>
+                <dt>Export proof</dt>
+                <dd>
+                  {exportProof ? (
+                    <BlockchainStatusIndicator status={exportProof.anchorStatus} compact />
+                  ) : 'Not anchored'}
+                </dd>
+              </div>
             </dl>
 
             <div className="export-claim-grid">
@@ -391,6 +400,26 @@ function ExportBundlePage({ session }: ExportBundlePageProps) {
               <div className="proof-field">
                 <dt>Verification status</dt>
                 <dd>{verificationStatus}</dd>
+              </div>
+              <div className="proof-field">
+                <dt>Export proof event</dt>
+                <dd><code>{exportProof?.eventId ?? 'Not anchored'}</code></dd>
+              </div>
+              <div className="proof-field">
+                <dt>Export proof status</dt>
+                <dd>
+                  {exportProof ? (
+                    <BlockchainStatusIndicator status={exportProof.anchorStatus} compact />
+                  ) : 'Not anchored'}
+                </dd>
+              </div>
+              <div className="proof-field">
+                <dt>Export proof hash</dt>
+                <dd><code>{exportProof?.payloadHash ?? 'Unavailable'}</code></dd>
+              </div>
+              <div className="proof-field">
+                <dt>Fabric transaction</dt>
+                <dd><code>{exportProof?.anchorStatus === 'anchored' ? exportProof.transactionId ?? 'Not reported' : 'Unavailable'}</code></dd>
               </div>
               <div className="proof-field">
                 <dt>Download reference</dt>
