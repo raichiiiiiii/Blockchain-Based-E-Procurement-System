@@ -47,12 +47,13 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 
 1. The Administrator signs in and confirms Amanah Retail, Barakah Supplies, and Mabrur Finance Partner are active member organizations with appropriate roles.
 2. The Compliance Reviewer opens the compliance queue and approves Barakah Supplies after reviewing safe KYC/AML metadata.
-3. The Buyer for Amanah Retail creates an order for Barakah Supplies.
-4. The Supplier for Barakah Supplies opens received orders and acknowledges the order.
-5. The Buyer or Supplier opens Contract Documents and uploads the Amanah-Barakah contract text for checksum, safe metadata extraction, and local signature-state recording.
-6. The Buyer or Supplier opens Contract Negotiation, creates machine-readable terms linked to the document reference, records any revised offer, and accepts the current terms hash.
-7. The Supplier records delivery evidence metadata for the accepted order using a safe reference, description, and hash; an external client may also submit signed IoT, QR, or EPCIS-compatible proof metadata through the external API gateway.
-8. The Buyer opens the order detail and reviews delivery evidence metadata, lifecycle hash, and proof state without seeing raw commercial documents.
+3. The Buyer opens Organization Network, previews `barakah-supplies`, inspects the Amanah-Barakah relationship vector, and sees proof-scope metadata in the Blockchain Trail panel.
+4. The Buyer for Amanah Retail creates an order for Barakah Supplies.
+5. The Supplier for Barakah Supplies opens received orders and acknowledges the order.
+6. The Buyer or Supplier opens Contract Documents and uploads the Amanah-Barakah contract text for checksum, safe metadata extraction, and local signature-state recording.
+7. The Buyer or Supplier opens Contract Negotiation, creates machine-readable terms linked to the document reference, records any revised offer, and accepts the current terms hash.
+8. The Supplier records delivery evidence metadata for the accepted order using a safe reference, description, and hash; an external client may also submit signed IoT, QR, or EPCIS-compatible proof metadata through the external API gateway.
+9. The Buyer opens the order detail and reviews delivery evidence metadata, lifecycle hash, and proof state without seeing raw commercial documents.
 9. The Buyer opens Escrow and creates escrow from the accepted order reference.
 10. Escrow creation emits a lifecycle audit event for the escrow-created state.
 11. The Buyer can mark the escrow funded, request release after accepted order, delivery evidence, eligibility, and dispute-free checks pass, and approve release into a settlement-instruction-ready state without executing payment.
@@ -92,6 +93,7 @@ The normal local demo path expects `npm run db:seed` to create backend/database 
 | PLS contract | Restricted seedbed contract linked to the procurement case, Shariah approval reference, certificate artifact reference, and distribution examples |
 | Export bundle | Combined audit scope with manifest hash, verification metadata, and detached local software-key signature package metadata |
 | ERP/accounting mapping | Local JSON export job for UBL/Peppol-like order or invoice mapping, OCDS-like contract release, or payment status |
+| Organization Network | Amanah-Barakah buyer/supplier relationship, Mabrur-Amanah financing relationship, proof-scope vectors, and local email outbox notifications |
 
 Seed data should avoid raw KYC documents, raw escrow terms, payment credentials, and private commercial documents in visible dashboard cards.
 
@@ -100,7 +102,7 @@ Seed data should avoid raw KYC documents, raw escrow terms, payment credentials,
 | Actor | Entry | Expected screen or route | Expected result |
 |---|---|---|---|
 | Administrator | Sign in | Dashboard, Members, Roles, Access History | Organizations and role controls are visible; non-admin workflow controls are not shown. |
-| Buyer | Sign in | Dashboard, Orders, Contract Documents, Contract Negotiation, Escrow, Blockchain Proof | Buyer creates order, records or reviews contract metadata, accepts current terms, reviews delivery evidence metadata, creates escrow from accepted order, and sees proof metadata. |
+| Buyer | Sign in | Dashboard, Organization Network, Orders, Contract Documents, Contract Negotiation, Escrow, Blockchain Proof | Buyer previews organization relationships, creates order, records or reviews contract metadata, accepts current terms, reviews delivery evidence metadata, creates escrow from accepted order, and sees proof metadata. |
 | Supplier | Sign in | Dashboard, Received Orders, Delivery Evidence, Contract Documents, Contract Negotiation, Escrow | Supplier acknowledges assigned order, submits or accepts negotiated terms, and submits safe delivery evidence metadata. |
 | Compliance Reviewer | Sign in | Dashboard, Compliance, Eligibility Status | Reviewer records decision and eligibility state is visible downstream. |
 | Shariah Reviewer | Sign in | Dashboard, Shariah Review | Reviewer inspects checklist metadata, records a decision, and registers certificate artifact coverage. |
@@ -135,6 +137,7 @@ The demo should be able to explain or inspect these events as governed actions:
 |---|---|---|
 | Organization status reviewed or changed | Administrator governance action | Actor, organization, status, timestamp, and outcome are recorded. |
 | Role assignment action | Administrator role action | Actor, role, target user or organization, and outcome are recorded. |
+| Network request sent or accepted | Organization user requests or accepts relationship establishment | Safe request metadata, relationship state, graph projection, and local email outbox record exist without private documents. |
 | Compliance decision recorded | Reviewer approves, rejects, flags, or blocks case | Eligibility state changes without exposing raw KYC/AML payloads. |
 | Order created | Buyer creates order | Procurement lifecycle event and payload hash metadata exist. |
 | Order acknowledged | Supplier accepts assigned order | Lifecycle event shows supplier action and order status. |
@@ -201,6 +204,7 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 - Contract negotiation uses in-memory contract records in this slice; production redlining, legal signing, PostgreSQL persistence, ERP mapping exports, and automatic order/escrow creation remain future work.
 - Export signing uses a local software-key detached manifest signature and offline package metadata; production KMS/HSM custody, legal attestation, certificate authority lifecycle, and external regulator portal integration remain future work.
 - ERP/accounting adapter produces local JSON mapping artifacts only; production ERP connection, Peppol access point delivery, UBL XML certification, and tax reporting remain future work.
+- Organization Network is a safe metadata and proof-scope view. It does not create production Fabric consortium membership, replace KYC/AML eligibility, share raw commercial documents, or establish ERP partner connectivity.
 - Security operator workflow is read-only and does not replace SIEM or incident response operations.
 
 ## Post-MVP Exclusions

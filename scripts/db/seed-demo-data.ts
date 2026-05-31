@@ -110,6 +110,53 @@ const demoExternalClients = [
   },
 ];
 
+const demoOrganizationProfiles: Record<string, {
+  legalName: string;
+  displayName: string;
+  alias: string;
+  uniqueIdentifier: string;
+  businessCategory: string;
+  publicProfileSummary: string;
+  contactEmail: string;
+}> = {
+  'demo-buyer-org': {
+    legalName: 'Amanah Retail Sdn Bhd',
+    displayName: 'Amanah Retail',
+    alias: 'Amanah',
+    uniqueIdentifier: 'amanah-retail',
+    businessCategory: 'Regulated buyer',
+    publicProfileSummary: 'Retail buyer coordinating verified procurement, escrow readiness, and proof review.',
+    contactEmail: 'ops@amanah.example',
+  },
+  'demo-supplier-org': {
+    legalName: 'Barakah Supplies Sdn Bhd',
+    displayName: 'Barakah Supplies',
+    alias: 'Barakah',
+    uniqueIdentifier: 'barakah-supplies',
+    businessCategory: 'SME supplier',
+    publicProfileSummary: 'Supplier organization providing packaging goods with delivery evidence metadata.',
+    contactEmail: 'supply@barakah.example',
+  },
+  'demo-financier-org': {
+    legalName: 'Mabrur Finance Partner',
+    displayName: 'Mabrur Finance',
+    alias: 'Mabrur',
+    uniqueIdentifier: 'mabrur-finance',
+    businessCategory: 'Islamic SME financier',
+    publicProfileSummary: 'Restricted PLS seedbed finance participant for approved procurement contracts.',
+    contactEmail: 'finance@mabrur.example',
+  },
+  'demo-regulator-org': {
+    legalName: 'Demo Reporting Authority',
+    displayName: 'Reporting Authority',
+    alias: 'Regulator',
+    uniqueIdentifier: 'reporting-authority',
+    businessCategory: 'Regulator',
+    publicProfileSummary: 'Reporting user that reviews export bundle integrity metadata.',
+    contactEmail: 'reporting@example.test',
+  },
+};
+
 function isDryRun(): boolean {
   return process.argv.includes('--dry-run');
 }
@@ -122,7 +169,7 @@ async function seed(): Promise<void> {
   if (isDryRun()) {
     console.log(`Validated demo seed plan for ${demoAccounts.length} demo account(s).`);
     console.log(`Demo usernames: ${demoAccounts.map(account => account.username).join(', ')}`);
-    console.log('Demo KYC/AML eligibility, Shariah review, Shariah certificate artifact, PLS contract, procurement order, delivery evidence, lifecycle events, anchor metadata, and escrow records are included.');
+    console.log('Demo KYC/AML eligibility, Shariah review, Shariah certificate artifact, PLS contract, procurement order, delivery evidence, lifecycle events, anchor metadata, escrow records, and organization network graph records are included.');
     console.log('Demo external API client credentials are included with hashed local shared-secret material only.');
     return;
   }
@@ -168,6 +215,16 @@ async function seed(): Promise<void> {
         [account.userId, account.username, passwordHash, now],
       );
 
+      const profile = demoOrganizationProfiles[account.organizationId] ?? {
+        legalName: account.displayName.replace('Demo ', 'Demo Organization '),
+        displayName: account.displayName.replace('Demo ', ''),
+        alias: account.displayName.replace('Demo ', ''),
+        uniqueIdentifier: account.organizationId.replace(/^demo-/, ''),
+        businessCategory: 'Demo organization',
+        publicProfileSummary: 'Demo organization profile for local workflow validation.',
+        contactEmail: `${account.username}@example.test`,
+      };
+
       await client.query(
         `
           INSERT INTO member_organizations (
@@ -176,22 +233,40 @@ async function seed(): Promise<void> {
             legal_name,
             display_name,
             organization_type,
+            business_type,
+            contact_email,
             status,
+            alias,
+            unique_identifier,
+            business_category,
+            public_profile_summary,
             created_at,
             updated_at
           )
-          VALUES ($1, $2, $3, $4, 'demo', 'active', $5, $5)
+          VALUES ($1, $2, $3, $4, 'demo', $5, $6, 'active', $7, $8, $5, $9, $10, $10)
           ON CONFLICT (id)
           DO UPDATE SET
+            legal_name = EXCLUDED.legal_name,
             display_name = EXCLUDED.display_name,
+            business_type = EXCLUDED.business_type,
+            contact_email = EXCLUDED.contact_email,
             status = EXCLUDED.status,
+            alias = EXCLUDED.alias,
+            unique_identifier = EXCLUDED.unique_identifier,
+            business_category = EXCLUDED.business_category,
+            public_profile_summary = EXCLUDED.public_profile_summary,
             updated_at = EXCLUDED.updated_at
         `,
         [
           account.organizationId,
           `REG-${account.organizationId.toUpperCase()}`,
-          account.displayName.replace('Demo ', 'Demo Organization '),
-          account.displayName.replace('Demo ', ''),
+          profile.legalName,
+          profile.displayName,
+          profile.businessCategory,
+          profile.contactEmail,
+          profile.alias,
+          profile.uniqueIdentifier,
+          profile.publicProfileSummary,
           now,
         ],
       );
@@ -240,6 +315,54 @@ async function seed(): Promise<void> {
             updated_at = EXCLUDED.updated_at
         `,
         [account.userId, account.organizationId, `role_${account.roleCode}`, now],
+      );
+    }
+
+    const demoRelationships = [
+      {
+        relationshipId: 'rel-amanah-barakah',
+        sourceOrganizationId: 'demo-buyer-org',
+        targetOrganizationId: 'demo-supplier-org',
+        relationshipType: 'buyer',
+        channelScope: 'sharedChannelA',
+      },
+      {
+        relationshipId: 'rel-mabrur-amanah',
+        sourceOrganizationId: 'demo-financier-org',
+        targetOrganizationId: 'demo-buyer-org',
+        relationshipType: 'financier',
+        channelScope: 'privateChannelC',
+      },
+    ];
+
+    for (const relationship of demoRelationships) {
+      await client.query(
+        `
+          INSERT INTO organization_network_relationships (
+            relationship_id,
+            source_organization_id,
+            target_organization_id,
+            relationship_type,
+            channel_scope,
+            status,
+            created_at,
+            updated_at
+          )
+          VALUES ($1, $2, $3, $4, $5, 'active', $6, $6)
+          ON CONFLICT (source_organization_id, target_organization_id, relationship_type)
+          DO UPDATE SET
+            channel_scope = EXCLUDED.channel_scope,
+            status = EXCLUDED.status,
+            updated_at = EXCLUDED.updated_at
+        `,
+        [
+          relationship.relationshipId,
+          relationship.sourceOrganizationId,
+          relationship.targetOrganizationId,
+          relationship.relationshipType,
+          relationship.channelScope,
+          now,
+        ],
       );
     }
 

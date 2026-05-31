@@ -5,6 +5,7 @@ export type DashboardOrganizationStatus = 'pendingReview' | 'active' | 'inactive
 export type DashboardRoleAssignmentStatus = 'active' | 'revoked' | 'none';
 export type SupportedDashboardRole =
   | 'administrator'
+  | 'organizationAdmin'
   | 'buyer'
   | 'supplier'
   | 'complianceReviewer'
@@ -39,6 +40,7 @@ export type DashboardResolverInput = {
 
 const ROLE_PRIORITY: SupportedDashboardRole[] = [
   'administrator',
+  'organizationAdmin',
   'auditor',
   'regulator',
   'securityOperator',
