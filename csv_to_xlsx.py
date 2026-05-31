@@ -107,6 +107,13 @@ def copy_cell_format(source: Cell, target: Cell) -> None:
 
 
 def copy_row_format(worksheet, source_row_number: int, target_row_number: int) -> None:
+    """
+    Copy row-level formatting.
+
+    RowDimension.customHeight is a read-only computed property in openpyxl, so it
+    must not be assigned directly. Setting height is enough for openpyxl to mark a
+    custom row height when one exists.
+    """
     source_dim = worksheet.row_dimensions[source_row_number]
     target_dim = worksheet.row_dimensions[target_row_number]
 
@@ -114,8 +121,6 @@ def copy_row_format(worksheet, source_row_number: int, target_row_number: int) -
     target_dim.hidden = source_dim.hidden
     target_dim.outlineLevel = source_dim.outlineLevel
     target_dim.collapsed = source_dim.collapsed
-    target_dim.ht = source_dim.ht
-    target_dim.customHeight = source_dim.customHeight
 
 
 def source_row_for(target_row: int, template_max_row: int) -> int:
