@@ -35,6 +35,13 @@ Supervisor-demo plus selected pilot-hardening and production-like Fabric lab val
 - `docs/analysis/ERPNext_FRAPPE_PROCUREMENT_UX_STUDY.md`
 - `docs/contracts/ORGANIZATION_NETWORK_CONTRACT.md`
 - `docs/contracts/EMAIL_NOTIFICATION_OUTBOX_CONTRACT.md`
+- `docs/contracts/API_CONTRACTS.md`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/evidence/qa/ORGANIZATION_NETWORK_GRAPH_WORKSPACE_VALIDATION.md`
+- `docs/evidence/qa/ORGANIZATION_REGISTRATION_ROLE_UMBRELLA_VALIDATION.md`
+- `docs/evidence/qa/EMAIL_NOTIFICATION_OUTBOX_VALIDATION.md`
+- `docs/evidence/qa/ERP_NEXT_FRAPPE_UX_STUDY_VALIDATION.md`
 - `docs/demo/AMANAH_BARAKAH_MABRUR_CASE.md`
 - `docs/runbooks/local-demo.md`
 - `docs/runbooks/supervisor-demo-script.md`
@@ -67,6 +74,10 @@ Supervisor-demo plus selected pilot-hardening and production-like Fabric lab val
   events.
 - Added Organization Network workspace with left Blockchain Trail panel, central
   graph, and right Establish Network/Email Outbox panel.
+- Added explicit open/close controls for the Blockchain Trail and Establish
+  Network panels.
+- Added node and vector hover summaries for company profile, relationship,
+  stage, proof hash, and scope metadata.
 - Added seeded Amanah, Barakah, and Mabrur relationship graph records.
 
 ## Graph Library Decision
@@ -107,6 +118,45 @@ interaction model stabilizes. A future richer graph editor can still adopt
 | Backlog CSV validation | Passed; 472 rows, no duplicate IDs, PBI-463 through PBI-472 present and `Completed`. |
 | `rg -n "PBI-\|Sprint\|Backlog\|Roadmap\|implementation slice\|feature lane" src/frontend` | Passed; no product-source matches. |
 | Browser smoke on temporary local stack (`backend :3114`, `frontend :5176`) | Passed; `buyer.demo` credential login reached dashboard, Organization Network navigation rendered, and the workspace showed relationship graph, Blockchain Trail, Email Outbox, and no forbidden product labels. |
+| `git diff --check` | Passed; line-ending warnings only. |
+
+## Follow-Up Acceptance Closure
+
+Date: 2026-05-31
+Branch: `codex/issue-14-evidence-contract-follow-up`
+
+Additional Issue #14 closure work added:
+
+- `docs/evidence/qa/ORGANIZATION_NETWORK_GRAPH_WORKSPACE_VALIDATION.md`
+- `docs/evidence/qa/ORGANIZATION_REGISTRATION_ROLE_UMBRELLA_VALIDATION.md`
+- `docs/evidence/qa/EMAIL_NOTIFICATION_OUTBOX_VALIDATION.md`
+- `docs/evidence/qa/ERP_NEXT_FRAPPE_UX_STUDY_VALIDATION.md`
+- Organization network cross-reference in `docs/contracts/API_CONTRACTS.md`
+- Organization network capability wording in
+  `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- Organization network persistence row in
+  `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- Graph workspace open/close controls for the Blockchain Trail and Establish
+  Network panels
+- Node and vector hover summaries for company profile, relationship, stage,
+  proof hash, and scope metadata
+
+Follow-up validation:
+
+| Command | Result |
+| --- | --- |
+| `npm run build` | Passed. |
+| `node --test --loader ts-node/esm src/modules/organization-network/api/organization-network.routes.test.ts` | Passed; 3 tests. |
+| `npm run frontend:build` | Passed; Vite built 88 modules. |
+| `npm run db:migrate -- --dry-run` | Passed; 18 migration files validated. |
+| `npm run db:seed -- --dry-run` | Passed; 9 demo accounts and organization network graph records validated. |
+| `docker compose config` | Passed. |
+| `docker compose -f docker-compose.app.yml config` | Passed. |
+| `npm test` | Passed; 829 tests, 72 suites, 0 failures. |
+| Browser smoke on temporary local stack (`backend :3114`, `frontend :5176`) | Passed; `buyer.demo` credential login reached Organization Network, panel toggles worked, hover prompt rendered, and no forbidden product labels appeared. |
+| Feature backlog CSV validation | Passed; PBI-463 through PBI-472 are present with no duplicate PBI IDs. |
+| `rg -n "PBI-\|Sprint\|Backlog\|Roadmap\|implementation slice\|feature lane" src/frontend` | Passed; no product-source matches. |
+| Tracked generated-artifact check | Passed; no tracked generated Fabric secret/artifact material detected. |
 | `git diff --check` | Passed; line-ending warnings only. |
 
 ## Known Limitations

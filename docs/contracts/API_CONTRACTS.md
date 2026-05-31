@@ -2155,3 +2155,148 @@ Backend authorization failures continue to use the standard error envelope:
   }
 }
 ```
+
+## 18. Organization network contracts
+
+The detailed organization network contract is maintained in
+`docs/contracts/ORGANIZATION_NETWORK_CONTRACT.md`. This section records the
+public API surface in the central API contract index so frontend, backend, and
+QA work share the same discovery point.
+
+Organization network endpoints use the global conventions in this document:
+
+- Base path: `/api/v1`
+- Protected reads and writes use `Authorization: Bearer <token>`
+- Actor identity is derived from trusted server-side session context
+- Responses use the standard success envelope
+- Validation, authentication, authorization, missing-record, and conflict
+  failures use the standard error envelope
+- Safe public organization metadata may be returned
+- Raw KYC data, private commercial documents, payment credentials, bearer
+  tokens, private keys, and unrestricted commercial terms must not be returned
+  or sent through email notification bodies
+
+### 18.1 Public organization registration
+
+`POST /api/v1/organizations/register`
+
+Purpose:
+
+- Register a new organization with safe profile metadata.
+- Bootstrap a primary organization administrator user and credential.
+- Create or link a pending KYC/AML onboarding case.
+
+Important boundary:
+
+- Registration does not make the organization transaction-eligible.
+- Eligibility remains controlled by onboarding/compliance gates.
+- The response must not return a raw password.
+
+### 18.2 Organization profile
+
+`GET /api/v1/organizations/me/profile`
+
+`PATCH /api/v1/organizations/me/profile`
+
+Purpose:
+
+- Return and update safe organization profile metadata such as alias, unique
+  identifier, logo reference, business category, public summary, status, and
+  eligibility summary.
+
+Authorization:
+
+- Profile read requires an authenticated user with an organization context.
+- Profile update requires an administrator or organization-admin role according
+  to the implementation contract.
+
+### 18.3 Organization discovery
+
+`GET /api/v1/organizations/search?identifier=<uniqueIdentifier>`
+
+Purpose:
+
+- Find a target organization by unique identifier and return safe public
+  profile metadata for network establishment.
+
+### 18.4 Network relationship requests
+
+`POST /api/v1/organization-network/requests`
+
+`GET /api/v1/organization-network/requests`
+
+`POST /api/v1/organization-network/requests/:requestId/accept`
+
+`POST /api/v1/organization-network/requests/:requestId/reject`
+
+Purpose:
+
+- Request, inspect, accept, or reject network relationships between
+  organizations.
+- Accepted requests create or update a relationship record and local email
+  notification outbox records.
+
+Network request states:
+
+- `draft`
+- `sent`
+- `received`
+- `accepted`
+- `rejected`
+- `cancelled`
+- `blocked`
+- `expired`
+
+Relationship/deal roles:
+
+- `buyer`
+- `supplier`
+- `financier`
+- `logistics`
+- `auditorRegulator`
+- `mixed`
+
+### 18.5 Graph projection and blockchain trail
+
+`GET /api/v1/organization-network/graph`
+
+`GET /api/v1/organization-network/graph/:edgeId/trail`
+
+Purpose:
+
+- Return graph nodes and directional vectors for the authenticated
+  organization.
+- Return proof-level blockchain trail metadata for a selected edge.
+
+Channel/scope aliases:
+
+- `sharedChannelA`
+- `sharedChannelB`
+- `privateChannelC`
+- `localProofOnly`
+- `unavailable`
+
+These are proof/visibility-scope aliases. They must not be described as live
+production Fabric channel membership unless that is independently implemented
+and validated.
+
+### 18.6 Email notification outbox
+
+`GET /api/v1/email-notifications/outbox`
+
+Purpose:
+
+- Return local notification outbox records for authorized governance/operator
+  users.
+
+Notification status values:
+
+- `queued`
+- `sent`
+- `failed`
+- `skipped`
+
+Current implementation boundary:
+
+- Local outbox records are persisted metadata.
+- No production SMTP delivery is claimed.

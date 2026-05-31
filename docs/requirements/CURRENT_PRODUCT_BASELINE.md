@@ -33,6 +33,8 @@ Not ready for:
 - KYC/AML onboarding and eligibility scaffolding
 - procurement order workflow
 - delivery evidence metadata/hash workflow
+- organization network workspace with safe relationship graph and proof-scope
+  vectors
 - escrow creation and release-readiness workflow
 - PLS/Shariah review seedbed support
 - audit trail and transaction history
@@ -40,6 +42,7 @@ Not ready for:
 - export bundle metadata and local signing support
 - security operator visibility
 - deployable Docker Compose foundation
+- local email notification outbox for selected workflow events
 
 ## Production-Extension Boundary
 
@@ -84,6 +87,7 @@ The deployable MVP centers on a controlled procurement case file:
 Visitor
 -> sign in
 -> organization, role, and eligibility setup
+-> organization network relationship view
 -> buyer order
 -> supplier acceptance
 -> delivery evidence
@@ -216,6 +220,8 @@ Deployment:
 - KYC/AML eligibility review
 - procurement order and supplier acceptance
 - delivery evidence metadata and hash
+- organization profile, unique identifier, network relationship request, graph
+  projection, proof trail, and local email outbox records
 - escrow creation and release-readiness transitions
 - PLS seedbed and Shariah review gate
 - financier readiness and distribution scenarios
