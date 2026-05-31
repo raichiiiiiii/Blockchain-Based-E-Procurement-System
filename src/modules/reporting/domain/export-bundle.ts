@@ -96,6 +96,20 @@ export type ExportBundleIntegrity = {
   proofType: 'mvp-manifest-hash';
   manifestHash: string;
   bundleHash: string;
+  exportProof?: ExportBundleBlockchainAnchor;
+};
+
+export type ExportBundleBlockchainAnchor = {
+  eventId: string;
+  payloadHash: string;
+  anchorStatus: 'notAnchored' | 'pending' | 'anchored' | 'failed';
+  blockchainNetwork?: 'fabric-local' | 'fabric';
+  channelName?: string;
+  chaincodeName?: string;
+  transactionId?: string;
+  blockNumber?: string;
+  anchoredAt?: string;
+  failureReason?: string;
 };
 
 export type ExportBundleRecord = {

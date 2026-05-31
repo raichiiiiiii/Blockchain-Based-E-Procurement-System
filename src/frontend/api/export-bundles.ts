@@ -23,6 +23,19 @@ export type ExportBundleRecordReference = {
   source: 'access-history' | 'transaction-history' | 'blockchain-proof';
 };
 
+export type ExportBundleBlockchainAnchor = {
+  eventId: string;
+  payloadHash: string;
+  anchorStatus: 'notAnchored' | 'pending' | 'anchored' | 'failed';
+  blockchainNetwork?: 'fabric-local' | 'fabric';
+  channelName?: string;
+  chaincodeName?: string;
+  transactionId?: string;
+  blockNumber?: string;
+  anchoredAt?: string;
+  failureReason?: string;
+};
+
 export type ExportBundleRecord = {
   bundleId: string;
   status: ExportBundleStatus;
@@ -52,6 +65,7 @@ export type ExportBundleRecord = {
     proofType: 'mvp-manifest-hash';
     manifestHash: string;
     bundleHash: string;
+    exportProof?: ExportBundleBlockchainAnchor;
   };
   signature?: ExportBundleSignature;
   download: {

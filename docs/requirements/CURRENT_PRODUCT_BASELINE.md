@@ -55,6 +55,13 @@ management, production payment execution, or formal Shariah certification.
 Remaining Fabric operations gaps before pilot or production-certified claims are
 tracked in `docs/architecture/PRODUCTION_FABRIC_OPERATIONS_GAP_REGISTER.md`.
 
+## Canonical Backlog Source
+
+`backlog/backlog.csv` is the single active backlog CSV. It contains the original
+MVP backlog and the production-extension PBIs PBI-436 through PBI-462. Historical
+roadmap CSVs in `backlog/archive/` are retained only for auditability and should
+not be treated as current backlog source-of-truth files.
+
 ## Claim Boundaries
 
 Do not claim:

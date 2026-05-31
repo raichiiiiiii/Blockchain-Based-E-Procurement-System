@@ -7,16 +7,19 @@ This index tells future agents where to look first. It does not replace source f
 ## Source-Of-Truth Priority
 
 1. `backlog/backlog.csv`
-2. `backlog/production-extension-roadmap.csv`
-3. `docs/contracts/`
-4. `docs/architecture/`
-5. `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
-6. `docs/process/CODING_RULES.md`
-7. `docs/runbooks/`
-8. `docs/evidence/qa/`
-9. `docs/report/`
-10. `docs/proposals/`
-11. `docs/drafts/` as historical or supporting material only
+2. `docs/contracts/`
+3. `docs/architecture/`
+4. `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+5. `docs/process/CODING_RULES.md`
+6. `docs/runbooks/`
+7. `docs/evidence/qa/`
+8. `docs/report/`
+9. `docs/proposals/`
+10. `docs/drafts/` as historical or supporting material only
+
+`backlog/backlog.csv` is the single active backlog CSV and includes the original
+MVP backlog plus production-extension PBIs PBI-436 through PBI-462. Superseded
+roadmap CSVs under `backlog/archive/` are historical only.
 
 ## Repository Root
 
@@ -29,6 +32,7 @@ This index tells future agents where to look first. It does not replace source f
 | `Dockerfile.backend` | Backend container build. |
 | `Dockerfile.frontend` | Frontend static container build. |
 | `.env.example` | Safe local environment variable examples. |
+| `backlog/archive/` | Historical backlog CSV snapshots; not active source-of-truth backlog files. |
 
 ## Application Code
 

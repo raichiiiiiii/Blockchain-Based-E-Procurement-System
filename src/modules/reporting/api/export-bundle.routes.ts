@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import type { AccessAuditEventRepository } from '../../shared/application/access-audit-event-repository.js';
 import type { ProcureToPayLifecycleEventRepository } from '../../procurement/application/procure-to-pay-lifecycle-event-repository.js';
+import type { BlockchainAnchorGateway } from '../../blockchain/application/blockchain-anchor-gateway.js';
 import type { BlockchainAnchorMetadataRepository } from '../../blockchain/application/blockchain-anchor-metadata-repository.js';
 import type { ExportBundleRepository } from '../application/export-bundle-repository.js';
 import type { ExportSigningPort } from '../application/export-signing-port.js';
@@ -21,6 +22,7 @@ export type ExportBundleRoutesOptions = {
   repository: ExportBundleRepository;
   accessAuditEventRepository?: AccessAuditEventRepository;
   lifecycleEventRepository?: ProcureToPayLifecycleEventRepository;
+  blockchainAnchorGateway?: BlockchainAnchorGateway;
   blockchainAnchorMetadataRepository?: BlockchainAnchorMetadataRepository;
   signingPort?: ExportSigningPort;
   authenticatedPreHandler?: (request: FastifyRequest, reply: FastifyReply) => Promise<void | FastifyReply>;
@@ -236,6 +238,7 @@ export const registerExportBundleRoutes: FastifyPluginAsync<ExportBundleRoutesOp
       repository: options.repository,
       accessAuditEventRepository: options.accessAuditEventRepository,
       lifecycleEventRepository: options.lifecycleEventRepository,
+      blockchainAnchorGateway: options.blockchainAnchorGateway,
       blockchainAnchorMetadataRepository: options.blockchainAnchorMetadataRepository,
     });
 

@@ -441,6 +441,7 @@ export function createTestableServer(options?: {
     repository: exportBundleRepository,
     accessAuditEventRepository,
     lifecycleEventRepository: procureToPayLifecycleEventRepository,
+    blockchainAnchorGateway,
     blockchainAnchorMetadataRepository,
     signingPort: new LocalSoftwareKeyExportSigningAdapter(),
     authenticatedPreHandler

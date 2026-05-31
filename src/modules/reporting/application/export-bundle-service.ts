@@ -7,6 +7,7 @@ import type {
   BlockchainAnchorMetadata,
   BlockchainAnchorMetadataRepository,
 } from '../../blockchain/application/blockchain-anchor-metadata-repository.js';
+import type { BlockchainAnchorGateway } from '../../blockchain/application/blockchain-anchor-gateway.js';
 import type { ExportBundleRepository } from './export-bundle-repository.js';
 import type {
   ExportBundleManifest,
@@ -16,6 +17,7 @@ import type {
   ExportBundleVerificationResult,
 } from '../domain/export-bundle.js';
 import { hashExportValue } from './export-canonicalization.js';
+import { anchorExportBundleGeneratedEvent } from './anchor-export-bundle-proof.js';
 
 export const allowedExportBundleScopes: readonly ExportBundleScope[] = [
   'accessHistory',
@@ -35,6 +37,7 @@ export type CreateExportBundleDependencies = {
   repository: ExportBundleRepository;
   accessAuditEventRepository?: AccessAuditEventRepository;
   lifecycleEventRepository?: ProcureToPayLifecycleEventRepository;
+  blockchainAnchorGateway?: BlockchainAnchorGateway;
   blockchainAnchorMetadataRepository?: BlockchainAnchorMetadataRepository;
   now?: () => string;
 };
@@ -276,7 +279,24 @@ export async function createExportBundle(
     },
   };
 
-  return dependencies.repository.save(bundle);
+  const savedBundle = await dependencies.repository.save(bundle);
+  const exportProof = await anchorExportBundleGeneratedEvent(savedBundle, {
+    gateway: dependencies.blockchainAnchorGateway,
+    metadataRepository: dependencies.blockchainAnchorMetadataRepository,
+    now: dependencies.now,
+  });
+
+  if (!exportProof) {
+    return savedBundle;
+  }
+
+  return dependencies.repository.save({
+    ...savedBundle,
+    integrity: {
+      ...savedBundle.integrity,
+      exportProof,
+    },
+  });
 }
 
 export async function verifyExportBundle(
