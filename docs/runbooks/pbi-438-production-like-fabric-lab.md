@@ -14,6 +14,17 @@ Fabric Gateway validation. See
 the operator path for rerunning or extending the lab. It does not by itself
 claim managed production Fabric operations.
 
+## After PBI-438 Lab Completion
+
+For production operations gaps, see:
+
+```text
+docs/architecture/PRODUCTION_FABRIC_OPERATIONS_GAP_REGISTER.md
+```
+
+Use the gap register to separate completed production-like lab evidence from
+pre-pilot and pre-production operating requirements.
+
 ## Purpose
 
 Use this runbook to prepare or rerun the production-like Fabric lab. The lab
@@ -26,9 +37,10 @@ This runbook deliberately does not provide a shortcut for simulated completion.
 For future reruns, do not treat a simulated or dry-run-only environment as
 production-like Fabric evidence.
 
-## Completion Boundary
+## Lab Completion Boundary
 
-PBI-438 can move from `Planned` to `Completed` only when all of the following are true:
+Future reruns or extensions of the production-like lab should only be treated as
+valid lab evidence when all of the following are true:
 
 - A real production-like Fabric consortium lab exists.
 - Separate MSPs exist for all required organizations.

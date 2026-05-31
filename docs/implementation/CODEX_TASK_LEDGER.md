@@ -1177,3 +1177,95 @@ Remaining limitations:
 - No production CA governance, HSM/KMS-backed key lifecycle, production payment
   execution, or formal Shariah certification is claimed.
 - External lab artifacts remain outside the repository.
+
+## TASK-2026-05-31-002 App-Owned Fabric Anchor Round Trip and Operations Gap Register
+
+Stage: GitHub Issues #10 and #11 follow-up
+Status: done
+
+Business reason:
+
+Close the app-owned proof consistency gap left after PBI-438 and make the
+remaining production Fabric operations gaps explicit without overclaiming pilot,
+commercial, or production readiness.
+
+Files inspected:
+
+- `src/modules/blockchain/application/blockchain-proof-service.ts`
+- `src/modules/blockchain/api/blockchain-anchor.routes.ts`
+- `src/modules/blockchain/infrastructure/fabric-contract-client-factory.ts`
+- `src/modules/blockchain/infrastructure/fabric-blockchain-anchor-gateway.ts`
+- `src/modules/blockchain/infrastructure/postgres-blockchain-anchor-metadata-repository.ts`
+- `src/modules/blockchain/application/blockchain-anchor-metadata-repository.ts`
+- `src/modules/escrow/api/escrow.routes.ts`
+- `src/modules/escrow/application/create-escrow.ts`
+- `src/modules/procurement/infrastructure/postgres-procure-to-pay-lifecycle-event-repository.ts`
+- `docs/contracts/BLOCKCHAIN_ANCHOR_CONTRACT.md`
+- `docs/contracts/CANONICAL_PAYLOAD_HASHING.md`
+- `docs/contracts/ESCROW_WORKFLOW_CONTRACT.md`
+- `docs/contracts/TRANSACTION_HISTORY_CONTRACT.md`
+- `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md`
+- `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md`
+- `backlog/production-extension-roadmap.csv`
+- `docs/architecture/PRODUCTION_FABRIC_CONSORTIUM_ARCHITECTURE.md`
+- `docs/architecture/FABRIC_MVP_BOUNDARY.md`
+- `docs/architecture/FABRIC_RUNTIME_GATEWAY_INTEGRATION_GAP.md`
+- `docs/runbooks/pbi-438-production-like-fabric-lab.md`
+- `docs/runbooks/fabric-local-network.md`
+- `docs/runbooks/deployable-mvp.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `fabric/production-consortium/README.md`
+- `fabric/production-consortium/channel-plan.json`
+- `fabric/production-consortium/chaincode-definitions.json`
+- `fabric/production-consortium/collections-config.json`
+
+Files changed:
+
+- `src/modules/blockchain/api/app-owned-anchor-round-trip.routes.test.ts`
+- `docs/architecture/PRODUCTION_FABRIC_OPERATIONS_GAP_REGISTER.md`
+- `docs/architecture/PRODUCTION_FABRIC_CONSORTIUM_ARCHITECTURE.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/evidence/qa/APP_OWNED_FABRIC_ANCHOR_ROUND_TRIP_VALIDATION.md`
+- `docs/evidence/qa/PRODUCTION_FABRIC_OPERATIONS_GAP_REGISTER_VALIDATION.md`
+- `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md`
+- `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md`
+- `docs/runbooks/pbi-438-production-like-fabric-lab.md`
+- `fabric/production-consortium/README.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Validation:
+
+- `node --test --loader ts-node/esm src/modules/blockchain/api/app-owned-anchor-round-trip.routes.test.ts` passed with 2 tests.
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm test` passed with 820 tests.
+- `npm run chaincode:audit-anchor:build` passed.
+- `npm run chaincode:audit-anchor:test` passed with 9 tests.
+- `npm run db:migrate -- --dry-run` passed.
+- `npm run db:seed -- --dry-run` passed.
+- `docker compose config` passed.
+- `docker compose -f docker-compose.app.yml config` passed.
+- CSV validation passed for both backlog CSV files.
+- Tracked generated Fabric secret/artifact scan passed.
+- `git diff --check` passed with line-ending warnings only.
+
+Result:
+
+- Added route-level regression coverage proving the app-owned `escrowCreated`
+  workflow creates a lifecycle event, stores proof metadata, returns anchored
+  lookup state, verifies a matching hash as `verified`, returns `mismatch` for a
+  changed hash, and returns `notFound` for a missing event.
+- Confirmed anchoring failure leaves escrow and lifecycle event records intact
+  while storing failed proof metadata.
+- Added the production Fabric operations gap register with pre-pilot and
+  pre-production gates and linked it from PBI-438 runbook/baseline documents.
+
+Known limitations:
+
+- Live Fabric lab was not rerun for Issue #10; automated route-level regression
+  coverage uses the controlled gateway double.
+- Equivalent app-owned proof route tests should be added for other workflows
+  before they are claimed complete.
+- Production CA governance, key custody, MSP lifecycle operations, failover,
+  DR, PDC live exercise, and production operations certification remain future
+  work.

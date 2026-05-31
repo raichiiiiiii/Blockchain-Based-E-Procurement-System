@@ -16,7 +16,7 @@ They are templates only. They do not include certificates, private keys, CA mate
 
 ## PBI-438 Production-Like Lab Guidance
 
-Use the dedicated operator runbook for the real external lab setup required before PBI-438 can close:
+Use the dedicated operator runbook for rerunning or extending the production-like local lab:
 
 ```text
 docs/runbooks/pbi-438-production-like-fabric-lab.md
@@ -34,7 +34,13 @@ Copy it to the QA evidence folder only when sanitized live output is ready:
 docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md
 ```
 
-PBI-438 remains `Planned` until a real production-like lab exists with separate MSPs, reachable TLS-enabled peers/orderers, `procurement-proof-channel`, committed `audit-anchor`, cross-organization endorsement, live anchor/verify smoke results, application proof-surface evidence, and a secrets boundary review.
+PBI-438 is Completed for the first production-like local Fabric lab and runtime
+Fabric Gateway validation. Completion does not claim managed production Fabric
+operations. For the remaining production operations gaps, see:
+
+```text
+docs/architecture/PRODUCTION_FABRIC_OPERATIONS_GAP_REGISTER.md
+```
 
 ## Operator Scripts
 

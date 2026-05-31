@@ -52,6 +52,9 @@ This does not claim commercial-ready production Fabric operations, managed
 consortium governance, production certificate/key lifecycle, HSM/KMS-backed key
 management, production payment execution, or formal Shariah certification.
 
+Remaining Fabric operations gaps before pilot or production-certified claims are
+tracked in `docs/architecture/PRODUCTION_FABRIC_OPERATIONS_GAP_REGISTER.md`.
+
 ## Claim Boundaries
 
 Do not claim:
