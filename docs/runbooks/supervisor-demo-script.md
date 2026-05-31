@@ -80,10 +80,11 @@ Chaincode build/test is automated. Live Fabric local-network deployment depends 
 | 1:30-2:30 | Landing and sign in | Show root page, sign-in requirement, and credential-only login. |
 | 2:30-4:00 | Administrator governance | Show Members, Roles, organization status, and Access History. |
 | 4:00-5:30 | Compliance review | Show safe KYC/AML metadata and eligibility decision. |
-| 5:30-7:00 | Buyer order | Create or inspect procurement order for supplier. |
-| 7:00-8:00 | Contract documents | Upload contract text and show checksum, extraction fields, and local signature state. |
-| 8:00-9:00 | Contract negotiation | Version machine-readable terms, show hash, submit an offer, and record acceptance. |
-| 9:00-10:15 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata; mention signed external IoT, QR, and EPCIS-compatible proof intake as an API-backed pilot-hardening path. |
+| 5:30-6:30 | Organization Network | Show Amanah, Barakah, and Mabrur relationship graph, proof-scope vectors, and safe network request action. |
+| 6:30-8:00 | Buyer order | Create or inspect procurement order for supplier. |
+| 8:00-9:00 | Contract documents | Upload contract text and show checksum, extraction fields, and local signature state. |
+| 9:00-10:00 | Contract negotiation | Version machine-readable terms, show hash, submit an offer, and record acceptance. |
+| 10:00-11:15 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata; mention signed external IoT, QR, and EPCIS-compatible proof intake as an API-backed pilot-hardening path. |
 | 10:15-11:15 | Buyer delivery review | Show evidence hash, lifecycle event, and proof state on the order detail. |
 | 11:15-12:45 | Escrow lifecycle | Create escrow, mark funded, request release, and show settlement-instruction-ready state without payment execution. |
 | 12:45-13:30 | Payment instruction | Create a sandbox/manual payment instruction and reconcile status without claiming bank execution. |
@@ -180,6 +181,11 @@ Sign in as `buyer.demo`.
 
 Show:
 
+- Organization Network
+- preview `barakah-supplies`
+- relationship graph and proof-scope vector
+- Blockchain Trail panel
+- Email Outbox entry after network request action
 - Orders
 - create or inspect order for Barakah Supplies
 - lifecycle metadata
@@ -188,6 +194,12 @@ What to say:
 
 ```text
 Amanah Retail creates the order inside a governed workflow. The product is capturing business state and audit evidence together.
+```
+
+For Organization Network, add:
+
+```text
+The graph is relationship and proof metadata only. It helps users understand who they are connected to, which proof scope is visible, and which requests are pending. It does not create production Fabric membership, bypass eligibility, or expose private contracts.
 ```
 
 ### 6. Supplier Acknowledgement
@@ -472,6 +484,7 @@ Do not claim:
 - [ ] Each mandatory actor reaches a role-specific dashboard.
 - [ ] Administrator can inspect members, roles, and access history.
 - [ ] Compliance reviewer can record eligibility decision with safe metadata only.
+- [ ] Buyer can open Organization Network, preview `barakah-supplies`, and inspect proof-scope vectors without raw payloads.
 - [ ] Buyer can create or inspect order.
 - [ ] Supplier can acknowledge assigned order.
 - [ ] Supplier can submit delivery evidence metadata for an accepted order.

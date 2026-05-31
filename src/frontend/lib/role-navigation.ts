@@ -10,6 +10,7 @@ export type DashboardNavigationTarget =
   | 'delivery-evidence'
   | 'documents'
   | 'contracts'
+  | 'organization-network'
   | 'escrow'
   | 'blockchain-proof'
   | 'compliance'
@@ -38,6 +39,15 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'access-history', label: 'Access History' },
     { id: 'documents', label: 'Contract Documents' },
     { id: 'contracts', label: 'Contract Negotiation' },
+    { id: 'organization-network', label: 'Organization Network' },
+    { id: 'settings', label: 'Settings' },
+    { id: 'logout', label: 'Sign out' },
+  ],
+  organizationAdmin: [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'organization-network', label: 'Organization Network' },
+    { id: 'members', label: 'Members' },
+    { id: 'roles', label: 'Roles' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
   ],
@@ -46,6 +56,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'orders', label: 'Orders' },
     { id: 'documents', label: 'Contract Documents' },
     { id: 'contracts', label: 'Contract Negotiation' },
+    { id: 'organization-network', label: 'Organization Network' },
     { id: 'escrow', label: 'Escrow' },
     { id: 'blockchain-proof', label: 'Blockchain Proof' },
     { id: 'settings', label: 'Settings' },
@@ -57,6 +68,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'delivery-evidence', label: 'Delivery Evidence' },
     { id: 'documents', label: 'Contract Documents' },
     { id: 'contracts', label: 'Contract Negotiation' },
+    { id: 'organization-network', label: 'Organization Network' },
     { id: 'escrow', label: 'Escrow' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
@@ -65,6 +77,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'compliance', label: 'Compliance' },
     { id: 'documents', label: 'Contract Documents' },
+    { id: 'organization-network', label: 'Organization Network' },
     { id: 'eligibility-status', label: 'Eligibility Status' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
@@ -73,6 +86,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'shariah-review', label: 'Shariah Review' },
     { id: 'documents', label: 'Contract Documents' },
+    { id: 'organization-network', label: 'Organization Network' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
   ],
@@ -81,6 +95,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'financing', label: 'Financing' },
     { id: 'documents', label: 'Contract Documents' },
     { id: 'contracts', label: 'Contract Negotiation' },
+    { id: 'organization-network', label: 'Organization Network' },
     { id: 'shariah-review', label: 'Shariah Review' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
@@ -89,6 +104,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'audit-trail', label: 'Audit Trail' },
     { id: 'blockchain-proof', label: 'Blockchain Proof' },
+    { id: 'organization-network', label: 'Organization Network' },
     { id: 'export-bundle', label: 'Export Bundle' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
@@ -97,12 +113,14 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'export-bundle', label: 'Export Bundle' },
     { id: 'blockchain-proof', label: 'Blockchain Proof' },
+    { id: 'organization-network', label: 'Organization Network' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
   ],
   securityOperator: [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'security-status', label: 'Security Status' },
+    { id: 'organization-network', label: 'Organization Network' },
     { id: 'access-alerts', label: 'Access Alerts' },
     { id: 'proof-failures', label: 'Proof Failures' },
     { id: 'denied-actions', label: 'Denied Actions' },

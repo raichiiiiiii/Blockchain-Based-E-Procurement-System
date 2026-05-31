@@ -24,6 +24,41 @@ type RoleDashboardProfile = {
 };
 
 const dashboardProfiles: Record<RoleDashboardRole, RoleDashboardProfile> = {
+  organizationAdmin: {
+    title: 'Organization workspace',
+    description: 'Manage your organization profile, network relationships, and proof-aware collaboration surface.',
+    cards: [
+      {
+        label: 'Organization Network',
+        value: 'Visible',
+        detail: 'Relationship graph shows connected organizations, pending requests, and proof scopes.',
+      },
+      {
+        label: 'Profile',
+        value: 'Safe metadata',
+        detail: 'Public profile fields are separated from private onboarding documents.',
+      },
+      {
+        label: 'Requests',
+        value: 'Controlled',
+        detail: 'Relationship requests require authenticated organization context and do not bypass eligibility.',
+      },
+    ],
+    surfaces: {
+      members: {
+        title: 'Members',
+        description: 'Organization user administration is staged for a later role-management workflow.',
+        status: 'Scoped governance',
+        note: 'The current implementation keeps platform administrator controls separate from organization admin profile and network actions.',
+      },
+      roles: {
+        title: 'Roles',
+        description: 'Organization role assignment changes remain backend-governed and are not a frontend-only switch.',
+        status: 'Backend controlled',
+        note: 'Role assignment expansion will preserve existing buyer, supplier, financier, reviewer, auditor, regulator, and security roles.',
+      },
+    },
+  },
   administrator: {
     title: 'Administration workspace',
     description: 'Manage member access, organization status, and governed platform controls from the administrator view.',

@@ -16,6 +16,7 @@ import FinancingDashboard from './pages/FinancingDashboard';
 import RoleDashboard from './pages/RoleDashboard';
 import DocumentWorkspacePage from './pages/DocumentWorkspacePage';
 import ContractNegotiationPage from './pages/ContractNegotiationPage';
+import OrganizationNetworkPage from './pages/OrganizationNetworkPage';
 import { loginWithCredentials, logoutSession, type LoginCredentials } from './lib/auth-client';
 import {
   clearStoredSession,
@@ -102,6 +103,10 @@ function renderRoleDashboard(
 
   if (activeTarget === 'contracts') {
     return <ContractNegotiationPage session={session} />;
+  }
+
+  if (activeTarget === 'organization-network') {
+    return <OrganizationNetworkPage session={session} />;
   }
 
   if (role === 'buyer') {

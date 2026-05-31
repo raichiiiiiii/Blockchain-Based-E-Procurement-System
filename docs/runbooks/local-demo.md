@@ -58,7 +58,7 @@ npm run build
 npm run dev
 ```
 
-The backend exposes REST routes under `/api/v1`. Use `PERSISTENCE_ADAPTER=memory` for a fully in-memory fast demo. Use `PERSISTENCE_ADAPTER=postgres` after migrations and seed have been applied to persist auth/session, membership/RBAC, access audit, procurement lifecycle events, procurement orders, delivery evidence metadata, blockchain anchor metadata, escrow records, KYC/AML onboarding cases, Shariah reviews, PLS contract/distribution records, export bundles, and operational readiness incidents.
+The backend exposes REST routes under `/api/v1`. Use `PERSISTENCE_ADAPTER=memory` for a fully in-memory fast demo. Use `PERSISTENCE_ADAPTER=postgres` after migrations and seed have been applied to persist auth/session, membership/RBAC, access audit, procurement lifecycle events, procurement orders, delivery evidence metadata, blockchain anchor metadata, escrow records, KYC/AML onboarding cases, Shariah reviews, PLS contract/distribution records, export bundles, organization network relationships, local email outbox records, and operational readiness incidents.
 
 Document intake stores local files through `DocumentStoragePort`. The default local adapter writes under `.local-documents/` unless `DOCUMENT_STORAGE_DIR` is set. This folder is ignored by git and should not be used as production object storage.
 
@@ -109,6 +109,9 @@ Landing page
 -> Sign in
 -> Enter buyer.demo / demo-password
 -> Dashboard
+-> Organization Network
+-> Preview barakah-supplies
+-> Inspect Amanah-Barakah relationship graph and proof-scope vector
 -> Orders
 -> Create order
 -> Contract Documents
@@ -325,4 +328,5 @@ Contract Negotiation
 - PLS workflow is a restricted single-venture seedbed with internal Shariah certificate artifact tracking; it does not provide external certification, production payment rails, guaranteed returns, or full Islamic finance product coverage.
 - Export signing includes a local software-key detached manifest signature and offline verification package metadata; production KMS/HSM custody, legal attestation, certificate authority lifecycle, and external regulator portal integration are not implemented.
 - ERP/accounting integration is a local JSON adapter boundary with UBL/Peppol-like and OCDS-like mappings only; production ERP posting, Peppol network delivery, and tax reporting are not implemented.
-- KYC/AML cases, export bundles, Shariah reviews, PLS contracts, operational incidents, document metadata, contract negotiation records, external API credentials/idempotency/audit, sandbox/manual payment instructions, and ERP/accounting local JSON jobs are now PostgreSQL-wired in runtime mode.
+- KYC/AML cases, export bundles, Shariah reviews, PLS contracts, operational incidents, document metadata, contract negotiation records, external API credentials/idempotency/audit, sandbox/manual payment instructions, ERP/accounting local JSON jobs, organization network relationships, and local email outbox notifications are now PostgreSQL-wired in runtime mode.
+- Organization Network shows seeded Amanah, Barakah, and Mabrur relationships with proof-scope vectors. It does not claim production Fabric channel membership, ERP partner onboarding, or unrestricted document sharing.

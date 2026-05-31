@@ -99,6 +99,10 @@ import { InMemoryPaymentInstructionRepository } from '../modules/payments/infras
 import { PostgresPaymentInstructionRepository } from '../modules/payments/infrastructure/postgres-payment-instruction-repository.js';
 import { LocalSandboxPaymentAdapter } from '../modules/payments/infrastructure/local-sandbox-payment-adapter.js';
 import { ManualSettlementAdapter } from '../modules/payments/infrastructure/manual-settlement-adapter.js';
+import { registerOrganizationNetworkRoutes } from '../modules/organization-network/api/organization-network.routes.js';
+import type { OrganizationNetworkRepository } from '../modules/organization-network/application/organization-network-repository.js';
+import { InMemoryOrganizationNetworkRepository } from '../modules/organization-network/infrastructure/in-memory-organization-network-repository.js';
+import { PostgresOrganizationNetworkRepository } from '../modules/organization-network/infrastructure/postgres-organization-network-repository.js';
 import { createPostgresPool, type PostgresExecutor } from '../infrastructure/database/postgres-client.js';
 import { PostgresMemberOrganizationRepository } from '../modules/membership/infrastructure/postgres-member-organization-repository.js';
 import { PostgresRoleRepository } from '../modules/access-control/infrastructure/postgres-role-repository.js';
@@ -165,6 +169,7 @@ export function createTestableServer(options?: {
   signatureVerifier?: SignatureVerificationPort;
   procurementContractRepository?: ProcurementContractRepository;
   paymentInstructionRepository?: PaymentInstructionRepository;
+  organizationNetworkRepository?: OrganizationNetworkRepository;
   registerKycAmlRoutes?: boolean;
   enforceBearerAuthForLegacyActorRoutes?: boolean;
   readiness?: () => Promise<RuntimeReadiness>;
@@ -306,6 +311,7 @@ export function createTestableServer(options?: {
   const signatureVerifier = options?.signatureVerifier ?? new LocalSignatureMetadataAdapter();
   const procurementContractRepository = options?.procurementContractRepository ?? new InMemoryProcurementContractRepository();
   const paymentInstructionRepository = options?.paymentInstructionRepository ?? new InMemoryPaymentInstructionRepository();
+  const organizationNetworkRepository = options?.organizationNetworkRepository ?? new InMemoryOrganizationNetworkRepository();
   const authenticatedPreHandler = createAuthenticatedRequestPreHandler(sessionRepository);
   const legacyActorRouteAuthenticatedPreHandler = options?.enforceBearerAuthForLegacyActorRoutes
     ? authenticatedPreHandler
@@ -536,6 +542,12 @@ export function createTestableServer(options?: {
     authenticatedPreHandler,
   });
 
+  server.register(registerOrganizationNetworkRoutes, {
+    prefix: '/api/v1',
+    repository: organizationNetworkRepository,
+    authenticatedPreHandler,
+  });
+
   return server;
 }
 
@@ -612,6 +624,7 @@ function createRuntimeServerDependencies(
       externalIdempotencyRepository: new PostgresExternalIdempotencyRepository(postgresPool),
       externalApiAuditRepository: new PostgresExternalApiAuditRepository(postgresPool),
       paymentInstructionRepository: new PostgresPaymentInstructionRepository(postgresPool),
+      organizationNetworkRepository: new PostgresOrganizationNetworkRepository(postgresPool),
       erpAccountingAdapter: new LocalJsonErpAccountingAdapter(new PostgresErpIntegrationJobRepository(postgresPool)),
     },
   };

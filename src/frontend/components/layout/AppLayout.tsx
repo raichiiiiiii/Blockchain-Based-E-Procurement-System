@@ -14,6 +14,7 @@ type AppLayoutProps = {
 
 const roleLabels: Record<SupportedDashboardRole, string> = {
   administrator: 'Administrator',
+  organizationAdmin: 'Organization Admin',
   buyer: 'Buyer',
   supplier: 'Supplier',
   complianceReviewer: 'Compliance Reviewer',
@@ -34,6 +35,7 @@ const navigationIconLabels: Record<DashboardNavigationTarget, string> = {
   'delivery-evidence': 'E',
   documents: 'C',
   contracts: 'N',
+  'organization-network': 'G',
   escrow: 'E',
   'blockchain-proof': 'P',
   compliance: 'C',

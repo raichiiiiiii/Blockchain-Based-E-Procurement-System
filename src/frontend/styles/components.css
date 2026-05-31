@@ -241,3 +241,198 @@
   overflow-wrap: anywhere;
   word-break: break-word;
 }
+
+.organization-network-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.organization-network-shell {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(320px, 1.8fr) minmax(240px, 0.9fr);
+  gap: 1rem;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.organization-network-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--shadow-soft);
+  padding: 1rem;
+}
+
+.organization-network-panel h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.organization-network-graph {
+  min-height: 540px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.organization-graph-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+}
+
+.organization-graph-arrow {
+  fill: var(--color-accent);
+}
+
+.organization-graph-edge {
+  cursor: pointer;
+  stroke: var(--color-info);
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+.organization-graph-edge-sharedChannelA {
+  stroke: var(--color-success);
+}
+
+.organization-graph-edge-sharedChannelB {
+  stroke: var(--color-info);
+}
+
+.organization-graph-edge-privateChannelC {
+  stroke: var(--color-accent-strong);
+}
+
+.organization-graph-edge-localProofOnly {
+  stroke: var(--color-warning);
+  stroke-dasharray: 8 6;
+}
+
+.organization-graph-edge-unavailable {
+  stroke: var(--color-neutral);
+  stroke-dasharray: 4 7;
+}
+
+.organization-graph-edge-selected {
+  filter: drop-shadow(0 0 8px rgba(246, 195, 67, 0.55));
+  stroke-width: 5;
+}
+
+.organization-graph-edge-label {
+  cursor: pointer;
+  fill: var(--color-ink-soft);
+  font-size: 12px;
+  font-weight: 800;
+  paint-order: stroke;
+  pointer-events: auto;
+  stroke: var(--color-surface);
+  stroke-linejoin: round;
+  stroke-width: 4;
+  text-anchor: middle;
+}
+
+.organization-graph-node {
+  cursor: pointer;
+}
+
+.organization-graph-node circle {
+  fill: #ffffff;
+  stroke: var(--color-border-strong);
+  stroke-width: 2;
+}
+
+.organization-graph-node-self circle {
+  fill: #fff7dd;
+  stroke: var(--color-accent-strong);
+  stroke-width: 3;
+}
+
+.organization-graph-node-selected circle {
+  filter: drop-shadow(0 0 10px rgba(246, 195, 67, 0.7));
+  stroke: var(--color-accent-strong);
+  stroke-width: 4;
+}
+
+.organization-graph-node text {
+  fill: var(--color-ink);
+  font-size: 13px;
+  font-weight: 900;
+  pointer-events: none;
+  text-anchor: middle;
+}
+
+.organization-graph-node-subtitle {
+  fill: var(--color-neutral);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.network-selection-summary,
+.network-preview-card,
+.network-request-card,
+.network-trail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: rgba(246, 247, 242, 0.84);
+  padding: 0.75rem;
+}
+
+.network-selection-summary strong,
+.network-preview-card strong,
+.network-request-card strong,
+.network-trail-row strong,
+.network-selection-summary span,
+.network-preview-card span,
+.network-request-card span,
+.network-trail-row span,
+.network-preview-card p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.network-selection-summary span,
+.network-preview-card span,
+.network-request-card span,
+.network-trail-row span,
+.network-preview-card p {
+  color: var(--color-neutral);
+}
+
+.network-trail-list,
+.network-request-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-width: 0;
+  overflow: auto;
+}
+
+.network-trail-row code {
+  display: block;
+  max-width: 100%;
+  border-radius: 6px;
+  background: #eef1ed;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+  padding: 0.5rem;
+  white-space: normal;
+}
+
+.network-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

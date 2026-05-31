@@ -18,6 +18,99 @@ PBIs PBI-436 through PBI-462 were merged into it under Issue #13. The previous
 `backlog/production-extension-roadmap.csv` file was archived at
 `backlog/archive/production-extension-roadmap.superseded.csv` for history only.
 
+## TASK-2026-05-31-005 Organization Network and ERPNext Reference Slice
+
+Stage: GitHub Issue #14 follow-up
+Status: done
+
+Business reason:
+
+Add organization-as-network master data, safe relationship establishment, graph
+visibility, blockchain trail context, and local email outbox support so the
+product starts to resemble an organization-network procurement platform rather
+than isolated actor dashboards.
+
+Files inspected:
+
+- `backlog/backlog.csv`
+- `docs/contracts/API_CONTRACTS.md`
+- `docs/contracts/AUTH_SESSION_CONTRACT.md`
+- `docs/architecture/FRONTEND_PRODUCT_JOURNEY.md`
+- `src/app/server.ts`
+- `src/modules/membership/**`
+- `src/modules/auth/**`
+- `src/frontend/App.tsx`
+- `src/frontend/lib/role-navigation.ts`
+- `src/frontend/pages/*Dashboard.tsx`
+- ERPNext/Frappe buying, supplier, quotation, purchase order, invoice,
+  scorecard, and notification documentation.
+
+Files changed:
+
+- `backlog/backlog.csv`
+- `docs/analysis/ERPNext_FRAPPE_PROCUREMENT_UX_STUDY.md`
+- `docs/contracts/ORGANIZATION_NETWORK_CONTRACT.md`
+- `docs/contracts/EMAIL_NOTIFICATION_OUTBOX_CONTRACT.md`
+- `docs/evidence/qa/PBI-463_TO_PBI-472_ORGANIZATION_NETWORK_VALIDATION.md`
+- `docs/demo/AMANAH_BARAKAH_MABRUR_CASE.md`
+- `docs/runbooks/local-demo.md`
+- `docs/runbooks/supervisor-demo-script.md`
+- `migrations/018_organization_network_email_outbox.sql`
+- `scripts/db/seed-demo-data.ts`
+- `src/app/server.ts`
+- `src/modules/organization-network/**`
+- `src/frontend/api/organization-network.ts`
+- `src/frontend/types/organization-network.ts`
+- `src/frontend/pages/OrganizationNetworkPage.tsx`
+- `src/frontend/lib/dashboard-state-resolver.ts`
+- `src/frontend/lib/role-navigation.ts`
+- `src/frontend/pages/RoleDashboard.tsx`
+- `src/frontend/styles/components.css`
+- `src/frontend/styles/responsive.css`
+
+Result:
+
+- Added PBI-463 through PBI-472 to the canonical backlog.
+- Added organization profile/registration, network request, graph projection,
+  proof trail, and local email outbox contracts.
+- Implemented backend organization network routes with in-memory and PostgreSQL
+  adapters.
+- Implemented Organization Network workspace with SVG graph, proof-scope edge
+  indicators, left Blockchain Trail panel, and right Establish Network panel.
+- Seeded Amanah-Barakah and Mabrur-Amanah organization relationships for the
+  local demo.
+
+Validation:
+
+- `node --test --loader ts-node/esm src/modules/organization-network/api/organization-network.routes.test.ts`
+  passed with 3 tests.
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm test` passed with 829 tests.
+- `npm run db:migrate -- --dry-run` passed with 18 migrations validated.
+- `npm run db:seed -- --dry-run` passed with 9 demo accounts and organization
+  network graph records validated.
+- `docker compose config` passed.
+- `docker compose -f docker-compose.app.yml config` passed.
+- Local Docker PostgreSQL migration/seed smoke passed after applying
+  `018_organization_network_email_outbox.sql`.
+- Browser smoke on a temporary local stack passed: `buyer.demo` reached the
+  dashboard, Organization Network navigation rendered, and the workspace showed
+  relationship graph, Blockchain Trail, Email Outbox, and no forbidden product
+  labels.
+- Backlog CSV validation passed with 472 rows and PBI-463 through PBI-472
+  marked Completed.
+- Forbidden product-source label scan passed for `src/frontend`.
+- `git diff --check` passed with line-ending warnings only.
+
+Known limitations:
+
+- Email outbox is local metadata only and does not send SMTP.
+- Graph channel names are visibility/proof-scope aliases and do not claim
+  production Fabric consortium membership.
+- Registration creates a pending KYC/AML case and does not bypass eligibility
+  gates.
+
 ## TASK-2026-05-31-004 Unified Backlog and Export Bundle App-Owned Anchor
 
 Stage: GitHub Issue #13 follow-up
