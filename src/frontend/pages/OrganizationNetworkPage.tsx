@@ -121,18 +121,47 @@ function positionNodes(nodes: OrganizationGraphNode[]) {
   return positioned;
 }
 
+function nodeHoverSummary(node: OrganizationGraphNode): string {
+  return [
+    `${node.displayName} (${node.uniqueIdentifier})`,
+    `Relationship: ${formatLabel(node.relationshipToCurrentOrg)} as ${formatLabel(node.relationshipRole)}`,
+    `Deals: ${node.activeDealCount}`,
+    `Eligibility: ${formatLabel(node.eligibilityStatus)}`,
+    `Last interaction: ${formatDate(node.lastInteractionAt)}`,
+    node.profileSummary ?? 'No public profile summary recorded.',
+    node.proofChannelSummary ?? 'No proof-channel summary recorded.',
+  ].join(' | ');
+}
+
+function edgeHoverSummary(edge: OrganizationGraphEdge): string {
+  return [
+    `${formatLabel(edge.relationshipType)} relationship`,
+    `Direction: ${formatLabel(edge.direction)}`,
+    `Stage: ${formatLabel(edge.currentStage)}`,
+    `Scope: ${formatLabel(edge.channelScope)}`,
+    `Anchor: ${formatLabel(edge.anchorStatus)}`,
+    `Verification: ${formatLabel(edge.verificationStatus)}`,
+    edge.latestPayloadHash ? `Latest hash: ${edge.latestPayloadHash}` : 'No payload hash recorded',
+    edge.safeSummary,
+  ].join(' | ');
+}
+
 function GraphCanvas({
   graph,
   selectedNodeId,
   selectedEdgeId,
   onSelectNode,
   onSelectEdge,
+  onHoverSummary,
+  onClearHover,
 }: {
   graph: OrganizationGraphProjection;
   selectedNodeId?: string;
   selectedEdgeId?: string;
   onSelectNode: (node: OrganizationGraphNode) => void;
   onSelectEdge: (edge: OrganizationGraphEdge) => void;
+  onHoverSummary: (summary: string) => void;
+  onClearHover: () => void;
 }) {
   const positions = useMemo(() => positionNodes(graph.nodes), [graph.nodes]);
 
@@ -160,13 +189,18 @@ function GraphCanvas({
               y2={target.y}
               markerEnd="url(#network-arrow)"
               onClick={() => onSelectEdge(edge)}
+              onMouseEnter={() => onHoverSummary(edgeHoverSummary(edge))}
+              onMouseLeave={onClearHover}
             />
             <text
               className="organization-graph-edge-label"
               x={(source.x + target.x) / 2}
               y={(source.y + target.y) / 2 - 8}
               onClick={() => onSelectEdge(edge)}
+              onMouseEnter={() => onHoverSummary(edgeHoverSummary(edge))}
+              onMouseLeave={onClearHover}
             >
+              <title>{edgeHoverSummary(edge)}</title>
               {formatLabel(edge.channelScope)}
             </text>
           </g>
@@ -184,7 +218,10 @@ function GraphCanvas({
             className={`organization-graph-node ${isSelf ? 'organization-graph-node-self' : ''} ${selectedNodeId === node.id ? 'organization-graph-node-selected' : ''}`}
             key={node.id}
             onClick={() => onSelectNode(node)}
+            onMouseEnter={() => onHoverSummary(nodeHoverSummary(node))}
+            onMouseLeave={onClearHover}
           >
+            <title>{nodeHoverSummary(node)}</title>
             <circle cx={position.x} cy={position.y} r={isSelf ? 48 : 38} />
             <text x={position.x} y={position.y - 4}>{node.alias ?? node.displayName}</text>
             <text className="organization-graph-node-subtitle" x={position.x} y={position.y + 15}>
@@ -207,6 +244,9 @@ function OrganizationNetworkPage({ session }: OrganizationNetworkPageProps) {
   const [trail, setTrail] = useState<OrganizationGraphTrailEntry[]>([]);
   const [searchResult, setSearchResult] = useState<OrganizationProfile | undefined>();
   const [form, setForm] = useState<NetworkFormState>(defaultNetworkForm);
+  const [hoverSummary, setHoverSummary] = useState<string | undefined>();
+  const [isTrailPanelOpen, setIsTrailPanelOpen] = useState(true);
+  const [isActionPanelOpen, setIsActionPanelOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | undefined>();
@@ -316,6 +356,19 @@ function OrganizationNetworkPage({ session }: OrganizationNetworkPageProps) {
     }
   };
 
+  const handleSelectNode = (node: OrganizationGraphNode) => {
+    setSelectedNode(node);
+    setSelectedEdge(undefined);
+    setTrail(graph?.latestProofActivity ?? []);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedNode(undefined);
+    setSelectedEdge(undefined);
+    setTrail(graph?.latestProofActivity ?? []);
+    setHoverSummary(undefined);
+  };
+
   if (isLoading) {
     return (
       <section className="workspace-panel">
@@ -331,12 +384,24 @@ function OrganizationNetworkPage({ session }: OrganizationNetworkPageProps) {
         <p className="dashboard-role-label">Organization Network</p>
         <h2>Relationship graph and proof trail</h2>
         <p>Search trusted organizations, request network establishment, and inspect proof-aware relationship vectors.</p>
+        <div className="network-panel-toggle-row" aria-label="Network panel controls">
+          <button className="button button-secondary" type="button" onClick={() => setIsTrailPanelOpen(current => !current)}>
+            {isTrailPanelOpen ? 'Hide trail' : 'Show trail'}
+          </button>
+          <button className="button button-secondary" type="button" onClick={() => setIsActionPanelOpen(current => !current)}>
+            {isActionPanelOpen ? 'Hide actions' : 'Show actions'}
+          </button>
+          <button className="button button-secondary" type="button" onClick={handleClearSelection}>
+            Clear selection
+          </button>
+        </div>
       </section>
 
       {error ? <div className="admin-alert admin-alert-error" role="alert">{error}</div> : null}
       {message ? <div className="admin-alert admin-alert-success" role="status">{message}</div> : null}
 
-      <div className="organization-network-shell">
+      <div className={`organization-network-shell ${!isTrailPanelOpen ? 'organization-network-shell-no-left' : ''} ${!isActionPanelOpen ? 'organization-network-shell-no-right' : ''}`}>
+        {isTrailPanelOpen ? (
         <aside className="organization-network-panel organization-network-panel-left" aria-label="Blockchain trail">
           <h3>Blockchain Trail</h3>
           {selectedEdge ? (
@@ -370,6 +435,7 @@ function OrganizationNetworkPage({ session }: OrganizationNetworkPageProps) {
             ))}
           </div>
         </aside>
+        ) : null}
 
         <section className="organization-network-graph workspace-panel" aria-label="Relationship graph">
           {graph ? (
@@ -377,18 +443,20 @@ function OrganizationNetworkPage({ session }: OrganizationNetworkPageProps) {
               graph={graph}
               selectedNodeId={selectedNode?.id}
               selectedEdgeId={selectedEdge?.id}
-              onSelectNode={node => {
-                setSelectedNode(node);
-                setSelectedEdge(undefined);
-                setTrail([]);
-              }}
+              onSelectNode={handleSelectNode}
               onSelectEdge={edge => void handleSelectEdge(edge)}
+              onHoverSummary={setHoverSummary}
+              onClearHover={() => setHoverSummary(undefined)}
             />
           ) : (
             <div className="empty-product-state">Graph data is not available.</div>
           )}
+          <div className="network-hover-summary" aria-live="polite">
+            {hoverSummary ?? 'Hover a node or vector to inspect company profile, relationship, stage, proof hash, and scope summary.'}
+          </div>
         </section>
 
+        {isActionPanelOpen ? (
         <aside className="organization-network-panel organization-network-panel-right" aria-label="Network actions">
           <h3>Establish Network</h3>
           <form className="admin-form" onSubmit={event => void handleCreateRequest(event)}>
@@ -449,6 +517,19 @@ function OrganizationNetworkPage({ session }: OrganizationNetworkPageProps) {
             </article>
           ) : null}
 
+          <article className="network-preview-card">
+            <strong>Start trade</strong>
+            <span>Accepted relationships can move into the Orders workspace.</span>
+            <p>This action prepares the next workflow step only; it does not bypass eligibility, create escrow, or execute payment.</p>
+            <button
+              className="button button-secondary"
+              type="button"
+              onClick={() => setMessage('Open Orders to create a governed order for an accepted relationship.')}
+            >
+              Prepare order
+            </button>
+          </article>
+
           <h3>Requests</h3>
           <div className="network-request-list">
             {inboundRequests.length === 0 ? (
@@ -482,6 +563,7 @@ function OrganizationNetworkPage({ session }: OrganizationNetworkPageProps) {
             ))}
           </div>
         </aside>
+        ) : null}
       </div>
     </div>
   );

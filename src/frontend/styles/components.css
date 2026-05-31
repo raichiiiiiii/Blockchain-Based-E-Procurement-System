@@ -257,6 +257,25 @@
   min-width: 0;
 }
 
+.organization-network-shell-no-left {
+  grid-template-columns: minmax(320px, 1.8fr) minmax(240px, 0.9fr);
+}
+
+.organization-network-shell-no-right {
+  grid-template-columns: minmax(220px, 0.8fr) minmax(320px, 1.8fr);
+}
+
+.organization-network-shell-no-left.organization-network-shell-no-right {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.network-panel-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+
 .organization-network-panel {
   display: flex;
   flex-direction: column;
@@ -276,6 +295,8 @@
 }
 
 .organization-network-graph {
+  display: flex;
+  flex-direction: column;
   min-height: 540px;
   min-width: 0;
   overflow: hidden;
@@ -285,7 +306,7 @@
 .organization-graph-canvas {
   display: block;
   width: 100%;
-  height: 100%;
+  flex: 1;
   min-height: 520px;
 }
 
@@ -379,7 +400,8 @@
 .network-selection-summary,
 .network-preview-card,
 .network-request-card,
-.network-trail-row {
+.network-trail-row,
+.network-hover-summary {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -398,7 +420,8 @@
 .network-preview-card span,
 .network-request-card span,
 .network-trail-row span,
-.network-preview-card p {
+.network-preview-card p,
+.network-hover-summary {
   margin: 0;
   overflow-wrap: anywhere;
 }
@@ -407,8 +430,14 @@
 .network-preview-card span,
 .network-request-card span,
 .network-trail-row span,
-.network-preview-card p {
+.network-preview-card p,
+.network-hover-summary {
   color: var(--color-neutral);
+}
+
+.network-hover-summary {
+  margin: 0 1rem 1rem;
+  font-size: 0.9rem;
 }
 
 .network-trail-list,

@@ -111,6 +111,74 @@ Known limitations:
 - Registration creates a pending KYC/AML case and does not bypass eligibility
   gates.
 
+## TASK-2026-05-31-006 Issue #14 Evidence and Contract Closure
+
+Stage: GitHub Issue #14 acceptance follow-up
+Status: done
+
+Business reason:
+
+Close the named evidence and documentation traceability gaps from Issue #14
+after the main organization network implementation was merged.
+
+Files inspected:
+
+- GitHub Issue #14
+- `src/frontend/pages/OrganizationNetworkPage.tsx`
+- `docs/contracts/API_CONTRACTS.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/evidence/qa/PBI-463_TO_PBI-472_ORGANIZATION_NETWORK_VALIDATION.md`
+
+Files changed:
+
+- `src/frontend/pages/OrganizationNetworkPage.tsx`
+- `src/frontend/styles/components.css`
+- `docs/contracts/API_CONTRACTS.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/evidence/qa/PBI-463_TO_PBI-472_ORGANIZATION_NETWORK_VALIDATION.md`
+- `docs/evidence/qa/ORGANIZATION_NETWORK_GRAPH_WORKSPACE_VALIDATION.md`
+- `docs/evidence/qa/ORGANIZATION_REGISTRATION_ROLE_UMBRELLA_VALIDATION.md`
+- `docs/evidence/qa/EMAIL_NOTIFICATION_OUTBOX_VALIDATION.md`
+- `docs/evidence/qa/ERP_NEXT_FRAPPE_UX_STUDY_VALIDATION.md`
+
+Result:
+
+- Added the four named Issue #14 evidence files.
+- Added the organization network API surface to the central API contract.
+- Added organization network persistence coverage to the persistence matrix.
+- Added organization network and local email outbox capability wording to the
+  current product baseline.
+- Added explicit Organization Network panel toggles and node/vector hover
+  summaries.
+
+Validation:
+
+- `npm run build` passed.
+- `node --test --loader ts-node/esm src/modules/organization-network/api/organization-network.routes.test.ts`
+  passed with 3 tests.
+- `npm run frontend:build` passed.
+- `npm run db:migrate -- --dry-run` passed with 18 migrations validated.
+- `npm run db:seed -- --dry-run` passed with 9 demo accounts and organization
+  network graph records validated.
+- `docker compose config` passed.
+- `docker compose -f docker-compose.app.yml config` passed.
+- `npm test` passed with 829 tests.
+- Browser smoke on a temporary local stack passed: `buyer.demo` reached
+  Organization Network, panel toggles worked, hover prompt rendered, and no
+  forbidden product labels appeared.
+- Feature backlog CSV validation passed.
+- Forbidden product-source label scan passed for `src/frontend`.
+- Tracked generated Fabric secret/artifact check passed.
+- `git diff --check` passed with line-ending warnings only.
+
+Known limitations:
+
+- The graph remains a compact SVG projection, not a full graph editor.
+- Start-trade preparation points users toward governed order creation and does
+  not bypass eligibility, create escrow, or execute payment.
+
 ## TASK-2026-05-31-004 Unified Backlog and Export Bundle App-Owned Anchor
 
 Stage: GitHub Issue #13 follow-up
