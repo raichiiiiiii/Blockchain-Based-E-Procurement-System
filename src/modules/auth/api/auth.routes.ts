@@ -3,6 +3,9 @@ import type { PlatformUserCredentialRepository } from '../application/platform-u
 import type { AuthSessionRepository } from '../application/auth-session-repository.js';
 import { LoginUserError, LoginUserService } from '../application/login-user.js';
 import { LogoutUserError, LogoutUserService } from '../application/logout-user.js';
+import { LocalPasswordAuthProvider } from '../application/local-password-auth-provider.js';
+import { ExternalOidcAuthProvider } from '../application/external-oidc-auth-provider.js';
+import { roleScopeMap } from '../application/auth-provider.js';
 import type { ValidationErrorEnvelope } from '../../shared/api/validation-error-helper.js';
 
 interface AuthRoutesOptions {
@@ -24,10 +27,26 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, opts) 
     opts.credentialRepository,
     opts.sessionRepository
   );
+  const localPasswordProvider = new LocalPasswordAuthProvider(loginService);
+  const externalOidcProvider = new ExternalOidcAuthProvider();
 
   const logoutService = new LogoutUserService(
     opts.sessionRepository
   );
+
+  fastify.get('/auth/providers', async (_request, reply) => {
+    return reply.status(200).send({
+      data: {
+        providers: [
+          localPasswordProvider.status(),
+          externalOidcProvider.status(),
+        ],
+        roleScopeMap,
+        tokenModel: 'opaqueBearerSession',
+        oidcReadiness: 'boundaryOnly',
+      },
+    });
+  });
 
   fastify.post('/auth/login', {
     schema: {
@@ -43,7 +62,7 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, opts) 
   }, async (request, reply) => {
     try {
       const { username, password } = request.body as { username: string; password: string };
-      const result = await loginService.login({ username, password });
+      const result = await localPasswordProvider.login({ username, password });
 
       return reply.status(200).send({
         data: result
@@ -70,6 +89,20 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, opts) 
         }
       });
     }
+  });
+
+  fastify.post('/auth/oidc/callback', async (_request, reply) => {
+    return reply.status(503).send({
+      error: {
+        code: 'EXTERNAL_SERVICE_ERROR',
+        message: 'External OIDC provider is not configured',
+        details: {
+          provider: 'externalOidc',
+          status: 'notConfigured',
+          tokenModel: 'opaqueBearerSession',
+        },
+      },
+    });
   });
 
   fastify.post('/auth/logout', async (request, reply) => {

@@ -1,0 +1,95 @@
+{
+  "info": {
+    "name": "Digital Procurement and PLS Seedbed API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Local supervisor-demo API collection. Uses credential login and bearer session variables. OAuth/OIDC remains a readiness boundary only."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3100/api/v1" },
+    { "key": "sessionToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth - providers",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/auth/providers"
+      }
+    },
+    {
+      "name": "Auth - login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"amanah.admin\",\n  \"password\": \"demo-password\"\n}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "Organization - dashboard summary",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{sessionToken}}" }],
+        "url": "{{baseUrl}}/organizations/me/dashboard-summary"
+      }
+    },
+    {
+      "name": "Organization - channel matrix",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{sessionToken}}" }],
+        "url": "{{baseUrl}}/organizations/me/channel-matrix"
+      }
+    },
+    {
+      "name": "Company Ledger - deals",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{sessionToken}}" }],
+        "url": "{{baseUrl}}/company-ledger/deals"
+      }
+    },
+    {
+      "name": "Productivity - summary",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{sessionToken}}" }],
+        "url": "{{baseUrl}}/company-productivity/summary"
+      }
+    },
+    {
+      "name": "Productivity - create saved view",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{sessionToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Proof exceptions\",\n  \"filter\": \"proofStatus in failed,mismatch,unavailable\"\n}"
+        },
+        "url": "{{baseUrl}}/company-productivity/saved-views"
+      }
+    },
+    {
+      "name": "Company Ledger - export summary",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{sessionToken}}" }],
+        "url": "{{baseUrl}}/company-ledger/exports"
+      }
+    },
+    {
+      "name": "Notifications",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{sessionToken}}" }],
+        "url": "{{baseUrl}}/notifications"
+      }
+    }
+  ]
+}

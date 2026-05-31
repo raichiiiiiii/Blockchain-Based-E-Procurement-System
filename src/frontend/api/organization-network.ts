@@ -3,6 +3,7 @@ import { requestJson } from './http-client';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 import type {
   CompanyDashboardSummary,
+  CompanyChannelMatrixEntry,
   CompanyDealProjection,
   CompanyUserSummary,
   EmailNotificationRecord,
@@ -89,6 +90,16 @@ export async function getCompanyDashboardSummary(
   return requestJson<CompanyDashboardSummary>('/api/v1/organizations/me/dashboard-summary', {
     headers: createSessionHeaders(session),
   });
+}
+
+export async function listCompanyChannelMatrix(
+  session: AuthenticatedFrontendSession,
+): Promise<CompanyChannelMatrixEntry[]> {
+  const response = await requestJson<{ items: CompanyChannelMatrixEntry[] }>('/api/v1/organizations/me/channel-matrix', {
+    headers: createSessionHeaders(session),
+  });
+
+  return response.items;
 }
 
 export async function listOrganizationUsers(

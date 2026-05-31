@@ -30,6 +30,9 @@ Demo accounts:
 ```text
 admin.demo
 amanah.admin
+amanah.procurement
+barakah.admin
+barakah.sales
 buyer.demo
 supplier.demo
 compliance.demo
@@ -38,6 +41,12 @@ financier.demo
 auditor.demo
 regulator.demo
 security.demo
+hidayah.admin
+raudhah.procurement
+halalpack.admin
+nusantara.sales
+falah.finance
+amanlogistics.ops
 ```
 
 Use `amanah.admin` when demonstrating company-level settings and organization
@@ -192,6 +201,8 @@ Show:
 - relationship graph and proof-scope vector
 - Blockchain Trail panel
 - Company Ledger and private deal projection
+- Productivity, partner scope matrix, task center, saved views, notification
+  center, and lightweight export summary
 - restricted Mudarabah projection
 - Email Outbox entry after network request action
 - Orders

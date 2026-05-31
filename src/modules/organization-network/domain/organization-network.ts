@@ -109,6 +109,22 @@ export type CompanyDashboardSummary = {
   latestProofStatus: CompanyProofStatus;
 };
 
+export type CompanyChannelMatrixEntry = {
+  matrixId: string;
+  partnerOrganizationId: string;
+  partnerDisplayName: string;
+  relationshipRole: OrganizationRelationshipIntent;
+  relationshipType: OrganizationGraphRelationshipType;
+  channelScope: OrganizationGraphChannelScope;
+  proofScopeSummary: string;
+  activeDealCount: number;
+  latestProofStatus: CompanyProofStatus;
+  eligibilityStatus: OrganizationEligibilityStatus;
+  riskSummary: string;
+  currentStage: string;
+  latestLifecycleEventId?: string;
+};
+
 export type CompanyDealProjection = {
   dealId: string;
   relationshipId?: string;

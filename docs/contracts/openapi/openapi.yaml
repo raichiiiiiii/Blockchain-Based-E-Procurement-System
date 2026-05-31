@@ -1,0 +1,831 @@
+openapi: 3.1.0
+info:
+  title: Digital Procurement and PLS Seedbed API
+  version: 0.24.0
+  summary: Compliance-first procurement evidence API with proof anchoring and PLS seedbed support.
+  description: >
+    API contract for the supervisor-demo plus selected pilot-hardening baseline.
+    The runtime uses opaque bearer sessions. OAuth2/OIDC entries are readiness
+    boundaries and do not claim a production identity provider.
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+servers:
+  - url: http://localhost:3100/api/v1
+    description: Local backend
+tags:
+  - name: Auth
+  - name: Organizations
+  - name: Organization Network
+  - name: Company Ledger
+  - name: Productivity
+  - name: Email
+  - name: Blockchain
+paths:
+  /auth/providers:
+    get:
+      tags: [Auth]
+      operationId: listAuthProviders
+      summary: List configured authentication providers and scope map.
+      responses:
+        "200":
+          description: Provider readiness status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthProvidersResponse"
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: loginWithLocalCredentials
+      summary: Sign in with issued local credentials.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  example: amanah.admin
+                password:
+                  type: string
+                  format: password
+                  example: demo-password
+      responses:
+        "200":
+          description: Opaque bearer session issued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logoutCurrentSession
+      summary: Revoke the current bearer session.
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Session revoked.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [loggedOut]
+                    properties:
+                      loggedOut:
+                        type: boolean
+                        example: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/oidc/callback:
+    post:
+      tags: [Auth]
+      operationId: oidcCallbackReadinessBoundary
+      summary: Return not configured for external OIDC callback readiness.
+      responses:
+        "503":
+          description: External OIDC is not configured.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /organizations/register:
+    post:
+      tags: [Organizations]
+      operationId: registerOrganization
+      summary: Register a pending organization and primary admin credential.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterOrganizationRequest"
+      responses:
+        "201":
+          description: Pending organization created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationRegistrationResponse"
+  /organizations/me/profile:
+    get:
+      tags: [Organizations]
+      operationId: getOwnOrganizationProfile
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Current organization profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationProfileResponse"
+    patch:
+      tags: [Organizations]
+      operationId: updateOwnOrganizationProfile
+      security:
+        - bearerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                alias: { type: string }
+                businessCategory: { type: string }
+                publicProfileSummary: { type: string }
+                contactEmail: { type: string, format: email }
+      responses:
+        "200":
+          description: Profile updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationProfileResponse"
+  /organizations/me/dashboard-summary:
+    get:
+      tags: [Organizations]
+      operationId: getCompanyDashboardSummary
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Current organization dashboard summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyDashboardSummaryResponse"
+  /organizations/me/channel-matrix:
+    get:
+      tags: [Organizations, Organization Network]
+      operationId: getCompanyChannelMatrix
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Partner proof-scope matrix for the authenticated organization.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [items]
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/CompanyChannelMatrixEntry"
+  /organizations/me/users:
+    get:
+      tags: [Organizations]
+      operationId: listOrganizationUsers
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Organization-scoped users.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListUsersResponse"
+    post:
+      tags: [Organizations]
+      operationId: inviteOrganizationUser
+      security:
+        - bearerSession: []
+      responses:
+        "201":
+          description: User invitation prepared.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyUserResponse"
+  /organization-network/graph:
+    get:
+      tags: [Organization Network]
+      operationId: getOrganizationNetworkGraph
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Organization graph projection.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationGraphResponse"
+  /organization-network/requests:
+    get:
+      tags: [Organization Network]
+      operationId: listOrganizationNetworkRequests
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Network relationship requests.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetworkRequestsResponse"
+    post:
+      tags: [Organization Network]
+      operationId: createOrganizationNetworkRequest
+      security:
+        - bearerSession: []
+      responses:
+        "201":
+          description: Request created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetworkRequestResponse"
+  /company-ledger/deals:
+    get:
+      tags: [Company Ledger]
+      operationId: listCompanyLedgerDeals
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Company-scoped private deal projections.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyDealsResponse"
+  /company-ledger/mudarabah:
+    get:
+      tags: [Company Ledger]
+      operationId: listCompanyMudarabahProjections
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Restricted Mudarabah workflow projections.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MudarabahProjectionsResponse"
+  /company-ledger/exports:
+    post:
+      tags: [Company Ledger, Productivity]
+      operationId: createCompanyLedgerExport
+      security:
+        - bearerSession: []
+      responses:
+        "201":
+          description: Lightweight company ledger manifest created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyLedgerExportResponse"
+  /company-productivity/summary:
+    get:
+      tags: [Productivity]
+      operationId: getCompanyProductivitySummary
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Money tracker, pipeline, inbox, scorecards, and checklist.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompanyProductivitySummaryResponse"
+  /company-productivity/action-inbox:
+    get:
+      tags: [Productivity]
+      operationId: listActionInbox
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Open and completed company tasks.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionInboxResponse"
+  /company-productivity/action-inbox/{taskId}:
+    patch:
+      tags: [Productivity]
+      operationId: completeActionInboxTask
+      security:
+        - bearerSession: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Task marked complete.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionInboxItemResponse"
+  /company-productivity/saved-views:
+    get:
+      tags: [Productivity]
+      operationId: listSavedWorkspaceViews
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Saved views for the current organization.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedViewsResponse"
+    post:
+      tags: [Productivity]
+      operationId: createSavedWorkspaceView
+      security:
+        - bearerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, example: Proof exceptions }
+                filter: { type: string, example: proofStatus in failed,mismatch,unavailable }
+      responses:
+        "201":
+          description: Saved view created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedViewResponse"
+  /notifications:
+    get:
+      tags: [Email, Productivity]
+      operationId: listNotifications
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Safe local notification center records.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationsResponse"
+  /email-notifications/outbox:
+    get:
+      tags: [Email]
+      operationId: listEmailNotificationOutbox
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Local email outbox records.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationsResponse"
+  /blockchain/anchors/{eventId}:
+    get:
+      tags: [Blockchain]
+      operationId: getBlockchainAnchor
+      security:
+        - bearerSession: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Proof metadata for an event.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlockchainAnchorResponse"
+  /blockchain/anchors/{eventId}/verify:
+    post:
+      tags: [Blockchain]
+      operationId: verifyBlockchainAnchor
+      security:
+        - bearerSession: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Proof verification result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BlockchainVerificationResponse"
+components:
+  securitySchemes:
+    bearerSession:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque-session
+      description: Current runtime opaque bearer session token.
+    oauth2:
+      type: oauth2
+      description: OAuth2/OIDC readiness boundary only; no production IdP is configured.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://identity.example.test/oauth/authorize
+          tokenUrl: https://identity.example.test/oauth/token
+          scopes:
+            org:read: Read organization profile and context.
+            org:write: Update organization metadata.
+            org:users:manage: Manage organization users.
+            network:read: Read organization network graph.
+            network:write: Create and decide network requests.
+            deals:read: Read company ledger projections.
+            deals:write: Prepare deal actions.
+            productivity:read: Read productivity workspace.
+            productivity:write: Update tasks and saved views.
+            proof:read: Read proof metadata.
+            proof:verify: Verify proof hashes.
+            email:read: Read local notification outbox.
+            admin:platform: Platform administration.
+  responses:
+    Unauthorized:
+      description: Authentication failed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+  schemas:
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: UNAUTHORIZED }
+            message: { type: string, example: Authentication required }
+            details: { type: object }
+    AuthProvidersResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [providers, roleScopeMap, tokenModel, oidcReadiness]
+          properties:
+            providers:
+              type: array
+              items:
+                type: object
+                required: [provider, status, authenticationMethod, scopes, message]
+                properties:
+                  provider: { type: string, enum: [localPassword, externalOidc] }
+                  status: { type: string, enum: [available, notConfigured] }
+                  authenticationMethod: { type: string }
+                  scopes:
+                    type: array
+                    items: { type: string }
+                  message: { type: string }
+            roleScopeMap: { type: object }
+            tokenModel: { type: string, example: opaqueBearerSession }
+            oidcReadiness: { type: string, example: boundaryOnly }
+    LoginResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [sessionToken, sessionId, expiresAt, actor]
+          properties:
+            sessionToken: { type: string, example: opaque-session-value }
+            sessionId: { type: string, example: session_123 }
+            expiresAt: { type: string, format: date-time }
+            actor:
+              type: object
+              required: [actorUserId, actorRoleCodes, authenticationSessionId, authenticationMethod]
+              properties:
+                actorUserId: { type: string }
+                actorOrganizationId: { type: string }
+                actorRoleCodes:
+                  type: array
+                  items: { type: string }
+                authenticationSessionId: { type: string }
+                authenticationMethod: { type: string, example: localPassword }
+    RegisterOrganizationRequest:
+      type: object
+      required: [legalName, alias, uniqueIdentifier, contactEmail, businessCategory, primaryAdminUsername, primaryAdminPassword]
+      properties:
+        legalName: { type: string }
+        alias: { type: string }
+        uniqueIdentifier: { type: string }
+        contactEmail: { type: string, format: email }
+        businessCategory: { type: string }
+        publicProfileSummary: { type: string }
+        primaryAdminUsername: { type: string }
+        primaryAdminPassword: { type: string, format: password }
+    OrganizationProfile:
+      type: object
+      required: [organizationId, legalName, uniqueIdentifier, status, eligibilityStatus]
+      properties:
+        organizationId: { type: string }
+        legalName: { type: string }
+        displayName: { type: string }
+        alias: { type: string }
+        uniqueIdentifier: { type: string }
+        status: { type: string, enum: [pendingReview, active, inactive, suspended, deleted] }
+        eligibilityStatus: { type: string, enum: [unknown, eligible, flagged, blocked] }
+        businessCategory: { type: string }
+        publicProfileSummary: { type: string }
+        contactEmail: { type: string }
+    OrganizationProfileResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/OrganizationProfile"
+    OrganizationRegistrationResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [organization, primaryAdminUserId]
+          properties:
+            organization:
+              $ref: "#/components/schemas/OrganizationProfile"
+            primaryAdminUserId: { type: string }
+            onboardingCaseId: { type: string }
+    CompanyDashboardSummaryResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [organization, currentUser, relationshipRoles, activeDealCount, latestProofStatus]
+          properties:
+            organization:
+              $ref: "#/components/schemas/OrganizationProfile"
+            currentUser:
+              type: object
+              properties:
+                userId: { type: string }
+                roleCodes:
+                  type: array
+                  items: { type: string }
+            relationshipRoles:
+              type: array
+              items:
+                type: object
+            activeDealCount: { type: integer }
+            latestProofStatus:
+              $ref: "#/components/schemas/ProofStatus"
+    CompanyChannelMatrixEntry:
+      type: object
+      required: [matrixId, partnerOrganizationId, partnerDisplayName, relationshipRole, channelScope, activeDealCount, latestProofStatus, eligibilityStatus, riskSummary]
+      properties:
+        matrixId: { type: string }
+        partnerOrganizationId: { type: string }
+        partnerDisplayName: { type: string }
+        relationshipRole: { type: string }
+        relationshipType: { type: string }
+        channelScope:
+          type: string
+          enum: [sharedChannelA, sharedChannelB, privateChannelC, localProofOnly, unavailable]
+        proofScopeSummary: { type: string }
+        activeDealCount: { type: integer }
+        latestProofStatus:
+          $ref: "#/components/schemas/ProofStatus"
+        eligibilityStatus: { type: string }
+        riskSummary: { type: string }
+        currentStage: { type: string }
+        latestLifecycleEventId: { type: string }
+    CompanyUserResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/CompanyUser"
+    ListUsersResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/CompanyUser"
+    CompanyUser:
+      type: object
+      properties:
+        userId: { type: string }
+        username: { type: string }
+        displayName: { type: string }
+        membershipStatus: { type: string }
+        roleCodes:
+          type: array
+          items: { type: string }
+    OrganizationGraphResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [currentOrganizationId, nodes, edges, latestProofActivity]
+          properties:
+            currentOrganizationId: { type: string }
+            nodes:
+              type: array
+              items: { type: object }
+            edges:
+              type: array
+              items: { type: object }
+            latestProofActivity:
+              type: array
+              items: { type: object }
+    NetworkRequestsResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { type: object }
+    NetworkRequestResponse:
+      type: object
+      properties:
+        data: { type: object }
+    CompanyDealsResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/CompanyDeal"
+    CompanyDeal:
+      type: object
+      required: [dealId, title, counterpartOrganizationId, counterpartDisplayName, orderStatus, deliveryEvidenceStatus, escrowStatus, proofStatus, financingStatus, safeSummary]
+      properties:
+        dealId: { type: string }
+        title: { type: string }
+        counterpartOrganizationId: { type: string }
+        counterpartDisplayName: { type: string }
+        relationship: { type: string }
+        orderId: { type: string }
+        orderStatus: { type: string }
+        deliveryEvidenceStatus: { type: string }
+        escrowId: { type: string }
+        escrowStatus: { type: string }
+        proofStatus:
+          $ref: "#/components/schemas/ProofStatus"
+        proofPayloadHash: { type: string }
+        financingStatus: { type: string }
+        safeSummary: { type: string }
+    MudarabahProjectionsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items: { type: object }
+    CompanyProductivitySummaryResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          required: [moneyTracker, pipeline, actionInbox, supplierScorecards, evidenceChecklist]
+          properties:
+            moneyTracker:
+              $ref: "#/components/schemas/MoneyTracker"
+            pipeline:
+              type: array
+              items: { type: object }
+            actionInbox:
+              type: array
+              items:
+                $ref: "#/components/schemas/ActionInboxItem"
+            supplierScorecards:
+              type: array
+              items: { type: object }
+            evidenceChecklist:
+              type: array
+              items: { type: object }
+    MoneyTracker:
+      type: object
+      properties:
+        currency: { type: string, example: MYR }
+        committedPurchaseOrderValue: { type: string, example: "68000.00" }
+        expectedDeliveryValue: { type: string }
+        escrowAmount: { type: string }
+        financingCapitalAmount: { type: string }
+        budgetRemaining: { type: string }
+        safeAmountLabel: { type: string }
+    ActionInboxResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/ActionInboxItem"
+    ActionInboxItemResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ActionInboxItem"
+    ActionInboxItem:
+      type: object
+      properties:
+        taskId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        priority: { type: string, enum: [low, medium, high] }
+        status: { type: string, enum: [open, completed] }
+        actionType: { type: string }
+    SavedViewsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/SavedWorkspaceView"
+    SavedViewResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/SavedWorkspaceView"
+    SavedWorkspaceView:
+      type: object
+      properties:
+        viewId: { type: string }
+        organizationId: { type: string }
+        name: { type: string }
+        filter: { type: string }
+        createdByUserId: { type: string }
+        createdAt: { type: string, format: date-time }
+    CompanyLedgerExportResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            exportId: { type: string }
+            organizationId: { type: string }
+            generatedByUserId: { type: string }
+            generatedAt: { type: string, format: date-time }
+            itemCount: { type: integer }
+            manifestHash: { type: string, example: sha256:abc123 }
+            proofScope: { type: string, example: companyLedgerSummary }
+            status: { type: string, example: ready }
+            safeSummary: { type: string }
+    NotificationsResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+    BlockchainAnchorResponse:
+      type: object
+      properties:
+        data:
+          type: object
+    BlockchainVerificationResponse:
+      type: object
+      properties:
+        data:
+          type: object
+    ProofStatus:
+      type: string
+      enum: [notAnchored, pending, anchored, failed, verified, mismatch, notFound, unavailable]

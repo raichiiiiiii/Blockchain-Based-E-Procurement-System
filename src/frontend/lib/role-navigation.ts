@@ -13,6 +13,7 @@ export type DashboardNavigationTarget =
   | 'organization-network'
   | 'organization-users'
   | 'company-ledger'
+  | 'productivity'
   | 'escrow'
   | 'blockchain-proof'
   | 'compliance'
@@ -44,6 +45,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'organization-network', label: 'Organization Network' },
     { id: 'organization-users', label: 'Company Users' },
     { id: 'company-ledger', label: 'Company Ledger' },
+    { id: 'productivity', label: 'Productivity' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
   ],
@@ -52,6 +54,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'organization-network', label: 'Organization Network' },
     { id: 'organization-users', label: 'Company Users' },
     { id: 'company-ledger', label: 'Company Ledger' },
+    { id: 'productivity', label: 'Productivity' },
     { id: 'members', label: 'Members' },
     { id: 'roles', label: 'Roles' },
     { id: 'settings', label: 'Settings' },
@@ -64,6 +67,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'contracts', label: 'Contract Negotiation' },
     { id: 'organization-network', label: 'Organization Network' },
     { id: 'company-ledger', label: 'Company Ledger' },
+    { id: 'productivity', label: 'Productivity' },
     { id: 'escrow', label: 'Escrow' },
     { id: 'blockchain-proof', label: 'Blockchain Proof' },
     { id: 'settings', label: 'Settings' },
@@ -77,6 +81,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'contracts', label: 'Contract Negotiation' },
     { id: 'organization-network', label: 'Organization Network' },
     { id: 'company-ledger', label: 'Company Ledger' },
+    { id: 'productivity', label: 'Productivity' },
     { id: 'escrow', label: 'Escrow' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
@@ -87,6 +92,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'documents', label: 'Contract Documents' },
     { id: 'organization-network', label: 'Organization Network' },
     { id: 'company-ledger', label: 'Company Ledger' },
+    { id: 'productivity', label: 'Productivity' },
     { id: 'eligibility-status', label: 'Eligibility Status' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
@@ -97,6 +103,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'documents', label: 'Contract Documents' },
     { id: 'organization-network', label: 'Organization Network' },
     { id: 'company-ledger', label: 'Company Ledger' },
+    { id: 'productivity', label: 'Productivity' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
   ],
@@ -107,6 +114,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'contracts', label: 'Contract Negotiation' },
     { id: 'organization-network', label: 'Organization Network' },
     { id: 'company-ledger', label: 'Company Ledger' },
+    { id: 'productivity', label: 'Productivity' },
     { id: 'shariah-review', label: 'Shariah Review' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
@@ -117,6 +125,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'blockchain-proof', label: 'Blockchain Proof' },
     { id: 'organization-network', label: 'Organization Network' },
     { id: 'company-ledger', label: 'Company Ledger' },
+    { id: 'productivity', label: 'Productivity' },
     { id: 'export-bundle', label: 'Export Bundle' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
@@ -127,6 +136,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'blockchain-proof', label: 'Blockchain Proof' },
     { id: 'organization-network', label: 'Organization Network' },
     { id: 'company-ledger', label: 'Company Ledger' },
+    { id: 'productivity', label: 'Productivity' },
     { id: 'settings', label: 'Settings' },
     { id: 'logout', label: 'Sign out' },
   ],
@@ -135,6 +145,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'security-status', label: 'Security Status' },
     { id: 'organization-network', label: 'Organization Network' },
     { id: 'company-ledger', label: 'Company Ledger' },
+    { id: 'productivity', label: 'Productivity' },
     { id: 'access-alerts', label: 'Access Alerts' },
     { id: 'proof-failures', label: 'Proof Failures' },
     { id: 'denied-actions', label: 'Denied Actions' },

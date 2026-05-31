@@ -78,6 +78,8 @@ The normal local demo path expects `npm run db:seed` to create backend/database 
 | Demo password | `demo-password` for local demo accounts |
 | Administrator account | `admin.demo` |
 | Amanah organization admin account | `amanah.admin` |
+| Amanah procurement account | `amanah.procurement` |
+| Barakah company admin account | `barakah.admin` |
 | Buyer account | `buyer.demo` |
 | Supplier account | `supplier.demo` |
 | Compliance account | `compliance.demo` |
@@ -96,6 +98,7 @@ The normal local demo path expects `npm run db:seed` to create backend/database 
 | ERP/accounting mapping | Local JSON export job for UBL/Peppol-like order or invoice mapping, OCDS-like contract release, or payment status |
 | Organization Network | Amanah-Barakah buyer/supplier relationship, Mabrur-Amanah financing relationship, proof-scope vectors, and local email outbox notifications |
 | Company Ledger | Backend-derived private deal projections for Amanah, Barakah, and Mabrur with delivery evidence hash, escrow status, proof status, and restricted Mudarabah seedbed projection |
+| Productivity | Backend-derived money tracker, action inbox, supplier scorecards, saved views, notification center, partner/channel matrix, and lightweight export manifest hash |
 
 Seed data should avoid raw KYC documents, raw escrow terms, payment credentials, and private commercial documents in visible dashboard cards.
 
@@ -216,6 +219,12 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 - ERP/accounting adapter produces local JSON mapping artifacts only; production ERP connection, Peppol access point delivery, UBL XML certification, and tax reporting remain future work.
 - Organization Network is a safe metadata and proof-scope view. It does not create production Fabric consortium membership, replace KYC/AML eligibility, share raw commercial documents, or establish ERP partner connectivity.
 - Company Ledger is a backend read-model projection for private deal visibility.
+- Productivity is a backend read model for company work coordination and safe
+  evidence readiness. Saved views and task-completion state are currently
+  process-local and do not claim multi-user production synchronization.
+- The 20+ organization seed is fictional and used to make the market-facing
+  demo credible; it must not be treated as real company, KYC, payment, or
+  production Fabric data.
   It does not create a production private ledger, production Fabric channel,
   payment settlement, ERP posting, or formal Shariah certification.
 - Security operator workflow is read-only and does not replace SIEM or incident response operations.

@@ -37,6 +37,13 @@ Not ready for:
   vectors
 - company-first dashboard context, organization user management, safe company
   settings, and private deal projection read models
+- 20-company fictional pilot seed with buyers, suppliers, financiers,
+  logistics/support partners, regulator/auditor/compliance, and platform
+  operator organizations
+- company channel matrix showing partner scope, deal count, eligibility/risk,
+  and honest proof status
+- company productivity workspace for money tracker, next actions, saved views,
+  local notifications, and lightweight company ledger export summaries
 - escrow creation and release-readiness workflow
 - PLS/Shariah review seedbed support
 - audit trail and transaction history
@@ -45,6 +52,10 @@ Not ready for:
 - security operator visibility
 - deployable Docker Compose foundation
 - local email notification outbox for selected workflow events
+- OpenAPI 3.1 contract plus local Postman collection for core auth,
+  organization, company ledger, productivity, notification, and proof APIs
+- OAuth/OIDC-ready provider boundary with `externalOidc` explicitly
+  `notConfigured`; local password remains the only available runtime login
 
 ## Production-Extension Boundary
 
@@ -228,6 +239,9 @@ Deployment:
 - company dashboard summary, organization-scoped user management, company
   profile maintenance, private deal projection, and restricted Mudarabah
   workflow projection
+- partner/channel scope matrix and productivity read models for task, saved
+  view, notification, money tracker, scorecard, checklist, and lightweight
+  manifest export workflows
 - escrow creation and release-readiness transitions
 - PLS seedbed and Shariah review gate
 - financier readiness and distribution scenarios
@@ -251,6 +265,9 @@ Deployment:
 - formal Shariah certification
 - production HSM / key-management infrastructure
 - React Native mobile implementation
+- production SSO/OIDC provider integration
+- durable multi-user saved-view synchronization beyond the current backend
+  process lifetime
 
 ## Next Implementation Priority
 

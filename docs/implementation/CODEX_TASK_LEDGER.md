@@ -18,6 +18,61 @@ PBIs PBI-436 through PBI-462 were merged into it under Issue #13. The previous
 `backlog/production-extension-roadmap.csv` file was archived at
 `backlog/archive/production-extension-roadmap.superseded.csv` for history only.
 
+## TASK-2026-06-01-001 Issue #24 Productivity, API, and Auth Hardening
+
+Stage: GitHub Issue #24
+Status: in validation
+
+Business reason:
+
+Move the company-centric supervisor demo toward a clearer pilot-hardening
+foundation by adding a larger fictional consortium seed, partner scope matrix,
+company productivity read models, OpenAPI contract, OAuth/OIDC readiness
+boundary, and an incremental React shell cleanup.
+
+Files changed:
+
+- `backlog/backlog.csv`
+- `scripts/db/seed-demo-data.ts`
+- `src/app/server.ts`
+- `src/modules/auth/**`
+- `src/modules/organization-network/**`
+- `src/modules/productivity/**`
+- `src/frontend/app/**`
+- `src/frontend/api/**`
+- `src/frontend/pages/CompanyProductivityPage.tsx`
+- `src/frontend/types/**`
+- `src/frontend/styles/**`
+- `docs/contracts/API_CONTRACTS.md`
+- `docs/contracts/AUTH_SESSION_CONTRACT.md`
+- `docs/contracts/openapi/**`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/architecture/PERSISTENCE_CAPABILITY_MATRIX.md`
+- `docs/evidence/qa/*ISSUE24*`
+
+Result:
+
+- Added PBI-485 through PBI-497 to the canonical backlog.
+- Expanded seed dry-run to 28 fictional organizations and 24 demo accounts.
+- Added `GET /api/v1/organizations/me/channel-matrix`.
+- Added company productivity endpoints for money tracker, pipeline, action
+  inbox, saved views, notification center, and ledger export manifest.
+- Added OpenAPI 3.1 contract plus local Postman collection.
+- Added local password auth provider abstraction and explicit OIDC
+  not-configured boundary.
+- Extracted frontend routes and dashboard renderer from `App.tsx`.
+
+Validation:
+
+- Targeted build and tests are passing; final full validation is recorded in
+  `docs/evidence/qa/PBI-496_ISSUE24_VALIDATION_SUMMARY.md`.
+
+Known limitations:
+
+- Productivity saved views and task completion are process-local.
+- OIDC is not configured.
+- Channel scope labels are projections and not production Fabric channels.
+
 ## TASK-2026-05-31-005 Organization Network and ERPNext Reference Slice
 
 Stage: GitHub Issue #14 follow-up

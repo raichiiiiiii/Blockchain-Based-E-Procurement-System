@@ -93,6 +93,9 @@ After `npm run db:seed`, sign-in supports these database-seeded demo users with 
 ```text
 admin.demo
 amanah.admin
+amanah.procurement
+barakah.admin
+barakah.sales
 buyer.demo
 supplier.demo
 compliance.demo
@@ -101,11 +104,23 @@ financier.demo
 auditor.demo
 regulator.demo
 security.demo
+hidayah.admin
+raudhah.procurement
+halalpack.admin
+nusantara.sales
+falah.finance
+amanlogistics.ops
 ```
 
 `amanah.admin` is an organization administrator for Amanah Retail Sdn Bhd. Use
 it to demonstrate company account settings and organization-scoped user
 management without granting platform administration privileges.
+
+The seed includes 20+ fictional organizations across regulated buyers, SME
+suppliers, Islamic SME financiers, logistics/support partners, regulator,
+audit/compliance, Shariah review, security, and platform operation. These are
+safe demo records only; no raw KYC, commercial documents, payment credentials,
+or production Fabric artifacts are seeded.
 
 Buyer demonstrable path:
 
@@ -120,6 +135,9 @@ Landing page
 -> Inspect Amanah-Barakah relationship graph and proof-scope vector
 -> Company Ledger
 -> Inspect Private Deal View and Mudarabah projection
+-> Productivity
+-> Inspect partner scope matrix, money tracker, next actions, saved views,
+   notifications, and export summary hash
 -> Orders
 -> Create order
 -> Contract Documents

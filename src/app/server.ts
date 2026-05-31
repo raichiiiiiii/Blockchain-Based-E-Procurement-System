@@ -103,6 +103,9 @@ import { registerOrganizationNetworkRoutes } from '../modules/organization-netwo
 import type { OrganizationNetworkRepository } from '../modules/organization-network/application/organization-network-repository.js';
 import { InMemoryOrganizationNetworkRepository } from '../modules/organization-network/infrastructure/in-memory-organization-network-repository.js';
 import { PostgresOrganizationNetworkRepository } from '../modules/organization-network/infrastructure/postgres-organization-network-repository.js';
+import { productivityRoutes } from '../modules/productivity/api/productivity.routes.js';
+import type { ProductivityStateRepository } from '../modules/productivity/application/productivity-state-repository.js';
+import { InMemoryProductivityStateRepository } from '../modules/productivity/infrastructure/in-memory-productivity-state-repository.js';
 import { createPostgresPool, type PostgresExecutor } from '../infrastructure/database/postgres-client.js';
 import { PostgresMemberOrganizationRepository } from '../modules/membership/infrastructure/postgres-member-organization-repository.js';
 import { PostgresRoleRepository } from '../modules/access-control/infrastructure/postgres-role-repository.js';
@@ -170,6 +173,7 @@ export function createTestableServer(options?: {
   procurementContractRepository?: ProcurementContractRepository;
   paymentInstructionRepository?: PaymentInstructionRepository;
   organizationNetworkRepository?: OrganizationNetworkRepository;
+  productivityStateRepository?: ProductivityStateRepository;
   registerKycAmlRoutes?: boolean;
   enforceBearerAuthForLegacyActorRoutes?: boolean;
   readiness?: () => Promise<RuntimeReadiness>;
@@ -312,6 +316,7 @@ export function createTestableServer(options?: {
   const procurementContractRepository = options?.procurementContractRepository ?? new InMemoryProcurementContractRepository();
   const paymentInstructionRepository = options?.paymentInstructionRepository ?? new InMemoryPaymentInstructionRepository();
   const organizationNetworkRepository = options?.organizationNetworkRepository ?? new InMemoryOrganizationNetworkRepository();
+  const productivityStateRepository = options?.productivityStateRepository ?? new InMemoryProductivityStateRepository();
   const authenticatedPreHandler = createAuthenticatedRequestPreHandler(sessionRepository);
   const legacyActorRouteAuthenticatedPreHandler = options?.enforceBearerAuthForLegacyActorRoutes
     ? authenticatedPreHandler
@@ -545,6 +550,13 @@ export function createTestableServer(options?: {
   server.register(registerOrganizationNetworkRoutes, {
     prefix: '/api/v1',
     repository: organizationNetworkRepository,
+    authenticatedPreHandler,
+  });
+
+  server.register(productivityRoutes, {
+    prefix: '/api/v1',
+    organizationNetworkRepository,
+    stateRepository: productivityStateRepository,
     authenticatedPreHandler,
   });
 

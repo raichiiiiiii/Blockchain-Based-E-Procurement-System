@@ -6,22 +6,14 @@ import CompanyContextBanner from './components/organization/CompanyContextBanner
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import CompanyRegistrationPage from './pages/CompanyRegistrationPage';
-import AdminDashboard from './pages/AdminDashboard';
-import BuyerDashboard from './pages/BuyerDashboard';
-import SupplierDashboard from './pages/SupplierDashboard';
-import ComplianceDashboard from './pages/ComplianceDashboard';
-import AuditorDashboard from './pages/AuditorDashboard';
-import RegulatorDashboard from './pages/RegulatorDashboard';
-import SecurityDashboard from './pages/SecurityDashboard';
-import ShariahDashboard from './pages/ShariahDashboard';
-import FinancingDashboard from './pages/FinancingDashboard';
-import RoleDashboard from './pages/RoleDashboard';
-import DocumentWorkspacePage from './pages/DocumentWorkspacePage';
-import ContractNegotiationPage from './pages/ContractNegotiationPage';
-import OrganizationNetworkPage from './pages/OrganizationNetworkPage';
-import OrganizationUsersPage from './pages/OrganizationUsersPage';
-import AccountSettingsPage from './pages/AccountSettingsPage';
-import CompanyLedgerPage from './pages/CompanyLedgerPage';
+import { renderRoleDashboard } from './app/dashboard-renderer';
+import {
+  isGuidedDemoModeFromLocation,
+  routeFromLocation,
+  routePath,
+  routeUrl,
+  type RouteKey,
+} from './app/routes';
 import { loginWithCredentials, logoutSession, type LoginCredentials } from './lib/auth-client';
 import {
   clearStoredSession,
@@ -41,50 +33,6 @@ import {
   isNavigationTargetAllowed,
   type DashboardNavigationTarget,
 } from './lib/role-navigation';
-import { isGuidedDemoEnabled } from './lib/runtime-config';
-
-type RouteKey = 'landing' | 'login' | 'register' | 'dashboard';
-
-function isGuidedDemoModeFromLocation(): boolean {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  return isGuidedDemoEnabled() && new URLSearchParams(window.location.search).get('demo') === 'guided';
-}
-
-function routeFromLocation(): RouteKey {
-  if (typeof window === 'undefined') {
-    return 'landing';
-  }
-
-  switch (window.location.pathname) {
-    case '/login':
-      return 'login';
-    case '/register-company':
-      return 'register';
-    case '/dashboard':
-      return 'dashboard';
-    case '/':
-      return 'landing';
-    default:
-      return 'landing';
-  }
-}
-
-function routePath(route: RouteKey): string {
-  switch (route) {
-    case 'login':
-      return '/login';
-    case 'register':
-      return '/register-company';
-    case 'dashboard':
-      return '/dashboard';
-    case 'landing':
-    default:
-      return '/';
-  }
-}
 
 function getAuthenticatedSession(session: FrontendSessionState): AuthenticatedFrontendSession | null {
   return session.status === 'authenticated' ? session : null;
@@ -99,80 +47,6 @@ function createForcedDashboardState(
     actor: current.actor,
     role: current.role,
   };
-}
-
-function renderRoleDashboard(
-  role: SupportedDashboardRole,
-  activeTarget: DashboardNavigationTarget,
-  session: AuthenticatedFrontendSession,
-  onOpenCompanyLedger: () => void,
-) {
-  if (activeTarget === 'settings') {
-    return <AccountSettingsPage session={session} />;
-  }
-
-  if (activeTarget === 'company-ledger') {
-    return <CompanyLedgerPage session={session} />;
-  }
-
-  if (activeTarget === 'organization-users') {
-    return <OrganizationUsersPage session={session} />;
-  }
-
-  if (activeTarget === 'documents') {
-    return <DocumentWorkspacePage session={session} />;
-  }
-
-  if (activeTarget === 'contracts') {
-    return <ContractNegotiationPage session={session} />;
-  }
-
-  if (activeTarget === 'organization-network') {
-    return <OrganizationNetworkPage session={session} onOpenCompanyLedger={onOpenCompanyLedger} />;
-  }
-
-  if (role === 'buyer') {
-    return <BuyerDashboard activeTarget={activeTarget} session={session} />;
-  }
-
-  if (role === 'administrator') {
-    return <AdminDashboard activeTarget={activeTarget} session={session} />;
-  }
-
-  if (role === 'supplier') {
-    return <SupplierDashboard activeTarget={activeTarget} session={session} />;
-  }
-
-  if (role === 'complianceReviewer') {
-    return <ComplianceDashboard activeTarget={activeTarget} session={session} />;
-  }
-
-  if (role === 'auditor') {
-    return <AuditorDashboard activeTarget={activeTarget} session={session} />;
-  }
-
-  if (role === 'regulator') {
-    return <RegulatorDashboard activeTarget={activeTarget} session={session} />;
-  }
-
-  if (role === 'securityOperator') {
-    return <SecurityDashboard activeTarget={activeTarget} session={session} />;
-  }
-
-  if (role === 'shariahReviewer') {
-    return <ShariahDashboard activeTarget={activeTarget} session={session} />;
-  }
-
-  if (role === 'financier') {
-    return <FinancingDashboard activeTarget={activeTarget} session={session} />;
-  }
-
-  return <RoleDashboard role={role} activeTarget={activeTarget} />;
-}
-
-function routeUrl(route: RouteKey, guidedDemoMode: boolean): string {
-  const path = routePath(route);
-  return guidedDemoMode ? `${path}?demo=guided` : path;
 }
 
 function App() {

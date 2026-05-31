@@ -2300,3 +2300,114 @@ Current implementation boundary:
 
 - Local outbox records are persisted metadata.
 - No production SMTP delivery is claimed.
+
+## 19. Company Productivity and API Contract Baseline
+
+Issue #24 extends the company-centric workspace with productivity and API
+readiness endpoints.
+
+### 19.1 Company channel matrix
+
+`GET /api/v1/organizations/me/channel-matrix`
+
+Purpose:
+
+- Return partner organization, relationship role, channel/proof scope, active
+  deal count, latest proof state, eligibility status, and a compact risk
+  summary for the authenticated organization.
+- The values are safe projections from organization network and company ledger
+  read models.
+
+Boundary:
+
+- `sharedChannelA`, `sharedChannelB`, `privateChannelC`, `localProofOnly`, and
+  `unavailable` remain proof-scope aliases. They do not claim production Fabric
+  channel membership.
+
+### 19.2 Productivity workspace
+
+`GET /api/v1/company-productivity/summary`
+
+`GET /api/v1/company-productivity/money-tracker`
+
+`GET /api/v1/company-productivity/pipeline`
+
+`GET /api/v1/company-productivity/action-inbox`
+
+`PATCH /api/v1/company-productivity/action-inbox/:taskId`
+
+`GET /api/v1/company-productivity/supplier-scorecards`
+
+`GET /api/v1/company-productivity/evidence-checklist`
+
+`GET /api/v1/company-productivity/saved-views`
+
+`POST /api/v1/company-productivity/saved-views`
+
+Compatibility aliases:
+
+- `GET /api/v1/productivity/tasks`
+- `PATCH /api/v1/productivity/tasks/:taskId`
+- `GET /api/v1/productivity/saved-views`
+- `POST /api/v1/productivity/saved-views`
+
+Purpose:
+
+- Return company-scoped money tracker, procurement pipeline, action inbox,
+  supplier scorecards, evidence checklist, and saved views.
+- Allow the authenticated user to mark a task complete and create a lightweight
+  saved workspace view.
+
+Boundary:
+
+- Current productivity state is a backend read model with in-memory task/view
+  persistence for the process lifetime. PostgreSQL persistence can be added
+  later if product ownership requires durable saved views.
+- Amounts are planning/demo figures and do not imply payment execution.
+
+### 19.3 Lightweight company ledger export
+
+`POST /api/v1/company-ledger/exports`
+
+Purpose:
+
+- Create a safe export manifest summary for the authenticated company's ledger
+  projection.
+- Return `exportId`, `itemCount`, `manifestHash`, `proofScope`, `status`, and a
+  safe summary.
+
+Boundary:
+
+- This is not a production signed export bundle.
+- Raw documents, private terms, KYC data, payment credentials, and unrestricted
+  commercial payloads are not returned.
+
+### 19.4 Notification center
+
+`GET /api/v1/notifications`
+
+Purpose:
+
+- Return safe local notification records mapped from the existing notification
+  outbox for the authenticated organization or governance read scope.
+
+Boundary:
+
+- No real email delivery, SMTP integration, or user-device push delivery is
+  claimed.
+
+### 19.5 OpenAPI 3.1
+
+The machine-readable API contract lives at:
+
+- `docs/contracts/openapi/openapi.yaml`
+
+The companion local API client collection lives at:
+
+- `docs/contracts/openapi/postman_collection.json`
+
+Validation command:
+
+```bash
+npm run openapi:validate
+```

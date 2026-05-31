@@ -104,6 +104,9 @@ Seeded usernames:
 
 ```text
 admin.demo
+amanah.admin
+amanah.procurement
+barakah.admin
 buyer.demo
 supplier.demo
 compliance.demo
@@ -112,9 +115,21 @@ financier.demo
 auditor.demo
 regulator.demo
 security.demo
+hidayah.admin
+raudhah.procurement
+halalpack.admin
+nusantara.sales
+falah.finance
+amanlogistics.ops
 ```
 
 The product login page is credential-only. Demo accounts are documented here and in runbooks, not shown as role shortcut cards in the UI.
+
+The current seed contains 20+ fictional organizations across buyers, suppliers,
+financiers, logistics/support partners, regulator/auditor/compliance, and
+platform operation. Use Company Ledger and Productivity to inspect partner
+scope, next actions, saved views, notification records, and safe ledger export
+manifest hashes.
 
 ### Validation Commands
 

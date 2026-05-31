@@ -203,6 +203,32 @@ test('company ledger and Mudarabah projection are scoped to authenticated compan
   assert.match(projections[0].simulationOnlyNotice, /does not guarantee profit or principal/);
 });
 
+test('channel matrix exposes partner proof scopes without production Fabric claims', async () => {
+  const { server } = await createNetworkTestContext();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/organizations/me/channel-matrix',
+    headers: {
+      authorization: 'Bearer buyer-token',
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  const matrix = response.json().data.items;
+  assert.ok(matrix.some(
+    (entry: { partnerOrganizationId: string; channelScope: string }) =>
+      entry.partnerOrganizationId === 'demo-supplier-org' && entry.channelScope === 'sharedChannelA',
+  ));
+  assert.equal(JSON.stringify(matrix).includes('production Fabric'), false);
+
+  const anonymousResponse = await server.inject({
+    method: 'GET',
+    url: '/api/v1/organizations/me/channel-matrix',
+  });
+  assert.equal(anonymousResponse.statusCode, 401);
+});
+
 test('buyer can request network relationship and supplier acceptance appears in graph and outbox', async () => {
   const { server } = await createNetworkTestContext();
 

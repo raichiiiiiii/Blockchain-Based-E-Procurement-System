@@ -1,6 +1,13 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import { getRequestActorContext } from '../../auth/api/request-actor-context.js';
 import type { OrganizationNetworkRepository } from '../application/organization-network-repository.js';
+import type {
+  CompanyChannelMatrixEntry,
+  CompanyProofStatus,
+  OrganizationGraphChannelScope,
+  OrganizationGraphRelationshipType,
+  OrganizationRelationshipIntent,
+} from '../domain/organization-network.js';
 import {
   acceptOrganizationNetworkRequest,
   createOrganizationNetworkRequest,
@@ -70,6 +77,130 @@ function canViewCompanyLedger(actorRoles: readonly string[]): boolean {
     'securityOperator',
     'shariahReviewer',
   ]);
+}
+
+function graphTypeToRelationshipIntent(type: OrganizationGraphRelationshipType): OrganizationRelationshipIntent {
+  switch (type) {
+    case 'financing':
+      return 'financier';
+    case 'logistics':
+      return 'logistics';
+    case 'audit':
+    case 'regulatory':
+      return 'auditorRegulator';
+    case 'mixed':
+      return 'mixed';
+    case 'buyerSupplier':
+    default:
+      return 'buyer';
+  }
+}
+
+function proofStatusFromEdge(statuses: Array<string | undefined>): CompanyProofStatus {
+  if (statuses.includes('mismatch')) {
+    return 'mismatch';
+  }
+
+  if (statuses.includes('failed')) {
+    return 'failed';
+  }
+
+  if (statuses.includes('verified')) {
+    return 'verified';
+  }
+
+  if (statuses.includes('anchored')) {
+    return 'anchored';
+  }
+
+  if (statuses.includes('pending')) {
+    return 'pending';
+  }
+
+  if (statuses.includes('notFound')) {
+    return 'notFound';
+  }
+
+  if (statuses.includes('notAnchored')) {
+    return 'notAnchored';
+  }
+
+  return 'unavailable';
+}
+
+function proofScopeSummary(scope: OrganizationGraphChannelScope): string {
+  switch (scope) {
+    case 'sharedChannelA':
+      return 'Procurement proof visibility shared by buyer and supplier.';
+    case 'sharedChannelB':
+      return 'Regulated export and audit evidence visibility scope.';
+    case 'privateChannelC':
+      return 'Restricted PLS, financier, and Shariah governance visibility scope.';
+    case 'localProofOnly':
+      return 'Local metadata proof scope; no live Fabric channel is claimed.';
+    case 'unavailable':
+    default:
+      return 'Proof visibility is intentionally unavailable or degraded for this relationship.';
+  }
+}
+
+function riskSummary(input: { eligibilityStatus: string; latestProofStatus: CompanyProofStatus }): string {
+  if (input.eligibilityStatus === 'blocked') {
+    return 'Blocked or rejected onboarding state. Governed transactions must remain unavailable.';
+  }
+
+  if (input.eligibilityStatus === 'flagged') {
+    return 'Flagged onboarding state. Review is required before expanding transaction activity.';
+  }
+
+  if (input.latestProofStatus === 'failed' || input.latestProofStatus === 'mismatch') {
+    return 'Proof exception detected. Audit or security review is recommended.';
+  }
+
+  if (input.latestProofStatus === 'unavailable' || input.latestProofStatus === 'notFound') {
+    return 'Proof visibility is incomplete for this partner relationship.';
+  }
+
+  return 'No high-risk partner signal is present in the current safe projection.';
+}
+
+async function buildChannelMatrix(
+  repository: OrganizationNetworkRepository,
+  organizationId: string,
+): Promise<CompanyChannelMatrixEntry[]> {
+  const [graph, deals] = await Promise.all([
+    repository.getGraphForOrganization(organizationId),
+    repository.listCompanyDealProjections(organizationId),
+  ]);
+
+  return graph.edges.map(edge => {
+    const partnerOrganizationId = edge.sourceOrganizationId === organizationId
+      ? edge.targetOrganizationId
+      : edge.sourceOrganizationId;
+    const partner = graph.nodes.find(node => node.organizationId === partnerOrganizationId);
+    const dealCount = deals.filter(deal =>
+      deal.counterpartOrganizationId === partnerOrganizationId
+      || deal.relationshipId === edge.id
+    ).length;
+    const latestProofStatus = proofStatusFromEdge([edge.verificationStatus, edge.anchorStatus]);
+    const eligibilityStatus = partner?.eligibilityStatus ?? 'unknown';
+
+    return {
+      matrixId: `matrix-${edge.id}`,
+      partnerOrganizationId,
+      partnerDisplayName: partner?.displayName ?? partnerOrganizationId,
+      relationshipRole: graphTypeToRelationshipIntent(edge.relationshipType),
+      relationshipType: edge.relationshipType,
+      channelScope: edge.channelScope,
+      proofScopeSummary: proofScopeSummary(edge.channelScope),
+      activeDealCount: dealCount,
+      latestProofStatus,
+      eligibilityStatus,
+      riskSummary: riskSummary({ eligibilityStatus, latestProofStatus }),
+      currentStage: edge.currentStage,
+      latestLifecycleEventId: edge.latestLifecycleEventId,
+    };
+  });
 }
 
 function actorOrUnauthorized(request: FastifyRequest, reply: FastifyReply): RequiredActorContext | null {
@@ -211,6 +342,24 @@ const registerOrganizationNetworkRoutes: FastifyPluginAsync<OrganizationNetworkR
       }
 
       return reply.code(200).send({ data: summary });
+    },
+  );
+
+  fastify.get(
+    '/organizations/me/channel-matrix',
+    { preHandler: options.authenticatedPreHandler },
+    async (request, reply) => {
+      const actor = actorOrUnauthorized(request, reply);
+      if (!actor) {
+        return;
+      }
+
+      if (!canViewCompanyLedger(actor.actorRoleCodes)) {
+        return forbidden(reply, 'Organization channel matrix access denied');
+      }
+
+      const matrix = await buildChannelMatrix(options.repository, actor.actorOrganizationId);
+      return reply.code(200).send({ data: { items: matrix } });
     },
   );
 

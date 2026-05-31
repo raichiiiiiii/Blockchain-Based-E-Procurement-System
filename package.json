@@ -13,6 +13,7 @@
     "test:backend": "node scripts/run-tests.mjs",
     "db:migrate": "node --loader ts-node/esm scripts/db/migrate.ts",
     "db:seed": "node --loader ts-node/esm scripts/db/seed-demo-data.ts",
+    "openapi:validate": "node scripts/validate-openapi.mjs",
     "chaincode:audit-anchor:build": "npm --prefix chaincode/audit-anchor run build",
     "chaincode:audit-anchor:test": "npm --prefix chaincode/audit-anchor test",
     "frontend:dev": "vite --config vite.config.ts",

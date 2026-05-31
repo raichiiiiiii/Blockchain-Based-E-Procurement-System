@@ -85,7 +85,8 @@ describe('Auth Routes', () => {
       url: '/api/v1/auth/login',
       payload: {
         username: 'testuser',
-        password: 'testpassword'
+        password: 'testpassword',
+        actorRoleCodes: ['administrator']
       }
     });
 
@@ -100,6 +101,38 @@ describe('Auth Routes', () => {
     assert.deepEqual(body.data?.actor?.actorRoleCodes, ['auditor']);
     assert.equal(body.data?.actor?.authenticationSessionId, body.data?.sessionId);
     assert.equal(body.data?.actor?.authenticationMethod, 'localPassword');
+  });
+
+  it('exposes local password and OIDC readiness provider status without enabling fake OIDC', async () => {
+    const providersResponse = await server.inject({
+      method: 'GET',
+      url: '/api/v1/auth/providers'
+    });
+
+    assert.equal(providersResponse.statusCode, 200);
+    const body = providersResponse.json();
+    assert.equal(body.data.tokenModel, 'opaqueBearerSession');
+    assert.ok(body.data.providers.some(
+      (provider: { provider: string; status: string }) =>
+        provider.provider === 'localPassword' && provider.status === 'available',
+    ));
+    assert.ok(body.data.providers.some(
+      (provider: { provider: string; status: string }) =>
+        provider.provider === 'externalOidc' && provider.status === 'notConfigured',
+    ));
+    assert.ok(body.data.roleScopeMap.auditor.includes('proof:verify'));
+
+    const callbackResponse = await server.inject({
+      method: 'POST',
+      url: '/api/v1/auth/oidc/callback',
+      payload: {
+        code: 'demo-code'
+      }
+    });
+
+    assert.equal(callbackResponse.statusCode, 503);
+    assert.equal(callbackResponse.json().error.code, 'EXTERNAL_SERVICE_ERROR');
+    assert.equal(callbackResponse.json().error.details.status, 'notConfigured');
   });
 
   it('returns HTTP 400 with VALIDATION_ERROR for blank username', async () => {

@@ -28,8 +28,8 @@ In scope:
 
 Out of scope:
 
-- external identity provider integration
-- SSO
+- production external identity provider integration
+- production SSO
 - MFA
 - password recovery
 - public account creation
@@ -215,6 +215,43 @@ Examples:
 - auditor-only routes still check the auditor role after authentication
 - administrator-only routes still check administrator role or permission after authentication
 - organization status and deactivation checks remain separate unless a later task integrates them explicitly
+
+## 10A. OAuth/OIDC Readiness Boundary
+
+Issue #24 introduces an authorization-provider boundary without replacing the
+current credential login flow.
+
+Current runtime:
+
+- `localPassword` remains the only available login provider.
+- sessions remain opaque bearer sessions issued by `/api/v1/auth/login`.
+- trusted actor context is still derived server-side from the session repository.
+- client payloads, query parameters, and headers cannot self-assign roles or scopes.
+
+Readiness boundary:
+
+- `externalOidc` is listed as `notConfigured` by `/api/v1/auth/providers`.
+- `/api/v1/auth/oidc/callback` returns a clear not-configured error envelope.
+- OpenAPI declares both `bearerSession` and OAuth2 authorization-code readiness schemes.
+- No JWKS, JWT signing key, external issuer, managed IdP, or production SSO claim exists in this repository.
+
+Future-compatible scopes are mapped from existing role codes:
+
+| Scope | Purpose |
+|---|---|
+| `org:read` | Read safe organization context. |
+| `org:write` | Update safe organization metadata. |
+| `org:users:manage` | Manage organization-scoped users. |
+| `network:read` | Read organization network graph and matrix. |
+| `network:write` | Create or decide network relationship requests. |
+| `deals:read` | Read company ledger projections. |
+| `deals:write` | Prepare governed deal actions. |
+| `productivity:read` | Read productivity workspace projections. |
+| `productivity:write` | Complete tasks or create saved views. |
+| `proof:read` | Read blockchain proof metadata. |
+| `proof:verify` | Verify proof hashes. |
+| `email:read` | Read local notification outbox records. |
+| `admin:platform` | Platform administration. |
 
 ## 11. Audit expectations
 
