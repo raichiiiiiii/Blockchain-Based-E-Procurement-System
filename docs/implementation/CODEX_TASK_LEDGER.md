@@ -1177,3 +1177,188 @@ Remaining limitations:
 - No production CA governance, HSM/KMS-backed key lifecycle, production payment
   execution, or formal Shariah certification is claimed.
 - External lab artifacts remain outside the repository.
+
+## TASK-2026-05-31-002 App-Owned Fabric Anchor Round Trip and Operations Gap Register
+
+Stage: GitHub Issues #10 and #11 follow-up
+Status: done
+
+Business reason:
+
+Close the app-owned proof consistency gap left after PBI-438 and make the
+remaining production Fabric operations gaps explicit without overclaiming pilot,
+commercial, or production readiness.
+
+Files inspected:
+
+- `src/modules/blockchain/application/blockchain-proof-service.ts`
+- `src/modules/blockchain/api/blockchain-anchor.routes.ts`
+- `src/modules/blockchain/infrastructure/fabric-contract-client-factory.ts`
+- `src/modules/blockchain/infrastructure/fabric-blockchain-anchor-gateway.ts`
+- `src/modules/blockchain/infrastructure/postgres-blockchain-anchor-metadata-repository.ts`
+- `src/modules/blockchain/application/blockchain-anchor-metadata-repository.ts`
+- `src/modules/escrow/api/escrow.routes.ts`
+- `src/modules/escrow/application/create-escrow.ts`
+- `src/modules/procurement/infrastructure/postgres-procure-to-pay-lifecycle-event-repository.ts`
+- `docs/contracts/BLOCKCHAIN_ANCHOR_CONTRACT.md`
+- `docs/contracts/CANONICAL_PAYLOAD_HASHING.md`
+- `docs/contracts/ESCROW_WORKFLOW_CONTRACT.md`
+- `docs/contracts/TRANSACTION_HISTORY_CONTRACT.md`
+- `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md`
+- `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md`
+- `backlog/production-extension-roadmap.csv`
+- `docs/architecture/PRODUCTION_FABRIC_CONSORTIUM_ARCHITECTURE.md`
+- `docs/architecture/FABRIC_MVP_BOUNDARY.md`
+- `docs/architecture/FABRIC_RUNTIME_GATEWAY_INTEGRATION_GAP.md`
+- `docs/runbooks/pbi-438-production-like-fabric-lab.md`
+- `docs/runbooks/fabric-local-network.md`
+- `docs/runbooks/deployable-mvp.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `fabric/production-consortium/README.md`
+- `fabric/production-consortium/channel-plan.json`
+- `fabric/production-consortium/chaincode-definitions.json`
+- `fabric/production-consortium/collections-config.json`
+
+Files changed:
+
+- `src/modules/blockchain/api/app-owned-anchor-round-trip.routes.test.ts`
+- `docs/architecture/PRODUCTION_FABRIC_OPERATIONS_GAP_REGISTER.md`
+- `docs/architecture/PRODUCTION_FABRIC_CONSORTIUM_ARCHITECTURE.md`
+- `docs/requirements/CURRENT_PRODUCT_BASELINE.md`
+- `docs/evidence/qa/APP_OWNED_FABRIC_ANCHOR_ROUND_TRIP_VALIDATION.md`
+- `docs/evidence/qa/PRODUCTION_FABRIC_OPERATIONS_GAP_REGISTER_VALIDATION.md`
+- `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md`
+- `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md`
+- `docs/runbooks/pbi-438-production-like-fabric-lab.md`
+- `fabric/production-consortium/README.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Validation:
+
+- `node --test --loader ts-node/esm src/modules/blockchain/api/app-owned-anchor-round-trip.routes.test.ts` passed with 2 tests.
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm test` passed with 820 tests.
+- `npm run chaincode:audit-anchor:build` passed.
+- `npm run chaincode:audit-anchor:test` passed with 9 tests.
+- `npm run db:migrate -- --dry-run` passed.
+- `npm run db:seed -- --dry-run` passed.
+- `docker compose config` passed.
+- `docker compose -f docker-compose.app.yml config` passed.
+- CSV validation passed for both backlog CSV files.
+- Tracked generated Fabric secret/artifact scan passed.
+- `git diff --check` passed with line-ending warnings only.
+
+Result:
+
+- Added route-level regression coverage proving the app-owned `escrowCreated`
+  workflow creates a lifecycle event, stores proof metadata, returns anchored
+  lookup state, verifies a matching hash as `verified`, returns `mismatch` for a
+  changed hash, and returns `notFound` for a missing event.
+- Confirmed anchoring failure leaves escrow and lifecycle event records intact
+  while storing failed proof metadata.
+- Added the production Fabric operations gap register with pre-pilot and
+  pre-production gates and linked it from PBI-438 runbook/baseline documents.
+
+Known limitations:
+
+- Live Fabric lab was not rerun for Issue #10; automated route-level regression
+  coverage uses the controlled gateway double.
+- Equivalent app-owned proof route tests should be added for other workflows
+  before they are claimed complete.
+- Production CA governance, key custody, MSP lifecycle operations, failover,
+  DR, PDC live exercise, and production operations certification remain future
+  work.
+
+## TASK-2026-05-31-003 App-Owned Fabric Anchor Coverage Expansion
+
+Stage: GitHub Issue #12 follow-up
+Status: done
+
+Business reason:
+
+Extend app-owned proof consistency beyond the initial `escrowCreated` route to
+additional core procurement workflows so metadata lookup and direct proof
+verification agree for more of the supervisor-demo procurement path.
+
+Files inspected:
+
+- `docs/evidence/qa/APP_OWNED_FABRIC_ANCHOR_ROUND_TRIP_VALIDATION.md`
+- `docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md`
+- `docs/evidence/qa/POST_PBI438_RELEASE_RECONCILIATION.md`
+- `docs/contracts/BLOCKCHAIN_ANCHOR_CONTRACT.md`
+- `docs/contracts/CANONICAL_PAYLOAD_HASHING.md`
+- `docs/contracts/TRANSACTION_HISTORY_CONTRACT.md`
+- `docs/contracts/ESCROW_WORKFLOW_CONTRACT.md`
+- `src/modules/blockchain/api/blockchain-anchor.routes.ts`
+- `src/modules/blockchain/application/blockchain-proof-service.ts`
+- `src/modules/blockchain/application/blockchain-anchor-metadata-repository.ts`
+- `src/modules/blockchain/infrastructure/postgres-blockchain-anchor-metadata-repository.ts`
+- `src/modules/procurement/api/delivery-evidence.routes.ts`
+- `src/modules/procurement/api/procurement-order.routes.ts`
+- `src/modules/procurement/application/submit-delivery-evidence.ts`
+- `src/modules/procurement/application/acknowledge-procurement-order.ts`
+- `src/modules/procurement/application/create-procurement-order.ts`
+- `src/modules/procurement/infrastructure/postgres-procure-to-pay-lifecycle-event-repository.ts`
+- `src/modules/reporting/api/export-bundle.routes.ts`
+- `src/modules/reporting/application/export-bundle-service.ts`
+- `src/modules/reporting/infrastructure/postgres-export-bundle-repository.ts`
+- `src/modules/financing/api/pls.routes.ts`
+- `src/modules/financing/application/*`
+- `src/modules/escrow/api/escrow.routes.ts`
+- `src/modules/escrow/application/transition-escrow.ts`
+
+Files changed:
+
+- `src/modules/blockchain/api/app-owned-anchor-coverage-expansion.routes.test.ts`
+- `docs/evidence/qa/APP_OWNED_FABRIC_ANCHOR_COVERAGE_EXPANSION_VALIDATION.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Workflow selection:
+
+- `deliveryEvidenceSubmitted` was selected because it is the next core
+  procurement proof event and already uses the configured gateway through
+  `submitDeliveryEvidence`.
+- `escrowReleaseRequested` was selected because it is a distinct escrow
+  transition after accepted order, delivery evidence, and eligibility checks and
+  already uses the configured gateway through `transitionEscrow`.
+- Export bundle generation/signing was not selected because those routes
+  aggregate existing proof metadata into manifests/signatures and do not submit
+  new gateway anchors today.
+
+Validation:
+
+- Targeted route regression
+  `node --test --loader ts-node/esm src/modules/blockchain/api/app-owned-anchor-coverage-expansion.routes.test.ts`
+  passed with 4 tests.
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `npm test` passed with 824 tests.
+- `npm run chaincode:audit-anchor:build` passed.
+- `npm run chaincode:audit-anchor:test` passed with 9 tests.
+- `npm run db:migrate -- --dry-run` passed with 17 migrations validated.
+- `npm run db:seed -- --dry-run` passed with 9 demo accounts and demo records
+  validated.
+- `docker compose config` passed.
+- `docker compose -f docker-compose.app.yml config` passed.
+- CSV validation passed for both backlog CSV files.
+- Tracked generated Fabric secret/artifact scan passed.
+- `git diff --check` passed with a line-ending warning only.
+
+Result:
+
+- Added route-level coverage proving `deliveryEvidenceSubmitted` and
+  `escrowReleaseRequested` create app-owned lifecycle events, persist anchored
+  metadata, return anchored proof lookup state, verify matching payload hashes
+  as `verified`, keep `mismatch` and `notFound` behavior distinct, and preserve
+  business records when anchoring fails.
+- Added gateway input assertions that selected workflows send proof-level data
+  only: event id, hashed case id, event type, canonical payload hash, schema,
+  canonicalization, and timestamp.
+
+Known limitations:
+
+- Live Fabric lab validation was not rerun.
+- Export bundle app-owned anchoring remains future work if Product Owner wants
+  export bundles to submit their own proof anchor rather than aggregate existing
+  proof metadata.

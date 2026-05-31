@@ -16,6 +16,12 @@ Primary completion evidence:
 docs/evidence/qa/PBI-438_PRODUCTION_LIKE_FABRIC_LAB_VALIDATION.md
 ```
 
+Post-lab production operations gaps:
+
+```text
+docs/architecture/PRODUCTION_FABRIC_OPERATIONS_GAP_REGISTER.md
+```
+
 ## What PBI-438 Completion Means
 
 - A production-like local Fabric lab was executed.

@@ -11,6 +11,8 @@ This document defines the production-oriented Hyperledger Fabric consortium mode
 
 The intended next state is a deployable internal pilot foundation. It does not claim production consortium operation, formal external governance, production CA lifecycle, payment settlement, or regulatory certification.
 
+Current operations gaps after the completed production-like local lab are tracked in `docs/architecture/PRODUCTION_FABRIC_OPERATIONS_GAP_REGISTER.md`.
+
 ## Official References Reviewed
 
 The plan uses the following Hyperledger Fabric documentation as reference material:
@@ -186,7 +188,12 @@ These are templates and checks. They do not create a production consortium, enro
 
 PBI-437 is complete when this plan, templates, and runbook updates are reviewed and validation passes.
 
-PBI-438 is staged, not fully production-complete, until at least one production-like environment supplies:
+PBI-438 is complete for the first production-like local Fabric lab and runtime
+Fabric Gateway validation. Completion does not mean production-certified
+consortium operations. Future production operations work is tracked in
+`docs/architecture/PRODUCTION_FABRIC_OPERATIONS_GAP_REGISTER.md`.
+
+Future lab reruns or production operations closure must continue to supply:
 
 - real CA/MSP material for all organizations
 - reachable peer/orderer endpoints

@@ -14,6 +14,12 @@ This evidence closes the implementation slice for a production-like local lab.
 It does not claim a production Fabric consortium, production CA governance,
 HSM/KMS-backed keys, production private-data operations, or payment settlement.
 
+Post-lab production operations gaps are tracked in:
+
+```text
+docs/architecture/PRODUCTION_FABRIC_OPERATIONS_GAP_REGISTER.md
+```
+
 ## Files Changed
 
 - `backlog/production-extension-roadmap.csv`
