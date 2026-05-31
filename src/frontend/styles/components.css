@@ -465,3 +465,80 @@
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+
+.company-context-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(90deg, rgba(13, 20, 16, 0.96), rgba(31, 38, 30, 0.94));
+  color: #ffffff;
+  padding: 1rem 2rem;
+  min-width: 0;
+}
+
+.company-context-banner-warning {
+  background: #fff7e0;
+  color: var(--color-ink);
+}
+
+.company-context-primary,
+.company-context-meta,
+.company-context-roles,
+.company-context-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.company-context-primary {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.company-context-primary strong,
+.company-context-primary p,
+.company-context-roles span {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.company-context-primary strong {
+  font-size: 1.2rem;
+}
+
+.company-context-primary p,
+.company-context-roles {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.company-context-banner-warning .company-context-primary p,
+.company-context-banner-warning .company-context-roles {
+  color: var(--color-neutral);
+}
+
+.company-context-actions {
+  justify-content: flex-end;
+}
+
+.company-ledger-page,
+.organization-users-page,
+.account-settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.company-registration-shell {
+  max-width: 1060px;
+}
+
+.company-ledger-page code,
+.account-settings-page dd,
+.organization-users-page small {
+  overflow-wrap: anywhere;
+}

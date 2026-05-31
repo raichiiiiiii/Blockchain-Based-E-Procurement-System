@@ -1,7 +1,7 @@
 import type { SupportedDashboardRole } from '../../lib/dashboard-state-resolver';
 import type { DashboardNavigationTarget } from '../../lib/role-navigation';
 
-type GuidedRoute = 'landing' | 'login' | 'dashboard';
+type GuidedRoute = 'landing' | 'login' | 'register' | 'dashboard';
 
 type GuidedDemoStep = {
   id: string;

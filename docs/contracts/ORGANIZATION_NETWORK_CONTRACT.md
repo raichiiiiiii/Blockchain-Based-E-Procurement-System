@@ -22,6 +22,11 @@ blockchain trail metadata for the Organization Network workspace.
 - `POST /api/v1/organization-network/requests/:requestId/reject`
 - `GET /api/v1/organization-network/graph`
 - `GET /api/v1/organization-network/graph/:edgeId/trail`
+- `GET /api/v1/organizations/me/dashboard-summary`
+- `GET /api/v1/organizations/me/users`
+- `POST /api/v1/organizations/me/users`
+- `GET /api/v1/company-ledger/deals`
+- `GET /api/v1/company-ledger/mudarabah`
 
 All routes except public registration require an authenticated bearer session
 and must derive actor identity from trusted server-side session context.
@@ -177,3 +182,96 @@ payloads must not be returned.
 
 These aliases are product visibility scopes, not production Fabric consortium
 claims.
+
+## Company Dashboard Summary
+
+The company summary is a server-derived read model for the signed-in user's
+organization context. It must not trust client-authored organization IDs or role
+headers.
+
+```ts
+type CompanyDashboardSummary = {
+  organization: OrganizationProfile;
+  currentUser: {
+    userId: string;
+    displayName: string;
+    username: string;
+    roleCodes: string[];
+  };
+  relationshipRoles: Array<{
+    organizationId: string;
+    displayName: string;
+    relationshipRole: 'buyer' | 'supplier' | 'financier' | 'auditor' | 'regulator' | 'logistics' | 'mixed';
+    activeDealCount: number;
+    latestProofStatus?: 'notAnchored' | 'pending' | 'anchored' | 'failed' | 'verified' | 'mismatch' | 'notFound' | 'unavailable';
+  }>;
+  activeDealCount: number;
+  eligibilityStatus: OrganizationProfile['eligibilityStatus'];
+  organizationStatus: OrganizationProfile['status'];
+  proofSummary: {
+    latestStatus: 'notAnchored' | 'pending' | 'anchored' | 'failed' | 'verified' | 'mismatch' | 'notFound' | 'unavailable';
+    latestEventId?: string;
+    latestPayloadHash?: string;
+  };
+};
+```
+
+`GET /api/v1/organizations/me/users` and `POST
+/api/v1/organizations/me/users` are restricted to platform administrators and
+organization administrators. The invite route creates organization-scoped user
+and role metadata only; it does not return passwords in dashboard responses.
+
+## Company Ledger Projection
+
+The company ledger routes are private deal projections backed by procurement,
+delivery evidence, escrow, blockchain anchor metadata, organization
+relationships, and restricted PLS records. They are not a production private
+ledger implementation and must be described as "Company Ledger", "Deal
+Workspace", or "Private Deal View" in product surfaces.
+
+```ts
+type CompanyDealProjection = {
+  dealId: string;
+  organizationId: string;
+  counterpartyOrganizationId: string;
+  counterpartyDisplayName: string;
+  relationshipRole: 'buyer' | 'supplier' | 'financier' | 'auditor' | 'regulator' | 'logistics' | 'mixed';
+  orderId?: string;
+  orderStatus: string;
+  deliveryEvidenceId?: string;
+  deliveryEvidenceHash?: string;
+  escrowId?: string;
+  escrowStatus?: string;
+  lifecycleStage: string;
+  proof: CompanyDashboardSummary['proofSummary'];
+  financingStatus?: 'notApplicable' | 'draft' | 'pendingShariahReview' | 'approvedForActivation' | 'blocked' | 'activeSimulation';
+  safeSummary: string;
+};
+```
+
+```ts
+type MudarabahWorkflowProjection = {
+  projectionId: string;
+  dealId: string;
+  contractId?: string;
+  status:
+    | 'notApplicable'
+    | 'draft'
+    | 'pendingShariahReview'
+    | 'approvedForActivation'
+    | 'blocked'
+    | 'activeSimulation'
+    | 'distributionRecorded';
+  capitalAmount?: number;
+  currency?: string;
+  financierSharePercent?: number;
+  ventureOperatorSharePercent?: number;
+  shariahDecisionReference?: string;
+  distributionRecordCount: number;
+  safeSummary: string;
+};
+```
+
+Company ledger routes return hashes, lifecycle IDs, status metadata, and safe
+summaries only. Raw KYC, commercial documents, payment credentials, contract
+payloads, and delivery files must stay off-chain and out of projection cards.

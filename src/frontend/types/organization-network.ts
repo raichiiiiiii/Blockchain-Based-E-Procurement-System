@@ -16,6 +16,84 @@ export type OrganizationProfile = {
   updatedAt?: string;
 };
 
+export type CompanyProofStatus =
+  | 'notAnchored'
+  | 'pending'
+  | 'anchored'
+  | 'failed'
+  | 'verified'
+  | 'mismatch'
+  | 'notFound'
+  | 'unavailable';
+
+export type CompanyUserSummary = {
+  userId: string;
+  username?: string;
+  displayName?: string;
+  membershipStatus: 'active' | 'inactive' | 'invited';
+  roleCodes: string[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CompanyDashboardSummary = {
+  organization: OrganizationProfile;
+  currentUser: {
+    userId: string;
+    roleCodes: string[];
+  };
+  relationshipRoles: Array<{
+    relationshipId: string;
+    relationshipRole: OrganizationRelationshipIntent;
+    counterpartOrganizationId: string;
+    counterpartDisplayName: string;
+    channelScope: OrganizationGraphEdge['channelScope'];
+    currentStage: string;
+  }>;
+  activeDealCount: number;
+  latestProofStatus: CompanyProofStatus;
+};
+
+export type CompanyDealProjection = {
+  dealId: string;
+  relationshipId?: string;
+  title: string;
+  counterpartOrganizationId: string;
+  counterpartDisplayName: string;
+  relationship: 'buyerToSupplier' | 'supplierToBuyer' | 'financing' | 'governance' | 'unknown';
+  orderId?: string;
+  orderStatus: 'notStarted' | 'created' | 'accepted' | 'rejected';
+  deliveryEvidenceStatus: 'notSubmitted' | 'metadataRecorded';
+  escrowId?: string;
+  escrowStatus: string;
+  proofStatus: CompanyProofStatus;
+  proofEventId?: string;
+  proofPayloadHash?: string;
+  financingStatus: 'noFinancing' | 'pendingShariahReview' | 'approvedForActivation' | 'activeSimulation' | 'blocked' | 'rejected';
+  latestLifecycleEvent?: string;
+  updatedAt?: string;
+  safeSummary: string;
+};
+
+export type MudarabahWorkflowProjection = {
+  projectionId: string;
+  dealId?: string;
+  contractId?: string;
+  procurementReference?: string;
+  buyerOrganizationId?: string;
+  supplierOrganizationId?: string;
+  financierOrganizationId?: string;
+  status: 'noFinancing' | 'pendingShariahReview' | 'approvedForActivation' | 'activeSimulation' | 'blocked' | 'rejected';
+  capitalAmount?: string;
+  currency?: string;
+  financierSharePercent?: number;
+  ventureOperatorSharePercent?: number;
+  shariahReference?: string;
+  certificateReference?: string;
+  simulationOnlyNotice: string;
+  updatedAt?: string;
+};
+
 export type OrganizationNetworkRequestState =
   | 'draft'
   | 'sent'

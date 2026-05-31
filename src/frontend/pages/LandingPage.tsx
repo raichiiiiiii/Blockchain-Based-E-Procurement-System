@@ -1,5 +1,6 @@
 type LandingPageProps = {
   onSignIn: () => void;
+  onRegisterCompany: () => void;
   onViewDashboard: () => void;
 };
 
@@ -10,7 +11,7 @@ const workflowSteps = [
   'Anchor audit proof',
 ];
 
-function LandingPage({ onSignIn, onViewDashboard }: LandingPageProps) {
+function LandingPage({ onSignIn, onRegisterCompany, onViewDashboard }: LandingPageProps) {
   return (
     <main className="landing-page">
       <header className="public-header">
@@ -25,6 +26,9 @@ function LandingPage({ onSignIn, onViewDashboard }: LandingPageProps) {
           <button className="button button-primary" type="button" onClick={onSignIn}>
             Sign in
           </button>
+          <button className="button button-secondary" type="button" onClick={onRegisterCompany}>
+            Register company
+          </button>
         </nav>
       </header>
 
@@ -38,6 +42,9 @@ function LandingPage({ onSignIn, onViewDashboard }: LandingPageProps) {
           <div className="hero-actions">
             <button className="button button-primary" type="button" onClick={onSignIn}>
               Sign in
+            </button>
+            <button className="button button-secondary" type="button" onClick={onRegisterCompany}>
+              Register company
             </button>
             <button className="button button-secondary" type="button" onClick={onViewDashboard}>
               View dashboard

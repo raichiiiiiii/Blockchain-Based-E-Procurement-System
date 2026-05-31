@@ -92,6 +92,7 @@ After `npm run db:seed`, sign-in supports these database-seeded demo users with 
 
 ```text
 admin.demo
+amanah.admin
 buyer.demo
 supplier.demo
 compliance.demo
@@ -102,6 +103,10 @@ regulator.demo
 security.demo
 ```
 
+`amanah.admin` is an organization administrator for Amanah Retail Sdn Bhd. Use
+it to demonstrate company account settings and organization-scoped user
+management without granting platform administration privileges.
+
 Buyer demonstrable path:
 
 ```text
@@ -109,9 +114,12 @@ Landing page
 -> Sign in
 -> Enter buyer.demo / demo-password
 -> Dashboard
+-> Inspect Company Context
 -> Organization Network
 -> Preview barakah-supplies
 -> Inspect Amanah-Barakah relationship graph and proof-scope vector
+-> Company Ledger
+-> Inspect Private Deal View and Mudarabah projection
 -> Orders
 -> Create order
 -> Contract Documents
@@ -257,6 +265,21 @@ Landing page
 -> Access History
 ```
 
+Company administrator demonstrable path:
+
+```text
+Landing page
+-> Register company
+-> Submit a new organization and primary admin credentials
+-> Sign in after registration
+-> Dashboard
+-> Inspect company context, pending eligibility, and proof summary
+-> Company Users
+-> Invite an organization-scoped user with product role access
+-> Settings
+-> Update safe company profile metadata
+```
+
 Role-specific dashboard entry is available for Administrator, Buyer, Supplier, Compliance Reviewer, Shariah Reviewer, Financier, Auditor, Regulator, and Security Operator. The administrator workflow includes member governance, status actions, role assignment controls, and access-history inspection. Buyer and supplier workflows include order creation, received-order acknowledgement, accepted-order escrow readiness, contract document intake, contract negotiation, and metadata-only delivery evidence. Escrow creation requires an accepted order or explicit demo accepted-order reference, and buyer/supplier organizations must be eligible. Compliance reviewer workflow includes safe KYC/AML case metadata, decision actions, and downstream eligibility visibility. Shariah reviewer workflow includes PLS checklist metadata and decision controls. Financier workflow includes Shariah-gated PLS activation and profit/loss distribution scenarios. Regulator and auditor workflows include scoped export bundle generation, deterministic bundle-hash verification, and local software-key detached manifest signature review. Security operator workflow is read-only and shows backend-backed access/proof anomaly metadata when a backend session is active.
 
 The Contract Documents panel lets authorized actors upload text/JSON document content for metadata, checksum, local storage reference, extraction output, and local detached-signature metadata state. PDF and DOCX bytes can be stored, but extraction is explicitly unsupported until a production extractor adapter is connected. The UI must not claim malware scanning, OCR, legal signature validation, or production document management.
@@ -313,6 +336,9 @@ Export Bundle
 Security Status
 Contract Documents
 Contract Negotiation
+Company Ledger
+Company Users
+Register company
 ```
 
 ## Current Known Limitations
@@ -330,3 +356,6 @@ Contract Negotiation
 - ERP/accounting integration is a local JSON adapter boundary with UBL/Peppol-like and OCDS-like mappings only; production ERP posting, Peppol network delivery, and tax reporting are not implemented.
 - KYC/AML cases, export bundles, Shariah reviews, PLS contracts, operational incidents, document metadata, contract negotiation records, external API credentials/idempotency/audit, sandbox/manual payment instructions, ERP/accounting local JSON jobs, organization network relationships, and local email outbox notifications are now PostgreSQL-wired in runtime mode.
 - Organization Network shows seeded Amanah, Barakah, and Mabrur relationships with proof-scope vectors. It does not claim production Fabric channel membership, ERP partner onboarding, or unrestricted document sharing.
+- Company Ledger shows private deal projections and restricted Mudarabah seedbed
+  status derived from backend read models. It is not a production private ledger,
+  payment rail, formal Shariah certification, or ERP workspace.

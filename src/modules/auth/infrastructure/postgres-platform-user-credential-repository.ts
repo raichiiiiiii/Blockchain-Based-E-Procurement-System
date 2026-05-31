@@ -88,7 +88,7 @@ export class PostgresPlatformUserCredentialRepository implements PlatformUserCre
           FROM organization_memberships memberships
           INNER JOIN member_organizations organizations
             ON organizations.id = memberships.organization_id
-           AND organizations.status = 'active'
+           AND organizations.status <> 'deleted'
           WHERE memberships.user_id = credentials.user_id
             AND memberships.status = 'active'
           ORDER BY memberships.created_at ASC, memberships.organization_id ASC
@@ -136,7 +136,7 @@ export class PostgresPlatformUserCredentialRepository implements PlatformUserCre
           FROM organization_memberships memberships
           INNER JOIN member_organizations organizations
             ON organizations.id = memberships.organization_id
-           AND organizations.status = 'active'
+           AND organizations.status <> 'deleted'
           WHERE memberships.user_id = credentials.user_id
             AND memberships.status = 'active'
           ORDER BY memberships.created_at ASC, memberships.organization_id ASC

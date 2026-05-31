@@ -38,6 +38,12 @@ async function createNetworkTestContext() {
     actorRoleCodes: ['buyer'],
   });
   await createSession(sessionRepository, {
+    token: 'org-admin-token',
+    actorUserId: 'demo-buyer-admin-user',
+    actorOrganizationId: 'demo-buyer-org',
+    actorRoleCodes: ['organizationAdmin'],
+  });
+  await createSession(sessionRepository, {
     token: 'supplier-token',
     actorUserId: 'demo-supplier-user',
     actorOrganizationId: 'demo-supplier-org',
@@ -91,6 +97,110 @@ test('public organization registration creates pending profile and admin bootstr
   assert.equal(body.data.organization.eligibilityStatus, 'unknown');
   assert.equal(typeof body.data.primaryAdminUserId, 'string');
   assert.equal(JSON.stringify(body).includes('safe-password'), false);
+});
+
+test('company dashboard summary shows organization context and deal count', async () => {
+  const { server } = await createNetworkTestContext();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/organizations/me/dashboard-summary',
+    headers: {
+      authorization: 'Bearer buyer-token',
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  const summary = response.json().data;
+  assert.equal(summary.organization.legalName, 'Amanah Retail Sdn Bhd');
+  assert.equal(summary.organization.uniqueIdentifier, 'amanah-retail');
+  assert.deepEqual(summary.currentUser.roleCodes, ['buyer']);
+  assert.ok(summary.relationshipRoles.some(
+    (relationship: { counterpartOrganizationId: string }) => relationship.counterpartOrganizationId === 'demo-supplier-org',
+  ));
+  assert.equal(summary.activeDealCount, 1);
+  assert.equal(summary.latestProofStatus, 'verified');
+});
+
+test('organization admin can list and prepare scoped company users', async () => {
+  const { server } = await createNetworkTestContext();
+
+  const listResponse = await server.inject({
+    method: 'GET',
+    url: '/api/v1/organizations/me/users',
+    headers: {
+      authorization: 'Bearer org-admin-token',
+    },
+  });
+
+  assert.equal(listResponse.statusCode, 200);
+  assert.ok(listResponse.json().data.items.some(
+    (user: { username: string }) => user.username === 'buyer.demo',
+  ));
+
+  const inviteResponse = await server.inject({
+    method: 'POST',
+    url: '/api/v1/organizations/me/users',
+    headers: {
+      authorization: 'Bearer org-admin-token',
+    },
+    payload: {
+      username: 'amanah.ops',
+      displayName: 'Amanah Operations User',
+      roleCodes: ['buyer'],
+    },
+  });
+
+  assert.equal(inviteResponse.statusCode, 201);
+  assert.equal(inviteResponse.json().data.username, 'amanah.ops');
+  assert.deepEqual(inviteResponse.json().data.roleCodes, ['buyer']);
+
+  const buyerInvite = await server.inject({
+    method: 'POST',
+    url: '/api/v1/organizations/me/users',
+    headers: {
+      authorization: 'Bearer buyer-token',
+    },
+    payload: {
+      username: 'bad.assign',
+      displayName: 'Bad Assign',
+      roleCodes: ['buyer'],
+    },
+  });
+  assert.equal(buyerInvite.statusCode, 403);
+});
+
+test('company ledger and Mudarabah projection are scoped to authenticated company context', async () => {
+  const { server } = await createNetworkTestContext();
+
+  const dealsResponse = await server.inject({
+    method: 'GET',
+    url: '/api/v1/company-ledger/deals',
+    headers: {
+      authorization: 'Bearer buyer-token',
+    },
+  });
+
+  assert.equal(dealsResponse.statusCode, 200);
+  const deals = dealsResponse.json().data.items;
+  assert.equal(deals.length, 1);
+  assert.equal(deals[0].orderStatus, 'accepted');
+  assert.equal(deals[0].deliveryEvidenceStatus, 'metadataRecorded');
+  assert.equal(deals[0].proofStatus, 'pending');
+  assert.match(deals[0].proofPayloadHash, /^sha256:/);
+
+  const mudarabahResponse = await server.inject({
+    method: 'GET',
+    url: '/api/v1/company-ledger/mudarabah',
+    headers: {
+      authorization: 'Bearer buyer-token',
+    },
+  });
+
+  assert.equal(mudarabahResponse.statusCode, 200);
+  const projections = mudarabahResponse.json().data.items;
+  assert.equal(projections[0].status, 'approvedForActivation');
+  assert.match(projections[0].simulationOnlyNotice, /does not guarantee profit or principal/);
 });
 
 test('buyer can request network relationship and supplier acceptance appears in graph and outbox', async () => {

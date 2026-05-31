@@ -25,6 +25,7 @@ import type {
 
 type OrganizationNetworkPageProps = {
   session: AuthenticatedFrontendSession;
+  onOpenCompanyLedger?: () => void;
 };
 
 type NetworkFormState = {
@@ -234,7 +235,7 @@ function GraphCanvas({
   );
 }
 
-function OrganizationNetworkPage({ session }: OrganizationNetworkPageProps) {
+function OrganizationNetworkPage({ session, onOpenCompanyLedger }: OrganizationNetworkPageProps) {
   const [profile, setProfile] = useState<OrganizationProfile | undefined>();
   const [graph, setGraph] = useState<OrganizationGraphProjection | undefined>();
   const [requests, setRequests] = useState<OrganizationNetworkRequest[]>([]);
@@ -519,14 +520,21 @@ function OrganizationNetworkPage({ session }: OrganizationNetworkPageProps) {
 
           <article className="network-preview-card">
             <strong>Start trade</strong>
-            <span>Accepted relationships can move into the Orders workspace.</span>
+            <span>Accepted relationships can move into Orders or Company Ledger.</span>
             <p>This action prepares the next workflow step only; it does not bypass eligibility, create escrow, or execute payment.</p>
             <button
               className="button button-secondary"
               type="button"
-              onClick={() => setMessage('Open Orders to create a governed order for an accepted relationship.')}
+              onClick={() => {
+                if (onOpenCompanyLedger) {
+                  onOpenCompanyLedger();
+                  return;
+                }
+
+                setMessage('Open Orders to create a governed order for an accepted relationship.');
+              }}
             >
-              Prepare order
+              Open company ledger
             </button>
           </article>
 

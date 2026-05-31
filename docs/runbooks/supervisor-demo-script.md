@@ -29,6 +29,7 @@ Demo accounts:
 
 ```text
 admin.demo
+amanah.admin
 buyer.demo
 supplier.demo
 compliance.demo
@@ -38,6 +39,9 @@ auditor.demo
 regulator.demo
 security.demo
 ```
+
+Use `amanah.admin` when demonstrating company-level settings and organization
+user management. Use `admin.demo` only for platform governance.
 
 ## Startup Steps
 
@@ -81,7 +85,8 @@ Chaincode build/test is automated. Live Fabric local-network deployment depends 
 | 2:30-4:00 | Administrator governance | Show Members, Roles, organization status, and Access History. |
 | 4:00-5:30 | Compliance review | Show safe KYC/AML metadata and eligibility decision. |
 | 5:30-6:30 | Organization Network | Show Amanah, Barakah, and Mabrur relationship graph, proof-scope vectors, and safe network request action. |
-| 6:30-8:00 | Buyer order | Create or inspect procurement order for supplier. |
+| 6:30-7:15 | Company context and ledger | Show company dashboard summary, Company Users, Settings, Private Deal View, and restricted Mudarabah projection. |
+| 7:15-8:15 | Buyer order | Create or inspect procurement order for supplier. |
 | 8:00-9:00 | Contract documents | Upload contract text and show checksum, extraction fields, and local signature state. |
 | 9:00-10:00 | Contract negotiation | Version machine-readable terms, show hash, submit an offer, and record acceptance. |
 | 10:00-11:15 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata; mention signed external IoT, QR, and EPCIS-compatible proof intake as an API-backed pilot-hardening path. |
@@ -181,10 +186,13 @@ Sign in as `buyer.demo`.
 
 Show:
 
+- Company Context
 - Organization Network
 - preview `barakah-supplies`
 - relationship graph and proof-scope vector
 - Blockchain Trail panel
+- Company Ledger and private deal projection
+- restricted Mudarabah projection
 - Email Outbox entry after network request action
 - Orders
 - create or inspect order for Barakah Supplies
@@ -200,6 +208,30 @@ For Organization Network, add:
 
 ```text
 The graph is relationship and proof metadata only. It helps users understand who they are connected to, which proof scope is visible, and which requests are pending. It does not create production Fabric membership, bypass eligibility, or expose private contracts.
+```
+
+For company context and ledger, add:
+
+```text
+The dashboard is company-first: the user sees Amanah Retail, scoped company roles, eligibility, relationships, active deals, proof status, and a private deal projection. This is a backend read model, not a production private ledger or fabricated Fabric channel.
+```
+
+### 5A. Company User Management and Settings
+
+Sign in as `amanah.admin`.
+
+Show:
+
+- Dashboard Company Context
+- Company Users
+- invite form with organization-scoped roles
+- Settings
+- safe company profile fields
+
+What to say:
+
+```text
+The company administrator can maintain safe profile metadata and company-scoped users. Passwords are not returned in the dashboard, and role assignments remain scoped to the organization rather than granting platform administration.
 ```
 
 ### 6. Supplier Acknowledgement
@@ -485,6 +517,8 @@ Do not claim:
 - [ ] Administrator can inspect members, roles, and access history.
 - [ ] Compliance reviewer can record eligibility decision with safe metadata only.
 - [ ] Buyer can open Organization Network, preview `barakah-supplies`, and inspect proof-scope vectors without raw payloads.
+- [ ] Company users can inspect Company Context and Company Ledger without production private-ledger claims.
+- [ ] Organization administrator can list or invite organization users without password disclosure.
 - [ ] Buyer can create or inspect order.
 - [ ] Supplier can acknowledge assigned order.
 - [ ] Supplier can submit delivery evidence metadata for an accepted order.

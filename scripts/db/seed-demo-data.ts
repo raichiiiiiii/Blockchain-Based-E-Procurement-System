@@ -58,6 +58,13 @@ const demoAccounts: DemoAccount[] = [
     organizationId: 'demo-buyer-org',
   },
   {
+    userId: 'demo-amanah-admin-user',
+    username: 'amanah.admin',
+    displayName: 'Amanah Company Admin',
+    roleCode: 'organizationAdmin',
+    organizationId: 'demo-buyer-org',
+  },
+  {
     userId: 'demo-supplier-user',
     username: 'supplier.demo',
     displayName: 'Demo Supplier',
@@ -87,6 +94,7 @@ const roleLabels: Record<string, string> = {
   complianceReviewer: 'Compliance Reviewer',
   shariahReviewer: 'Shariah Reviewer',
   buyer: 'Buyer',
+  organizationAdmin: 'Organization Admin',
   supplier: 'Supplier',
   financier: 'Financier',
   securityOperator: 'Security Operator',

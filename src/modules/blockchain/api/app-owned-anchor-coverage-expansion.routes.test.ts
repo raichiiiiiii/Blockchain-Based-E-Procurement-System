@@ -49,8 +49,8 @@ async function createSession(
     actorOrganizationId: input.actorOrganizationId,
     actorRoleCodes: input.actorRoleCodes,
     status: 'active',
-    issuedAt: '2026-05-31T08:00:00.000Z',
-    expiresAt: '2026-05-31T10:00:00.000Z',
+    issuedAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     authenticationMethod: 'localPassword',
   });
 }

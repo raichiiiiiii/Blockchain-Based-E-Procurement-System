@@ -77,6 +77,7 @@ The normal local demo path expects `npm run db:seed` to create backend/database 
 | Financier organization | `demo-financier-org`, display name Mabrur Finance Partner, status active |
 | Demo password | `demo-password` for local demo accounts |
 | Administrator account | `admin.demo` |
+| Amanah organization admin account | `amanah.admin` |
 | Buyer account | `buyer.demo` |
 | Supplier account | `supplier.demo` |
 | Compliance account | `compliance.demo` |
@@ -94,6 +95,7 @@ The normal local demo path expects `npm run db:seed` to create backend/database 
 | Export bundle | Combined audit scope with manifest hash, verification metadata, and detached local software-key signature package metadata |
 | ERP/accounting mapping | Local JSON export job for UBL/Peppol-like order or invoice mapping, OCDS-like contract release, or payment status |
 | Organization Network | Amanah-Barakah buyer/supplier relationship, Mabrur-Amanah financing relationship, proof-scope vectors, and local email outbox notifications |
+| Company Ledger | Backend-derived private deal projections for Amanah, Barakah, and Mabrur with delivery evidence hash, escrow status, proof status, and restricted Mudarabah seedbed projection |
 
 Seed data should avoid raw KYC documents, raw escrow terms, payment credentials, and private commercial documents in visible dashboard cards.
 
@@ -102,6 +104,7 @@ Seed data should avoid raw KYC documents, raw escrow terms, payment credentials,
 | Actor | Entry | Expected screen or route | Expected result |
 |---|---|---|---|
 | Administrator | Sign in | Dashboard, Members, Roles, Access History | Organizations and role controls are visible; non-admin workflow controls are not shown. |
+| Company Administrator | Register company or sign in | Dashboard, Company Users, Settings, Company Ledger | Company context is visible; organization users and safe profile metadata can be maintained without platform-admin authority. |
 | Buyer | Sign in | Dashboard, Organization Network, Orders, Contract Documents, Contract Negotiation, Escrow, Blockchain Proof | Buyer previews organization relationships, creates order, records or reviews contract metadata, accepts current terms, reviews delivery evidence metadata, creates escrow from accepted order, and sees proof metadata. |
 | Supplier | Sign in | Dashboard, Received Orders, Delivery Evidence, Contract Documents, Contract Negotiation, Escrow | Supplier acknowledges assigned order, submits or accepts negotiated terms, and submits safe delivery evidence metadata. |
 | Compliance Reviewer | Sign in | Dashboard, Compliance, Eligibility Status | Reviewer records decision and eligibility state is visible downstream. |
@@ -118,6 +121,7 @@ Seed data should avoid raw KYC documents, raw escrow terms, payment credentials,
 | Actor | Backend or API dependency |
 |---|---|
 | Administrator | Auth session, membership routes, role routes, access history query. |
+| Company Administrator | Auth session, company dashboard summary, organization user list/invite route, own-profile route, company ledger read model. |
 | Buyer | Auth session, procurement order routes, delivery evidence read route, eligibility gate, escrow routes, blockchain proof endpoint. |
 | Supplier | Auth session, procurement order list/detail, acknowledgement route, delivery evidence submit/read routes, document metadata route, contract negotiation route, ownership authorization. |
 | Compliance Reviewer | Auth session, KYC/AML case routes, eligibility/status history route, redaction policy. |
@@ -137,6 +141,7 @@ The demo should be able to explain or inspect these events as governed actions:
 |---|---|---|
 | Organization status reviewed or changed | Administrator governance action | Actor, organization, status, timestamp, and outcome are recorded. |
 | Role assignment action | Administrator role action | Actor, role, target user or organization, and outcome are recorded. |
+| Organization user invited | Company or platform administrator invites a company-scoped user | User, organization, role metadata, and safe local outbox notification are recorded; passwords are not returned in dashboard responses. |
 | Network request sent or accepted | Organization user requests or accepts relationship establishment | Safe request metadata, relationship state, graph projection, and local email outbox record exist without private documents. |
 | Compliance decision recorded | Reviewer approves, rejects, flags, or blocks case | Eligibility state changes without exposing raw KYC/AML payloads. |
 | Order created | Buyer creates order | Procurement lifecycle event and payload hash metadata exist. |
@@ -162,6 +167,7 @@ The demo should be able to explain or inspect these events as governed actions:
 | Procurement lifecycle event hash | May be anchored, pending, failed, or not anchored depending on gateway availability. |
 | Delivery evidence lifecycle event hash | May be anchored, pending, failed, or not anchored; failed proof must not appear verified. |
 | Escrow-created lifecycle event hash | Must be visible as proof metadata; anchoring failure must not delete the escrow event. |
+| Company deal projection proof status | Must reflect backend anchor/proof metadata and distinguish pending, failed, not found, unavailable, anchored, and verified states without fabricated transaction IDs. |
 | Audit/export bundle integrity metadata | Bundle hash and detached signature verification must distinguish verified, mismatch/invalid, and not found. |
 | Blockchain proof panel | Must never fabricate transaction IDs, block numbers, verified states, or unavailable proof. |
 
@@ -174,6 +180,8 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 | Landing and sign in | Root opens landing page; dashboard requires authenticated session. |
 | Role routing | Each actor reaches the correct role-specific dashboard. |
 | Administrator governance | Members, Roles, and Access History are accessible only to authorized admin context. |
+| Company context | Authenticated company users see organization identity, company roles, eligibility state, relationship count, active deal count, and proof summary from server-derived session context. |
+| Organization users | Company admin or platform admin can list/invite organization-scoped users; non-admin company roles are denied. |
 | Compliance decision | Eligibility changes are visible and raw KYC/AML documents are not exposed. |
 | Buyer order | Buyer creates or inspects order and sees lifecycle metadata. |
 | Supplier acknowledgement | Supplier accepts only assigned order. |
@@ -184,6 +192,8 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 | Payment instruction | Buyer or financier creates sandbox/manual settlement instruction; reconciliation status is auditable and does not imply bank execution. |
 | ISO 20022 mapping | Authorized reviewer exports payment initiation/status JSON for mapping review only; no bank execution or certification is claimed. |
 | Proof verification | Verified, mismatch, not found, pending, failed, and unavailable states are distinct where applicable. |
+| Company ledger | Authorized company actors can inspect private deal projections without raw KYC, commercial documents, payment credentials, or fake private-ledger claims. |
+| Mudarabah projection | Buyer, supplier, financier, or Shariah reviewer can inspect read-only restricted Mudarabah status without guaranteed return, payment execution, or formal certification claims. |
 | Shariah review | PLS activation depends on an approved Shariah reference and active certificate artifact coverage. |
 | Financier PLS view | Profit/loss scenarios are visible as simulation-only seedbed records. |
 | Regulator export | Bundle manifest, detached local software-key signature, and integrity verification are visible. |
@@ -205,6 +215,9 @@ Proof metadata may show transaction ID, channel, chaincode, block number, and an
 - Export signing uses a local software-key detached manifest signature and offline package metadata; production KMS/HSM custody, legal attestation, certificate authority lifecycle, and external regulator portal integration remain future work.
 - ERP/accounting adapter produces local JSON mapping artifacts only; production ERP connection, Peppol access point delivery, UBL XML certification, and tax reporting remain future work.
 - Organization Network is a safe metadata and proof-scope view. It does not create production Fabric consortium membership, replace KYC/AML eligibility, share raw commercial documents, or establish ERP partner connectivity.
+- Company Ledger is a backend read-model projection for private deal visibility.
+  It does not create a production private ledger, production Fabric channel,
+  payment settlement, ERP posting, or formal Shariah certification.
 - Security operator workflow is read-only and does not replace SIEM or incident response operations.
 
 ## Post-MVP Exclusions
@@ -225,7 +238,7 @@ The demo must explicitly exclude:
 
 ## Developer Notes
 
-Related planning and governance rows: PBI-429, PBI-431, PBI-432, PBI-433, PBI-434, and PBI-435.
+Related planning and governance rows: PBI-429, PBI-431, PBI-432, PBI-433, PBI-434, PBI-435, and PBI-473 through PBI-484.
 
 Related evidence:
 

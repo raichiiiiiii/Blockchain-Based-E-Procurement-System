@@ -2,11 +2,16 @@ import { createHash, randomUUID } from 'node:crypto';
 import type {
   CreateNetworkRequestInput,
   DecideNetworkRequestInput,
+  InviteOrganizationUserInput,
   OrganizationNetworkRepository,
   RegisterOrganizationInput,
   UpdateOrganizationProfileInput,
 } from '../application/organization-network-repository.js';
 import type {
+  CompanyDashboardSummary,
+  CompanyDealProjection,
+  CompanyProofStatus,
+  CompanyUserSummary,
   EmailNotificationRecord,
   OrganizationGraphChannelScope,
   OrganizationGraphEdge,
@@ -17,6 +22,7 @@ import type {
   OrganizationNetworkRequest,
   OrganizationProfile,
   OrganizationRelationshipIntent,
+  MudarabahWorkflowProjection,
 } from '../domain/organization-network.js';
 
 type RelationshipRecord = {
@@ -88,6 +94,7 @@ function profileToPublic(profile: OrganizationProfile) {
 
 export class InMemoryOrganizationNetworkRepository implements OrganizationNetworkRepository {
   private readonly profiles = new Map<string, OrganizationProfile>();
+  private readonly users = new Map<string, CompanyUserSummary & { organizationId: string }>();
   private readonly requests = new Map<string, OrganizationNetworkRequest>();
   private readonly relationships = new Map<string, RelationshipRecord>();
   private readonly emailNotifications = new Map<string, EmailNotificationRecord>();
@@ -102,6 +109,20 @@ export class InMemoryOrganizationNetworkRepository implements OrganizationNetwor
   private seedDemoGraph() {
     const now = '2026-05-31T00:00:00.000Z';
     const profiles: OrganizationProfile[] = [
+      {
+        organizationId: 'demo-platform-org',
+        legalName: 'PLS Procurement Platform',
+        displayName: 'PLS Procurement',
+        alias: 'Platform',
+        uniqueIdentifier: 'platform',
+        status: 'active',
+        eligibilityStatus: 'eligible',
+        businessCategory: 'Platform operator',
+        publicProfileSummary: 'Platform operator account for governed workspace administration.',
+        contactEmail: 'platform@example.test',
+        createdAt: now,
+        updatedAt: now,
+      },
       {
         organizationId: 'demo-buyer-org',
         legalName: 'Amanah Retail Sdn Bhd',
@@ -158,10 +179,176 @@ export class InMemoryOrganizationNetworkRepository implements OrganizationNetwor
         createdAt: now,
         updatedAt: now,
       },
+      {
+        organizationId: 'demo-compliance-org',
+        legalName: 'Demo Compliance Office',
+        displayName: 'Compliance Office',
+        alias: 'Compliance',
+        uniqueIdentifier: 'compliance-office',
+        status: 'active',
+        eligibilityStatus: 'eligible',
+        businessCategory: 'Compliance reviewer',
+        publicProfileSummary: 'Compliance reviewer organization for KYC and eligibility decisions.',
+        contactEmail: 'compliance@example.test',
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        organizationId: 'demo-shariah-org',
+        legalName: 'Demo Shariah Review Office',
+        displayName: 'Shariah Review Office',
+        alias: 'Shariah',
+        uniqueIdentifier: 'shariah-review-office',
+        status: 'active',
+        eligibilityStatus: 'eligible',
+        businessCategory: 'Shariah reviewer',
+        publicProfileSummary: 'Restricted PLS seedbed review organization.',
+        contactEmail: 'shariah@example.test',
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        organizationId: 'demo-audit-org',
+        legalName: 'Demo Audit Office',
+        displayName: 'Audit Office',
+        alias: 'Auditor',
+        uniqueIdentifier: 'audit-office',
+        status: 'active',
+        eligibilityStatus: 'eligible',
+        businessCategory: 'Auditor',
+        publicProfileSummary: 'Auditor organization for proof and audit trail review.',
+        contactEmail: 'auditor@example.test',
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        organizationId: 'demo-security-org',
+        legalName: 'Demo Security Operations',
+        displayName: 'Security Operations',
+        alias: 'Security',
+        uniqueIdentifier: 'security-operations',
+        status: 'active',
+        eligibilityStatus: 'eligible',
+        businessCategory: 'Security operator',
+        publicProfileSummary: 'Security operator organization for read-only access and proof alerts.',
+        contactEmail: 'security@example.test',
+        createdAt: now,
+        updatedAt: now,
+      },
     ];
 
     for (const profile of profiles) {
       this.profiles.set(profile.organizationId, profile);
+    }
+
+    const users: Array<CompanyUserSummary & { organizationId: string }> = [
+      {
+        userId: 'demo-admin-user',
+        username: 'admin.demo',
+        displayName: 'Demo Administrator',
+        organizationId: 'demo-platform-org',
+        membershipStatus: 'active',
+        roleCodes: ['administrator'],
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        userId: 'demo-buyer-user',
+        username: 'buyer.demo',
+        displayName: 'Demo Buyer',
+        organizationId: 'demo-buyer-org',
+        membershipStatus: 'active',
+        roleCodes: ['buyer'],
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        userId: 'demo-amanah-admin-user',
+        username: 'amanah.admin',
+        displayName: 'Amanah Company Admin',
+        organizationId: 'demo-buyer-org',
+        membershipStatus: 'active',
+        roleCodes: ['organizationAdmin'],
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        userId: 'demo-supplier-user',
+        username: 'supplier.demo',
+        displayName: 'Demo Supplier',
+        organizationId: 'demo-supplier-org',
+        membershipStatus: 'active',
+        roleCodes: ['supplier', 'organizationAdmin'],
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        userId: 'demo-financier-user',
+        username: 'financier.demo',
+        displayName: 'Demo Financier',
+        organizationId: 'demo-financier-org',
+        membershipStatus: 'active',
+        roleCodes: ['financier', 'organizationAdmin'],
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        userId: 'demo-compliance-user',
+        username: 'compliance.demo',
+        displayName: 'Demo Compliance Reviewer',
+        organizationId: 'demo-compliance-org',
+        membershipStatus: 'active',
+        roleCodes: ['complianceReviewer'],
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        userId: 'demo-shariah-user',
+        username: 'shariah.demo',
+        displayName: 'Demo Shariah Reviewer',
+        organizationId: 'demo-shariah-org',
+        membershipStatus: 'active',
+        roleCodes: ['shariahReviewer'],
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        userId: 'demo-auditor-user',
+        username: 'auditor.demo',
+        displayName: 'Demo Auditor',
+        organizationId: 'demo-audit-org',
+        membershipStatus: 'active',
+        roleCodes: ['auditor'],
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        userId: 'demo-regulator-user',
+        username: 'regulator.demo',
+        displayName: 'Demo Regulator',
+        organizationId: 'demo-regulator-org',
+        membershipStatus: 'active',
+        roleCodes: ['regulator'],
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        userId: 'demo-security-user',
+        username: 'security.demo',
+        displayName: 'Demo Security Operator',
+        organizationId: 'demo-security-org',
+        membershipStatus: 'active',
+        roleCodes: ['securityOperator'],
+        createdAt: now,
+        updatedAt: now,
+      },
+    ];
+
+    for (const user of users) {
+      this.users.set(user.userId, user);
+      if (user.username) {
+        this.usernames.add(user.username.toLowerCase());
+      }
     }
 
     this.relationships.set('rel-amanah-barakah', {
@@ -219,6 +406,16 @@ export class InMemoryOrganizationNetworkRepository implements OrganizationNetwor
 
     this.profiles.set(organizationId, profile);
     this.usernames.add(input.primaryAdminUsername.toLowerCase());
+    this.users.set(primaryAdminUserId, {
+      userId: primaryAdminUserId,
+      username: input.primaryAdminUsername,
+      displayName: input.primaryAdminDisplayName ?? input.primaryAdminUsername,
+      organizationId,
+      membershipStatus: 'active',
+      roleCodes: ['organizationAdmin'],
+      createdAt: now,
+      updatedAt: now,
+    });
 
     return {
       status: 'registered' as const,
@@ -233,6 +430,44 @@ export class InMemoryOrganizationNetworkRepository implements OrganizationNetwor
   async findProfileByOrganizationId(organizationId: string) {
     const profile = this.profiles.get(organizationId);
     return profile ? { ...profile } : null;
+  }
+
+  async getCompanyDashboardSummary(input: {
+    organizationId: string;
+    actorUserId: string;
+    actorRoleCodes: string[];
+  }): Promise<CompanyDashboardSummary | null> {
+    const organization = await this.findProfileByOrganizationId(input.organizationId);
+    if (!organization) {
+      return null;
+    }
+
+    const graph = await this.getGraphForOrganization(input.organizationId);
+    const relationshipRoles = graph.edges.map(edge => {
+      const counterpartOrganizationId = edge.sourceOrganizationId === input.organizationId
+        ? edge.targetOrganizationId
+        : edge.sourceOrganizationId;
+      const counterpart = this.profiles.get(counterpartOrganizationId);
+      return {
+        relationshipId: edge.id,
+        relationshipRole: this.graphTypeToRelationshipIntent(edge.relationshipType),
+        counterpartOrganizationId,
+        counterpartDisplayName: counterpart?.displayName ?? counterpart?.legalName ?? counterpartOrganizationId,
+        channelScope: edge.channelScope,
+        currentStage: edge.currentStage,
+      };
+    });
+
+    return {
+      organization,
+      currentUser: {
+        userId: input.actorUserId,
+        roleCodes: input.actorRoleCodes,
+      },
+      relationshipRoles,
+      activeDealCount: (await this.listCompanyDealProjections(input.organizationId)).length,
+      latestProofStatus: this.latestProofStatus(graph.edges.map(edge => edge.verificationStatus ?? edge.anchorStatus)),
+    };
   }
 
   async updateProfile(organizationId: string, input: UpdateOrganizationProfileInput) {
@@ -253,6 +488,50 @@ export class InMemoryOrganizationNetworkRepository implements OrganizationNetwor
     };
     this.profiles.set(organizationId, updated);
     return { ...updated };
+  }
+
+  async listOrganizationUsers(organizationId: string) {
+    return [...this.users.values()]
+      .filter(user => user.organizationId === organizationId)
+      .sort((a, b) => (a.displayName ?? a.userId).localeCompare(b.displayName ?? b.userId))
+      .map(({ organizationId: _organizationId, ...user }) => ({ ...user }));
+  }
+
+  async inviteOrganizationUser(input: InviteOrganizationUserInput) {
+    if (!this.profiles.has(input.organizationId)) {
+      return { status: 'organizationNotFound' as const };
+    }
+
+    if (this.usernames.has(input.username.toLowerCase())) {
+      return { status: 'duplicateUsername' as const };
+    }
+
+    const now = new Date().toISOString();
+    const userId = `user_${randomUUID()}`;
+    const user: CompanyUserSummary & { organizationId: string } = {
+      userId,
+      username: input.username,
+      displayName: input.displayName,
+      organizationId: input.organizationId,
+      membershipStatus: 'invited',
+      roleCodes: input.roleCodes,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.users.set(userId, user);
+    this.usernames.add(input.username.toLowerCase());
+    this.recordEmail({
+      recipientOrganizationId: input.organizationId,
+      recipientUserId: userId,
+      templateKey: 'organizationUserInvited',
+      subject: 'Workspace access prepared',
+      safeBody: 'Organization access was prepared for a company user. Credentials are issued through the operator process.',
+      relatedEntityType: 'organizationUser',
+      relatedEntityId: userId,
+    });
+
+    const { organizationId: _organizationId, ...summary } = user;
+    return { status: 'created' as const, user: summary };
   }
 
   async searchPublicProfileByUniqueIdentifier(identifier: string) {
@@ -447,6 +726,74 @@ export class InMemoryOrganizationNetworkRepository implements OrganizationNetwor
     return [this.edgeToTrailEntry(edge)];
   }
 
+  async listCompanyDealProjections(organizationId: string): Promise<CompanyDealProjection[]> {
+    if (!['demo-buyer-org', 'demo-supplier-org', 'demo-financier-org'].includes(organizationId)) {
+      return [];
+    }
+
+    const buyer = this.profiles.get('demo-buyer-org');
+    const supplier = this.profiles.get('demo-supplier-org');
+    const financier = this.profiles.get('demo-financier-org');
+    const isSupplier = organizationId === 'demo-supplier-org';
+    const isFinancier = organizationId === 'demo-financier-org';
+    const counterpart = isSupplier ? buyer : isFinancier ? buyer : supplier;
+    const relationship: CompanyDealProjection['relationship'] = isSupplier
+      ? 'supplierToBuyer'
+      : isFinancier
+        ? 'financing'
+        : 'buyerToSupplier';
+
+    return [{
+      dealId: 'deal-amanah-barakah-packaging',
+      relationshipId: isFinancier ? 'rel-mabrur-amanah' : 'rel-amanah-barakah',
+      title: 'Halal packaging procurement',
+      counterpartOrganizationId: counterpart?.organizationId ?? 'demo-supplier-org',
+      counterpartDisplayName: counterpart?.displayName ?? counterpart?.legalName ?? 'Counterparty',
+      relationship,
+      orderId: 'demo-order-001',
+      orderStatus: 'accepted',
+      deliveryEvidenceStatus: 'metadataRecorded',
+      escrowId: 'demo-escrow-001',
+      escrowStatus: 'escrowCreated',
+      proofStatus: 'pending',
+      proofEventId: 'demo-delivery-event-001',
+      proofPayloadHash: 'sha256:demo-delivery-event-hash',
+      financingStatus: 'approvedForActivation',
+      latestLifecycleEvent: 'deliveryEvidenceSubmitted',
+      updatedAt: '2026-05-31T00:00:00.000Z',
+      safeSummary: 'Company-visible deal projection links accepted order, delivery evidence metadata, escrow state, and restricted PLS readiness without exposing private terms.',
+    }];
+  }
+
+  async listMudarabahWorkflowProjections(organizationId: string): Promise<MudarabahWorkflowProjection[]> {
+    if (!['demo-buyer-org', 'demo-supplier-org', 'demo-financier-org', 'demo-shariah-org'].includes(organizationId)) {
+      return [{
+        projectionId: `mudarabah-none-${organizationId}`,
+        status: 'noFinancing',
+        simulationOnlyNotice: 'No Mudarabah or PLS seedbed projection is linked to this company context.',
+      }];
+    }
+
+    return [{
+      projectionId: 'mudarabah-amanah-barakah',
+      dealId: 'deal-amanah-barakah-packaging',
+      contractId: 'pls-demo-halal-packaging',
+      procurementReference: 'demo-order-001',
+      buyerOrganizationId: 'demo-buyer-org',
+      supplierOrganizationId: 'demo-supplier-org',
+      financierOrganizationId: 'demo-financier-org',
+      status: 'approvedForActivation',
+      capitalAmount: '68000.00',
+      currency: 'MYR',
+      financierSharePercent: 60,
+      ventureOperatorSharePercent: 40,
+      shariahReference: 'review-demo-approved',
+      certificateReference: 'shariah-certificate-mudarabah-v1',
+      simulationOnlyNotice: 'Restricted Mudarabah seedbed projection only. It does not guarantee profit or principal, execute payment, or claim formal external Shariah certification.',
+      updatedAt: '2026-05-31T00:00:00.000Z',
+    }];
+  }
+
   async listEmailNotificationsForOrganization(
     organizationId: string,
     options?: { includeGovernanceView?: boolean },
@@ -557,5 +904,54 @@ export class InMemoryOrganizationNetworkRepository implements OrganizationNetwor
       createdAt: new Date().toISOString(),
     };
     this.emailNotifications.set(notification.notificationId, notification);
+  }
+
+  private graphTypeToRelationshipIntent(type: OrganizationGraphRelationshipType): OrganizationRelationshipIntent {
+    switch (type) {
+      case 'financing':
+        return 'financier';
+      case 'logistics':
+        return 'logistics';
+      case 'regulatory':
+      case 'audit':
+        return 'auditorRegulator';
+      case 'mixed':
+        return 'mixed';
+      case 'buyerSupplier':
+      default:
+        return 'buyer';
+    }
+  }
+
+  private latestProofStatus(statuses: Array<string | undefined>): CompanyProofStatus {
+    if (statuses.includes('mismatch')) {
+      return 'mismatch';
+    }
+
+    if (statuses.includes('failed')) {
+      return 'failed';
+    }
+
+    if (statuses.includes('verified')) {
+      return 'verified';
+    }
+
+    if (statuses.includes('anchored')) {
+      return 'anchored';
+    }
+
+    if (statuses.includes('pending')) {
+      return 'pending';
+    }
+
+    if (statuses.includes('notFound')) {
+      return 'notFound';
+    }
+
+    if (statuses.includes('notAnchored')) {
+      return 'notAnchored';
+    }
+
+    return 'unavailable';
   }
 }

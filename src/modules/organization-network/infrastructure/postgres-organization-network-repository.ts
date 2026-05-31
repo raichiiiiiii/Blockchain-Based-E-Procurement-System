@@ -4,13 +4,19 @@ import { toIsoString } from '../../../infrastructure/database/postgres-row-utils
 import type {
   CreateNetworkRequestInput,
   DecideNetworkRequestInput,
+  InviteOrganizationUserInput,
   OrganizationNetworkRepository,
   RegisterOrganizationInput,
   UpdateOrganizationProfileInput,
 } from '../application/organization-network-repository.js';
 import type {
+  CompanyDashboardSummary,
+  CompanyDealProjection,
+  CompanyProofStatus,
+  CompanyUserSummary,
   EmailNotificationRecord,
   EmailNotificationStatus,
+  MudarabahWorkflowProjection,
   OrganizationEligibilityStatus,
   OrganizationGraphChannelScope,
   OrganizationGraphEdge,
@@ -82,6 +88,59 @@ type EmailNotificationRow = {
   created_at: Date | string;
   sent_at: Date | string | null;
   failure_reason: string | null;
+};
+
+type CompanyUserRow = {
+  user_id: string;
+  username: string | null;
+  display_name: string | null;
+  membership_status: CompanyUserSummary['membershipStatus'];
+  role_codes: string[] | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+};
+
+type CompanyDealRow = {
+  order_id: string;
+  title: string;
+  buyer_organization_id: string;
+  supplier_organization_id: string;
+  order_status: CompanyDealProjection['orderStatus'];
+  order_updated_at: Date | string;
+  buyer_display_name: string | null;
+  buyer_legal_name: string;
+  supplier_display_name: string | null;
+  supplier_legal_name: string;
+  relationship_id: string | null;
+  relationship_type: OrganizationRelationshipIntent | null;
+  evidence_id: string | null;
+  evidence_status: 'metadataRecorded' | null;
+  evidence_event_id: string | null;
+  evidence_payload_hash: string | null;
+  evidence_anchor_status: CompanyProofStatus | null;
+  escrow_id: string | null;
+  escrow_status: CompanyDealProjection['escrowStatus'] | null;
+  escrow_event_id: string | null;
+  escrow_payload_hash: string | null;
+  escrow_anchor_status: CompanyProofStatus | null;
+  pls_contract_id: string | null;
+  pls_status: string | null;
+  pls_updated_at: Date | string | null;
+};
+
+type MudarabahProjectionRow = {
+  contract_id: string;
+  procurement_reference: string;
+  buyer_organization_id: string;
+  supplier_organization_id: string;
+  financier_organization_id: string;
+  capital_amount: string;
+  currency: string;
+  profit_share: { financierPercent?: number; ventureOperatorPercent?: number } | null;
+  status: string;
+  shariah_approval: { reviewId?: string; status?: string } | null;
+  shariah_certificate: { certificateId?: string; status?: string } | null;
+  updated_at: Date | string;
 };
 
 function hashPassword(password: string): string {
@@ -205,6 +264,84 @@ function toEmailNotification(row: EmailNotificationRow): EmailNotificationRecord
     sentAt: row.sent_at ? toIsoString(row.sent_at) : undefined,
     failureReason: row.failure_reason ?? undefined,
   };
+}
+
+function toCompanyUser(row: CompanyUserRow): CompanyUserSummary {
+  return {
+    userId: row.user_id,
+    username: row.username ?? undefined,
+    displayName: row.display_name ?? undefined,
+    membershipStatus: row.membership_status,
+    roleCodes: row.role_codes ?? [],
+    createdAt: toIsoString(row.created_at),
+    updatedAt: toIsoString(row.updated_at),
+  };
+}
+
+function proofStatusFromAnchors(
+  ...statuses: Array<CompanyProofStatus | null | undefined>
+): CompanyProofStatus {
+  if (statuses.includes('mismatch')) {
+    return 'mismatch';
+  }
+
+  if (statuses.includes('failed')) {
+    return 'failed';
+  }
+
+  if (statuses.includes('verified')) {
+    return 'verified';
+  }
+
+  if (statuses.includes('anchored')) {
+    return 'anchored';
+  }
+
+  if (statuses.includes('pending')) {
+    return 'pending';
+  }
+
+  if (statuses.includes('notFound')) {
+    return 'notFound';
+  }
+
+  if (statuses.includes('notAnchored')) {
+    return 'notAnchored';
+  }
+
+  return 'unavailable';
+}
+
+function plsStatusToProjectionStatus(status: string | null | undefined): CompanyDealProjection['financingStatus'] {
+  switch (status) {
+    case 'pendingShariahReview':
+      return 'pendingShariahReview';
+    case 'approvedForActivation':
+      return 'approvedForActivation';
+    case 'active':
+      return 'activeSimulation';
+    case 'activationBlocked':
+      return 'blocked';
+    case 'draft':
+    default:
+      return status ? 'pendingShariahReview' : 'noFinancing';
+  }
+}
+
+function plsStatusToMudarabahProjectionStatus(status: string): MudarabahWorkflowProjection['status'] {
+  switch (status) {
+    case 'pendingShariahReview':
+      return 'pendingShariahReview';
+    case 'approvedForActivation':
+      return 'approvedForActivation';
+    case 'active':
+      return 'activeSimulation';
+    case 'activationBlocked':
+      return 'blocked';
+    case 'draft':
+    default:
+      return 'pendingShariahReview';
+  }
 }
 
 function publicProfile(profile: OrganizationProfile) {
@@ -380,6 +517,46 @@ export class PostgresOrganizationNetworkRepository implements OrganizationNetwor
     return result.rows[0] ? toProfile(result.rows[0]) : null;
   }
 
+  async getCompanyDashboardSummary(input: {
+    organizationId: string;
+    actorUserId: string;
+    actorRoleCodes: string[];
+  }): Promise<CompanyDashboardSummary | null> {
+    const organization = await this.findProfileByOrganizationId(input.organizationId);
+    if (!organization) {
+      return null;
+    }
+
+    const graph = await this.getGraphForOrganization(input.organizationId);
+    const relationshipRoles = graph.edges.map(edge => {
+      const counterpartOrganizationId = edge.sourceOrganizationId === input.organizationId
+        ? edge.targetOrganizationId
+        : edge.sourceOrganizationId;
+      const counterpart = graph.nodes.find(node => node.organizationId === counterpartOrganizationId);
+      return {
+        relationshipId: edge.id,
+        relationshipRole: this.graphTypeToRelationshipIntent(edge.relationshipType),
+        counterpartOrganizationId,
+        counterpartDisplayName: counterpart?.displayName ?? counterpartOrganizationId,
+        channelScope: edge.channelScope,
+        currentStage: edge.currentStage,
+      };
+    });
+
+    return {
+      organization,
+      currentUser: {
+        userId: input.actorUserId,
+        roleCodes: input.actorRoleCodes,
+      },
+      relationshipRoles,
+      activeDealCount: (await this.listCompanyDealProjections(input.organizationId)).length,
+      latestProofStatus: proofStatusFromAnchors(...graph.edges.map(edge =>
+        (edge.verificationStatus ?? edge.anchorStatus) as CompanyProofStatus | undefined
+      )),
+    };
+  }
+
   async updateProfile(organizationId: string, input: UpdateOrganizationProfileInput) {
     const current = await this.findProfileByOrganizationId(organizationId);
     if (!current) {
@@ -411,6 +588,139 @@ export class PostgresOrganizationNetworkRepository implements OrganizationNetwor
     );
 
     return this.findProfileByOrganizationId(organizationId);
+  }
+
+  async listOrganizationUsers(organizationId: string) {
+    const result = await this.db.query<CompanyUserRow>(
+      `
+        SELECT
+          users.user_id,
+          credentials.username,
+          users.display_name,
+          memberships.status AS membership_status,
+          COALESCE(
+            ARRAY_AGG(DISTINCT roles.role_code) FILTER (WHERE roles.role_code IS NOT NULL),
+            ARRAY[]::TEXT[]
+          ) AS role_codes,
+          users.created_at,
+          GREATEST(users.updated_at, memberships.updated_at) AS updated_at
+        FROM organization_memberships memberships
+        INNER JOIN platform_users users
+          ON users.user_id = memberships.user_id
+        LEFT JOIN platform_user_credentials credentials
+          ON credentials.user_id = users.user_id
+        LEFT JOIN role_assignments assignments
+          ON assignments.user_id = users.user_id
+         AND assignments.organization_id = memberships.organization_id
+         AND assignments.status = 'active'
+        LEFT JOIN roles
+          ON roles.id = assignments.role_id
+         AND roles.status = 'active'
+        WHERE memberships.organization_id = $1
+        GROUP BY
+          users.user_id,
+          credentials.username,
+          users.display_name,
+          memberships.status,
+          users.created_at,
+          users.updated_at,
+          memberships.updated_at
+        ORDER BY users.display_name ASC NULLS LAST, users.user_id ASC
+      `,
+      [organizationId],
+    );
+
+    return result.rows.map(row => toCompanyUser(row));
+  }
+
+  async inviteOrganizationUser(input: InviteOrganizationUserInput) {
+    const organization = await this.findProfileByOrganizationId(input.organizationId);
+    if (!organization) {
+      return { status: 'organizationNotFound' as const };
+    }
+
+    const duplicateUsername = await this.db.query(
+      'SELECT 1 FROM platform_user_credentials WHERE lower(username) = lower($1)',
+      [input.username],
+    );
+    if ((duplicateUsername.rowCount ?? 0) > 0) {
+      return { status: 'duplicateUsername' as const };
+    }
+
+    const now = new Date().toISOString();
+    const userId = `user_${randomUUID()}`;
+    const disabledPasswordHash = hashPassword(`invited-disabled-${randomUUID()}`);
+
+    await this.db.query('BEGIN');
+    try {
+      await this.db.query(
+        `
+          INSERT INTO platform_users (user_id, display_name, status, created_at, updated_at)
+          VALUES ($1, $2, 'active', $3, $3)
+        `,
+        [userId, input.displayName, now],
+      );
+
+      await this.db.query(
+        `
+          INSERT INTO platform_user_credentials (user_id, username, password_hash, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $4)
+        `,
+        [userId, input.username, disabledPasswordHash, now],
+      );
+
+      await this.db.query(
+        `
+          INSERT INTO organization_memberships (user_id, organization_id, status, created_at, updated_at)
+          VALUES ($1, $2, 'active', $3, $3)
+        `,
+        [userId, input.organizationId, now],
+      );
+
+      for (const roleCode of input.roleCodes) {
+        const roleId = `role_${roleCode}`;
+        await this.db.query(
+          `
+            INSERT INTO roles (id, role_code, display_name, scope, permissions, status, is_system_reserved, created_at, updated_at)
+            VALUES ($1, $2, $2, 'organization', '[]'::jsonb, 'active', true, $3, $3)
+            ON CONFLICT (role_code, scope)
+            DO UPDATE SET status = 'active', updated_at = EXCLUDED.updated_at
+          `,
+          [roleId, roleCode, now],
+        );
+        await this.db.query(
+          `
+            INSERT INTO role_assignments (user_id, organization_id, role_id, status, created_at, updated_at)
+            VALUES ($1, $2, $3, 'active', $4, $4)
+            ON CONFLICT (user_id, organization_id, role_id)
+            DO UPDATE SET status = 'active', updated_at = EXCLUDED.updated_at
+          `,
+          [userId, input.organizationId, roleId, now],
+        );
+      }
+
+      await this.recordEmail({
+        recipientOrganizationId: input.organizationId,
+        recipientUserId: userId,
+        templateKey: 'organizationUserInvited',
+        subject: 'Workspace access prepared',
+        safeBody: 'Organization access was prepared for a company user. Credentials are issued through the operator process.',
+        relatedEntityType: 'organizationUser',
+        relatedEntityId: userId,
+      });
+
+      await this.db.query('COMMIT');
+    } catch (error) {
+      await this.db.query('ROLLBACK');
+      throw error;
+    }
+
+    const user = (await this.listOrganizationUsers(input.organizationId)).find(candidate => candidate.userId === userId);
+    if (!user) {
+      throw new Error('Invited organization user could not be read back');
+    }
+
+    return { status: 'created' as const, user };
   }
 
   async searchPublicProfileByUniqueIdentifier(identifier: string) {
@@ -680,6 +990,191 @@ export class PostgresOrganizationNetworkRepository implements OrganizationNetwor
     return [this.edgeToTrailEntry(edge)];
   }
 
+  async listCompanyDealProjections(organizationId: string): Promise<CompanyDealProjection[]> {
+    const result = await this.db.query<CompanyDealRow>(
+      `
+        SELECT
+          orders.order_id,
+          orders.title,
+          orders.buyer_organization_id,
+          orders.supplier_organization_id,
+          orders.status AS order_status,
+          orders.updated_at AS order_updated_at,
+          buyer.display_name AS buyer_display_name,
+          buyer.legal_name AS buyer_legal_name,
+          supplier.display_name AS supplier_display_name,
+          supplier.legal_name AS supplier_legal_name,
+          relationship.relationship_id,
+          relationship.relationship_type,
+          evidence.evidence_id,
+          evidence.verification_status AS evidence_status,
+          evidence.lifecycle_event_id AS evidence_event_id,
+          evidence.lifecycle_event_hash AS evidence_payload_hash,
+          evidence.blockchain_anchor_status AS evidence_anchor_status,
+          escrow.escrow_id,
+          escrow.status AS escrow_status,
+          escrow.lifecycle_event_id AS escrow_event_id,
+          escrow.lifecycle_event_hash AS escrow_payload_hash,
+          escrow.blockchain_anchor_status AS escrow_anchor_status,
+          pls.contract_id AS pls_contract_id,
+          pls.status AS pls_status,
+          pls.updated_at AS pls_updated_at
+        FROM procurement_orders orders
+        INNER JOIN member_organizations buyer
+          ON buyer.id = orders.buyer_organization_id
+        INNER JOIN member_organizations supplier
+          ON supplier.id = orders.supplier_organization_id
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM delivery_evidence evidence
+          WHERE evidence.order_id = orders.order_id
+          ORDER BY evidence.submitted_at DESC, evidence.evidence_id DESC
+          LIMIT 1
+        ) evidence ON TRUE
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM escrows escrow
+          WHERE escrow.order_id = orders.order_id
+          ORDER BY escrow.updated_at DESC, escrow.escrow_id DESC
+          LIMIT 1
+        ) escrow ON TRUE
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM pls_contracts pls
+          WHERE pls.procurement_reference = orders.order_id
+          ORDER BY pls.updated_at DESC, pls.contract_id DESC
+          LIMIT 1
+        ) pls ON TRUE
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM organization_network_relationships relationship
+          WHERE relationship.status = 'active'
+            AND (
+              (relationship.source_organization_id = orders.buyer_organization_id AND relationship.target_organization_id = orders.supplier_organization_id)
+              OR (relationship.source_organization_id = orders.supplier_organization_id AND relationship.target_organization_id = orders.buyer_organization_id)
+              OR (relationship.source_organization_id = pls.financier_organization_id AND relationship.target_organization_id = orders.buyer_organization_id)
+              OR (relationship.source_organization_id = orders.buyer_organization_id AND relationship.target_organization_id = pls.financier_organization_id)
+            )
+          ORDER BY
+            CASE
+              WHEN (
+                (relationship.source_organization_id = orders.buyer_organization_id AND relationship.target_organization_id = orders.supplier_organization_id)
+                OR (relationship.source_organization_id = orders.supplier_organization_id AND relationship.target_organization_id = orders.buyer_organization_id)
+              ) THEN 0
+              ELSE 1
+            END,
+            relationship.updated_at DESC,
+            relationship.relationship_id DESC
+          LIMIT 1
+        ) relationship ON TRUE
+        WHERE orders.buyer_organization_id = $1
+           OR orders.supplier_organization_id = $1
+           OR pls.financier_organization_id = $1
+        ORDER BY GREATEST(orders.updated_at, COALESCE(pls.updated_at, orders.updated_at)) DESC, orders.order_id DESC
+      `,
+      [organizationId],
+    );
+
+    return result.rows.map(row => {
+      const isBuyer = row.buyer_organization_id === organizationId;
+      const isSupplier = row.supplier_organization_id === organizationId;
+      const relationship: CompanyDealProjection['relationship'] = isBuyer
+        ? 'buyerToSupplier'
+        : isSupplier
+          ? 'supplierToBuyer'
+          : row.pls_contract_id
+            ? 'financing'
+            : 'unknown';
+      const counterpartOrganizationId = isBuyer
+        ? row.supplier_organization_id
+        : row.buyer_organization_id;
+      const counterpartDisplayName = isBuyer
+        ? row.supplier_display_name ?? row.supplier_legal_name
+        : row.buyer_display_name ?? row.buyer_legal_name;
+      const proofStatus = proofStatusFromAnchors(row.evidence_anchor_status, row.escrow_anchor_status);
+
+      return {
+        dealId: `deal-${row.order_id}`,
+        relationshipId: row.relationship_id ?? undefined,
+        title: row.title,
+        counterpartOrganizationId,
+        counterpartDisplayName,
+        relationship,
+        orderId: row.order_id,
+        orderStatus: row.order_status,
+        deliveryEvidenceStatus: row.evidence_id ? 'metadataRecorded' : 'notSubmitted',
+        escrowId: row.escrow_id ?? undefined,
+        escrowStatus: row.escrow_status ?? 'notCreated',
+        proofStatus,
+        proofEventId: row.evidence_event_id ?? row.escrow_event_id ?? undefined,
+        proofPayloadHash: row.evidence_payload_hash ?? row.escrow_payload_hash ?? undefined,
+        financingStatus: plsStatusToProjectionStatus(row.pls_status),
+        latestLifecycleEvent: row.evidence_event_id
+          ? 'deliveryEvidenceSubmitted'
+          : row.escrow_event_id
+            ? 'escrowCreated'
+            : row.order_status === 'accepted'
+              ? 'purchaseOrderAccepted'
+              : 'purchaseOrderCreated',
+        updatedAt: toIsoString(row.pls_updated_at ?? row.order_updated_at),
+        safeSummary: 'Company-visible deal projection links order, delivery evidence, escrow, financing, and proof metadata without exposing private terms or raw documents.',
+      };
+    });
+  }
+
+  async listMudarabahWorkflowProjections(organizationId: string): Promise<MudarabahWorkflowProjection[]> {
+    const result = await this.db.query<MudarabahProjectionRow>(
+      `
+        SELECT
+          contract_id,
+          procurement_reference,
+          buyer_organization_id,
+          supplier_organization_id,
+          financier_organization_id,
+          capital_amount,
+          currency,
+          profit_share,
+          status,
+          shariah_approval,
+          shariah_certificate,
+          updated_at
+        FROM pls_contracts
+        WHERE buyer_organization_id = $1
+           OR supplier_organization_id = $1
+           OR financier_organization_id = $1
+        ORDER BY updated_at DESC, contract_id DESC
+      `,
+      [organizationId],
+    );
+
+    if (result.rows.length === 0) {
+      return [{
+        projectionId: `mudarabah-none-${organizationId}`,
+        status: 'noFinancing',
+        simulationOnlyNotice: 'No Mudarabah or PLS seedbed projection is linked to this company context.',
+      }];
+    }
+
+    return result.rows.map(row => ({
+      projectionId: `mudarabah-${row.contract_id}`,
+      dealId: `deal-${row.procurement_reference}`,
+      contractId: row.contract_id,
+      procurementReference: row.procurement_reference,
+      buyerOrganizationId: row.buyer_organization_id,
+      supplierOrganizationId: row.supplier_organization_id,
+      financierOrganizationId: row.financier_organization_id,
+      status: plsStatusToMudarabahProjectionStatus(row.status),
+      capitalAmount: row.capital_amount,
+      currency: row.currency,
+      financierSharePercent: row.profit_share?.financierPercent,
+      ventureOperatorSharePercent: row.profit_share?.ventureOperatorPercent,
+      shariahReference: row.shariah_approval?.reviewId,
+      certificateReference: row.shariah_certificate?.certificateId,
+      simulationOnlyNotice: 'Restricted Mudarabah seedbed projection only. It does not guarantee profit or principal, execute payment, or claim formal external Shariah certification.',
+      updatedAt: toIsoString(row.updated_at),
+    }));
+  }
+
   async listEmailNotificationsForOrganization(
     organizationId: string,
     options?: { includeGovernanceView?: boolean },
@@ -700,6 +1195,8 @@ export class PostgresOrganizationNetworkRepository implements OrganizationNetwor
 
   private async recordEmail(input: {
     recipientOrganizationId: string;
+    recipientUserId?: string;
+    recipientEmail?: string;
     templateKey: string;
     subject: string;
     safeBody: string;
@@ -711,6 +1208,8 @@ export class PostgresOrganizationNetworkRepository implements OrganizationNetwor
         INSERT INTO outgoing_email_notifications (
           notification_id,
           recipient_organization_id,
+          recipient_user_id,
+          recipient_email,
           template_key,
           subject,
           safe_body,
@@ -719,11 +1218,13 @@ export class PostgresOrganizationNetworkRepository implements OrganizationNetwor
           status,
           created_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'queued', $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'queued', $10)
       `,
       [
         `email_${randomUUID()}`,
         input.recipientOrganizationId,
+        input.recipientUserId ?? null,
+        input.recipientEmail ?? null,
         input.templateKey,
         input.subject,
         input.safeBody,
@@ -757,6 +1258,23 @@ export class PostgresOrganizationNetworkRepository implements OrganizationNetwor
         ? 'Current organization proof activity'
         : 'Shared proof metadata visible by relationship scope',
     };
+  }
+
+  private graphTypeToRelationshipIntent(type: OrganizationGraphRelationshipType): OrganizationRelationshipIntent {
+    switch (type) {
+      case 'financing':
+        return 'financier';
+      case 'logistics':
+        return 'logistics';
+      case 'audit':
+      case 'regulatory':
+        return 'auditorRegulator';
+      case 'mixed':
+        return 'mixed';
+      case 'buyerSupplier':
+      default:
+        return 'buyer';
+    }
   }
 
   private relationshipRowToEdge(row: RelationshipRow): OrganizationGraphEdge {

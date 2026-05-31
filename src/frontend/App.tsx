@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import AppLayout from './components/layout/AppLayout';
 import DashboardStateView from './components/dashboard/DashboardStateView';
 import GuidedDemoPanel from './components/demo/GuidedDemoPanel';
+import CompanyContextBanner from './components/organization/CompanyContextBanner';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import CompanyRegistrationPage from './pages/CompanyRegistrationPage';
 import AdminDashboard from './pages/AdminDashboard';
 import BuyerDashboard from './pages/BuyerDashboard';
 import SupplierDashboard from './pages/SupplierDashboard';
@@ -17,6 +19,9 @@ import RoleDashboard from './pages/RoleDashboard';
 import DocumentWorkspacePage from './pages/DocumentWorkspacePage';
 import ContractNegotiationPage from './pages/ContractNegotiationPage';
 import OrganizationNetworkPage from './pages/OrganizationNetworkPage';
+import OrganizationUsersPage from './pages/OrganizationUsersPage';
+import AccountSettingsPage from './pages/AccountSettingsPage';
+import CompanyLedgerPage from './pages/CompanyLedgerPage';
 import { loginWithCredentials, logoutSession, type LoginCredentials } from './lib/auth-client';
 import {
   clearStoredSession,
@@ -38,7 +43,7 @@ import {
 } from './lib/role-navigation';
 import { isGuidedDemoEnabled } from './lib/runtime-config';
 
-type RouteKey = 'landing' | 'login' | 'dashboard';
+type RouteKey = 'landing' | 'login' | 'register' | 'dashboard';
 
 function isGuidedDemoModeFromLocation(): boolean {
   if (typeof window === 'undefined') {
@@ -56,6 +61,8 @@ function routeFromLocation(): RouteKey {
   switch (window.location.pathname) {
     case '/login':
       return 'login';
+    case '/register-company':
+      return 'register';
     case '/dashboard':
       return 'dashboard';
     case '/':
@@ -69,6 +76,8 @@ function routePath(route: RouteKey): string {
   switch (route) {
     case 'login':
       return '/login';
+    case 'register':
+      return '/register-company';
     case 'dashboard':
       return '/dashboard';
     case 'landing':
@@ -96,7 +105,20 @@ function renderRoleDashboard(
   role: SupportedDashboardRole,
   activeTarget: DashboardNavigationTarget,
   session: AuthenticatedFrontendSession,
+  onOpenCompanyLedger: () => void,
 ) {
+  if (activeTarget === 'settings') {
+    return <AccountSettingsPage session={session} />;
+  }
+
+  if (activeTarget === 'company-ledger') {
+    return <CompanyLedgerPage session={session} />;
+  }
+
+  if (activeTarget === 'organization-users') {
+    return <OrganizationUsersPage session={session} />;
+  }
+
   if (activeTarget === 'documents') {
     return <DocumentWorkspacePage session={session} />;
   }
@@ -106,7 +128,7 @@ function renderRoleDashboard(
   }
 
   if (activeTarget === 'organization-network') {
-    return <OrganizationNetworkPage session={session} />;
+    return <OrganizationNetworkPage session={session} onOpenCompanyLedger={onOpenCompanyLedger} />;
   }
 
   if (role === 'buyer') {
@@ -295,7 +317,20 @@ function App() {
       <div className="app">
         <LandingPage
           onSignIn={() => navigate('login')}
+          onRegisterCompany={() => navigate('register')}
           onViewDashboard={() => navigate(authenticatedSession ? 'dashboard' : 'login')}
+        />
+        {guidedDemoPanel}
+      </div>
+    );
+  }
+
+  if (route === 'register') {
+    return (
+      <div className="app">
+        <CompanyRegistrationPage
+          onBack={() => navigate('landing')}
+          onSignIn={() => navigate('login')}
         />
         {guidedDemoPanel}
       </div>
@@ -348,7 +383,17 @@ function App() {
         navigationItems={navigationItems}
         onNavigate={handleDashboardNavigation}
       >
-        {renderRoleDashboard(dashboardState.role, activeDashboardTarget, authenticatedSession)}
+        <CompanyContextBanner
+          session={authenticatedSession}
+          onOpenCompanyLedger={() => handleDashboardNavigation('company-ledger')}
+          onOpenSettings={() => handleDashboardNavigation('settings')}
+        />
+        {renderRoleDashboard(
+          dashboardState.role,
+          activeDashboardTarget,
+          authenticatedSession,
+          () => handleDashboardNavigation('company-ledger'),
+        )}
       </AppLayout>
       {guidedDemoPanel}
     </div>

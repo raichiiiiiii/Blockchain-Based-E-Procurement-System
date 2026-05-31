@@ -3,6 +3,7 @@ import { createApplicationValidationError } from '../../shared/api/validation-er
 import type {
   CreateNetworkRequestInput,
   DecideNetworkRequestInput,
+  InviteOrganizationUserInput,
   OrganizationNetworkRepository,
   RegisterOrganizationInput,
   UpdateOrganizationProfileInput,
@@ -43,6 +44,18 @@ function assertSafeEmailBody(...values: Array<string | undefined>) {
     throw createApplicationValidationError('Notification text contains unsafe content');
   }
 }
+
+const inviteAssignableRoles = new Set([
+  'organizationAdmin',
+  'buyer',
+  'supplier',
+  'financier',
+  'complianceReviewer',
+  'shariahReviewer',
+  'auditor',
+  'regulator',
+  'securityOperator',
+]);
 
 export async function registerOrganization(
   input: Record<string, unknown>,
@@ -89,6 +102,40 @@ export async function updateOrganizationProfile(
   }
 
   return repository.updateProfile(organizationId, normalized);
+}
+
+export async function inviteOrganizationUser(
+  organizationId: string,
+  actorUserId: string,
+  input: Record<string, unknown>,
+  repository: OrganizationNetworkRepository,
+) {
+  const roleCodes = Array.isArray(input.roleCodes)
+    ? input.roleCodes.filter((role): role is string => typeof role === 'string')
+    : [];
+
+  if (roleCodes.length === 0) {
+    throw createApplicationValidationError('At least one role is required', [
+      { path: 'roleCodes', message: 'At least one role is required' },
+    ]);
+  }
+
+  const invalidRole = roleCodes.find(role => !inviteAssignableRoles.has(role));
+  if (invalidRole) {
+    throw createApplicationValidationError('Role cannot be assigned from this workspace', [
+      { path: 'roleCodes', message: `${invalidRole} cannot be assigned from this workspace` },
+    ]);
+  }
+
+  const normalized: InviteOrganizationUserInput = {
+    organizationId,
+    username: requireNonEmpty(input.username, 'username'),
+    displayName: requireNonEmpty(input.displayName, 'displayName'),
+    roleCodes: [...new Set(roleCodes)],
+    invitedByUserId: actorUserId,
+  };
+
+  return repository.inviteOrganizationUser(normalized);
 }
 
 export async function createOrganizationNetworkRequest(

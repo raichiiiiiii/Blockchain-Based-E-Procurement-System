@@ -1,5 +1,9 @@
 import type {
+  CompanyDashboardSummary,
+  CompanyDealProjection,
+  CompanyUserSummary,
   EmailNotificationRecord,
+  MudarabahWorkflowProjection,
   OrganizationGraphProjection,
   OrganizationGraphTrailEntry,
   OrganizationNetworkRequest,
@@ -31,6 +35,14 @@ export type UpdateOrganizationProfileInput = {
   contactEmail?: string;
 };
 
+export type InviteOrganizationUserInput = {
+  organizationId: string;
+  username: string;
+  displayName: string;
+  roleCodes: string[];
+  invitedByUserId: string;
+};
+
 export type CreateNetworkRequestInput = {
   requesterOrganizationId: string;
   targetUniqueIdentifier: string;
@@ -60,10 +72,21 @@ export type OrganizationNetworkRepository = {
     | { status: 'duplicateUsername' }
   >;
   findProfileByOrganizationId(organizationId: string): Promise<OrganizationProfile | null>;
+  getCompanyDashboardSummary(input: {
+    organizationId: string;
+    actorUserId: string;
+    actorRoleCodes: string[];
+  }): Promise<CompanyDashboardSummary | null>;
   updateProfile(
     organizationId: string,
     input: UpdateOrganizationProfileInput,
   ): Promise<OrganizationProfile | null>;
+  listOrganizationUsers(organizationId: string): Promise<CompanyUserSummary[]>;
+  inviteOrganizationUser(input: InviteOrganizationUserInput): Promise<
+    | { status: 'created'; user: CompanyUserSummary }
+    | { status: 'duplicateUsername' }
+    | { status: 'organizationNotFound' }
+  >;
   searchPublicProfileByUniqueIdentifier(identifier: string): Promise<OrganizationPublicProfile | null>;
   createNetworkRequest(input: CreateNetworkRequestInput): Promise<
     | { status: 'created'; request: OrganizationNetworkRequest }
@@ -76,6 +99,8 @@ export type OrganizationNetworkRepository = {
   rejectNetworkRequest(input: DecideNetworkRequestInput): Promise<NetworkDecisionResult>;
   getGraphForOrganization(organizationId: string): Promise<OrganizationGraphProjection>;
   getTrailForEdge(organizationId: string, edgeId: string): Promise<OrganizationGraphTrailEntry[] | null>;
+  listCompanyDealProjections(organizationId: string): Promise<CompanyDealProjection[]>;
+  listMudarabahWorkflowProjections(organizationId: string): Promise<MudarabahWorkflowProjection[]>;
   listEmailNotificationsForOrganization(
     organizationId: string,
     options?: { includeGovernanceView?: boolean },

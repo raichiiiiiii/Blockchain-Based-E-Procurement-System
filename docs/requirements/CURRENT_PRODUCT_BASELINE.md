@@ -35,6 +35,8 @@ Not ready for:
 - delivery evidence metadata/hash workflow
 - organization network workspace with safe relationship graph and proof-scope
   vectors
+- company-first dashboard context, organization user management, safe company
+  settings, and private deal projection read models
 - escrow creation and release-readiness workflow
 - PLS/Shariah review seedbed support
 - audit trail and transaction history
@@ -173,6 +175,7 @@ Procurement case
   PLS: notApplicable, draft, pendingShariahReview, approvedForActivation, blocked, activeSimulation
   audit: unknown, complete, partial, gapDetected
   proof: notAnchored, pending, anchored, failed, verified, mismatch, notFound, unavailable
+  company ledger: noDeal, relationshipOnly, orderProjected, deliveryProjected, escrowProjected, financingProjected
   export bundle: notRequested, requested, generating, ready, failed, signed, invalid, unsupported
 ```
 
@@ -222,6 +225,9 @@ Deployment:
 - delivery evidence metadata and hash
 - organization profile, unique identifier, network relationship request, graph
   projection, proof trail, and local email outbox records
+- company dashboard summary, organization-scoped user management, company
+  profile maintenance, private deal projection, and restricted Mudarabah
+  workflow projection
 - escrow creation and release-readiness transitions
 - PLS seedbed and Shariah review gate
 - financier readiness and distribution scenarios

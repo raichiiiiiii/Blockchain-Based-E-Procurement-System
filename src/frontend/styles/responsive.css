@@ -46,6 +46,15 @@
   .app-sidebar-nav {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
+
+  .company-context-banner {
+    grid-template-columns: 1fr;
+    padding-inline: 1rem;
+  }
+
+  .company-context-actions {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 620px) {

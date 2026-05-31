@@ -36,6 +36,8 @@ const navigationIconLabels: Record<DashboardNavigationTarget, string> = {
   documents: 'C',
   contracts: 'N',
   'organization-network': 'G',
+  'organization-users': 'U',
+  'company-ledger': 'L',
   escrow: 'E',
   'blockchain-proof': 'P',
   compliance: 'C',

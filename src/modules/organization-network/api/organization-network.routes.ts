@@ -4,6 +4,7 @@ import type { OrganizationNetworkRepository } from '../application/organization-
 import {
   acceptOrganizationNetworkRequest,
   createOrganizationNetworkRequest,
+  inviteOrganizationUser,
   registerOrganization,
   rejectOrganizationNetworkRequest,
   updateOrganizationProfile,
@@ -53,6 +54,21 @@ function canGovernanceRead(actorRoles: readonly string[]): boolean {
     'auditor',
     'regulator',
     'securityOperator',
+  ]);
+}
+
+function canViewCompanyLedger(actorRoles: readonly string[]): boolean {
+  return hasAnyRole(actorRoles, [
+    'administrator',
+    'organizationAdmin',
+    'buyer',
+    'supplier',
+    'financier',
+    'complianceReviewer',
+    'auditor',
+    'regulator',
+    'securityOperator',
+    'shariahReviewer',
   ]);
 }
 
@@ -176,6 +192,28 @@ const registerOrganizationNetworkRoutes: FastifyPluginAsync<OrganizationNetworkR
     },
   );
 
+  fastify.get(
+    '/organizations/me/dashboard-summary',
+    { preHandler: options.authenticatedPreHandler },
+    async (request, reply) => {
+      const actor = actorOrUnauthorized(request, reply);
+      if (!actor) {
+        return;
+      }
+
+      const summary = await options.repository.getCompanyDashboardSummary({
+        organizationId: actor.actorOrganizationId,
+        actorUserId: actor.actorUserId,
+        actorRoleCodes: actor.actorRoleCodes,
+      });
+      if (!summary) {
+        return notFound(reply, 'Organization profile not found');
+      }
+
+      return reply.code(200).send({ data: summary });
+    },
+  );
+
   fastify.patch<{ Body: Record<string, unknown> }>(
     '/organizations/me/profile',
     { preHandler: options.authenticatedPreHandler },
@@ -196,6 +234,69 @@ const registerOrganizationNetworkRoutes: FastifyPluginAsync<OrganizationNetworkR
         }
 
         return reply.code(200).send({ data: profile });
+      } catch (error) {
+        if (isValidationEnvelope(error)) {
+          return reply.code(400).send(error);
+        }
+
+        throw error;
+      }
+    },
+  );
+
+  fastify.get(
+    '/organizations/me/users',
+    { preHandler: options.authenticatedPreHandler },
+    async (request, reply) => {
+      const actor = actorOrUnauthorized(request, reply);
+      if (!actor) {
+        return;
+      }
+
+      if (!canManageOrganization(actor.actorRoleCodes)) {
+        return forbidden(reply, 'Organization admin access required');
+      }
+
+      const users = await options.repository.listOrganizationUsers(actor.actorOrganizationId);
+      return reply.code(200).send({ data: { items: users } });
+    },
+  );
+
+  fastify.post<{ Body: Record<string, unknown> }>(
+    '/organizations/me/users',
+    { preHandler: options.authenticatedPreHandler },
+    async (request, reply) => {
+      const actor = actorOrUnauthorized(request, reply);
+      if (!actor) {
+        return;
+      }
+
+      if (!canManageOrganization(actor.actorRoleCodes)) {
+        return forbidden(reply, 'Organization admin access required');
+      }
+
+      try {
+        const result = await inviteOrganizationUser(
+          actor.actorOrganizationId,
+          actor.actorUserId,
+          request.body,
+          options.repository,
+        );
+
+        if (result.status === 'organizationNotFound') {
+          return notFound(reply, 'Organization profile not found');
+        }
+
+        if (result.status === 'duplicateUsername') {
+          return reply.code(409).send({
+            error: {
+              code: 'CONFLICT',
+              message: 'A platform user with this username already exists',
+            },
+          });
+        }
+
+        return reply.code(201).send({ data: result.user });
       } catch (error) {
         if (isValidationEnvelope(error)) {
           return reply.code(400).send(error);
@@ -394,6 +495,42 @@ const registerOrganizationNetworkRoutes: FastifyPluginAsync<OrganizationNetworkR
 
       const graph = await options.repository.getGraphForOrganization(actor.actorOrganizationId);
       return reply.code(200).send({ data: graph });
+    },
+  );
+
+  fastify.get(
+    '/company-ledger/deals',
+    { preHandler: options.authenticatedPreHandler },
+    async (request, reply) => {
+      const actor = actorOrUnauthorized(request, reply);
+      if (!actor) {
+        return;
+      }
+
+      if (!canViewCompanyLedger(actor.actorRoleCodes)) {
+        return forbidden(reply, 'Company ledger access denied');
+      }
+
+      const deals = await options.repository.listCompanyDealProjections(actor.actorOrganizationId);
+      return reply.code(200).send({ data: { items: deals } });
+    },
+  );
+
+  fastify.get(
+    '/company-ledger/mudarabah',
+    { preHandler: options.authenticatedPreHandler },
+    async (request, reply) => {
+      const actor = actorOrUnauthorized(request, reply);
+      if (!actor) {
+        return;
+      }
+
+      if (!canViewCompanyLedger(actor.actorRoleCodes)) {
+        return forbidden(reply, 'Company ledger access denied');
+      }
+
+      const projections = await options.repository.listMudarabahWorkflowProjections(actor.actorOrganizationId);
+      return reply.code(200).send({ data: { items: projections } });
     },
   );
 
