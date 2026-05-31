@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Create an XLSX copy from backlog/backlog.csv while preserving the formatting from
-backlog/backlog.xlsx.
+Overwrite backlog/backlog.xlsx from backlog/backlog.csv while preserving the
+formatting already present in backlog/backlog.xlsx.
 
 Run from the repository root:
     python csv_to_xlsx.py
@@ -9,17 +9,22 @@ Run from the repository root:
 Defaults:
     CSV input:      backlog/backlog.csv
     XLSX template:  backlog/backlog.xlsx
-    XLSX output:    backlog/backlog_from_csv.xlsx
+    XLSX output:    backlog/backlog.xlsx
 
-The template workbook is never overwritten unless --output points to it explicitly
-and --allow-template-overwrite is passed.
+Notes:
+    - Requires openpyxl:
+        pip install openpyxl
+    - Close backlog/backlog.xlsx in Excel before running this script, otherwise
+      Windows may block the overwrite.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import os
 import sys
+import tempfile
 from copy import copy
 from datetime import date, datetime, time
 from pathlib import Path
@@ -42,17 +47,13 @@ except ImportError:
 REPO_ROOT = Path(__file__).resolve().parent
 DEFAULT_CSV = REPO_ROOT / "backlog" / "backlog.csv"
 DEFAULT_TEMPLATE = REPO_ROOT / "backlog" / "backlog.xlsx"
-DEFAULT_OUTPUT = REPO_ROOT / "backlog" / "backlog_from_csv.xlsx"
+DEFAULT_OUTPUT = DEFAULT_TEMPLATE
 
 
 def read_csv_rows(csv_path: Path) -> list[list[str]]:
     """Read CSV rows, accepting UTF-8 with or without a BOM."""
     with csv_path.open("r", newline="", encoding="utf-8-sig") as csv_file:
         return [row for row in csv.reader(csv_file)]
-
-
-def is_empty(value: Any) -> bool:
-    return value is None or value == ""
 
 
 def is_formula(value: Any) -> bool:
@@ -319,11 +320,31 @@ def force_recalculation_on_open(workbook) -> None:
             pass
 
 
+def save_workbook(workbook, output_path: Path) -> None:
+    """Save safely, including when overwriting the source XLSX path."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fd, temp_name = tempfile.mkstemp(
+        prefix=f".{output_path.stem}.",
+        suffix=output_path.suffix,
+        dir=output_path.parent,
+    )
+    os.close(fd)
+    temp_path = Path(temp_name)
+
+    try:
+        workbook.save(temp_path)
+        os.replace(temp_path, output_path)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Convert backlog/backlog.csv into an XLSX copy using "
-            "backlog/backlog.xlsx as the formatting template."
+            "Convert backlog/backlog.csv into backlog/backlog.xlsx using the "
+            "existing XLSX file as the formatting template."
         )
     )
     parser.add_argument(
@@ -331,19 +352,19 @@ def parse_args() -> argparse.Namespace:
         dest="csv_path",
         type=Path,
         default=DEFAULT_CSV,
-        help=f"CSV file to convert. Default: {DEFAULT_CSV}",
+        help=f"CSV file to read. Default: {DEFAULT_CSV}",
     )
     parser.add_argument(
         "--template",
         type=Path,
         default=DEFAULT_TEMPLATE,
-        help=f"XLSX template to copy formatting from. Default: {DEFAULT_TEMPLATE}",
+        help=f"XLSX file to use as the formatting template. Default: {DEFAULT_TEMPLATE}",
     )
     parser.add_argument(
         "--output",
         type=Path,
         default=DEFAULT_OUTPUT,
-        help=f"XLSX output file to create. Default: {DEFAULT_OUTPUT}",
+        help=f"XLSX file to write. Default: {DEFAULT_OUTPUT}",
     )
     parser.add_argument(
         "--sheet",
@@ -354,11 +375,6 @@ def parse_args() -> argparse.Namespace:
         "--preserve-formulas",
         action="store_true",
         help="Keep existing template formulas instead of replacing them with CSV values.",
-    )
-    parser.add_argument(
-        "--allow-template-overwrite",
-        action="store_true",
-        help="Allow --output to be the same file as --template.",
     )
     return parser.parse_args()
 
@@ -376,14 +392,6 @@ def main() -> int:
 
     if not template_path.exists():
         print(f"Could not find XLSX template: {template_path}", file=sys.stderr)
-        return 1
-
-    if output_path == template_path and not args.allow_template_overwrite:
-        print(
-            "Refusing to overwrite the template workbook. Choose a different --output "
-            "or pass --allow-template-overwrite.",
-            file=sys.stderr,
-        )
         return 1
 
     csv_rows = read_csv_rows(csv_path)
@@ -410,9 +418,7 @@ def main() -> int:
         column_count=max((len(row) for row in csv_rows), default=0),
     )
     force_recalculation_on_open(workbook)
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    workbook.save(output_path)
+    save_workbook(workbook, output_path)
 
     print(f"CSV input:     {csv_path}")
     print(f"XLSX template: {template_path}")
