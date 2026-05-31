@@ -6,8 +6,11 @@ export type DashboardNavigationTarget =
   | 'roles'
   | 'access-history'
   | 'orders'
+  | 'source-to-award'
   | 'received-orders'
   | 'delivery-evidence'
+  | 'invoices'
+  | 'supplier-performance'
   | 'documents'
   | 'contracts'
   | 'organization-network'
@@ -62,7 +65,10 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
   ],
   buyer: [
     { id: 'dashboard', label: 'Dashboard' },
+    { id: 'source-to-award', label: 'Source to Award' },
     { id: 'orders', label: 'Orders' },
+    { id: 'invoices', label: 'Invoices' },
+    { id: 'supplier-performance', label: 'Supplier Performance' },
     { id: 'documents', label: 'Contract Documents' },
     { id: 'contracts', label: 'Contract Negotiation' },
     { id: 'organization-network', label: 'Organization Network' },
@@ -75,8 +81,11 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
   ],
   supplier: [
     { id: 'dashboard', label: 'Dashboard' },
+    { id: 'source-to-award', label: 'Source to Award' },
     { id: 'received-orders', label: 'Received Orders' },
     { id: 'delivery-evidence', label: 'Delivery Evidence' },
+    { id: 'invoices', label: 'Invoices' },
+    { id: 'supplier-performance', label: 'Supplier Performance' },
     { id: 'documents', label: 'Contract Documents' },
     { id: 'contracts', label: 'Contract Negotiation' },
     { id: 'organization-network', label: 'Organization Network' },
@@ -123,6 +132,7 @@ export const ROLE_NAVIGATION: Record<SupportedDashboardRole, RoleNavigationItem[
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'audit-trail', label: 'Audit Trail' },
     { id: 'blockchain-proof', label: 'Blockchain Proof' },
+    { id: 'supplier-performance', label: 'Supplier Performance' },
     { id: 'organization-network', label: 'Organization Network' },
     { id: 'company-ledger', label: 'Company Ledger' },
     { id: 'productivity', label: 'Productivity' },

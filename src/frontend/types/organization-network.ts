@@ -146,6 +146,7 @@ export type OrganizationNetworkRequest = {
 
 export type OrganizationGraphNode = {
   id: string;
+  nodeType?: 'organization' | 'buyer' | 'supplier' | 'financier' | 'regulator' | 'auditor' | 'shariahReviewer' | 'logisticsProofProvider' | 'erpAccountingAdapter' | 'apiIntegrationClient' | 'fabricProofBoundary';
   organizationId: string;
   uniqueIdentifier: string;
   displayName: string;
@@ -163,6 +164,7 @@ export type OrganizationGraphNode = {
 
 export type OrganizationGraphEdge = {
   id: string;
+  edgeType?: 'buyerSupplier' | 'financing' | 'oversight' | 'audit' | 'proofAnchoring' | 'integration' | 'deliveryProof';
   sourceOrganizationId: string;
   targetOrganizationId: string;
   direction: 'outbound' | 'inbound' | 'bidirectional';
@@ -175,6 +177,7 @@ export type OrganizationGraphEdge = {
   latestPayloadHash?: string;
   anchorStatus?: 'notAnchored' | 'pending' | 'anchored' | 'failed';
   verificationStatus?: 'verified' | 'mismatch' | 'notFound' | 'unavailable';
+  claimBoundary?: string;
   safeSummary: string;
 };
 

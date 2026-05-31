@@ -15,6 +15,9 @@ import OrganizationUsersPage from '../pages/OrganizationUsersPage';
 import AccountSettingsPage from '../pages/AccountSettingsPage';
 import CompanyLedgerPage from '../pages/CompanyLedgerPage';
 import CompanyProductivityPage from '../pages/CompanyProductivityPage';
+import InvoiceWorkspacePage from '../pages/InvoiceWorkspacePage';
+import SourceToAwardPage from '../pages/SourceToAwardPage';
+import SupplierPerformancePage from '../pages/SupplierPerformancePage';
 import type { AuthenticatedFrontendSession } from '../lib/session-state';
 import type { SupportedDashboardRole } from '../lib/dashboard-state-resolver';
 import type { DashboardNavigationTarget } from '../lib/role-navigation';
@@ -35,6 +38,18 @@ export function renderRoleDashboard(
 
   if (activeTarget === 'productivity') {
     return <CompanyProductivityPage session={session} />;
+  }
+
+  if (activeTarget === 'source-to-award') {
+    return <SourceToAwardPage session={session} />;
+  }
+
+  if (activeTarget === 'invoices') {
+    return <InvoiceWorkspacePage session={session} />;
+  }
+
+  if (activeTarget === 'supplier-performance') {
+    return <SupplierPerformancePage session={session} />;
   }
 
   if (activeTarget === 'organization-users') {

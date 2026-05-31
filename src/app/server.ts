@@ -34,12 +34,21 @@ import type { AuthSessionRepository } from '../modules/auth/application/auth-ses
 import { registerTransactionHistoryRoutes } from '../modules/procurement/api/transaction-history.routes.js';
 import { registerProcurementOrderRoutes } from '../modules/procurement/api/procurement-order.routes.js';
 import { registerDeliveryEvidenceRoutes } from '../modules/procurement/api/delivery-evidence.routes.js';
+import { registerSourceToAwardRoutes } from '../modules/procurement/api/source-to-award.routes.js';
+import { registerInvoiceRoutes } from '../modules/procurement/api/invoice.routes.js';
+import { registerProcurementCloseoutRoutes } from '../modules/procurement/api/procurement-closeout.routes.js';
 import type { ProcureToPayLifecycleEventRepository } from '../modules/procurement/application/procure-to-pay-lifecycle-event-repository.js';
 import { InMemoryProcureToPayLifecycleEventRepository } from '../modules/procurement/infrastructure/in-memory-procure-to-pay-lifecycle-event-repository.js';
 import type { ProcurementOrderRepository } from '../modules/procurement/application/procurement-order-repository.js';
 import { InMemoryProcurementOrderRepository } from '../modules/procurement/infrastructure/in-memory-procurement-order-repository.js';
 import type { DeliveryEvidenceRepository } from '../modules/procurement/application/delivery-evidence-repository.js';
 import { InMemoryDeliveryEvidenceRepository } from '../modules/procurement/infrastructure/in-memory-delivery-evidence-repository.js';
+import type { SourceToAwardRepository } from '../modules/procurement/application/source-to-award-repository.js';
+import { InMemorySourceToAwardRepository } from '../modules/procurement/infrastructure/in-memory-source-to-award-repository.js';
+import type { ProcurementInvoiceRepository } from '../modules/procurement/application/invoice-repository.js';
+import { InMemoryProcurementInvoiceRepository } from '../modules/procurement/infrastructure/in-memory-invoice-repository.js';
+import type { ProcurementCloseoutRepository } from '../modules/procurement/application/procurement-closeout-repository.js';
+import { InMemoryProcurementCloseoutRepository } from '../modules/procurement/infrastructure/in-memory-procurement-closeout-repository.js';
 import { registerKYCAMLRoutes } from '../modules/kyc-aml-onboarding/api/routes.js';
 import { getOnboardingEligibility } from '../modules/kyc-aml-onboarding/application/get-onboarding-eligibility.js';
 import type { OnboardingCaseRepository } from '../modules/kyc-aml-onboarding/application/create-onboarding-case.js';
@@ -154,6 +163,9 @@ export function createTestableServer(options?: {
   procureToPayLifecycleEventRepository?: ProcureToPayLifecycleEventRepository;
   procurementOrderRepository?: ProcurementOrderRepository;
   deliveryEvidenceRepository?: DeliveryEvidenceRepository;
+  sourceToAwardRepository?: SourceToAwardRepository;
+  invoiceRepository?: ProcurementInvoiceRepository;
+  procurementCloseoutRepository?: ProcurementCloseoutRepository;
   onboardingCaseRepository?: OnboardingCaseRepository;
   blockchainAnchorGateway?: BlockchainAnchorGateway;
   blockchainAnchorMetadataRepository?: BlockchainAnchorMetadataRepository;
@@ -275,6 +287,9 @@ export function createTestableServer(options?: {
   const procureToPayLifecycleEventRepository = options?.procureToPayLifecycleEventRepository ?? new InMemoryProcureToPayLifecycleEventRepository();
   const procurementOrderRepository = options?.procurementOrderRepository ?? new InMemoryProcurementOrderRepository();
   const deliveryEvidenceRepository = options?.deliveryEvidenceRepository ?? new InMemoryDeliveryEvidenceRepository();
+  const sourceToAwardRepository = options?.sourceToAwardRepository ?? new InMemorySourceToAwardRepository();
+  const invoiceRepository = options?.invoiceRepository ?? new InMemoryProcurementInvoiceRepository();
+  const procurementCloseoutRepository = options?.procurementCloseoutRepository ?? new InMemoryProcurementCloseoutRepository();
   const onboardingCaseRepository = options?.onboardingCaseRepository ?? new InMemoryOnboardingCaseRepository();
   const blockchainAnchorGateway = options?.blockchainAnchorGateway ?? new InMemoryBlockchainAnchorGateway();
   const blockchainAnchorMetadataRepository = options?.blockchainAnchorMetadataRepository ?? new InMemoryBlockchainAnchorMetadataRepository();
@@ -413,6 +428,44 @@ export function createTestableServer(options?: {
     lifecycleEventRepository: procureToPayLifecycleEventRepository,
     blockchainAnchorGateway,
     blockchainAnchorMetadataRepository,
+    authenticatedPreHandler,
+  });
+
+  server.register(registerSourceToAwardRoutes, {
+    prefix: '/api/v1',
+    sourceToAwardRepository,
+    orderRepository: procurementOrderRepository,
+    lifecycleEventRepository: procureToPayLifecycleEventRepository,
+    authenticatedPreHandler,
+    eligibilityGateway: {
+      async checkOrganizationEligibility(memberOrganizationId: string) {
+        const result = await getOnboardingEligibility(memberOrganizationId, onboardingCaseRepository);
+        return {
+          memberOrganizationId: result.memberOrganizationId,
+          eligibility: result.eligibility,
+          reasonCodes: result.reasonCodes,
+          rationale: result.rationale,
+        };
+      }
+    }
+  });
+
+  server.register(registerInvoiceRoutes, {
+    prefix: '/api/v1',
+    invoiceRepository,
+    orderRepository: procurementOrderRepository,
+    deliveryEvidenceRepository,
+    lifecycleEventRepository: procureToPayLifecycleEventRepository,
+    authenticatedPreHandler,
+  });
+
+  server.register(registerProcurementCloseoutRoutes, {
+    prefix: '/api/v1',
+    orderRepository: procurementOrderRepository,
+    deliveryEvidenceRepository,
+    invoiceRepository,
+    closeoutRepository: procurementCloseoutRepository,
+    sourceToAwardRepository,
     authenticatedPreHandler,
   });
 
@@ -557,6 +610,10 @@ export function createTestableServer(options?: {
     prefix: '/api/v1',
     organizationNetworkRepository,
     stateRepository: productivityStateRepository,
+    orderRepository: procurementOrderRepository,
+    deliveryEvidenceRepository,
+    invoiceRepository,
+    closeoutRepository: procurementCloseoutRepository,
     authenticatedPreHandler,
   });
 

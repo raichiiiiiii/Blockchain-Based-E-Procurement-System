@@ -6,9 +6,16 @@ import type {
 } from './procure-to-pay-lifecycle-event.js';
 import type { AnchorProcureToPayLifecycleEventDependencies } from '../../blockchain/application/anchor-procure-to-pay-lifecycle-event.js';
 
-export type ProcureToPaySource = 'purchaseOrder' | 'delivery' | 'invoice' | 'settlement' | 'escrow';
+export type ProcureToPaySource = 'sourceToAward' | 'purchaseOrder' | 'delivery' | 'invoice' | 'settlement' | 'escrow';
 
 export type ProcureToPaySourceAction = 
+  // Source-to-award actions
+  | 'requisitionCreated'
+  | 'requisitionApproved'
+  | 'rfqIssued'
+  | 'quotationSubmitted'
+  | 'awardSelected'
+  | 'purchaseOrderGenerated'
   // Purchase Order actions
   | 'purchaseOrderCreated'
   | 'purchaseOrderAccepted'
@@ -24,6 +31,9 @@ export type ProcureToPaySourceAction =
   | 'deliveryModified'
   // Invoice actions
   | 'invoiceIssued'
+  | 'invoiceMatchPassed'
+  | 'invoiceMatchFailed'
+  | 'invoicePaymentApproved'
   | 'invoiceApproved'
   | 'invoiceRejected'
   | 'invoicePaid'
@@ -63,6 +73,13 @@ const SOURCE_MAPPING: Record<ProcureToPaySourceAction, {
   source: ProcureToPaySource; 
   stage: ProcureToPayLifecycleStage 
 }> = {
+  // Source-to-award actions
+  'requisitionCreated': { source: 'sourceToAward', stage: 'purchaseOrder' },
+  'requisitionApproved': { source: 'sourceToAward', stage: 'purchaseOrder' },
+  'rfqIssued': { source: 'sourceToAward', stage: 'purchaseOrder' },
+  'quotationSubmitted': { source: 'sourceToAward', stage: 'purchaseOrder' },
+  'awardSelected': { source: 'sourceToAward', stage: 'purchaseOrder' },
+  'purchaseOrderGenerated': { source: 'sourceToAward', stage: 'purchaseOrder' },
   // Purchase Order actions
   'purchaseOrderCreated': { source: 'purchaseOrder', stage: 'purchaseOrder' },
   'purchaseOrderAccepted': { source: 'purchaseOrder', stage: 'purchaseOrder' },
@@ -78,6 +95,9 @@ const SOURCE_MAPPING: Record<ProcureToPaySourceAction, {
   'deliveryModified': { source: 'delivery', stage: 'delivery' },
   // Invoice actions
   'invoiceIssued': { source: 'invoice', stage: 'invoice' },
+  'invoiceMatchPassed': { source: 'invoice', stage: 'invoice' },
+  'invoiceMatchFailed': { source: 'invoice', stage: 'invoice' },
+  'invoicePaymentApproved': { source: 'invoice', stage: 'invoice' },
   'invoiceApproved': { source: 'invoice', stage: 'invoice' },
   'invoiceRejected': { source: 'invoice', stage: 'invoice' },
   'invoicePaid': { source: 'invoice', stage: 'invoice' },

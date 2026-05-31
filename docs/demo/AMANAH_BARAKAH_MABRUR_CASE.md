@@ -48,23 +48,26 @@ The MVP should demonstrate that every actor can complete a role in a governed co
 1. The Administrator signs in and confirms Amanah Retail, Barakah Supplies, and Mabrur Finance Partner are active member organizations with appropriate roles.
 2. The Compliance Reviewer opens the compliance queue and approves Barakah Supplies after reviewing safe KYC/AML metadata.
 3. The Buyer opens Organization Network, previews `barakah-supplies`, inspects the Amanah-Barakah relationship vector, and sees proof-scope metadata in the Blockchain Trail panel.
-4. The Buyer for Amanah Retail creates an order for Barakah Supplies.
-5. The Supplier for Barakah Supplies opens received orders and acknowledges the order.
+4. The Buyer for Amanah Retail opens Source to Award, creates a requisition, approves it, issues an RFQ to Barakah Supplies, reviews the supplier quotation, and selects the award.
+5. The award generates the purchase order handoff for Barakah Supplies.
+6. The Supplier for Barakah Supplies opens received orders and acknowledges the order.
 6. The Buyer or Supplier opens Contract Documents and uploads the Amanah-Barakah contract text for checksum, safe metadata extraction, and local signature-state recording.
 7. The Buyer or Supplier opens Contract Negotiation, creates machine-readable terms linked to the document reference, records any revised offer, and accepts the current terms hash.
 8. The Supplier records delivery evidence metadata for the accepted order using a safe reference, description, and hash; an external client may also submit signed IoT, QR, or EPCIS-compatible proof metadata through the external API gateway.
-9. The Buyer opens the order detail and reviews delivery evidence metadata, lifecycle hash, and proof state without seeing raw commercial documents.
-9. The Buyer opens Escrow and creates escrow from the accepted order reference.
-10. Escrow creation emits a lifecycle audit event for the escrow-created state.
-11. The Buyer can mark the escrow funded, request release after accepted order, delivery evidence, eligibility, and dispute-free checks pass, and approve release into a settlement-instruction-ready state without executing payment.
-12. The Buyer or Financier can create a sandbox/manual payment instruction from the settlement-ready escrow, reconcile it to pending, accepted, failed, or settled status without moving money, and export an ISO 20022-like mapping artifact for integration review.
-13. If evidence is contested, the Buyer or Supplier can open a dispute and an authorized reviewer can record an arbitration outcome to prepare release, refund, or cancellation.
-14. Delivery evidence, escrow lifecycle, and settlement lifecycle events are anchored when the proof gateway is available, or remain proof-ready/pending/failed with honest proof states.
-15. The Auditor opens Blockchain Proof or an event detail and verifies the proof without fabricated transaction data.
-16. The Shariah Reviewer opens Shariah Review, inspects PLS metadata, approves the restricted seedbed terms, and confirms active certificate artifact coverage for the template.
-17. The Financier opens Financing, verifies the Shariah approval and certificate artifact references, and views profit/loss distribution scenarios.
-18. The Regulator opens Export Bundle, requests the scoped evidence bundle, signs the manifest with the local software-key profile, and verifies the detached signature metadata for offline review.
-19. The Administrator or integrator calls the ERP/accounting adapter API to export local JSON mapping evidence for the accepted order, contract release package, or payment status without external posting.
+10. The Supplier submits invoice metadata for the accepted order and delivery evidence.
+11. The Buyer opens Invoices, runs the three-way match, and approves payment readiness without executing payment.
+12. The Buyer opens Supplier Performance, reviews the case summary, and closes the procurement case for internal performance scoring.
+13. The Buyer opens Escrow and creates escrow from the accepted order reference.
+14. Escrow creation emits a lifecycle audit event for the escrow-created state.
+15. The Buyer can mark the escrow funded, request release after accepted order, delivery evidence, eligibility, and dispute-free checks pass, and approve release into a settlement-instruction-ready state without executing payment.
+16. The Buyer or Financier can create a sandbox/manual payment instruction from the settlement-ready escrow, reconcile it to pending, accepted, failed, or settled status without moving money, and export an ISO 20022-like mapping artifact for integration review.
+17. If evidence is contested, the Buyer or Supplier can open a dispute and an authorized reviewer can record an arbitration outcome to prepare release, refund, or cancellation.
+18. Delivery evidence, invoice, escrow lifecycle, closeout, and settlement lifecycle events are anchored when the proof gateway is available, or remain proof-ready/pending/failed with honest proof states.
+19. The Auditor opens Blockchain Proof or an event detail and verifies the proof without fabricated transaction data.
+20. The Shariah Reviewer opens Shariah Review, inspects PLS metadata, approves the restricted seedbed terms, and confirms active certificate artifact coverage for the template.
+21. The Financier opens Financing, verifies the Shariah approval and certificate artifact references, and views profit/loss distribution scenarios.
+22. The Regulator opens Export Bundle, requests the scoped evidence bundle, signs the manifest with the local software-key profile, and verifies the detached signature metadata for offline review.
+23. The Administrator or integrator calls the ERP/accounting adapter API to export local JSON mapping evidence for the accepted order, contract release package, or payment status without external posting.
 
 ## Expected Seed Data
 

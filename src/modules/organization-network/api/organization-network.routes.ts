@@ -5,6 +5,9 @@ import type {
   CompanyChannelMatrixEntry,
   CompanyProofStatus,
   OrganizationGraphChannelScope,
+  OrganizationGraphEdge,
+  OrganizationGraphNode,
+  OrganizationGraphProjection,
   OrganizationGraphRelationshipType,
   OrganizationRelationshipIntent,
 } from '../domain/organization-network.js';
@@ -94,6 +97,196 @@ function graphTypeToRelationshipIntent(type: OrganizationGraphRelationshipType):
     default:
       return 'buyer';
   }
+}
+
+function nodeTypeFor(node: OrganizationGraphNode): NonNullable<OrganizationGraphNode['nodeType']> {
+  if (node.relationshipToCurrentOrg === 'self') {
+    return 'organization';
+  }
+
+  switch (node.relationshipRole) {
+    case 'buyer':
+      return 'buyer';
+    case 'supplier':
+      return 'supplier';
+    case 'financier':
+      return 'financier';
+    case 'auditor':
+      return 'auditor';
+    case 'regulator':
+      return 'regulator';
+    case 'logistics':
+      return 'logisticsProofProvider';
+    case 'mixed':
+    default:
+      return 'organization';
+  }
+}
+
+function edgeTypeFor(edge: OrganizationGraphEdge): NonNullable<OrganizationGraphEdge['edgeType']> {
+  switch (edge.relationshipType) {
+    case 'buyerSupplier':
+      return 'buyerSupplier';
+    case 'financing':
+      return 'financing';
+    case 'audit':
+      return 'audit';
+    case 'regulatory':
+      return 'oversight';
+    case 'logistics':
+      return 'deliveryProof';
+    case 'mixed':
+    default:
+      return edge.channelScope === 'localProofOnly' ? 'integration' : 'proofAnchoring';
+  }
+}
+
+function topologyBoundaryNode(input: {
+  id: string;
+  displayName: string;
+  uniqueIdentifier: string;
+  nodeType: NonNullable<OrganizationGraphNode['nodeType']>;
+  summary: string;
+}): OrganizationGraphNode {
+  return {
+    id: `node-${input.id}`,
+    nodeType: input.nodeType,
+    organizationId: input.id,
+    uniqueIdentifier: input.uniqueIdentifier,
+    displayName: input.displayName,
+    organizationStatus: 'active',
+    eligibilityStatus: 'unknown',
+    relationshipToCurrentOrg: 'connected',
+    relationshipRole: 'mixed',
+    activeDealCount: 0,
+    profileSummary: input.summary,
+    proofChannelSummary: 'Boundary node for internal-pilot topology visibility. No production network certification is implied.',
+  };
+}
+
+function topologyBoundaryEdge(input: {
+  id: string;
+  currentOrganizationId: string;
+  targetOrganizationId: string;
+  edgeType: NonNullable<OrganizationGraphEdge['edgeType']>;
+  relationshipType: OrganizationGraphRelationshipType;
+  currentStage: string;
+  safeSummary: string;
+}): OrganizationGraphEdge {
+  return {
+    id: input.id,
+    edgeType: input.edgeType,
+    sourceOrganizationId: input.currentOrganizationId,
+    targetOrganizationId: input.targetOrganizationId,
+    direction: 'outbound',
+    relationshipType: input.relationshipType,
+    channelScope: 'localProofOnly',
+    currentStage: input.currentStage,
+    latestLifecycleEventId: `topology:${input.id}`,
+    anchorStatus: 'notAnchored',
+    verificationStatus: 'unavailable',
+    claimBoundary: 'Topology projection only; this is not a production Fabric consortium, ERP integration, logistics network, or external legal proof.',
+    safeSummary: input.safeSummary,
+  };
+}
+
+function enrichGraphTopology(graph: OrganizationGraphProjection): OrganizationGraphProjection {
+  const nodes = graph.nodes.map(node => ({
+    ...node,
+    nodeType: node.nodeType ?? nodeTypeFor(node),
+  }));
+  const edges = graph.edges.map(edge => ({
+    ...edge,
+    edgeType: edge.edgeType ?? edgeTypeFor(edge),
+    claimBoundary: edge.claimBoundary ?? 'Relationship proof metadata only; no production consortium or external integration claim is implied.',
+  }));
+
+  const boundaryNodes = [
+    topologyBoundaryNode({
+      id: 'topology-fabric-proof-boundary',
+      displayName: 'Fabric proof boundary',
+      uniqueIdentifier: 'fabric-proof-boundary',
+      nodeType: 'fabricProofBoundary',
+      summary: 'Proof anchoring boundary for hashes and metadata only.',
+    }),
+    topologyBoundaryNode({
+      id: 'topology-api-integration-client',
+      displayName: 'API integration client',
+      uniqueIdentifier: 'api-integration-client',
+      nodeType: 'apiIntegrationClient',
+      summary: 'Scoped external client boundary for future safe integrations.',
+    }),
+    topologyBoundaryNode({
+      id: 'topology-erp-accounting-adapter',
+      displayName: 'ERP and accounting adapter',
+      uniqueIdentifier: 'erp-accounting-adapter',
+      nodeType: 'erpAccountingAdapter',
+      summary: 'Adapter boundary for local JSON/OCDS/UBL style mapping, not production ERP certification.',
+    }),
+    topologyBoundaryNode({
+      id: 'topology-logistics-proof-provider',
+      displayName: 'Logistics proof provider',
+      uniqueIdentifier: 'logistics-proof-provider',
+      nodeType: 'logisticsProofProvider',
+      summary: 'Delivery proof intake boundary for safe metadata, not real logistics integration.',
+    }),
+  ];
+
+  const boundaryEdges = [
+    topologyBoundaryEdge({
+      id: 'topology-proof-anchoring',
+      currentOrganizationId: graph.currentOrganizationId,
+      targetOrganizationId: 'topology-fabric-proof-boundary',
+      edgeType: 'proofAnchoring',
+      relationshipType: 'mixed',
+      currentStage: 'proofBoundaryProjected',
+      safeSummary: 'Only hashes and proof metadata belong in the proof boundary.',
+    }),
+    topologyBoundaryEdge({
+      id: 'topology-external-api',
+      currentOrganizationId: graph.currentOrganizationId,
+      targetOrganizationId: 'topology-api-integration-client',
+      edgeType: 'integration',
+      relationshipType: 'mixed',
+      currentStage: 'integrationBoundaryProjected',
+      safeSummary: 'External clients require scoped credentials and audit logging.',
+    }),
+    topologyBoundaryEdge({
+      id: 'topology-erp-adapter',
+      currentOrganizationId: graph.currentOrganizationId,
+      targetOrganizationId: 'topology-erp-accounting-adapter',
+      edgeType: 'integration',
+      relationshipType: 'mixed',
+      currentStage: 'adapterBoundaryProjected',
+      safeSummary: 'ERP/accounting mapping is adapter-scoped and does not claim production network certification.',
+    }),
+    topologyBoundaryEdge({
+      id: 'topology-delivery-proof',
+      currentOrganizationId: graph.currentOrganizationId,
+      targetOrganizationId: 'topology-logistics-proof-provider',
+      edgeType: 'deliveryProof',
+      relationshipType: 'logistics',
+      currentStage: 'deliveryProofBoundaryProjected',
+      safeSummary: 'Delivery proof uses safe metadata and hashes, not full logistics infrastructure.',
+    }),
+  ];
+
+  return {
+    ...graph,
+    nodes: [...nodes, ...boundaryNodes],
+    edges: [...edges, ...boundaryEdges],
+    latestProofActivity: [...graph.latestProofActivity, ...boundaryEdges.map(edge => ({
+      lifecycleEventId: edge.latestLifecycleEventId ?? edge.id,
+      eventType: edge.currentStage,
+      timestamp: new Date().toISOString(),
+      payloadHash: `sha256:${'0'.repeat(64)}`,
+      anchorStatus: edge.anchorStatus ?? 'notAnchored',
+      verificationStatus: edge.verificationStatus ?? 'unavailable',
+      channelScope: edge.channelScope,
+      relatedRecordType: 'topologyBoundary',
+      relatedRecordId: edge.id,
+    }))].slice(0, 9),
+  };
 }
 
 function proofStatusFromEdge(statuses: Array<string | undefined>): CompanyProofStatus {
@@ -643,7 +836,7 @@ const registerOrganizationNetworkRoutes: FastifyPluginAsync<OrganizationNetworkR
       }
 
       const graph = await options.repository.getGraphForOrganization(actor.actorOrganizationId);
-      return reply.code(200).send({ data: graph });
+      return reply.code(200).send({ data: enrichGraphTopology(graph) });
     },
   );
 

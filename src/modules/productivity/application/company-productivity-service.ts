@@ -1,6 +1,13 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { OrganizationNetworkRepository } from '../../organization-network/application/organization-network-repository.js';
 import type { CompanyDealProjection } from '../../organization-network/domain/organization-network.js';
+import type { DeliveryEvidenceRepository } from '../../procurement/application/delivery-evidence-repository.js';
+import type { ProcurementInvoiceRepository } from '../../procurement/application/invoice-repository.js';
+import type { ProcurementOrderRepository } from '../../procurement/application/procurement-order-repository.js';
+import type { ProcurementCloseoutRepository } from '../../procurement/application/procurement-closeout-repository.js';
+import type { DeliveryEvidenceRecord } from '../../procurement/domain/delivery-evidence.js';
+import type { ProcurementInvoice } from '../../procurement/domain/invoice.js';
+import type { ProcurementOrder } from '../../procurement/domain/procurement-order.js';
 import type { ProductivityStateRepository } from './productivity-state-repository.js';
 import type {
   ActionInboxItem,
@@ -18,6 +25,19 @@ export type ProductivityActor = {
   actorUserId: string;
   actorOrganizationId: string;
   actorRoleCodes: string[];
+};
+
+export type ProductivityRecordDependencies = {
+  orderRepository?: ProcurementOrderRepository;
+  deliveryEvidenceRepository?: DeliveryEvidenceRepository;
+  invoiceRepository?: ProcurementInvoiceRepository;
+  closeoutRepository?: ProcurementCloseoutRepository;
+};
+
+type ProductivityRecords = {
+  orders: ProcurementOrder[];
+  evidence: DeliveryEvidenceRecord[];
+  invoices: ProcurementInvoice[];
 };
 
 function decimal(value: number): string {
@@ -108,6 +128,32 @@ function buildMoneyTracker(deals: CompanyDealProjection[]): MoneyTrackerSummary 
   };
 }
 
+function buildMoneyTrackerFromRecords(records: ProductivityRecords, fallback: MoneyTrackerSummary): MoneyTrackerSummary {
+  if (records.orders.length === 0) {
+    return fallback;
+  }
+
+  const committed = records.orders.reduce((total, order) => total + parseAmount(order.amount), 0);
+  const deliveredOrderIds = new Set(records.evidence.map(record => record.orderId));
+  const delivered = records.orders
+    .filter(order => deliveredOrderIds.has(order.orderId))
+    .reduce((total, order) => total + parseAmount(order.amount), 0);
+  const paymentReady = records.invoices.some(invoice => invoice.status === 'paymentApproved');
+  const invoiceException = records.invoices.some(invoice => invoice.status === 'matchFailed');
+  const budgetLimit = Math.max(parseAmount(fallback.budgetLimit), committed + 50000);
+
+  return {
+    ...fallback,
+    committedPurchaseOrderValue: decimal(committed),
+    expectedDeliveryValue: decimal(delivered),
+    incomingReceivableStatus: invoiceException ? 'failed' : records.invoices.length > 0 ? 'metadataReady' : 'pending',
+    outgoingPaymentInstructionStatus: paymentReady ? 'settlementInstructionReady' : fallback.outgoingPaymentInstructionStatus,
+    budgetLimit: decimal(budgetLimit),
+    budgetConsumed: decimal(committed),
+    budgetRemaining: decimal(Math.max(0, budgetLimit - committed)),
+  };
+}
+
 function taskIdFor(deal: CompanyDealProjection, suffix: string): string {
   return `task-${deal.dealId}-${suffix}`;
 }
@@ -173,6 +219,42 @@ function buildActionInbox(
   return items;
 }
 
+function appendRecordDrivenTasks(
+  items: ActionInboxItem[],
+  records: ProductivityRecords,
+  completedTaskIds: readonly string[],
+): ActionInboxItem[] {
+  const completed = new Set(completedTaskIds);
+  const invoiceException = records.invoices.find(invoice => invoice.status === 'matchFailed');
+  if (invoiceException) {
+    items.push({
+      taskId: `task-invoice-exception-${invoiceException.invoiceId}`,
+      title: 'Review invoice exception',
+      description: `Invoice ${invoiceException.invoiceId} failed matching and needs review before payment readiness.`,
+      priority: 'high',
+      status: completed.has(`task-invoice-exception-${invoiceException.invoiceId}`) ? 'completed' : 'open',
+      actionType: 'monitorException',
+      relatedRecordId: invoiceException.invoiceId,
+    });
+  }
+
+  for (const order of records.orders) {
+    if (order.status === 'accepted' && !records.invoices.some(invoice => invoice.orderId === order.orderId)) {
+      items.push({
+        taskId: `task-invoice-needed-${order.orderId}`,
+        title: 'Prepare invoice match',
+        description: `${order.title} has an accepted order and should be matched before payment readiness.`,
+        priority: 'medium',
+        status: completed.has(`task-invoice-needed-${order.orderId}`) ? 'completed' : 'open',
+        actionType: 'reviewDelivery',
+        relatedRecordId: order.orderId,
+      });
+    }
+  }
+
+  return items;
+}
+
 function buildSupplierScorecards(deals: CompanyDealProjection[]): SupplierScorecard[] {
   const grouped = new Map<string, SupplierScorecard>();
 
@@ -202,6 +284,54 @@ function buildSupplierScorecards(deals: CompanyDealProjection[]): SupplierScorec
   }
 
   return [...grouped.values()];
+}
+
+function buildSupplierScorecardsFromRecords(records: ProductivityRecords): SupplierScorecard[] {
+  const grouped = new Map<string, {
+    orders: ProcurementOrder[];
+    evidence: DeliveryEvidenceRecord[];
+    invoices: ProcurementInvoice[];
+  }>();
+
+  for (const order of records.orders) {
+    const current = grouped.get(order.supplierOrganizationId) ?? { orders: [], evidence: [], invoices: [] };
+    current.orders.push(order);
+    grouped.set(order.supplierOrganizationId, current);
+  }
+
+  for (const evidence of records.evidence) {
+    const current = grouped.get(evidence.supplierOrganizationId) ?? { orders: [], evidence: [], invoices: [] };
+    current.evidence.push(evidence);
+    grouped.set(evidence.supplierOrganizationId, current);
+  }
+
+  for (const invoice of records.invoices) {
+    const current = grouped.get(invoice.supplierOrganizationId) ?? { orders: [], evidence: [], invoices: [] };
+    current.invoices.push(invoice);
+    grouped.set(invoice.supplierOrganizationId, current);
+  }
+
+  return [...grouped.entries()].map(([supplierOrganizationId, group]) => {
+    const exceptionCount = group.invoices.filter(invoice => invoice.status === 'matchFailed').length;
+    const evidenceStatus = group.evidence.length === 0
+      ? 'notSubmitted'
+      : group.evidence.length >= group.orders.length
+        ? 'metadataRecorded'
+        : 'mixed';
+    return {
+      supplierOrganizationId,
+      supplierDisplayName: supplierOrganizationId,
+      activeDealCount: group.orders.length,
+      deliveryEvidenceStatus: evidenceStatus,
+      proofReliabilityState: exceptionCount > 0 ? 'mismatch' : group.evidence.length > 0 ? 'anchored' : 'pending',
+      exceptionCount,
+      lastInteractionAt: [
+        ...group.orders.map(order => order.updatedAt),
+        ...group.evidence.map(evidence => evidence.submittedAt),
+        ...group.invoices.map(invoice => invoice.updatedAt),
+      ].sort().pop(),
+    };
+  });
 }
 
 function buildEvidenceChecklist(deals: CompanyDealProjection[]): EvidenceChecklistItem[] {
@@ -241,21 +371,139 @@ function buildEvidenceChecklist(deals: CompanyDealProjection[]): EvidenceCheckli
   return items;
 }
 
+function buildRecordPipeline(records: ProductivityRecords): ProcurementPipelineItem[] {
+  return records.orders.flatMap(order => {
+    const orderEvidence = records.evidence.filter(record => record.orderId === order.orderId);
+    const orderInvoices = records.invoices.filter(invoice => invoice.orderId === order.orderId);
+    const matchedInvoice = orderInvoices.find(invoice => invoice.status === 'matchPassed' || invoice.status === 'paymentApproved');
+
+    return [
+      {
+        stage: 'orderCreated',
+        label: `${order.title}: order created`,
+        state: 'complete' as const,
+        relatedDealId: order.orderId,
+        relatedRecordId: order.orderId,
+        updatedAt: order.updatedAt,
+      },
+      {
+        stage: 'supplierAccepted',
+        label: `${order.title}: supplier accepted`,
+        state: order.status === 'accepted' ? 'complete' as const : 'pending' as const,
+        relatedDealId: order.orderId,
+        relatedRecordId: order.orderId,
+        updatedAt: order.updatedAt,
+      },
+      {
+        stage: 'deliveryEvidenceSubmitted',
+        label: `${order.title}: delivery evidence`,
+        state: orderEvidence.length > 0 ? 'complete' as const : 'pending' as const,
+        relatedDealId: order.orderId,
+        relatedRecordId: orderEvidence[0]?.evidenceId,
+        updatedAt: orderEvidence[0]?.submittedAt ?? order.updatedAt,
+      },
+      {
+        stage: 'buyerVerified',
+        label: `${order.title}: invoice match`,
+        state: matchedInvoice ? 'complete' as const : orderInvoices.some(invoice => invoice.status === 'matchFailed') ? 'blocked' as const : 'pending' as const,
+        relatedDealId: order.orderId,
+        relatedRecordId: matchedInvoice?.invoiceId ?? orderInvoices[0]?.invoiceId,
+        updatedAt: matchedInvoice?.updatedAt ?? orderInvoices[0]?.updatedAt ?? order.updatedAt,
+      },
+    ];
+  });
+}
+
+function buildEvidenceChecklistFromRecords(records: ProductivityRecords): EvidenceChecklistItem[] {
+  return records.orders.flatMap(order => {
+    const orderEvidence = records.evidence.filter(record => record.orderId === order.orderId);
+    const orderInvoices = records.invoices.filter(invoice => invoice.orderId === order.orderId);
+    const invoiceOk = orderInvoices.some(invoice => invoice.status === 'matchPassed' || invoice.status === 'paymentApproved');
+    return [
+      {
+        checklistId: `record-order-${order.orderId}`,
+        label: `${order.title}: order record`,
+        state: 'complete' as const,
+        relatedDealId: order.orderId,
+        proofStatus: 'anchored' as const,
+      },
+      {
+        checklistId: `record-delivery-${order.orderId}`,
+        label: `${order.title}: delivery evidence`,
+        state: orderEvidence.length > 0 ? 'complete' as const : 'missing' as const,
+        relatedDealId: order.orderId,
+        proofStatus: orderEvidence.length > 0 ? 'anchored' as const : 'pending' as const,
+      },
+      {
+        checklistId: `record-invoice-${order.orderId}`,
+        label: `${order.title}: invoice match`,
+        state: invoiceOk ? 'complete' as const : orderInvoices.length > 0 ? 'pending' as const : 'missing' as const,
+        relatedDealId: order.orderId,
+        proofStatus: orderInvoices.some(invoice => invoice.status === 'matchFailed') ? 'mismatch' as const : 'pending' as const,
+      },
+    ];
+  });
+}
+
 export class CompanyProductivityService {
   constructor(
     private readonly organizationNetworkRepository: OrganizationNetworkRepository,
     private readonly stateRepository: ProductivityStateRepository,
+    private readonly recordDependencies: ProductivityRecordDependencies = {},
   ) {}
+
+  private async getRecords(actor: ProductivityActor): Promise<ProductivityRecords> {
+    if (!this.recordDependencies.orderRepository) {
+      return { orders: [], evidence: [], invoices: [] };
+    }
+
+    const roles = actor.actorRoleCodes;
+    const orders = roles.includes('buyer')
+      ? await this.recordDependencies.orderRepository.listByBuyerOrganization(actor.actorOrganizationId)
+      : roles.includes('supplier')
+        ? await this.recordDependencies.orderRepository.listBySupplierOrganization(actor.actorOrganizationId)
+        : roles.some(role => ['administrator', 'auditor', 'regulator', 'securityOperator'].includes(role))
+          ? await this.recordDependencies.orderRepository.listAll()
+          : [];
+
+    const evidence = this.recordDependencies.deliveryEvidenceRepository
+      ? (await Promise.all(orders.map(order => this.recordDependencies.deliveryEvidenceRepository?.listByOrderId(order.orderId) ?? []))).flat()
+      : [];
+    const invoices = this.recordDependencies.invoiceRepository
+      ? (await Promise.all(orders.map(order => this.recordDependencies.invoiceRepository?.listByOrderId(order.orderId) ?? []))).flat()
+      : [];
+
+    return { orders, evidence, invoices };
+  }
 
   async getSummary(actor: ProductivityActor): Promise<CompanyProductivitySummary> {
     const deals = await this.organizationNetworkRepository.listCompanyDealProjections(actor.actorOrganizationId);
     const completedTaskIds = await this.stateRepository.listCompletedTaskIds(actor.actorOrganizationId);
-    return {
+    const records = await this.getRecords(actor);
+    const dealSummary = {
       moneyTracker: buildMoneyTracker(deals),
       pipeline: buildPipeline(deals),
       actionInbox: buildActionInbox(deals, completedTaskIds),
       supplierScorecards: buildSupplierScorecards(deals),
       evidenceChecklist: buildEvidenceChecklist(deals),
+    };
+
+    if (records.orders.length === 0) {
+      return dealSummary;
+    }
+
+    return {
+      moneyTracker: buildMoneyTrackerFromRecords(records, dealSummary.moneyTracker),
+      pipeline: [...buildRecordPipeline(records), ...dealSummary.pipeline],
+      actionInbox: appendRecordDrivenTasks([...dealSummary.actionInbox], records, completedTaskIds),
+      supplierScorecards: [
+        ...buildSupplierScorecardsFromRecords(records),
+        ...dealSummary.supplierScorecards,
+      ],
+      evidenceChecklist: [
+        ...buildEvidenceChecklistFromRecords(records),
+        ...dealSummary.evidenceChecklist,
+      ],
     };
   }
 

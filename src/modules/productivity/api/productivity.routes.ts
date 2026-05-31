@@ -1,12 +1,20 @@
 import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 import { getRequestActorContext } from '../../auth/api/request-actor-context.js';
 import type { OrganizationNetworkRepository } from '../../organization-network/application/organization-network-repository.js';
+import type { DeliveryEvidenceRepository } from '../../procurement/application/delivery-evidence-repository.js';
+import type { ProcurementInvoiceRepository } from '../../procurement/application/invoice-repository.js';
+import type { ProcurementCloseoutRepository } from '../../procurement/application/procurement-closeout-repository.js';
+import type { ProcurementOrderRepository } from '../../procurement/application/procurement-order-repository.js';
 import { CompanyProductivityService } from '../application/company-productivity-service.js';
 import type { ProductivityStateRepository } from '../application/productivity-state-repository.js';
 
 type ProductivityRoutesOptions = {
   organizationNetworkRepository: OrganizationNetworkRepository;
   stateRepository: ProductivityStateRepository;
+  orderRepository?: ProcurementOrderRepository;
+  deliveryEvidenceRepository?: DeliveryEvidenceRepository;
+  invoiceRepository?: ProcurementInvoiceRepository;
+  closeoutRepository?: ProcurementCloseoutRepository;
   authenticatedPreHandler?: (request: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
 };
 
@@ -93,6 +101,12 @@ const productivityRoutes: FastifyPluginAsync<ProductivityRoutesOptions> = async 
   const service = new CompanyProductivityService(
     options.organizationNetworkRepository,
     options.stateRepository,
+    {
+      orderRepository: options.orderRepository,
+      deliveryEvidenceRepository: options.deliveryEvidenceRepository,
+      invoiceRepository: options.invoiceRepository,
+      closeoutRepository: options.closeoutRepository,
+    },
   );
 
   fastify.get(

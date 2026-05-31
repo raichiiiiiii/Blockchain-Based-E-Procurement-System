@@ -32,6 +32,12 @@ export type CreateProcureToPayLifecycleEventInput = {
 // Define allowed event types per lifecycle stage
 const ALLOWED_EVENT_TYPES: Record<ProcureToPayLifecycleStage, string[]> = {
   purchaseOrder: [
+    'requisitionCreated',
+    'requisitionApproved',
+    'rfqIssued',
+    'quotationSubmitted',
+    'awardSelected',
+    'purchaseOrderGenerated',
     'purchaseOrderCreated',
     'purchaseOrderAccepted',
     'purchaseOrderRejected',
@@ -48,6 +54,9 @@ const ALLOWED_EVENT_TYPES: Record<ProcureToPayLifecycleStage, string[]> = {
   ],
   invoice: [
     'invoiceIssued',
+    'invoiceMatchPassed',
+    'invoiceMatchFailed',
+    'invoicePaymentApproved',
     'invoiceApproved',
     'invoiceRejected',
     'invoicePaid'

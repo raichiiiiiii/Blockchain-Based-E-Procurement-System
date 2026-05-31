@@ -18,6 +18,45 @@ PBIs PBI-436 through PBI-462 were merged into it under Issue #13. The previous
 `backlog/production-extension-roadmap.csv` file was archived at
 `backlog/archive/production-extension-roadmap.superseded.csv` for history only.
 
+## TASK-2026-06-01-003 Issue #26 Executable Actor Workflow Closure
+
+Stage: GitHub Issue #26
+Status: in progress
+
+Business reason:
+
+Convert the remaining useful-but-partial actor gaps from Issue #25 into
+executable internal-pilot workflows while preserving the claim boundary:
+supervisor-demo plus selected pilot-hardening features, not commercial-ready or
+production-certified.
+
+Planned implementation PBIs:
+
+- PBI-498 Source-to-award workflow closure
+- PBI-499 Invoice and three-way matching workflow
+- PBI-500 Supplier performance and procurement closeout workflow
+- PBI-501 Channel-node graph model for private procurement networks
+- PBI-502 Real productivity aggregation from procurement records
+- PBI-503 OpenAPI and CI validation gate for core actor workflows
+- PBI-504 Actor workflow browser smoke and evidence
+- PBI-505 Topology and private network scenario documentation
+- PBI-506 Issue 26 final implementation validation
+
+Initial results:
+
+- Created branch `codex/issue-26-executable-actor-workflows`.
+- Ran baseline build, frontend build, full tests, seed dry-run, OpenAPI
+  validation, Docker Compose config, and diff check successfully.
+- Reconciled `backlog/backlog.csv` to include PBI-498 through PBI-506 exactly
+  once. PBI-501 now tracks the Issue #26 graph/topology scope; the Issue #25
+  Shariah reviewer usability gap remains documented in Issue #25 evidence for
+  future grooming.
+
+Evidence:
+
+- `docs/evidence/qa/ISSUE26_BASELINE_READINESS.md`
+- `docs/evidence/qa/PBI-498_TO_PBI-506_BACKLOG_ALIGNMENT.md`
+
 ## TASK-2026-06-01-002 Issue #25 Actor Usefulness Validation
 
 Stage: GitHub Issue #25
@@ -1716,3 +1755,61 @@ Known limitations:
 - Export bundle app-owned anchoring remains future work if Product Owner wants
   export bundles to submit their own proof anchor rather than aggregate existing
   proof metadata.
+
+## TASK-2026-06-01-004 - Issue 26 executable actor workflow implementation
+
+Status: Completed
+
+Issue:
+
+- https://github.com/raichiiiiiii/Blockchain-Based-E-Procurement-System/issues/26
+
+PBIs:
+
+- PBI-498
+- PBI-499
+- PBI-500
+- PBI-501
+- PBI-502
+- PBI-503
+- PBI-504
+- PBI-505
+- PBI-506
+
+Summary:
+
+- Added source-to-award requisition, approval, RFQ, quotation, award, and order
+  handoff workflow.
+- Added invoice metadata submission, three-way match, and payment-readiness
+  approval without payment execution.
+- Added procurement closeout and supplier scorecards derived from order,
+  delivery evidence, invoice, proof, and closeout records.
+- Extended the organization graph with channel-node types and explicit boundary
+  nodes for proof, external API, ERP/accounting, and logistics proof.
+- Updated productivity aggregation to consume real procurement record
+  repositories when available.
+- Updated OpenAPI contract and documentation/evidence for the new actor
+  workflows.
+
+Validation:
+
+- `npm run build` passed.
+- `npm run frontend:build` passed.
+- `node --test --loader ts-node/esm src/modules/procurement/api/issue26-workflow.routes.test.ts`
+  passed with 4 tests.
+- `npm test` passed with 842 tests.
+- `npm run db:migrate -- --dry-run` passed.
+- `npm run db:seed -- --dry-run` passed.
+- `npm run openapi:validate` passed with 36 paths.
+- `docker compose -f docker-compose.app.yml config` passed.
+- Browser smoke passed for credential login and role dashboard access for
+  admin, buyer, supplier, auditor, and security accounts.
+- `git diff --check` passed.
+
+Known limitations:
+
+- Source-to-award, invoice, and closeout repositories use in-memory runtime
+  composition in this slice.
+- Browser smoke used a temporary in-memory credential backend because Docker was
+  unavailable; database seed dry-run validated the normal seeded account
+  catalogue separately.

@@ -26,6 +26,28 @@ export type OrganizationGraphRelationshipType =
   | 'regulatory'
   | 'mixed';
 
+export type OrganizationGraphNodeType =
+  | 'organization'
+  | 'buyer'
+  | 'supplier'
+  | 'financier'
+  | 'regulator'
+  | 'auditor'
+  | 'shariahReviewer'
+  | 'logisticsProofProvider'
+  | 'erpAccountingAdapter'
+  | 'apiIntegrationClient'
+  | 'fabricProofBoundary';
+
+export type OrganizationGraphEdgeType =
+  | 'buyerSupplier'
+  | 'financing'
+  | 'oversight'
+  | 'audit'
+  | 'proofAnchoring'
+  | 'integration'
+  | 'deliveryProof';
+
 export type OrganizationGraphChannelScope =
   | 'sharedChannelA'
   | 'sharedChannelB'
@@ -202,6 +224,7 @@ export type OrganizationNetworkRequest = {
 
 export type OrganizationGraphNode = {
   id: string;
+  nodeType?: OrganizationGraphNodeType;
   organizationId: string;
   uniqueIdentifier: string;
   displayName: string;
@@ -231,6 +254,7 @@ export type OrganizationGraphNode = {
 
 export type OrganizationGraphEdge = {
   id: string;
+  edgeType?: OrganizationGraphEdgeType;
   sourceOrganizationId: string;
   targetOrganizationId: string;
   direction: 'outbound' | 'inbound' | 'bidirectional';
@@ -243,6 +267,7 @@ export type OrganizationGraphEdge = {
   latestPayloadHash?: string;
   anchorStatus?: OrganizationGraphAnchorStatus;
   verificationStatus?: OrganizationGraphVerificationStatus;
+  claimBoundary?: string;
   safeSummary: string;
 };
 

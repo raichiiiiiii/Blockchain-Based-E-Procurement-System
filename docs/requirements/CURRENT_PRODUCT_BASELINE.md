@@ -47,7 +47,12 @@ Primary gaps added to the backlog:
 - PBI-498 source-to-award workflow closure
 - PBI-499 invoice and three-way matching workflow
 - PBI-500 supplier performance and procurement closeout workflow
-- PBI-501 backend-backed Shariah decision workspace closure
+- PBI-501 channel-node graph model for private procurement networks
+- PBI-502 real productivity aggregation from procurement records
+- PBI-503 OpenAPI and CI validation gate for core actor workflows
+- PBI-504 actor workflow browser smoke and evidence
+- PBI-505 topology and private network scenario documentation
+- PBI-506 Issue 26 final implementation validation
 
 ## Current MVP / Pilot-Hardening Capabilities
 
@@ -56,7 +61,11 @@ Primary gaps added to the backlog:
 - membership and RBAC workflows
 - KYC/AML onboarding and eligibility scaffolding
 - procurement order workflow
+- source-to-award requisition, RFQ, quotation, award, and order handoff workflow
 - delivery evidence metadata/hash workflow
+- invoice metadata, three-way matching, and payment-readiness workflow
+- procurement closeout and supplier performance scorecards derived from order,
+  evidence, invoice, and closeout records
 - organization network workspace with safe relationship graph and proof-scope
   vectors
 - company-first dashboard context, organization user management, safe company

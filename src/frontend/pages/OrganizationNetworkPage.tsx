@@ -125,6 +125,7 @@ function positionNodes(nodes: OrganizationGraphNode[]) {
 function nodeHoverSummary(node: OrganizationGraphNode): string {
   return [
     `${node.displayName} (${node.uniqueIdentifier})`,
+    `Node type: ${formatLabel(node.nodeType)}`,
     `Relationship: ${formatLabel(node.relationshipToCurrentOrg)} as ${formatLabel(node.relationshipRole)}`,
     `Deals: ${node.activeDealCount}`,
     `Eligibility: ${formatLabel(node.eligibilityStatus)}`,
@@ -137,12 +138,14 @@ function nodeHoverSummary(node: OrganizationGraphNode): string {
 function edgeHoverSummary(edge: OrganizationGraphEdge): string {
   return [
     `${formatLabel(edge.relationshipType)} relationship`,
+    `Vector type: ${formatLabel(edge.edgeType)}`,
     `Direction: ${formatLabel(edge.direction)}`,
     `Stage: ${formatLabel(edge.currentStage)}`,
     `Scope: ${formatLabel(edge.channelScope)}`,
     `Anchor: ${formatLabel(edge.anchorStatus)}`,
     `Verification: ${formatLabel(edge.verificationStatus)}`,
     edge.latestPayloadHash ? `Latest hash: ${edge.latestPayloadHash}` : 'No payload hash recorded',
+    edge.claimBoundary ?? 'Relationship proof metadata only.',
     edge.safeSummary,
   ].join(' | ');
 }
@@ -407,13 +410,15 @@ function OrganizationNetworkPage({ session, onOpenCompanyLedger }: OrganizationN
           <h3>Blockchain Trail</h3>
           {selectedEdge ? (
             <div className="network-selection-summary">
-              <strong>{formatLabel(selectedEdge.relationshipType)}</strong>
+              <strong>{formatLabel(selectedEdge.edgeType ?? selectedEdge.relationshipType)}</strong>
               <span>{selectedEdge.safeSummary}</span>
+              {selectedEdge.claimBoundary ? <span>{selectedEdge.claimBoundary}</span> : null}
               <StatusIndicator label={formatLabel(selectedEdge.channelScope)} tone={statusTone(selectedEdge.channelScope)} compact />
             </div>
           ) : selectedNode ? (
             <div className="network-selection-summary">
               <strong>{selectedNode.displayName}</strong>
+              <span>{formatLabel(selectedNode.nodeType)}</span>
               <span>{selectedNode.profileSummary ?? 'No public profile summary recorded.'}</span>
               <StatusIndicator label={formatLabel(selectedNode.eligibilityStatus)} tone={statusTone(selectedNode.eligibilityStatus)} compact />
             </div>

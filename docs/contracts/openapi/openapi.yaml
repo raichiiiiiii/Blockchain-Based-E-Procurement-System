@@ -17,6 +17,9 @@ tags:
   - name: Organization Network
   - name: Company Ledger
   - name: Productivity
+  - name: Source to Award
+  - name: Invoices
+  - name: Procurement Closeout
   - name: Email
   - name: Blockchain
 paths:
@@ -369,6 +372,334 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SavedViewResponse"
+  /source-to-award/requisitions:
+    post:
+      tags: [Source to Award]
+      operationId: createSourceToAwardRequisition
+      summary: Create a sourcing requisition for buyer approval.
+      security:
+        - bearerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, estimatedAmount, currency]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                estimatedAmount: { type: string, example: "68000.00" }
+                currency: { type: string, example: MYR }
+      responses:
+        "200":
+          description: Requisition created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceToAwardResponse"
+  /source-to-award/requisitions/{id}/approve:
+    post:
+      tags: [Source to Award]
+      operationId: approveSourceToAwardRequisition
+      summary: Approve a requisition for RFQ issuance.
+      security:
+        - bearerSession: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Requisition approved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceToAwardResponse"
+  /source-to-award/rfqs:
+    post:
+      tags: [Source to Award]
+      operationId: issueSourceToAwardRfq
+      summary: Issue an RFQ to invited supplier organizations.
+      security:
+        - bearerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requisitionId, supplierOrganizationIds]
+              properties:
+                requisitionId: { type: string }
+                supplierOrganizationIds:
+                  type: array
+                  items: { type: string }
+                responseDeadline: { type: string, format: date-time }
+      responses:
+        "200":
+          description: RFQ issued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceToAwardResponse"
+  /source-to-award/rfqs/{id}/quotations:
+    post:
+      tags: [Source to Award]
+      operationId: submitSourceToAwardQuotation
+      summary: Submit a supplier quotation for an invited RFQ.
+      security:
+        - bearerSession: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, currency]
+              properties:
+                amount: { type: string, example: "68000.00" }
+                currency: { type: string, example: MYR }
+                deliveryDays: { type: integer }
+                notes: { type: string }
+      responses:
+        "200":
+          description: Quotation submitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceToAwardResponse"
+  /source-to-award/rfqs/{id}/award:
+    post:
+      tags: [Source to Award]
+      operationId: awardSourceToAwardRfq
+      summary: Select a quotation and generate the purchase order handoff.
+      security:
+        - bearerSession: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quotationId]
+              properties:
+                quotationId: { type: string }
+                rationale: { type: string }
+      responses:
+        "201":
+          description: Award selected and order generated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceToAwardResponse"
+  /source-to-award/cases:
+    get:
+      tags: [Source to Award]
+      operationId: listSourceToAwardCases
+      summary: List source-to-award cases visible to the authenticated actor.
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Visible source-to-award cases.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceToAwardListResponse"
+  /source-to-award/cases/{caseId}:
+    get:
+      tags: [Source to Award]
+      operationId: getSourceToAwardCase
+      summary: Get a source-to-award case.
+      security:
+        - bearerSession: []
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Source-to-award case.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceToAwardResponse"
+  /invoices:
+    get:
+      tags: [Invoices]
+      operationId: listProcurementInvoices
+      summary: List invoices visible to the authenticated actor.
+      security:
+        - bearerSession: []
+      responses:
+        "200":
+          description: Visible invoices.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceListResponse"
+    post:
+      tags: [Invoices]
+      operationId: submitProcurementInvoice
+      summary: Submit invoice metadata for three-way matching.
+      security:
+        - bearerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId, amount, currency]
+              properties:
+                orderId: { type: string }
+                deliveryEvidenceId: { type: string }
+                amount: { type: string, example: "68000.00" }
+                tax: { type: string }
+                currency: { type: string, example: MYR }
+                invoiceReference: { type: string }
+                invoiceHash: { type: string, example: sha256:abc123 }
+      responses:
+        "200":
+          description: Invoice submitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceResponse"
+  /invoices/{id}:
+    get:
+      tags: [Invoices]
+      operationId: getProcurementInvoice
+      summary: Get invoice metadata and match state.
+      security:
+        - bearerSession: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Invoice metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceResponse"
+  /invoices/{id}/verify-match:
+    post:
+      tags: [Invoices]
+      operationId: verifyProcurementInvoiceMatch
+      summary: Verify invoice against order and delivery evidence metadata.
+      security:
+        - bearerSession: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Invoice match verification result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceResponse"
+  /invoices/{id}/approve-payment:
+    post:
+      tags: [Invoices]
+      operationId: approveProcurementInvoicePaymentReadiness
+      summary: Approve invoice for sandbox payment readiness without executing a payment.
+      security:
+        - bearerSession: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Invoice marked payment-ready.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceResponse"
+  /procurement-cases/{caseId}/closeout:
+    post:
+      tags: [Procurement Closeout]
+      operationId: closeProcurementCase
+      summary: Close a procurement case after evidence and invoice readiness review.
+      security:
+        - bearerSession: []
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes: { type: string }
+      responses:
+        "200":
+          description: Procurement case closed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcurementCaseCloseoutResponse"
+  /procurement-cases/{caseId}/summary:
+    get:
+      tags: [Procurement Closeout]
+      operationId: getProcurementCaseSummary
+      summary: Summarize case evidence, invoice, proof, and closeout state.
+      security:
+        - bearerSession: []
+      parameters:
+        - name: caseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Procurement case summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcurementCaseSummaryResponse"
+  /suppliers/{supplierOrganizationId}/performance:
+    get:
+      tags: [Procurement Closeout]
+      operationId: getSupplierPerformance
+      summary: Get supplier scorecard metrics from procurement records.
+      security:
+        - bearerSession: []
+      parameters:
+        - name: supplierOrganizationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Supplier performance summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupplierPerformanceResponse"
   /notifications:
     get:
       tags: [Email, Productivity]
@@ -791,6 +1122,126 @@ components:
         filter: { type: string }
         createdByUserId: { type: string }
         createdAt: { type: string, format: date-time }
+    SourceToAwardCase:
+      type: object
+      properties:
+        caseId: { type: string }
+        status: { type: string }
+        requisition: { type: object }
+        rfq: { type: object }
+        quotations:
+          type: array
+          items: { type: object }
+        award: { type: object }
+        generatedOrderId: { type: string }
+        lifecycleEventIds:
+          type: array
+          items: { type: string }
+        latestLifecyclePayloadHash: { type: string, example: sha256:abc123 }
+    SourceToAwardResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [case]
+          properties:
+            case:
+              $ref: "#/components/schemas/SourceToAwardCase"
+    SourceToAwardListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/SourceToAwardCase"
+    ProcurementInvoice:
+      type: object
+      properties:
+        invoiceId: { type: string }
+        orderId: { type: string }
+        deliveryEvidenceId: { type: string }
+        supplierOrganizationId: { type: string }
+        buyerOrganizationId: { type: string }
+        amount: { type: string, example: "68000.00" }
+        currency: { type: string, example: MYR }
+        invoiceReference: { type: string }
+        invoiceHash: { type: string, example: sha256:abc123 }
+        status: { type: string, enum: [submitted, matchPassed, matchFailed, paymentApproved, rejected] }
+        matchResult: { type: object }
+        lifecycleEventIds:
+          type: array
+          items: { type: string }
+        latestLifecyclePayloadHash: { type: string }
+    InvoiceResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/ProcurementInvoice"
+    InvoiceListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProcurementInvoice"
+    SupplierPerformanceSummary:
+      type: object
+      properties:
+        supplierOrganizationId: { type: string }
+        orderCount: { type: integer }
+        deliveryEvidenceCount: { type: integer }
+        invoiceCount: { type: integer }
+        invoiceExceptionCount: { type: integer }
+        proofCoveragePercent: { type: integer }
+        closeoutCount: { type: integer }
+        score: { type: integer }
+        lastUpdatedAt: { type: string, format: date-time }
+    ProcurementCaseCloseoutResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          properties:
+            closeoutId: { type: string }
+            caseId: { type: string }
+            orderId: { type: string }
+            status: { type: string, enum: [open, closed] }
+            metrics:
+              $ref: "#/components/schemas/SupplierPerformanceSummary"
+    ProcurementCaseSummaryResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          properties:
+            caseId: { type: string }
+            orderId: { type: string }
+            sourceToAwardCaseId: { type: string }
+            deliveryEvidenceCount: { type: integer }
+            invoiceCount: { type: integer }
+            invoiceExceptionCount: { type: integer }
+            proofCoveragePercent: { type: integer }
+            closeout: { type: object }
+    SupplierPerformanceResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/SupplierPerformanceSummary"
     CompanyLedgerExportResponse:
       type: object
       properties:

@@ -95,12 +95,14 @@ Chaincode build/test is automated. Live Fabric local-network deployment depends 
 | 4:00-5:30 | Compliance review | Show safe KYC/AML metadata and eligibility decision. |
 | 5:30-6:30 | Organization Network | Show Amanah, Barakah, and Mabrur relationship graph, proof-scope vectors, and safe network request action. |
 | 6:30-7:15 | Company context and ledger | Show company dashboard summary, Company Users, Settings, Private Deal View, and restricted Mudarabah projection. |
-| 7:15-8:15 | Buyer order | Create or inspect procurement order for supplier. |
+| 7:15-8:15 | Source to award | Create requisition, approve it, issue RFQ, review quotation, select award, and generate order handoff. |
+| 8:15-8:45 | Buyer order | Inspect generated procurement order for supplier. |
 | 8:00-9:00 | Contract documents | Upload contract text and show checksum, extraction fields, and local signature state. |
 | 9:00-10:00 | Contract negotiation | Version machine-readable terms, show hash, submit an offer, and record acceptance. |
 | 10:00-11:15 | Supplier acknowledgement and delivery evidence | Accept assigned order and record safe delivery evidence metadata; mention signed external IoT, QR, and EPCIS-compatible proof intake as an API-backed pilot-hardening path. |
 | 10:15-11:15 | Buyer delivery review | Show evidence hash, lifecycle event, and proof state on the order detail. |
-| 11:15-12:45 | Escrow lifecycle | Create escrow, mark funded, request release, and show settlement-instruction-ready state without payment execution. |
+| 11:15-12:00 | Invoice matching and closeout | Submit invoice metadata, run three-way match, approve payment readiness, and close procurement case. |
+| 12:00-13:15 | Escrow lifecycle | Create escrow, mark funded, request release, and show settlement-instruction-ready state without payment execution. |
 | 12:45-13:30 | Payment instruction | Create a sandbox/manual payment instruction and reconcile status without claiming bank execution. |
 | 13:30-14:00 | Dispute path | Show hold/dispute/arbitration controls as auditable lifecycle transitions, not external arbitration integration. |
 | 14:00-14:45 | Blockchain proof | Show proof panel and honest verification states. |
@@ -205,14 +207,20 @@ Show:
   center, and lightweight export summary
 - restricted Mudarabah projection
 - Email Outbox entry after network request action
+- Source to Award
+- create requisition
+- approve requisition
+- issue RFQ to Barakah Supplies
+- review quotation
+- select award and generate order handoff
 - Orders
-- create or inspect order for Barakah Supplies
+- inspect generated order for Barakah Supplies
 - lifecycle metadata
 
 What to say:
 
 ```text
-Amanah Retail creates the order inside a governed workflow. The product is capturing business state and audit evidence together.
+Amanah Retail moves from sourcing to award before order handoff. The product is capturing business state and audit evidence together without replacing external ERP or payment systems.
 ```
 
 For Organization Network, add:
@@ -258,6 +266,8 @@ Show:
 - accepted order selection
 - safe delivery evidence metadata form
 - submitted evidence hash and lifecycle proof state
+- Invoices
+- submit invoice metadata for the accepted order and delivery evidence
 
 What to say:
 
@@ -317,11 +327,16 @@ Show:
 - evidence hash
 - lifecycle event ID and hash
 - proof panel with pending, failed, not anchored, or anchored state
+- Invoices
+- three-way match result
+- payment readiness approval without payment execution
+- Supplier Performance
+- procurement case summary and closeout
 
 What to say:
 
 ```text
-The buyer can review delivery evidence metadata and proof state. A failed or unavailable proof is visible and is not treated as verified.
+The buyer can review delivery evidence metadata, invoice match status, and proof state. A failed or unavailable proof is visible and is not treated as verified. Payment readiness is a workflow state, not bank execution.
 ```
 
 ### 10. Escrow Lifecycle
@@ -530,9 +545,12 @@ Do not claim:
 - [ ] Buyer can open Organization Network, preview `barakah-supplies`, and inspect proof-scope vectors without raw payloads.
 - [ ] Company users can inspect Company Context and Company Ledger without production private-ledger claims.
 - [ ] Organization administrator can list or invite organization users without password disclosure.
-- [ ] Buyer can create or inspect order.
+- [ ] Buyer can create a requisition, approve it, issue RFQ, select award, and inspect generated order handoff.
 - [ ] Supplier can acknowledge assigned order.
 - [ ] Supplier can submit delivery evidence metadata for an accepted order.
+- [ ] Supplier can submit invoice metadata for an accepted order and delivery evidence.
+- [ ] Buyer can verify invoice three-way match and approve payment readiness without payment execution.
+- [ ] Buyer or auditor can inspect supplier scorecard and procurement closeout summary.
 - [ ] Contract document upload shows checksum, extraction, and local signature state without raw content or legal signature overclaiming.
 - [ ] Buyer can review delivery evidence hash, lifecycle event, and proof state.
 - [ ] Buyer can create escrow from accepted order.
