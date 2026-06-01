@@ -1813,3 +1813,58 @@ Known limitations:
 - Browser smoke used a temporary in-memory credential backend because Docker was
   unavailable; database seed dry-run validated the normal seeded account
   catalogue separately.
+
+## TASK-2026-06-01-005 - Issue 28 product owner knowledge tree
+
+Status: Completed
+
+Issue:
+
+- https://github.com/raichiiiiiii/Blockchain-Based-E-Procurement-System/issues/28
+
+Summary:
+
+- Created `docs/knowledge-tree/` as a product-owner repository ontology.
+- Mapped business problems, actor goals, procurement lifecycle coverage,
+  Mudarabah/PLS alignment, product features, data models, backend modules,
+  frontend navigation, API/OpenAPI coverage, RBAC, blockchain proof, integration
+  boundaries, testing evidence, backlog traceability, research alignment, and
+  product-owner decisions.
+- Preserved readiness wording: supervisor-demo plus selected pilot-hardening
+  features, not commercial-ready or production-certified.
+- Used repository source-of-truth documents plus available local research PDFs
+  for procurement, blockchain, Fabric, and Mudarabah alignment.
+
+Files changed:
+
+- `docs/knowledge-tree/README.md`
+- `docs/knowledge-tree/01-business-problem-tree.md`
+- `docs/knowledge-tree/02-actor-goal-tree.md`
+- `docs/knowledge-tree/03-procurement-process-tree.md`
+- `docs/knowledge-tree/04-mudarabah-financing-tree.md`
+- `docs/knowledge-tree/05-product-feature-tree.md`
+- `docs/knowledge-tree/06-domain-data-model-tree.md`
+- `docs/knowledge-tree/07-backend-module-tree.md`
+- `docs/knowledge-tree/08-frontend-navigation-tree.md`
+- `docs/knowledge-tree/09-api-openapi-tree.md`
+- `docs/knowledge-tree/10-auth-rbac-permission-tree.md`
+- `docs/knowledge-tree/11-blockchain-proof-tree.md`
+- `docs/knowledge-tree/12-integration-boundary-tree.md`
+- `docs/knowledge-tree/13-testing-evidence-tree.md`
+- `docs/knowledge-tree/14-backlog-traceability-tree.md`
+- `docs/knowledge-tree/15-research-alignment-matrix.md`
+- `docs/knowledge-tree/16-product-owner-decision-map.md`
+- `docs/evidence/qa/KNOWLEDGE_TREE_GENERATION_VALIDATION.md`
+- `docs/implementation/CODEX_TASK_LEDGER.md`
+
+Validation:
+
+- Documentation-safe validation results are recorded in
+  `docs/evidence/qa/KNOWLEDGE_TREE_GENERATION_VALIDATION.md`.
+
+Known limitations:
+
+- This was documentation and repository cartography only; no product feature
+  behavior was changed.
+- Research alignment uses available local PDFs and repository docs, not a new
+  external literature review.
