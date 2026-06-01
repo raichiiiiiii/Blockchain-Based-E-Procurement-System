@@ -71,13 +71,33 @@ function hasRole(actor: InvoiceActor, role: string): boolean {
   return actor.actorRoleCodes?.includes(role) === true;
 }
 
+function hasAnyRole(actor: InvoiceActor, roles: readonly string[]): boolean {
+  return actor.actorRoleCodes?.some(role => roles.includes(role)) === true;
+}
+
+function canSubmitInvoice(actor: InvoiceActor): boolean {
+  return hasAnyRole(actor, ['supplier', 'invoiceManager']);
+}
+
+function canReviewInvoice(actor: InvoiceActor, invoice: ProcurementInvoice): boolean {
+  if (hasRole(actor, 'financier')) {
+    return true;
+  }
+
+  if (hasAnyRole(actor, ['buyer', 'invoiceManager', 'paymentReadinessApprover'])) {
+    return actor.actorOrganizationId === invoice.buyerOrganizationId;
+  }
+
+  return false;
+}
+
 function canReadInvoice(actor: InvoiceActor, invoice: ProcurementInvoice): boolean {
   if (actor.actorRoleCodes?.some(role => ['administrator', 'auditor', 'regulator', 'securityOperator', 'financier'].includes(role))) {
     return true;
   }
 
   return (
-    (hasRole(actor, 'buyer') && actor.actorOrganizationId === invoice.buyerOrganizationId) ||
+    (hasAnyRole(actor, ['buyer', 'invoiceManager', 'paymentReadinessApprover']) && actor.actorOrganizationId === invoice.buyerOrganizationId) ||
     (hasRole(actor, 'supplier') && actor.actorOrganizationId === invoice.supplierOrganizationId)
   );
 }
@@ -138,7 +158,7 @@ export async function submitInvoice(
 ): Promise<InvoiceResult> {
   const actorError = requireActor(input);
   if (actorError) return actorError;
-  if (!hasRole(input, 'supplier')) return { status: 'forbidden', reason: 'supplierRoleRequired' };
+  if (!canSubmitInvoice(input)) return { status: 'forbidden', reason: 'supplierRoleRequired' };
 
   const orderId = trimOptional(input.orderId);
   const amount = trimOptional(input.amount);
@@ -236,11 +256,10 @@ export async function verifyInvoiceMatch(
 ): Promise<InvoiceResult> {
   const actorError = requireActor(actor);
   if (actorError) return actorError;
-  if (!hasRole(actor, 'buyer') && !hasRole(actor, 'financier')) return { status: 'forbidden', reason: 'buyerOrFinancierRequired' };
 
   const invoice = await dependencies.invoiceRepository.findById(invoiceId);
   if (!invoice) return { status: 'notFound', reason: 'invoiceNotFound' };
-  if (hasRole(actor, 'buyer') && actor.actorOrganizationId !== invoice.buyerOrganizationId) return { status: 'forbidden', reason: 'buyerOrganizationMismatch' };
+  if (!canReviewInvoice(actor, invoice)) return { status: 'forbidden', reason: 'buyerOrFinancierRequired' };
 
   const order = await dependencies.orderRepository.findById(invoice.orderId);
   if (!order) return { status: 'notFound', reason: 'orderNotFound' };
@@ -296,11 +315,10 @@ export async function approveInvoicePayment(
 ): Promise<InvoiceResult> {
   const actorError = requireActor(actor);
   if (actorError) return actorError;
-  if (!hasRole(actor, 'buyer') && !hasRole(actor, 'financier')) return { status: 'forbidden', reason: 'buyerOrFinancierRequired' };
 
   const invoice = await dependencies.invoiceRepository.findById(invoiceId);
   if (!invoice) return { status: 'notFound', reason: 'invoiceNotFound' };
-  if (hasRole(actor, 'buyer') && actor.actorOrganizationId !== invoice.buyerOrganizationId) return { status: 'forbidden', reason: 'buyerOrganizationMismatch' };
+  if (!canReviewInvoice(actor, invoice)) return { status: 'forbidden', reason: 'buyerOrFinancierRequired' };
   if (invoice.status !== 'matchPassed') return { status: 'conflict', reason: 'matchMustPassBeforePaymentApproval' };
 
   const approvedAt = dependencies.now?.() ?? new Date().toISOString();
@@ -327,7 +345,7 @@ export async function listInvoicesForActor(
 ): Promise<InvoiceResult | { status: 'list'; invoices: ProcurementInvoice[] }> {
   const actorError = requireActor(actor);
   if (actorError) return actorError;
-  if (hasRole(actor, 'buyer')) {
+  if (hasAnyRole(actor, ['buyer', 'invoiceManager', 'paymentReadinessApprover'])) {
     return { status: 'list', invoices: await dependencies.invoiceRepository.listByBuyerOrganization(actor.actorOrganizationId as string) };
   }
   if (hasRole(actor, 'supplier')) {

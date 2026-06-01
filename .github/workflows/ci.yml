@@ -23,8 +23,23 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Run tests
-      run: npm test
+    - name: Validate OpenAPI contract
+      run: npm run openapi:validate
+
+    - name: Validate database migrations
+      run: npm run db:migrate -- --dry-run
+
+    - name: Validate demo seed data
+      run: npm run db:seed -- --dry-run
+
+    - name: Validate Docker Compose model
+      run: docker compose -f docker-compose.app.yml config
 
     - name: Build project
       run: npm run build
+
+    - name: Build frontend
+      run: npm run frontend:build
+
+    - name: Run tests
+      run: npm test

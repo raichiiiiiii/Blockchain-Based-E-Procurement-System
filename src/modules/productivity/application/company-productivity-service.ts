@@ -481,6 +481,7 @@ export class CompanyProductivityService {
     const completedTaskIds = await this.stateRepository.listCompletedTaskIds(actor.actorOrganizationId);
     const records = await this.getRecords(actor);
     const dealSummary = {
+      calculationSource: 'projectionFallback' as const,
       moneyTracker: buildMoneyTracker(deals),
       pipeline: buildPipeline(deals),
       actionInbox: buildActionInbox(deals, completedTaskIds),
@@ -493,6 +494,7 @@ export class CompanyProductivityService {
     }
 
     return {
+      calculationSource: 'recordBacked',
       moneyTracker: buildMoneyTrackerFromRecords(records, dealSummary.moneyTracker),
       pipeline: [...buildRecordPipeline(records), ...dealSummary.pipeline],
       actionInbox: appendRecordDrivenTasks([...dealSummary.actionInbox], records, completedTaskIds),

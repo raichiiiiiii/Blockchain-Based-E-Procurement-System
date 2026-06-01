@@ -44,3 +44,27 @@ Supervisor-demo plus selected pilot-hardening features, not commercial-ready or 
 ## Recommendation
 
 Next hardening should add PostgreSQL persistence for source-to-award, invoice, and closeout records before pilot deployment claims are made.
+
+## Issue 27 Merge-Gate Addendum
+
+Date: 2026-06-01
+Evidence: docs/evidence/qa/ISSUE27_MERGE_GATE_HARDENING_VALIDATION.md
+
+Issue 27 supersedes the source-to-award, invoice, and closeout persistence limitation above for this branch. PBI-507 through PBI-512 close the merge-gate hardening gaps by adding PostgreSQL runtime persistence for source-to-award cases, procurement invoices, and closeout records; treating source-to-award, quotation, invoice, and closeout actors as first-class workflow roles; expanding CI to include OpenAPI, frontend, database, compose, build, and test validation; refreshing actor workflow evidence; labeling productivity fallback calculations; and hardening claim-boundary graph interactions.
+
+Updated readiness remains: supervisor-demo plus selected pilot-hardening features, not commercial-ready or production-certified.
+
+Updated validation highlights:
+
+| Command | Result |
+|---|---|
+| `npm run build` | Passed |
+| `npm run frontend:build` | Passed |
+| `npm test` | Passed, 849 tests |
+| `npm run openapi:validate` | Passed, 36 paths |
+| `npm run db:migrate -- --dry-run` | Passed, 19 migrations validated |
+| `npm run db:seed -- --dry-run` | Passed, 28 organizations and 24 demo accounts validated |
+| `docker compose -f docker-compose.app.yml config` | Passed |
+| Python backlog CSV validation | Passed, 512 rows |
+| Browser smoke | Passed for credential login, buyer dashboard, productivity fallback label, and forbidden-label scan |
+| `git diff --check` | Passed |

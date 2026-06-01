@@ -150,6 +150,10 @@ function edgeHoverSummary(edge: OrganizationGraphEdge): string {
   ].join(' | ');
 }
 
+function isClaimBoundaryNode(node: OrganizationGraphNode): boolean {
+  return ['fabricProofBoundary', 'apiIntegrationClient', 'erpAccountingAdapter', 'logisticsProofProvider'].includes(node.nodeType ?? '');
+}
+
 function GraphCanvas({
   graph,
   selectedNodeId,
@@ -363,7 +367,7 @@ function OrganizationNetworkPage({ session, onOpenCompanyLedger }: OrganizationN
   const handleSelectNode = (node: OrganizationGraphNode) => {
     setSelectedNode(node);
     setSelectedEdge(undefined);
-    setTrail(graph?.latestProofActivity ?? []);
+    setTrail(isClaimBoundaryNode(node) ? [] : graph?.latestProofActivity ?? []);
   };
 
   const handleClearSelection = () => {
@@ -420,6 +424,10 @@ function OrganizationNetworkPage({ session, onOpenCompanyLedger }: OrganizationN
               <strong>{selectedNode.displayName}</strong>
               <span>{formatLabel(selectedNode.nodeType)}</span>
               <span>{selectedNode.profileSummary ?? 'No public profile summary recorded.'}</span>
+              {isClaimBoundaryNode(selectedNode) ? (
+                <span>This boundary is informational only; it does not create a route, external integration, or production certification.</span>
+              ) : null}
+              {selectedNode.proofChannelSummary ? <span>{selectedNode.proofChannelSummary}</span> : null}
               <StatusIndicator label={formatLabel(selectedNode.eligibilityStatus)} tone={statusTone(selectedNode.eligibilityStatus)} compact />
             </div>
           ) : (

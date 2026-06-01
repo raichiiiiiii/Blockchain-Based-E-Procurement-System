@@ -84,6 +84,7 @@ export type NotificationCenterItem = {
 };
 
 export type CompanyProductivitySummary = {
+  calculationSource: 'recordBacked' | 'projectionFallback';
   moneyTracker: MoneyTrackerSummary;
   pipeline: ProcurementPipelineItem[];
   actionInbox: ActionInboxItem[];

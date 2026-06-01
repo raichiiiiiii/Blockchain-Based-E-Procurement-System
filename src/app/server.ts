@@ -125,6 +125,9 @@ import { PostgresAuthSessionRepository } from '../modules/auth/infrastructure/po
 import { PostgresProcureToPayLifecycleEventRepository } from '../modules/procurement/infrastructure/postgres-procure-to-pay-lifecycle-event-repository.js';
 import { PostgresProcurementOrderRepository } from '../modules/procurement/infrastructure/postgres-procurement-order-repository.js';
 import { PostgresDeliveryEvidenceRepository } from '../modules/procurement/infrastructure/postgres-delivery-evidence-repository.js';
+import { PostgresSourceToAwardRepository } from '../modules/procurement/infrastructure/postgres-source-to-award-repository.js';
+import { PostgresProcurementInvoiceRepository } from '../modules/procurement/infrastructure/postgres-invoice-repository.js';
+import { PostgresProcurementCloseoutRepository } from '../modules/procurement/infrastructure/postgres-procurement-closeout-repository.js';
 import { PostgresBlockchainAnchorMetadataRepository } from '../modules/blockchain/infrastructure/postgres-blockchain-anchor-metadata-repository.js';
 import { PostgresEscrowRepository } from '../modules/escrow/infrastructure/postgres-escrow-repository.js';
 import { PostgresOnboardingCaseRepository } from '../modules/kyc-aml-onboarding/infrastructure/postgres-onboarding-case-repository.js';
@@ -679,6 +682,9 @@ function createRuntimeServerDependencies(
       procureToPayLifecycleEventRepository: new PostgresProcureToPayLifecycleEventRepository(postgresPool),
       procurementOrderRepository: new PostgresProcurementOrderRepository(postgresPool),
       deliveryEvidenceRepository: new PostgresDeliveryEvidenceRepository(postgresPool),
+      sourceToAwardRepository: new PostgresSourceToAwardRepository(postgresPool),
+      invoiceRepository: new PostgresProcurementInvoiceRepository(postgresPool),
+      procurementCloseoutRepository: new PostgresProcurementCloseoutRepository(postgresPool),
       onboardingCaseRepository: new PostgresOnboardingCaseRepository(postgresPool),
       shariahReviewRepository: new PostgresShariahReviewRepository(postgresPool),
       shariahCertificateRepository: new PostgresShariahCertificateRepository(postgresPool),

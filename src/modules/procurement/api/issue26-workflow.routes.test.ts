@@ -88,10 +88,34 @@ async function createIssue26Context() {
       actorRoleCodes: ['buyer'],
     }),
     createSession(sessionRepository, {
+      token: 'source-award-token',
+      actorUserId: 'source-award-user',
+      actorOrganizationId: 'buyer-org',
+      actorRoleCodes: ['sourceToAwardManager'],
+    }),
+    createSession(sessionRepository, {
+      token: 'invoice-manager-token',
+      actorUserId: 'invoice-manager-user',
+      actorOrganizationId: 'buyer-org',
+      actorRoleCodes: ['invoiceManager'],
+    }),
+    createSession(sessionRepository, {
+      token: 'closeout-manager-token',
+      actorUserId: 'closeout-manager-user',
+      actorOrganizationId: 'buyer-org',
+      actorRoleCodes: ['procurementCloseoutManager'],
+    }),
+    createSession(sessionRepository, {
       token: 'supplier-token',
       actorUserId: 'supplier-user',
       actorOrganizationId: 'supplier-org',
       actorRoleCodes: ['supplier'],
+    }),
+    createSession(sessionRepository, {
+      token: 'quotation-token',
+      actorUserId: 'quotation-user',
+      actorOrganizationId: 'supplier-org',
+      actorRoleCodes: ['quotationManager'],
     }),
     createSession(sessionRepository, {
       token: 'other-supplier-token',
@@ -127,10 +151,25 @@ async function createIssue26Context() {
 }
 
 async function createAwardedAcceptedOrder(server: Awaited<ReturnType<typeof createIssue26Context>>['server']) {
+  return createAwardedAcceptedOrderWithActors(server, {
+    buyerToken: 'buyer-token',
+    quotationToken: 'supplier-token',
+    acknowledgementToken: 'supplier-token',
+  });
+}
+
+async function createAwardedAcceptedOrderWithActors(
+  server: Awaited<ReturnType<typeof createIssue26Context>>['server'],
+  actors: {
+    buyerToken: string;
+    quotationToken: string;
+    acknowledgementToken: string;
+  },
+) {
   const requisition = await server.inject({
     method: 'POST',
     url: '/api/v1/source-to-award/requisitions',
-    headers: { authorization: 'Bearer buyer-token' },
+    headers: { authorization: `Bearer ${actors.buyerToken}` },
     payload: {
       title: 'Cold-chain packaging',
       estimatedAmount: '68000.00',
@@ -143,14 +182,14 @@ async function createAwardedAcceptedOrder(server: Awaited<ReturnType<typeof crea
   const approval = await server.inject({
     method: 'POST',
     url: `/api/v1/source-to-award/requisitions/${requisitionId}/approve`,
-    headers: { authorization: 'Bearer buyer-token' },
+    headers: { authorization: `Bearer ${actors.buyerToken}` },
   });
   assert.strictEqual(approval.statusCode, 200);
 
   const rfq = await server.inject({
     method: 'POST',
     url: '/api/v1/source-to-award/rfqs',
-    headers: { authorization: 'Bearer buyer-token' },
+    headers: { authorization: `Bearer ${actors.buyerToken}` },
     payload: {
       requisitionId,
       supplierOrganizationIds: ['supplier-org'],
@@ -162,7 +201,7 @@ async function createAwardedAcceptedOrder(server: Awaited<ReturnType<typeof crea
   const quotation = await server.inject({
     method: 'POST',
     url: `/api/v1/source-to-award/rfqs/${rfqId}/quotations`,
-    headers: { authorization: 'Bearer supplier-token' },
+    headers: { authorization: `Bearer ${actors.quotationToken}` },
     payload: {
       amount: '68000.00',
       currency: 'MYR',
@@ -176,7 +215,7 @@ async function createAwardedAcceptedOrder(server: Awaited<ReturnType<typeof crea
   const award = await server.inject({
     method: 'POST',
     url: `/api/v1/source-to-award/rfqs/${rfqId}/award`,
-    headers: { authorization: 'Bearer buyer-token' },
+    headers: { authorization: `Bearer ${actors.buyerToken}` },
     payload: {
       quotationId,
       rationale: 'Best compliant offer for the demo case.',
@@ -188,7 +227,7 @@ async function createAwardedAcceptedOrder(server: Awaited<ReturnType<typeof crea
   const acknowledge = await server.inject({
     method: 'POST',
     url: `/api/v1/orders/${orderId}/acknowledgement`,
-    headers: { authorization: 'Bearer supplier-token' },
+    headers: { authorization: `Bearer ${actors.acknowledgementToken}` },
     payload: { decision: 'accept' },
   });
   assert.strictEqual(acknowledge.statusCode, 200);
@@ -198,6 +237,67 @@ async function createAwardedAcceptedOrder(server: Awaited<ReturnType<typeof crea
     orderId,
   };
 }
+
+test('first-class workflow roles can execute source-to-award, invoice review, and closeout without role picker shortcuts', async () => {
+  const { server } = await createIssue26Context();
+  const { orderId } = await createAwardedAcceptedOrderWithActors(server, {
+    buyerToken: 'source-award-token',
+    quotationToken: 'quotation-token',
+    acknowledgementToken: 'supplier-token',
+  });
+
+  const evidence = await server.inject({
+    method: 'POST',
+    url: `/api/v1/orders/${orderId}/delivery-evidence`,
+    headers: { authorization: 'Bearer supplier-token' },
+    payload: {
+      evidenceType: 'deliveryNote',
+      evidenceReference: 'delivery-note:first-class:001',
+      notes: 'Metadata only delivery evidence for actor workflow validation.',
+    },
+  });
+  assert.strictEqual(evidence.statusCode, 201);
+
+  const invoice = await server.inject({
+    method: 'POST',
+    url: '/api/v1/invoices',
+    headers: { authorization: 'Bearer supplier-token' },
+    payload: {
+      orderId,
+      deliveryEvidenceId: evidence.json().data.evidenceId,
+      amount: '68000.00',
+      currency: 'MYR',
+      invoiceReference: 'invoice:first-class:001',
+    },
+  });
+  assert.strictEqual(invoice.statusCode, 200);
+  const invoiceId = invoice.json().data.invoiceId;
+
+  const match = await server.inject({
+    method: 'POST',
+    url: `/api/v1/invoices/${invoiceId}/verify-match`,
+    headers: { authorization: 'Bearer invoice-manager-token' },
+  });
+  assert.strictEqual(match.statusCode, 200);
+  assert.strictEqual(match.json().data.matchResult.status, 'passed');
+
+  const approval = await server.inject({
+    method: 'POST',
+    url: `/api/v1/invoices/${invoiceId}/approve-payment`,
+    headers: { authorization: 'Bearer invoice-manager-token' },
+  });
+  assert.strictEqual(approval.statusCode, 200);
+  assert.strictEqual(approval.json().data.status, 'paymentApproved');
+
+  const closeout = await server.inject({
+    method: 'POST',
+    url: `/api/v1/procurement-cases/${orderId}/closeout`,
+    headers: { authorization: 'Bearer closeout-manager-token' },
+    payload: { notes: 'Closed by procurement closeout manager role.' },
+  });
+  assert.strictEqual(closeout.statusCode, 200);
+  assert.strictEqual(closeout.json().data.status, 'closed');
+});
 
 test('buyer and supplier can execute source-to-award through purchase order handoff', async () => {
   const { server, lifecycleEventRepository } = await createIssue26Context();

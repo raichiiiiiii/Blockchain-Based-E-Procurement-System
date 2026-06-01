@@ -85,12 +85,16 @@ function trimOptional(value: string | undefined): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
-function isBuyer(actor: SourceToAwardActor): boolean {
-  return actor.actorRoleCodes?.includes('buyer') === true;
+function hasAnyRole(actor: SourceToAwardActor, roles: readonly string[]): boolean {
+  return actor.actorRoleCodes?.some(role => roles.includes(role)) === true;
 }
 
-function isSupplier(actor: SourceToAwardActor): boolean {
-  return actor.actorRoleCodes?.includes('supplier') === true;
+function canManageSourceToAward(actor: SourceToAwardActor): boolean {
+  return hasAnyRole(actor, ['buyer', 'procurementOfficer', 'sourceToAwardManager']);
+}
+
+function canSubmitSourceToAwardQuotation(actor: SourceToAwardActor): boolean {
+  return hasAnyRole(actor, ['supplier', 'quotationManager']);
 }
 
 function isPrivilegedReader(actor: SourceToAwardActor): boolean {
@@ -159,7 +163,7 @@ export async function createSourceToAwardRequisition(
 ): Promise<SourceToAwardResult> {
   const actorError = requireActor(input);
   if (actorError) return actorError;
-  if (!isBuyer(input)) return { status: 'forbidden', reason: 'buyerRoleRequired' };
+  if (!canManageSourceToAward(input)) return { status: 'forbidden', reason: 'buyerRoleRequired' };
 
   const title = trimOptional(input.title);
   const estimatedAmount = trimOptional(input.estimatedAmount);
@@ -212,7 +216,7 @@ export async function approveSourceToAwardRequisition(
 ): Promise<SourceToAwardResult> {
   const actorError = requireActor(input);
   if (actorError) return actorError;
-  if (!isBuyer(input)) return { status: 'forbidden', reason: 'buyerRoleRequired' };
+  if (!canManageSourceToAward(input)) return { status: 'forbidden', reason: 'buyerRoleRequired' };
 
   const requisitionId = trimOptional(input.requisitionId);
   if (!requisitionId) return { status: 'invalidInput', issues: [{ path: 'requisitionId', message: 'Requisition is required' }] };
@@ -247,7 +251,7 @@ export async function issueSourceToAwardRfq(
 ): Promise<SourceToAwardResult> {
   const actorError = requireActor(input);
   if (actorError) return actorError;
-  if (!isBuyer(input)) return { status: 'forbidden', reason: 'buyerRoleRequired' };
+  if (!canManageSourceToAward(input)) return { status: 'forbidden', reason: 'buyerRoleRequired' };
 
   const requisitionId = trimOptional(input.requisitionId);
   const supplierOrganizationIds = [...new Set((input.supplierOrganizationIds ?? []).map(id => id.trim()).filter(Boolean))];
@@ -291,7 +295,7 @@ export async function submitSourceToAwardQuotation(
 ): Promise<SourceToAwardResult> {
   const actorError = requireActor(input);
   if (actorError) return actorError;
-  if (!isSupplier(input)) return { status: 'forbidden', reason: 'supplierRoleRequired' };
+  if (!canSubmitSourceToAwardQuotation(input)) return { status: 'forbidden', reason: 'supplierRoleRequired' };
 
   const rfqId = trimOptional(input.rfqId);
   const amount = trimOptional(input.amount);
@@ -348,7 +352,7 @@ export async function awardSourceToAwardRfq(
 ): Promise<SourceToAwardResult> {
   const actorError = requireActor(input);
   if (actorError) return actorError;
-  if (!isBuyer(input)) return { status: 'forbidden', reason: 'buyerRoleRequired' };
+  if (!canManageSourceToAward(input)) return { status: 'forbidden', reason: 'buyerRoleRequired' };
 
   const rfqId = trimOptional(input.rfqId);
   const quotationId = trimOptional(input.quotationId);
@@ -458,14 +462,14 @@ export async function listSourceToAwardCases(
   const actorError = requireActor(actor);
   if (actorError) return actorError;
 
-  if (isBuyer(actor)) {
+  if (canManageSourceToAward(actor)) {
     return {
       status: 'list',
       sourceCases: await dependencies.sourceToAwardRepository.listByBuyerOrganization(actor.actorOrganizationId as string),
     };
   }
 
-  if (isSupplier(actor)) {
+  if (canSubmitSourceToAwardQuotation(actor)) {
     return {
       status: 'list',
       sourceCases: await dependencies.sourceToAwardRepository.listBySupplierOrganization(actor.actorOrganizationId as string),

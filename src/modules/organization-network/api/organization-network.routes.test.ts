@@ -308,6 +308,32 @@ test('buyer can request network relationship and supplier acceptance appears in 
   ));
 });
 
+test('graph includes claim-boundary nodes with explicit non-production wording', async () => {
+  const { server } = await createNetworkTestContext();
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/api/v1/organization-network/graph',
+    headers: {
+      authorization: 'Bearer buyer-token',
+    },
+  });
+
+  assert.equal(response.statusCode, 200);
+  const graph = response.json().data;
+  const boundaryNode = graph.nodes.find((node: { uniqueIdentifier: string }) =>
+    node.uniqueIdentifier === 'fabric-proof-boundary'
+  );
+  assert.ok(boundaryNode);
+  assert.match(boundaryNode.proofChannelSummary, /No production network certification is implied/);
+
+  const boundaryEdge = graph.edges.find((edge: { targetOrganizationId: string }) =>
+    edge.targetOrganizationId === 'topology-fabric-proof-boundary'
+  );
+  assert.ok(boundaryEdge);
+  assert.match(boundaryEdge.claimBoundary, /not a production Fabric consortium/);
+});
+
 test('network routes enforce session and role restrictions', async () => {
   const { server } = await createNetworkTestContext();
 

@@ -146,12 +146,17 @@ function CompanyProductivityPage({ session }: CompanyProductivityPageProps) {
     );
   }
 
+  const calculationSourceLabel = summary.calculationSource === 'recordBacked'
+    ? 'Record-backed'
+    : 'Projection fallback';
+
   return (
     <div className="company-productivity-page">
       <section className="proof-surface-header" aria-label="Company Productivity">
         <p className="dashboard-role-label">Company Productivity</p>
         <h2>Work, money, and evidence readiness</h2>
         <p>Track company-safe budget signals, action items, partner proof scope, and export readiness without exposing private documents or payment credentials.</p>
+        <StatusIndicator label={calculationSourceLabel} tone={summary.calculationSource === 'recordBacked' ? 'success' : 'pending'} compact />
       </section>
 
       {error ? <div className="admin-alert admin-alert-error" role="alert">{error}</div> : null}

@@ -47,7 +47,7 @@ export async function createProcurementOrder(
     return { status: 'unauthorized' };
   }
 
-  if (!input.actorRoleCodes?.includes('buyer')) {
+  if (!input.actorRoleCodes?.some(role => ['buyer', 'procurementOfficer', 'sourceToAwardManager'].includes(role))) {
     return { status: 'forbidden', reason: 'buyerRoleRequired' };
   }
 

@@ -41,8 +41,16 @@ function hasRole(actor: ProcurementCloseoutActor, role: string): boolean {
   return actor.actorRoleCodes?.includes(role) === true;
 }
 
+function hasAnyRole(actor: ProcurementCloseoutActor, roles: readonly string[]): boolean {
+  return actor.actorRoleCodes?.some(role => roles.includes(role)) === true;
+}
+
 function privileged(actor: ProcurementCloseoutActor): boolean {
   return actor.actorRoleCodes?.some(role => ['administrator', 'auditor', 'regulator', 'securityOperator'].includes(role)) === true;
+}
+
+function canManageCloseoutForBuyer(actor: ProcurementCloseoutActor, buyerOrganizationId: string): boolean {
+  return hasAnyRole(actor, ['buyer', 'procurementCloseoutManager']) && actor.actorOrganizationId === buyerOrganizationId;
 }
 
 function requireActor(actor: ProcurementCloseoutActor): ProcurementCloseoutResult | null {
@@ -135,7 +143,7 @@ export async function getProcurementCaseSummary(
   if (!order) return { status: 'notFound', reason: 'caseNotFound' };
 
   const canRead = privileged(actor) ||
-    (hasRole(actor, 'buyer') && actor.actorOrganizationId === order.buyerOrganizationId) ||
+    canManageCloseoutForBuyer(actor, order.buyerOrganizationId) ||
     (hasRole(actor, 'supplier') && actor.actorOrganizationId === order.supplierOrganizationId);
   if (!canRead) return { status: 'forbidden', reason: 'caseNotVisible' };
 
@@ -167,11 +175,11 @@ export async function closeProcurementCase(
 ): Promise<ProcurementCloseoutResult> {
   const actorError = requireActor(actor);
   if (actorError) return actorError;
-  if (!hasRole(actor, 'buyer') && !hasRole(actor, 'auditor')) return { status: 'forbidden', reason: 'buyerOrAuditorRequired' };
+  if (!hasAnyRole(actor, ['buyer', 'auditor', 'procurementCloseoutManager'])) return { status: 'forbidden', reason: 'buyerOrAuditorRequired' };
 
   const { order } = await resolveCaseOrder(caseId, dependencies);
   if (!order) return { status: 'notFound', reason: 'caseNotFound' };
-  if (hasRole(actor, 'buyer') && actor.actorOrganizationId !== order.buyerOrganizationId) {
+  if (hasAnyRole(actor, ['buyer', 'procurementCloseoutManager']) && actor.actorOrganizationId !== order.buyerOrganizationId) {
     return { status: 'forbidden', reason: 'buyerOrganizationMismatch' };
   }
   if (order.status !== 'accepted') return { status: 'conflict', reason: 'orderMustBeAccepted' };
@@ -213,7 +221,7 @@ export async function getSupplierPerformance(
   if (actorError) return actorError;
   const canRead = privileged(actor) ||
     (hasRole(actor, 'supplier') && actor.actorOrganizationId === supplierOrganizationId) ||
-    hasRole(actor, 'buyer');
+    hasAnyRole(actor, ['buyer', 'procurementCloseoutManager']);
   if (!canRead) return { status: 'forbidden', reason: 'performanceNotVisible' };
 
   const orders = (await dependencies.orderRepository.listAll())
